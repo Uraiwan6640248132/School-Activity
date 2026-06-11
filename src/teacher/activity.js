@@ -2,64 +2,69 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 
 function Activity() {
-  // เปลี่ยนชื่อ State ให้สอดคล้องกับคอลัมน์ใน Database เพื่อไล่โค้ดง่ายขึ้น
+  // 1. สร้าง State แลกเปลี่ยนข้อมูลให้ตรงตามฟิลด์ตารางฐานข้อมูล activity
   const [activities, setActivities] = useState([]);
-  const [nameActivity, setNameActivity] = useState(""); // ตรงกับ Name_activity
-  const [location, setLocation] = useState("");         // ตรงกับ Location
-  const [activityDate, setActivityDate] = useState("");   // ตรงกับ Activity_date
-  const [editId, setEditId] = useState(null);           // ตรงกับ Activity_id
+  const [nameActivity, setNameActivity] = useState(""); // ฟิลด์ Name_activity
+  const [location, setLocation] = useState("");         // ฟิลด์ Location
+  const [activityDate, setActivityDate] = useState("");   // ฟิลด์ Activity_date
+  const [editId, setEditId] = useState(null);           // ฟิลด์ Activity_id
   
   const [showForm, setShowForm] = useState(false);
 
-  // ตรวจสอบพอร์ตเซิร์ฟเวอร์หลังบ้าน (Backend) ของคุณให้ถูกต้อง (เช่น 3001)
-  const API_URL = "http://localhost:3001/activities"; 
+  // เปลี่ยนเป็น IP ตรง 127.0.0.1 เพื่อบังคับเบราว์เซอร์ส่งข้ามพอร์ตและเคลียร์แคช
+  const API_URL = "http://127.0.0.1:3001/activities"; 
 
   useEffect(() => {
     fetchActivities();
   }, []);
 
-  // 1. ดึงข้อมูลกิจกรรม (GET)
+  // 🔄 ฟังก์ชันดึงข้อมูลกิจกรรม (GET)
   const fetchActivities = async () => {
     try {
-      const res = await axios.get(API_URL);
+      const res = await axios.get(API_URL, {
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        }
+      });
       setActivities(res.data);
     } catch (err) {
-      console.error("ดึงข้อมูลไม่สำเร็จ! กรุณาตรวจสอบว่าเปิด API Server หรือยัง:", err);
+      console.error("ดึงข้อมูลไม่สำเร็จ! ตรวจสอบการเชื่อมต่อ API:", err);
     }
   };
 
-  // 2. บันทึกข้อมูล เพิ่มใหม่ (POST) / แก้ไข (PUT)
+  // 💾 ฟังก์ชันบันทึกข้อมูล (สร้างใหม่ POST / แก้ไข PUT)
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!nameActivity) return alert("กรุณากรอกชื่อกิจกรรม");
 
-    // โครงสร้าง Object ที่จะส่งไปหา Backend (Key ต้องตรงกับที่ Backend และ DB รอรับ)
+    // จัดระเบียบ Object ส่งเข้าหลังบ้านตัวใหญ่ตัวเล็กตรงกัน
     const activityData = {
       Name_activity: nameActivity,
       Location: location,
       Activity_date: activityDate,
-      User_id: 1 // ใส่ตุนไว้ก่อนตามโครงสร้างที่มีคอลัมน์ User_id ใน DB
+      User_id: 1 
     };
 
     try {
       if (editId) {
-        // อัปเดตข้อมูลกิจกรรมเดิม
+        // แก้ไขข้อมูลเก่าตาม ID
         await axios.put(`${API_URL}/${editId}`, activityData);
       } else {
-        // สร้างกิจกรรมใหม่
+        // บันทึกสร้างกิจกรรมใหม่
         await axios.post(API_URL, activityData);
       }
 
-      // ล้างค่าข้อมูลในฟอร์มเมื่อบันทึกสำเร็จ
       clearForm();
       fetchActivities();
     } catch (err) {
       console.error(err);
-      alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล (ตรวจสอบ Route ที่ Backend หรือแก้ปัญหา 404)");
+      alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล ลองตรวจสอบ Console หลังบ้าน");
     }
   };
 
-  // 3. ลบข้อมูลกิจกรรม (DELETE)
+  // ❌ ฟังก์ชันลบกิจกรรม (DELETE)
   const handleDelete = async (id) => {
     if (window.confirm("คุณแน่ใจหรือไม่ว่าต้องการลบกิจกรรมนี้?")) {
       try {
@@ -67,17 +72,17 @@ function Activity() {
         fetchActivities();
       } catch (err) {
         console.error(err);
-        alert("ลบข้อมูลไม่สำเร็จ");
+        alert("ไม่สามารถลบข้อมูลได้");
       }
     }
   };
 
-  // 4. จิ้มเลือกการ์ดเพื่อนำข้อมูลเดิมขึ้นมาแก้ไข
+  // ✏️ ฟังก์ชันดึงข้อมูลแถวที่เลือกขึ้นไปตั้งต้นบนฟอร์มเพื่อเตรียมแก้ไข
   const handleEdit = (item) => {
-    setEditId(item.Activity_id); // อ้างอิงตามคอลัมน์ Activity_id จากฐานข้อมูล
-    setNameActivity(item.Name_activity); // อ้างอิงตามคอลัมน์ Name_activity
-    setLocation(item.Location);         // อ้างอิงตามคอลัมน์ Location
-    setActivityDate(item.Activity_date ? item.Activity_date.split("T")[0] : ""); // ตัด Format วันที่ให้เข้ากับ Input type="date"
+    setEditId(item.Activity_id);
+    setNameActivity(item.Name_activity);
+    setLocation(item.Location);
+    setActivityDate(item.Activity_date ? item.Activity_date.split("T")[0] : "");
     setShowForm(true);
   };
 
@@ -89,7 +94,7 @@ function Activity() {
     setShowForm(false);
   };
 
-  // ฟังก์ชันช่วยแสดงผลวันที่แบบไทย (เช่น 03/06/2026)
+  // จัดการจัดแสดงวันที่รูปแบบของประเทศไทย
   const formatDate = (dateStr) => {
     if (!dateStr) return "ไม่ระบุวันเวลา";
     const date = new Date(dateStr);
@@ -100,7 +105,7 @@ function Activity() {
     <div className="bg-gray-50 min-h-screen p-8 text-slate-800 font-sans">
       <div className="max-w-5xl mx-auto">
         
-        {/* ส่วนหัวของหน้าเว็บ */}
+        {/* ส่วนหัวแสดงประเภทเมนู */}
         <div className="flex justify-between items-start mb-12">
           <div>
             <button className="bg-white border border-slate-400 text-black font-medium px-8 py-2 rounded-md shadow-sm text-lg">
@@ -117,10 +122,10 @@ function Activity() {
           </button>
         </div>
 
-        {/* หน้าต่างฟอร์ม เพิ่ม/แก้ไข ข้อมูล */}
+        {/* หน้าต่างสไลด์ฟอร์มกรอกข้อมูลกิจกรรม */}
         {showForm && (
           <form onSubmit={handleSubmit} className="bg-white border border-slate-300 rounded-2xl p-6 mb-8 max-w-xl shadow-md">
-            <h3 className="text-xl font-bold mb-4">{editId ? "✏️ แก้ไขกิจกรรม" : "➕ เพิ่มกิจกรรมใหม่"}</h3>
+            <h3 className="text-xl font-bold mb-4">{editId ? "✏️ แก้ไขข้อมูลกิจกรรม" : "➕ เพิ่มกิจกรรมใหม่"}</h3>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-1">ชื่อกิจกรรม</label>
@@ -163,15 +168,14 @@ function Activity() {
           </form>
         )}
 
-        {/* ส่วนแสดงรายการการ์ดกิจกรรมที่ดึงมาจาก Database */}
+        {/* 🗂️ Grid การ์ดรายการแสดงกิจกรรมดึงตรงจากตาราง MySQL */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl">
           {activities.length === 0 ? (
-            <p className="text-slate-400 col-span-2 text-center py-12">ไม่พบข้อมูลกิจกรรมในระบบ หรือเซิร์ฟเวอร์หลังบ้านปิดอยู่</p>
+            <p className="text-slate-400 col-span-2 text-center py-12">ไม่พบข้อมูลกิจกรรมในระบบ หรือเซิร์ฟเวอร์หลังบ้านยังไม่ได้เปิด</p>
           ) : (
             activities.map((item) => (
               <div key={item.Activity_id} className="bg-white border border-slate-400 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
                 <div>
-                  {/* แสดงข้อมูลตามชื่อฟิลด์จาก phpMyAdmin */}
                   <h2 className="text-3xl font-bold mb-3 text-black truncate">{item.Name_activity}</h2>
                   <p className="text-slate-400 text-lg mb-2">{formatDate(item.Activity_date)}</p>
                   <p className="text-slate-400 text-lg mb-6 break-words">{item.Location || "ไม่ระบุสถานที่"}</p>
@@ -200,7 +204,5 @@ function Activity() {
     </div>
   );
 }
-
-
 
 export default Activity;
