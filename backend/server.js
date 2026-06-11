@@ -149,3 +149,66 @@ app.delete("/api/students/:id", (req, res) => {
         res.json({ message: "ลบข้อมูลนักเรียนสำเร็จ" });
     });
 });
+// ==========================================
+// 📢 ระบบ API จัดการประชาสัมพันธ์ (PUBLIC RELATIONS)
+// ==========================================
+
+// 1. เส้นทางสำหรับดึงข้อมูลประชาสัมพันธ์ทั้งหมด
+app.get("/api/publicrelations", (req, res) => {
+    // ใช้ชื่อตาราง 'publicrelation' ตามใน phpMyAdmin ของคุณ
+    const sql = "SELECT * FROM publicrelation ORDER BY PublicRelations_id DESC";
+    db.query(sql, (err, result) => {
+        if (err) {
+            console.log(err);
+            return res.status(500).json(err);
+        }
+        res.json(result);
+    });
+});
+
+// 2. เส้นทางสำหรับเพิ่มข้อมูลประชาสัมพันธ์
+app.post("/api/publicrelations", (req, res) => {
+    const { Name, date, Location, details, User_id, Image } = req.body;
+    const sql = `INSERT INTO publicrelation (Name, date, Location, details, User_id, Image) 
+                 VALUES (?, ?, ?, ?, ?, ?)`;
+                 
+    db.query(sql, [Name, date, Location, details, User_id || 1, Image], (err, result) => {
+        if (err) {
+            console.log(err);
+            return res.status(500).json(err);
+        }
+        res.json({ message: "เพิ่มประชาสัมพันธ์สำเร็จ", PublicRelations_id: result.insertId });
+    });
+});
+
+// 3. เส้นทางสำหรับแก้ไขข้อมูลประชาสัมพันธ์
+app.put("/api/publicrelations/:id", (req, res) => {
+    const { Name, date, Location, details, User_id, Image } = req.body;
+    const prId = req.params.id;
+
+    const sql = `UPDATE publicrelation 
+                 SET Name=?, date=?, Location=?, details=?, User_id=?, Image=? 
+                 WHERE PublicRelations_id=?`;
+
+    db.query(sql, [Name, date, Location, details, User_id || 1, Image, prId], (err, result) => {
+        if (err) {
+            console.log(err);
+            return res.status(500).json(err);
+        }
+        res.json({ message: "แก้ไขประชาสัมพันธ์สำเร็จ" });
+    });
+});
+
+// 4. เส้นทางสำหรับลบข้อมูลประชาสัมพันธ์
+app.delete("/api/publicrelations/:id", (req, res) => {
+    const prId = req.params.id;
+    const sql = "DELETE FROM publicrelation WHERE PublicRelations_id=?";
+
+    db.query(sql, [prId], (err, result) => {
+        if (err) {
+            console.log(err);
+            return res.status(500).json(err);
+        }
+        res.json({ message: "ลบประชาสัมพันธ์สำเร็จ" });
+    });
+});
