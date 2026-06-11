@@ -36,6 +36,7 @@ function StudentManagement() {
     setStudents([...students, newStudent]);
     setIsAddModalOpen(false);
   };
+  
 
   // เปิดกล่องแก้ไขข้อมูล (ภาพ 9.JPG)
   const handleOpenEditModal = (student) => {
