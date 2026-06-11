@@ -1,13 +1,10 @@
 import './App.css';
-import { Routes, Route, Navigate } from 'react-router-dom'; 
+import { Routes, Route, Navigate } from 'react-router-dom';
 import Navbar from './navbar/nb';
 import StudentManagement from './teacher/student';
+import Activity from './teacher/activity'; // ดึงไฟล์กิจกรรมตัวจริงมาใช้แล้ว
 
-// 1. เพิ่มการ Import หน้าประชาสัมพันธ์ (ปรับพาร์ทที่อยู่ไฟล์ให้ตรงกับเครื่องของคุณ เช่นถ้าอยู่ในโฟลเดอร์เดียวกันให้ใช้ './teacher/publicrelations')
-// บรรทัดที่ 7 แก้ไขจาก publicrelations เป็น publicrelation (เอา s ออก)
-import PublicRelationsManagement from './teacher/publicrelation';
-
-// คอมโพเนนต์จำลองหน้าอื่นที่ยังไม่ได้ทำ
+// สร้างคอมโพเนนต์จำลองหน้าอื่นไว้เพื่อให้ลิงก์กดไปแล้วไม่พัง
 const NotificationsPage = () => <h2 style={{ padding: 20 }}>หน้าแจ้งเตือนการบ้าน (กำลังพัฒนา)</h2>;
 
 function App() {
@@ -16,16 +13,16 @@ function App() {
       {/* ใช้ Navbar ครอบเอาไว้ด้านนอกสุด เพื่อให้ Sidebar แสดงผลทุกหน้า */}
       <Navbar>
         <Routes>
-          {/* หน้าแรกสุดให้เด้งไปที่หน้า /students อัตโนมัติ */}
+          {/* 1. หน้าแรกสุดให้เด้งไปที่หน้า /students อัตโนมัติ */}
           <Route path="/" element={<Navigate to="/students" />} />
 
-          {/* หน้าแสดงข้อมูลจัดการนักเรียน */}
+          {/* 2. เมื่อ URL เป็น /students ให้แสดงหน้าจัดการข้อมูลนักเรียน */}
           <Route path="/students" element={<StudentManagement />} />
 
-          {/* 2. เปลี่ยนจากหน้าจำลองอันเก่า ให้มาเปิดหน้าประชาสัมพันธ์ของจริงที่คุณเพิ่งสร้าง */}
-          <Route path="/activity" element={<PublicRelationsManagement />} /> 
-
-          {/* ลิงก์หน้าอื่นๆ ในระบบ Navbar */}
+          {/* 3. ลิงก์ไปหน้ากิจกรรมตัวจริงที่เชื่อมฐานข้อมูลแล้ว */}
+          <Route path="/activity" element={<Activity />} />
+          
+          {/* 4. หน้าแจ้งเตือนการบ้าน */}
           <Route path="/notifications" element={<NotificationsPage />} />
         </Routes>
       </Navbar>

@@ -5,86 +5,91 @@ const db = require("./db");
 const app = express();
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json()); // สำคัญมาก: เพื่อให้รับค่า JSON จาก React ได้
 
 
+// 👤 ระบบ API จัดการข้อมูลผู้ใช้งาน (USERS)
 
-// แสดงข้อมูลทั้งหมด
 app.get("/users", (req, res) => {
-
     const sql = "SELECT * FROM users";
-
     db.query(sql, (err, result) => {
-
         if (err) {
             console.log(err);
             return res.status(500).json(err);
         }
-
         res.json(result);
-
     });
-
 });
 
-app.listen(3001, () => {
-    console.log("Server running on port 3001");
-});
 
-// ดึงข้อมูลกิจกรรม
+// 📅 ระบบ API จัดการข้อมูลกิจกรรม (ACTIVITY CRUD)
+
+
+// 1. ดึงข้อมูลกิจกรรมทั้งหมด (ตารางชื่อ activity ตาม phpMyAdmin)
 app.get("/activities", (req, res) => {
-  const sql = "SELECT * FROM activities ORDER BY activity_id DESC";
+  const sql = "SELECT * FROM activity ORDER BY Activity_id DESC";
 
   db.query(sql, (err, result) => {
-    if (err) return res.status(500).json(err);
+    if (err) {
+        console.log(err);
+        return res.status(500).json(err);
+    }
     res.json(result);
   });
 });
 
-// เพิ่มกิจกรรม
+// 2. เพิ่มกิจกรรมใหม่ (คอลัมน์: Name_activity, Location, Activity_date, User_id)
 app.post("/activities", (req, res) => {
-  const { title, details, activity_date } = req.body;
+  const { Name_activity, Location, Activity_date, User_id } = req.body;
+  const userId = User_id || 1; // ดักไว้กรณีไม่มี User_id ส่งมา
 
   const sql =
-    "INSERT INTO activities(title, details, activity_date) VALUES (?, ?, ?)";
+    "INSERT INTO activity (Name_activity, Location, Activity_date, User_id) VALUES (?, ?, ?, ?)";
 
-  db.query(sql, [title, details, activity_date], (err, result) => {
-    if (err) return res.status(500).json(err);
-    res.json({ message: "เพิ่มกิจกรรมสำเร็จ" });
+  db.query(sql, [Name_activity, Location, Activity_date, userId], (err, result) => {
+    if (err) {
+        console.log(err);
+        return res.status(500).json(err);
+    }
+    res.json({ message: "เพิ่มกิจกรรมสำเร็จ", Activity_id: result.insertId });
   });
 });
 
-// แก้ไขกิจกรรม
+// 3. แก้ไขกิจกรรม (อัปเดตตามคอลัมน์จริง เงื่อนไข WHERE อิง Activity_id)
 app.put("/activities/:id", (req, res) => {
-  const { title, details, activity_date } = req.body;
+  const { Name_activity, Location, Activity_date } = req.body;
+  const activityId = req.params.id;
 
   const sql =
-    "UPDATE activities SET title=?, details=?, activity_date=? WHERE activity_id=?";
+    "UPDATE activity SET Name_activity=?, Location=?, Activity_date=? WHERE Activity_id=?";
 
-  db.query(
-    sql,
-    [title, details, activity_date, req.params.id],
-    (err, result) => {
-      if (err) return res.status(500).json(err);
+  db.query(sql, [Name_activity, Location, Activity_date, activityId], (err, result) => {
+      if (err) {
+        console.log(err);
+        return res.status(500).json(err);
+      }
       res.json({ message: "แก้ไขสำเร็จ" });
     }
   );
 });
 
-// ลบกิจกรรม
+// 4. ลบกิจกรรม (อิงเงื่อนไข WHERE จาก Activity_id)
 app.delete("/activities/:id", (req, res) => {
-  const sql = "DELETE FROM activities WHERE activity_id=?";
+  const activityId = req.params.id;
+  const sql = "DELETE FROM activity WHERE Activity_id=?";
 
-  db.query(sql, [req.params.id], (err, result) => {
-    if (err) return res.status(500).json(err);
+  db.query(sql, [activityId], (err, result) => {
+    if (err) {
+        console.log(err);
+        return res.status(500).json(err);
+    }
     res.json({ message: "ลบสำเร็จ" });
   });
 });
+
 // ==========================================
 // 🚀 ระบบ API จัดการข้อมูลนักเรียน (STUDENTS CRUD)
 // ==========================================
-
-// 1. ดึงข้อมูลนักเรียนทั้งหมดมาแสดงที่หน้าจอ
 app.get("/api/students", (req, res) => {
     const sql = "SELECT * FROM student ORDER BY Student_id DESC";
     db.query(sql, (err, result) => {
@@ -96,14 +101,10 @@ app.get("/api/students", (req, res) => {
     });
 });
 
-// 2. เพิ่มข้อมูลนักเรียนใหม่ (รองรับค่าเพศเป็นตัวเลขตามเงื่อนไข Database ของคุณ)
 app.post("/api/students", (req, res) => {
     const { Name, Birthday, Gender, Class_level, Blood_group, User_id } = req.body;
-    
-    // แปลงเพศเป็นตัวเลขเพื่อไม่ให้เกิด Warning #1366 Incorrect integer value
-    // ถ้าเลือก "ชาย" บันทึกเป็น 1, "หญิง" หรือค่าอื่นๆ บันทึกเป็น 0 
     const genderId = (Gender === "ชาย" || Gender === "1") ? 1 : 0;
-    const userId = User_id || 1; // ดักไว้ถ้าไม่มีให้เป็น 1
+    const userId = User_id || 1;
 
     const sql = `INSERT INTO student (Name, Birthday, Gender, Class_level, User_id, Blood_group) 
                  VALUES (?, ?, ?, ?, ?, ?)`;
@@ -117,15 +118,12 @@ app.post("/api/students", (req, res) => {
     });
 });
 
-// 3. แก้ไขข้อมูลนักเรียน
 app.put("/api/students/:id", (req, res) => {
     const { Name, Birthday, Gender, Class_level, Blood_group } = req.body;
     const studentId = req.params.id;
     const genderId = (Gender === "ชาย" || Gender === "1") ? 1 : 0;
 
-    const sql = `UPDATE student 
-                 SET Name=?, Birthday=?, Gender=?, Class_level=?, Blood_group=? 
-                 WHERE Student_id=?`;
+    const sql = `UPDATE student SET Name=?, Birthday=?, Gender=?, Class_level=?, Blood_group=? WHERE Student_id=?`;
 
     db.query(sql, [Name, Birthday, genderId, Class_level, Blood_group, studentId], (err, result) => {
         if (err) {
@@ -136,7 +134,6 @@ app.put("/api/students/:id", (req, res) => {
     });
 });
 
-// 4. ลบข้อมูลนักเรียน
 app.delete("/api/students/:id", (req, res) => {
     const studentId = req.params.id;
     const sql = "DELETE FROM student WHERE Student_id=?";
@@ -149,13 +146,11 @@ app.delete("/api/students/:id", (req, res) => {
         res.json({ message: "ลบข้อมูลนักเรียนสำเร็จ" });
     });
 });
+
 // ==========================================
 // 📢 ระบบ API จัดการประชาสัมพันธ์ (PUBLIC RELATIONS)
 // ==========================================
-
-// 1. เส้นทางสำหรับดึงข้อมูลประชาสัมพันธ์ทั้งหมด
 app.get("/api/publicrelations", (req, res) => {
-    // ใช้ชื่อตาราง 'publicrelation' ตามใน phpMyAdmin ของคุณ
     const sql = "SELECT * FROM publicrelation ORDER BY PublicRelations_id DESC";
     db.query(sql, (err, result) => {
         if (err) {
@@ -166,11 +161,9 @@ app.get("/api/publicrelations", (req, res) => {
     });
 });
 
-// 2. เส้นทางสำหรับเพิ่มข้อมูลประชาสัมพันธ์
 app.post("/api/publicrelations", (req, res) => {
     const { Name, date, Location, details, User_id, Image } = req.body;
-    const sql = `INSERT INTO publicrelation (Name, date, Location, details, User_id, Image) 
-                 VALUES (?, ?, ?, ?, ?, ?)`;
+    const sql = `INSERT INTO publicrelation (Name, date, Location, details, User_id, Image) VALUES (?, ?, ?, ?, ?, ?)`;
                  
     db.query(sql, [Name, date, Location, details, User_id || 1, Image], (err, result) => {
         if (err) {
@@ -181,14 +174,11 @@ app.post("/api/publicrelations", (req, res) => {
     });
 });
 
-// 3. เส้นทางสำหรับแก้ไขข้อมูลประชาสัมพันธ์
 app.put("/api/publicrelations/:id", (req, res) => {
     const { Name, date, Location, details, User_id, Image } = req.body;
     const prId = req.params.id;
 
-    const sql = `UPDATE publicrelation 
-                 SET Name=?, date=?, Location=?, details=?, User_id=?, Image=? 
-                 WHERE PublicRelations_id=?`;
+    const sql = `UPDATE publicrelation SET Name=?, date=?, Location=?, details=?, User_id=?, Image=? WHERE PublicRelations_id=?`;
 
     db.query(sql, [Name, date, Location, details, User_id || 1, Image, prId], (err, result) => {
         if (err) {
@@ -199,7 +189,6 @@ app.put("/api/publicrelations/:id", (req, res) => {
     });
 });
 
-// 4. เส้นทางสำหรับลบข้อมูลประชาสัมพันธ์
 app.delete("/api/publicrelations/:id", (req, res) => {
     const prId = req.params.id;
     const sql = "DELETE FROM publicrelation WHERE PublicRelations_id=?";
@@ -211,4 +200,9 @@ app.delete("/api/publicrelations/:id", (req, res) => {
         }
         res.json({ message: "ลบประชาสัมพันธ์สำเร็จ" });
     });
+});
+
+// รัน Server พอร์ต 3001
+app.listen(3001, () => {
+    console.log("Server running on port 3001");
 });
