@@ -1,70 +1,107 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 function StudentManagement() {
-  // 1. สร้าง Mock Data สำหรับแสดงการ์ดนักเรียนเริ่มต้น
-  const [students, setStudents] = useState([
-    { id: 1, name: 'สมชาย ดีใจ', parent: 'สมปอง ดีใจ', birthday: '2020-05-12', level: 'อนุบาล 1', gender: 'ชาย', blood: 'A' },
-    { id: 2, name: 'สมหญิง รักดี', parent: 'สมศักดิ์ รักดี', birthday: '2020-08-20', level: 'อนุบาล 2', gender: 'หญิง', blood: 'B' }
-  ]);
+  // State หลักสำหรับเก็บข้อมูลนักเรียนที่ดึงมาจากฐานข้อมูล
+  const [students, setStudents] = useState([]);
 
-  // 2. State สำหรับควบคุมการเปิด-ปิดหน้าต่าง Pop-up (Modal) ต่างๆ
+  // State สำหรับควบคุมหน้าต่าง Pop-up (Modal)
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
-  // 3. State สำหรับเก็บข้อมูลในฟอร์มพิมพ์
-  const [formData, setFormData] = useState({ id: '', name: '', parent: '', birthday: '', level: '', gender: '', blood: '' });
+  // State สำหรับพิมพ์กรอกข้อมูล (อิงตามชื่อคอลัมน์จริงใน MySQL)
+  const [formData, setFormData] = useState({ Student_id: '', Name: '', Birthday: '', Gender: '', Class_level: '', Blood_group: '', User_id: 1 });
   const [selectedStudentId, setSelectedStudentId] = useState(null);
 
-  // ฟังก์ชันล้างค่าในฟอร์มกรอกข้อมูล
   const resetForm = () => {
-    setFormData({ id: '', name: '', parent: '', birthday: '', level: '', gender: '', blood: '' });
+    setFormData({ Student_id: '', Name: '', Birthday: '', Gender: '', Class_level: '', Blood_group: '', User_id: 1 });
   };
 
-  // --- ฟังก์ชันการทำงานหลัก (CRUD) ---
-  
-  // เปิดกล่องเพิ่มข้อมูล (ภาพ 0.JPG)
+  // --- ฟังก์ชันดึงข้อมูลจาก Backend มาแสดงผลครั้งแรก ---
+  const fetchStudents = () => {
+    fetch('http://localhost:3001/api/students')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) setStudents(data);
+      })
+      .catch(err => console.error("Error fetching data:", err));
+  };
+
+  useEffect(() => {
+    fetchStudents();
+  }, []);
+
+  // --- จัดการการเพิ่มข้อมูล (Create) ---
   const handleOpenAddModal = () => {
     resetForm();
     setIsAddModalOpen(true);
   };
 
-  // กดยืนยันบันทึกการเพิ่มข้อมูล
   const handleAddSubmit = (e) => {
     e.preventDefault();
-    const newStudent = { ...formData, id: Date.now() }; // จำลอง ID แฝง
-    setStudents([...students, newStudent]);
-    setIsAddModalOpen(false);
+    fetch('http://localhost:3001/api/students', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(formData)
+    })
+    .then(res => res.json())
+    .then(() => {
+      fetchStudents(); // ดึงข้อมูลใหม่จากฐานข้อมูลมาแสดงทันที
+      setIsAddModalOpen(false);
+    })
+    .catch(err => console.error(err));
   };
 
-  // เปิดกล่องแก้ไขข้อมูล (ภาพ 9.JPG)
+  // --- จัดการการแก้ไขข้อมูล (Update) ---
   const handleOpenEditModal = (student) => {
-    setFormData(student);
+    // ปรับรูปแบบวันที่ให้แสดงบน `<input type="date">` ได้ถูกต้อง
+    const formattedBirthday = student.Birthday ? student.Birthday.split('T')[0] : '';
+    // แปลงค่าเพศกลับมาเป็นคำอ่านเพื่อแสดงใน select
+    const displayGender = student.Gender == 1 ? "ชาย" : "หญิง";
+
+    setFormData({
+      ...student,
+      Birthday: formattedBirthday,
+      Gender: displayGender
+    });
     setIsEditModalOpen(true);
   };
 
-  // กดยืนยันบันทึกการแก้ไขข้อมูล
   const handleEditSubmit = (e) => {
     e.preventDefault();
-    setStudents(students.map(item => item.id === formData.id ? formData : item));
-    setIsEditModalOpen(false);
+    fetch(`http://localhost:3001/api/students/${formData.Student_id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(formData)
+    })
+    .then(res => res.json())
+    .then(() => {
+      fetchStudents();
+      setIsEditModalOpen(false);
+    })
+    .catch(err => console.error(err));
   };
 
-  // เปิดกล่องถามเพื่อยืนยันการลบ (ภาพ 8.JPG)
+  // --- จัดการการลบข้อมูล (Delete) ---
   const handleOpenDeleteModal = (id) => {
     setSelectedStudentId(id);
     setIsDeleteModalOpen(true);
   };
 
-  // กดยืนยันลบข้อมูลจริง
   const handleDeleteConfirm = () => {
-    setStudents(students.filter(item => item.id !== selectedStudentId));
-    setIsDeleteModalOpen(false);
+    fetch(`http://localhost:3001/api/students/${selectedStudentId}`, {
+      method: 'DELETE'
+    })
+    .then(res => res.json())
+    .then(() => {
+      fetchStudents();
+      setIsDeleteModalOpen(false);
+    })
+    .catch(err => console.error(err));
   };
 
   return (
     <div style={styles.studentContainer}>
-      {/* ส่วนหัวแสดงประเภทและปุ่มกดเพิ่ม */}
       <div style={styles.studentHeader}>
         <div style={styles.titleSection}>
           <button style={styles.btnTab}>นักเรียน</button>
@@ -73,29 +110,33 @@ function StudentManagement() {
         <button style={styles.btnValueAdd} onClick={handleOpenAddModal}>+ เพิ่มนักเรียน</button>
       </div>
 
-      {/* หน้าจอแสดงผลแบบการ์ดล็อก (ภาพ 3.JPG) */}
+      {/* หน้าจอแสดงผลการ์ดนักเรียน */}
       <div style={styles.studentGrid}>
         {students.map((student) => (
-          <div style={styles.studentCard} key={student.id}>
+          <div style={styles.studentCard} key={student.Student_id}>
             <div style={styles.cardInfo}>
               <div style={styles.avatarPlaceholder}>
                 <span style={{ fontSize: '14px' }}>📄<span style={{ fontSize: '10px', verticalAlign: 'super' }}>+</span></span>
                 <small style={{ fontSize: '8px', marginTop: '2px' }}>Add Image</small>
               </div>
               <div style={styles.detailText}>
-                <h4 style={styles.studentNameText}>{student.name || 'ชื่อ-นามสกุล'}</h4>
-                <p style={styles.studentLevelText}>ระดับชั้น: {student.level || 'ไม่ได้ระบุ'}</p>
+                <h4 style={styles.studentNameText}>{student.Name || 'ชื่อ-นามสกุล'}</h4>
+                <p style={styles.studentLevelText}>ระดับชั้น: {student.Class_level || 'ไม่ได้ระบุ'}</p>
+                <small style={{ fontSize: '11px', color: '#888' }}>
+                  เพศ: {student.Gender == 1 ? 'ชาย' : 'หญิง'} | กรุ๊ปเลือด: {student.Blood_group || '-'}
+                </small>
               </div>
             </div>
             <div style={styles.cardActions}>
               <button style={styles.btnEdit} onClick={() => handleOpenEditModal(student)}>แก้ไข</button>
-              <button style={styles.btnDelete} onClick={() => handleOpenDeleteModal(student.id)}>ลบ</button>
+              <button style={styles.btnDelete} onClick={() => handleOpenDeleteModal(student.Student_id)}>ลบ</button>
             </div>
           </div>
         ))}
+        {students.length === 0 && <p style={{ color: '#999' }}>ไม่มีข้อมูลนักเรียนในระบบ</p>}
       </div>
 
-      {/* ================= POP-UP MODAL: เพิ่มนักเรียน (0.JPG) ================= */}
+      {/* MODAL: เพิ่มนักเรียน */}
       {isAddModalOpen && (
         <div style={styles.modalOverlay}>
           <div style={styles.modalContent}>
@@ -106,29 +147,24 @@ function StudentManagement() {
                 <div style={{ ...styles.avatarPlaceholder, ...styles.avatarBig }}>
                   <span style={{ fontSize: '18px' }}>📄<span>+</span></span>
                 </div>
-                <small style={{ fontSize: '10px', color: '#666', marginTop: '4px', display: 'block' }}>Add Image</small>
               </div>
 
               <div style={styles.formGroup}>
                 <label style={styles.formLabel}>ชื่อ-นามสกุล</label>
-                <input type="text" required style={styles.formInput} value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} />
-              </div>
-              <div style={styles.formGroup}>
-                <label style={styles.formLabel}>ผู้ปกครอง</label>
-                <input type="text" required style={styles.formInput} value={formData.parent} onChange={(e) => setFormData({...formData, parent: e.target.value})} />
+                <input type="text" required style={styles.formInput} value={formData.Name} onChange={(e) => setFormData({...formData, Name: e.target.value})} />
               </div>
               <div style={styles.formGroup}>
                 <label style={styles.formLabel}>วันเกิด</label>
-                <input type="date" required style={styles.formInput} value={formData.birthday} onChange={(e) => setFormData({...formData, birthday: e.target.value})} />
+                <input type="date" required style={styles.formInput} value={formData.Birthday} onChange={(e) => setFormData({...formData, Birthday: e.target.value})} />
               </div>
               <div style={styles.formRow}>
                 <div style={{ ...styles.formGroup, flex: 1 }}>
                   <label style={styles.formLabel}>ระดับชั้น</label>
-                  <input type="text" placeholder="เลือกระดับชั้น" style={styles.formInput} value={formData.level} onChange={(e) => setFormData({...formData, level: e.target.value})} />
+                  <input type="text" placeholder="เช่น 1/2" style={styles.formInput} value={formData.Class_level} onChange={(e) => setFormData({...formData, Class_level: e.target.value})} />
                 </div>
                 <div style={{ ...styles.formGroup, flex: 1 }}>
                   <label style={styles.formLabel}>เพศ</label>
-                  <select style={styles.formSelect} value={formData.gender} onChange={(e) => setFormData({...formData, gender: e.target.value})}>
+                  <select style={styles.formSelect} required value={formData.Gender} onChange={(e) => setFormData({...formData, Gender: e.target.value})}>
                     <option value="">เลือกเพศ</option>
                     <option value="ชาย">ชาย</option>
                     <option value="หญิง">หญิง</option>
@@ -137,7 +173,7 @@ function StudentManagement() {
               </div>
               <div style={styles.formGroup}>
                 <label style={styles.formLabel}>กรุ๊ปเลือด</label>
-                <select style={styles.formSelect} value={formData.blood} onChange={(e) => setFormData({...formData, blood: e.target.value})}>
+                <select style={styles.formSelect} value={formData.Blood_group} onChange={(e) => setFormData({...formData, Blood_group: e.target.value})}>
                   <option value="">เลือกกรุ๊ปเลือด</option>
                   <option value="A">A</option>
                   <option value="B">B</option>
@@ -151,40 +187,29 @@ function StudentManagement() {
         </div>
       )}
 
-      {/* ================= POP-UP MODAL: แก้ไขนักเรียน (9.JPG) ================= */}
+      {/* MODAL: แก้ไขนักเรียน */}
       {isEditModalOpen && (
         <div style={styles.modalOverlay}>
           <div style={styles.modalContent}>
             <button style={styles.closeX} onClick={() => setIsEditModalOpen(false)}>X</button>
             <h3 style={styles.modalHeading}>แก้ไขนักเรียน</h3>
             <form onSubmit={handleEditSubmit}>
-              <div style={styles.avatarUploadZone}>
-                <div style={{ ...styles.avatarPlaceholder, ...styles.avatarBig }}>
-                  <span style={{ fontSize: '18px' }}>📄<span>+</span></span>
-                </div>
-                <small style={{ fontSize: '10px', color: '#666', marginTop: '4px', display: 'block' }}>Add Image</small>
-              </div>
-
               <div style={styles.formGroup}>
                 <label style={styles.formLabel}>ชื่อ-นามสกุล</label>
-                <input type="text" required style={styles.formInput} value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} />
-              </div>
-              <div style={styles.formGroup}>
-                <label style={styles.formLabel}>ผู้ปกครอง</label>
-                <input type="text" required style={styles.formInput} value={formData.parent} onChange={(e) => setFormData({...formData, parent: e.target.value})} />
+                <input type="text" required style={styles.formInput} value={formData.Name} onChange={(e) => setFormData({...formData, Name: e.target.value})} />
               </div>
               <div style={styles.formGroup}>
                 <label style={styles.formLabel}>วันเกิด</label>
-                <input type="date" required style={styles.formInput} value={formData.birthday} onChange={(e) => setFormData({...formData, birthday: e.target.value})} />
+                <input type="date" required style={styles.formInput} value={formData.Birthday} onChange={(e) => setFormData({...formData, Birthday: e.target.value})} />
               </div>
               <div style={styles.formRow}>
                 <div style={{ ...styles.formGroup, flex: 1 }}>
                   <label style={styles.formLabel}>ระดับชั้น</label>
-                  <input type="text" style={styles.formInput} value={formData.level} onChange={(e) => setFormData({...formData, level: e.target.value})} />
+                  <input type="text" style={styles.formInput} value={formData.Class_level} onChange={(e) => setFormData({...formData, Class_level: e.target.value})} />
                 </div>
                 <div style={{ ...styles.formGroup, flex: 1 }}>
                   <label style={styles.formLabel}>เพศ</label>
-                  <select style={styles.formSelect} value={formData.gender} onChange={(e) => setFormData({...formData, gender: e.target.value})}>
+                  <select style={styles.formSelect} value={formData.Gender} onChange={(e) => setFormData({...formData, Gender: e.target.value})}>
                     <option value="ชาย">ชาย</option>
                     <option value="หญิง">หญิง</option>
                   </select>
@@ -192,7 +217,7 @@ function StudentManagement() {
               </div>
               <div style={styles.formGroup}>
                 <label style={styles.formLabel}>กรุ๊ปเลือด</label>
-                <select style={styles.formSelect} value={formData.blood} onChange={(e) => setFormData({...formData, blood: e.target.value})}>
+                <select style={styles.formSelect} value={formData.Blood_group} onChange={(e) => setFormData({...formData, Blood_group: e.target.value})}>
                   <option value="A">A</option>
                   <option value="B">B</option>
                   <option value="O">O</option>
@@ -205,7 +230,7 @@ function StudentManagement() {
         </div>
       )}
 
-      {/* ================= POP-UP MODAL: ยืนยันการลบ (8.JPG) ================= */}
+      {/* MODAL: ยืนยันการลบ */}
       {isDeleteModalOpen && (
         <div style={styles.modalOverlay}>
           <div style={styles.modalDeleteContent}>
@@ -223,228 +248,39 @@ function StudentManagement() {
   );
 }
 
-// 4. ส่วนของ Style CSS Object สำหรับตกแต่งหน้าตา (รวมอยู่ในไฟล์เดียว)
 const styles = {
-  studentContainer: {
-    padding: '30px',
-    fontFamily: 'system-ui, -apple-system, sans-serif',
-    backgroundColor: '#ffffff',
-    minHeight: '100vh',
-  },
-  studentHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: '30px',
-  },
-  titleSection: {
-    display: 'flex',
-    flexDirection: 'column',
-  },
-  headerTitle: {
-    marginTop: '15px',
-    fontSize: '15px',
-    color: '#000000',
-    fontWeight: '600',
-  },
-  btnTab: {
-    background: '#ffffff',
-    border: '1px solid #cccccc',
-    padding: '6px 30px',
-    borderRadius: '6px',
-    boxShadow: '0px 2px 4px rgba(0,0,0,0.08)',
-    fontWeight: 'bold',
-    width: 'fit-content',
-  },
-  btnValueAdd: {
-    background: '#ffffff',
-    border: '1px solid #000000',
-    padding: '8px 18px',
-    borderRadius: '8px',
-    fontWeight: 'bold',
-    cursor: 'pointer',
-    boxShadow: '0px 2px 4px rgba(0,0,0,0.08)',
-  },
-  studentGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-    gap: '20px',
-  },
-  studentCard: {
-    border: '1px solid #cccccc',
-    borderRadius: '14px',
-    padding: '15px',
-    background: '#ffffff',
-    boxShadow: '0 2px 6px rgba(0,0,0,0.04)',
-  },
-  cardInfo: {
-    display: 'flex',
-    gap: '15px',
-    alignItems: 'center',
-    marginBottom: '15px',
-  },
-  avatarPlaceholder: {
-    border: '1px solid #cccccc',
-    width: '52px',
-    height: '52px',
-    borderRadius: '8px',
-    display: 'flex',
-    flexDirection: 'column',
-    justifyContent: 'center',
-    alignItems: 'center',
-    color: '#555555',
-    background: '#fcfcfc',
-  },
-  avatarBig: {
-    width: '65px',
-    height: '65px',
-    margin: '0 auto',
-  },
-  detailText: {
-    display: 'flex',
-    flexDirection: 'column',
-  },
-  studentNameText: {
-    margin: '0 0 4px 0',
-    fontSize: '15px',
-    fontWeight: '600',
-  },
-  studentLevelText: {
-    margin: '0',
-    color: '#666666',
-    fontSize: '13px',
-  },
-  cardActions: {
-    display: 'flex',
-    gap: '10px',
-  },
-  btnEdit: {
-    flex: '1',
-    padding: '6px',
-    border: '1px solid #cccccc',
-    background: '#ffffff',
-    borderRadius: '6px',
-    cursor: 'pointer',
-    fontSize: '13px',
-  },
-  btnDelete: {
-    flex: '1',
-    padding: '6px',
-    border: '1px solid #cccccc',
-    background: '#ffffff',
-    borderRadius: '6px',
-    cursor: 'pointer',
-    fontSize: '13px',
-  },
-  modalOverlay: {
-    position: 'fixed',
-    top: '0',
-    left: '0',
-    width: '100%',
-    height: '100%',
-    background: 'rgba(0, 0, 0, 0.35)',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: '999',
-  },
-  modalContent: {
-    background: '#ffffff',
-    padding: '25px',
-    borderRadius: '16px',
-    width: '350px',
-    position: 'relative',
-    boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
-  },
-  modalHeading: {
-    margin: '0 0 20px 0',
-    fontSize: '16px',
-    textAlign: 'left',
-    fontWeight: '600',
-  },
-  closeX: {
-    position: 'absolute',
-    top: '15px',
-    right: '15px',
-    background: 'none',
-    border: 'none',
-    fontSize: '15px',
-    cursor: 'pointer',
-    color: '#999999',
-  },
-  avatarUploadZone: {
-    textAlign: 'center',
-    marginBottom: '15px',
-  },
-  formGroup: {
-    marginBottom: '12px',
-    display: 'flex',
-    flexDirection: 'column',
-    textAlign: 'left',
-  },
-  formLabel: {
-    fontSize: '12px',
-    color: '#555555',
-    marginBottom: '4px',
-  },
-  formInput: {
-    padding: '8px',
-    border: '1px solid #cccccc',
-    borderRadius: '6px',
-    fontSize: '13px',
-    outline: 'none',
-  },
-  formSelect: {
-    padding: '8px',
-    border: '1px solid #cccccc',
-    borderRadius: '6px',
-    fontSize: '13px',
-    outline: 'none',
-    background: '#ffffff',
-  },
-  formRow: {
-    display: 'flex',
-    gap: '10px',
-  },
-  btnSubmitSave: {
-    width: '100%',
-    padding: '10px',
-    background: '#ffffff',
-    border: '1px solid #333333',
-    borderRadius: '8px',
-    fontWeight: 'bold',
-    marginTop: '15px',
-    cursor: 'pointer',
-  },
-  modalDeleteContent: {
-    background: '#ffffff',
-    padding: '30px',
-    borderRadius: '16px',
-    width: '300px',
-    textAlign: 'center',
-    boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
-  },
-  modalDeleteActions: {
-    display: 'flex',
-    gap: '15px',
-  },
-  btnCancel: {
-    flex: '1',
-    padding: '8px',
-    border: '1px solid #cccccc',
-    background: '#ffffff',
-    borderRadius: '6px',
-    cursor: 'pointer',
-  },
-  btnConfirmDelete: {
-    flex: '1',
-    padding: '8px',
-    border: '1px solid #000000',
-    background: '#ffffff',
-    fontWeight: 'bold',
-    borderRadius: '6px',
-    cursor: 'pointer',
-  },
+  studentContainer: { padding: '30px', fontFamily: 'system-ui, -apple-system, sans-serif', backgroundColor: '#ffffff', minHeight: '100vh' },
+  studentHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '30px' },
+  titleSection: { display: 'flex', flexDirection: 'column' },
+  headerTitle: { marginTop: '15px', fontSize: '15px', color: '#000000', fontWeight: '600' },
+  btnTab: { background: '#ffffff', border: '1px solid #cccccc', padding: '6px 30px', borderRadius: '6px', boxShadow: '0px 2px 4px rgba(0,0,0,0.08)', fontWeight: 'bold' },
+  btnValueAdd: { background: '#ffffff', border: '1px solid #000000', padding: '8px 18px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' },
+  studentGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' },
+  studentCard: { border: '1px solid #cccccc', borderRadius: '14px', padding: '15px', background: '#ffffff', boxShadow: '0 2px 6px rgba(0,0,0,0.04)' },
+  cardInfo: { display: 'flex', gap: '15px', alignItems: 'center', marginBottom: '15px' },
+  avatarPlaceholder: { border: '1px solid #cccccc', width: '52px', height: '52px', borderRadius: '8px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', color: '#555555', background: '#fcfcfc' },
+  avatarBig: { width: '65px', height: '65px', margin: '0 auto' },
+  detailText: { display: 'flex', flexDirection: 'column' },
+  studentNameText: { margin: '0 0 4px 0', fontSize: '15px', fontWeight: '600' },
+  studentLevelText: { margin: '0', color: '#666666', fontSize: '13px' },
+  cardActions: { display: 'flex', gap: '10px' },
+  btnEdit: { flex: '1', padding: '6px', border: '1px solid #cccccc', background: '#ffffff', borderRadius: '6px', cursor: 'pointer', fontSize: '13px' },
+  btnDelete: { flex: '1', padding: '6px', border: '1px solid #cccccc', background: '#ffffff', borderRadius: '6px', cursor: 'pointer', fontSize: '13px' },
+  modalOverlay: { position: 'fixed', top: '0', left: '0', width: '100%', height: '100%', background: 'rgba(0, 0, 0, 0.35)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: '999' },
+  modalContent: { background: '#ffffff', padding: '25px', borderRadius: '16px', width: '350px', position: 'relative', boxShadow: '0 10px 25px rgba(0,0,0,0.15)' },
+  modalHeading: { margin: '0 0 20px 0', fontSize: '16px', fontWeight: '600' },
+  closeX: { position: 'absolute', top: '15px', right: '15px', background: 'none', border: 'none', fontSize: '15px', cursor: 'pointer', color: '#999999' },
+  avatarUploadZone: { textAlign: 'center', marginBottom: '15px' },
+  formGroup: { marginBottom: '12px', display: 'flex', flexDirection: 'column' },
+  formLabel: { fontSize: '12px', color: '#555555', marginBottom: '4px' },
+  formInput: { padding: '8px', border: '1px solid #cccccc', borderRadius: '6px', fontSize: '13px', outline: 'none' },
+  formSelect: { padding: '8px', border: '1px solid #cccccc', borderRadius: '6px', fontSize: '13px', outline: 'none', background: '#ffffff' },
+  formRow: { display: 'flex', gap: '10px' },
+  btnSubmitSave: { width: '100%', padding: '10px', background: '#ffffff', border: '1px solid #333333', borderRadius: '8px', fontWeight: 'bold', marginTop: '15px', cursor: 'pointer' },
+  modalDeleteContent: { background: '#ffffff', padding: '30px', borderRadius: '16px', width: '300px', textAlign: 'center', boxShadow: '0 10px 25px rgba(0,0,0,0.15)' },
+  modalDeleteActions: { display: 'flex', gap: '15px' },
+  btnCancel: { flex: '1', padding: '8px', border: '1px solid #cccccc', background: '#ffffff', borderRadius: '6px', cursor: 'pointer' },
+  btnConfirmDelete: { flex: '1', padding: '8px', border: '1px solid #000000', background: '#ffffff', fontWeight: 'bold', borderRadius: '6px', cursor: 'pointer' }
 };
 
 export default StudentManagement;
