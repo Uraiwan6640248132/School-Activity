@@ -14,7 +14,7 @@ function Navbar({ children }) {
       <div style={styles.sidebar}>
         <h3 style={styles.logo}>📘 School</h3>
         <Link to="/personal" style={menu("/personal")}>ข้อมูลส่วนตัว</Link>
-        <Link to="/news" style={menu("/news")}>ประชาสัมพันธ์</Link>
+        <Link to="/publicRelations" style={menu("/publicRelations")}>ประชาสัมพันธ์</Link>
         <Link to="/activity" style={menu("/activity")}>กิจกรรม</Link>
         <Link to="/students" style={menu("/students")}>ข้อมูลนักเรียน</Link>
         <Link to="/notifications" style={menu("/notifications")}>แจ้งเตือนการบ้าน</Link>
