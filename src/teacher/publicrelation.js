@@ -12,7 +12,6 @@ export default function PublicRelations() {
     Name: '',
     date: '',
     Location: '',
-    details: '',
     User_id: 1,
     Image: ''
   });
@@ -102,18 +101,22 @@ export default function PublicRelations() {
   };
 
   const clearForm = () => {
-    setFormData({ Name: '', date: '', Location: '', details: '', User_id: 1, Image: '' });
+    setFormData({ 
+      Name: '', 
+      date: '', 
+      Location: '', 
+      User_id: 1, 
+      Image: '' 
+    });
     setSelectedId(null);
   };
 
   const openEditModal = (item) => {
-    // 🌟 แก้ไข: เปลี่ยนจาก item.PublicRelations_id เป็น item.PublicRelation_id (ไม่มี s)
     setSelectedId(item.PublicRelation_id); 
     setFormData({
-      Name: item.Name_activity, // 🌟 แก้ไข: ดึงข้อมูลจากคอลัมน์ Name_activity ของฐานข้อมูล
-      date: item.Date ? item.Date.substring(0, 10) : '', // 🌟 แก้ไข: ตัว D พิมพ์ใหญ่ตามฐานข้อมูล
-      Location: item.Location,
-      details: item.details,
+      Name: item.Name_activity || '', 
+      date: item.Date ? item.Date.substring(0, 10) : '', 
+      Location: item.Location || '',
       User_id: item.User_id || 1,
       Image: item.Image || ''
     });
@@ -141,7 +144,6 @@ export default function PublicRelations() {
 
       <div style={styles.cardContainer}>
         {prList.map((item) => (
-          // 🌟 แก้ไขคีย์: item.PublicRelation_id
           <div key={item.PublicRelation_id} style={styles.card}>
             <div style={styles.cardLeft}>
               {item.Image ? (
@@ -150,16 +152,13 @@ export default function PublicRelations() {
                 <div style={styles.cardImgPlaceholder}>ไม่มีรูปภาพ</div>
               )}
               <div style={styles.cardInfo}>
-                {/* 🌟 แก้ไข: item.Name_activity และ item.Date */}
                 <strong>ชื่อเรื่อง:</strong> {item.Name_activity} <br />
                 <strong>วัน/เดือน/ปี:</strong> {item.Date ? item.Date.substring(0, 10) : '-'} <br />
                 <strong>สถานที่:</strong> {item.Location} <br />
-                <strong>รายละเอียด:</strong> {item.details} <br />
                 <strong>ประชาสัมพันธ์โดย:</strong> {item.User_id}
               </div>
             </div>
             <div style={styles.cardAction}>
-              {/* 🌟 แก้ไขไอดีที่ส่งไปตอนลบและแก้ไข */}
               <button style={styles.iconBtn} onClick={() => openDeleteModal(item.PublicRelation_id)}>🗑️</button>
               <button style={styles.iconBtn} onClick={() => openEditModal(item)}>📝</button>
             </div>
@@ -196,9 +195,6 @@ export default function PublicRelations() {
 
               <label style={styles.label}>สถานที่</label>
               <input type="text" style={styles.input} value={formData.Location} onChange={(e) => setFormData({ ...formData, Location: e.target.value })} required />
-
-              <label style={styles.label}>รายละเอียด</label>
-              <input type="text" style={styles.input} value={formData.details} onChange={(e) => setFormData({ ...formData, details: e.target.value })} required />
 
               <label style={styles.label}>ประชาสัมพันธ์โดย</label>
               <input type="number" style={styles.input} value={formData.User_id} onChange={(e) => setFormData({ ...formData, User_id: e.target.value })} />
@@ -237,9 +233,6 @@ export default function PublicRelations() {
 
               <label style={styles.label}>สถานที่</label>
               <input type="text" style={styles.input} value={formData.Location} onChange={(e) => setFormData({ ...formData, Location: e.target.value })} required />
-
-              <label style={styles.label}>รายละเอียด</label>
-              <input type="text" style={styles.input} value={formData.details} onChange={(e) => setFormData({ ...formData, details: e.target.value })} required />
 
               <label style={styles.label}>ประชาสัมพันธ์โดย</label>
               <input type="number" style={styles.input} value={formData.User_id} onChange={(e) => setFormData({ ...formData, User_id: e.target.value })} />

@@ -9,12 +9,21 @@ function StudentManagement() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
-  // State สำหรับพิมพ์กรอกข้อมูล (อิงตามชื่อคอลัมน์จริงใน MySQL)
-  const [formData, setFormData] = useState({ Student_id: '', Name: '', Birthday: '', Gender: '', Class_level: '', Blood_group: '', User_id: 1 });
+  // State สำหรับพิมพ์กรอกข้อมูล (เพิ่มตัวแปร Image เข้าไปในระบบ)
+  const [formData, setFormData] = useState({ 
+    Student_id: '', 
+    Name: '', 
+    Birthday: '', 
+    Gender: '', 
+    Class_level: '', 
+    Blood_group: '', 
+    User_id: 1,
+    Image: '' // รองรับภาพถ่ายนักเรียน
+  });
   const [selectedStudentId, setSelectedStudentId] = useState(null);
 
   const resetForm = () => {
-    setFormData({ Student_id: '', Name: '', Birthday: '', Gender: '', Class_level: '', Blood_group: '', User_id: 1 });
+    setFormData({ Student_id: '', Name: '', Birthday: '', Gender: '', Class_level: '', Blood_group: '', User_id: 1, Image: '' });
   };
 
   // --- ฟังก์ชันดึงข้อมูลจาก Backend มาแสดงผลครั้งแรก ---
@@ -30,6 +39,18 @@ function StudentManagement() {
   useEffect(() => {
     fetchStudents();
   }, []);
+
+  // 📸 ฟังก์ชันสำหรับแปลงไฟล์ภาพเป็น Base64
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData((prev) => ({ ...prev, Image: reader.result })); // เก็บภาพลง State
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   // --- จัดการการเพิ่มข้อมูล (Create) ---
   const handleOpenAddModal = () => {
@@ -62,7 +83,8 @@ function StudentManagement() {
     setFormData({
       ...student,
       Birthday: formattedBirthday,
-      Gender: displayGender
+      Gender: displayGender,
+      Image: student.Image || '' // ดึงภาพเดิมมาแสดงถ้ามี
     });
     setIsEditModalOpen(true);
   };
@@ -115,10 +137,14 @@ function StudentManagement() {
         {students.map((student) => (
           <div style={styles.studentCard} key={student.Student_id}>
             <div style={styles.cardInfo}>
-              <div style={styles.avatarPlaceholder}>
-                <span style={{ fontSize: '14px' }}>📄<span style={{ fontSize: '10px', verticalAlign: 'super' }}>+</span></span>
-                <small style={{ fontSize: '8px', marginTop: '2px' }}>Add Image</small>
-              </div>
+              {/* แสดงรูปภาพจริงของนักเรียนแทนที่กล่องสี่เหลี่ยมเดิม */}
+              {student.Image ? (
+                <img src={student.Image} alt="student" style={styles.avatarImg} />
+              ) : (
+                <div style={styles.avatarPlaceholder}>
+                  <span style={{ fontSize: '14px' }}>👤</span>
+                </div>
+              )}
               <div style={styles.detailText}>
                 <h4 style={styles.studentNameText}>{student.Name || 'ชื่อ-นามสกุล'}</h4>
                 <p style={styles.studentLevelText}>ระดับชั้น: {student.Class_level || 'ไม่ได้ระบุ'}</p>
@@ -143,10 +169,20 @@ function StudentManagement() {
             <button style={styles.closeX} onClick={() => setIsAddModalOpen(false)}>X</button>
             <h3 style={styles.modalHeading}>เพิ่มนักเรียน</h3>
             <form onSubmit={handleAddSubmit}>
+              
+              {/* โซนอัปโหลดรูปภาพที่ใช้งานได้จริง */}
               <div style={styles.avatarUploadZone}>
-                <div style={{ ...styles.avatarPlaceholder, ...styles.avatarBig }}>
-                  <span style={{ fontSize: '18px' }}>📄<span>+</span></span>
-                </div>
+                <label style={{ cursor: 'pointer', display: 'inline-block' }}>
+                  {formData.Image ? (
+                    <img src={formData.Image} alt="preview" style={{ ...styles.avatarPlaceholder, ...styles.avatarBig, objectFit: 'cover' }} />
+                  ) : (
+                    <div style={{ ...styles.avatarPlaceholder, ...styles.avatarBig }}>
+                      <span style={{ fontSize: '18px' }}>📁<span>+</span></span>
+                      <small style={{ fontSize: '9px' }}>อัปโหลดรูป</small>
+                    </div>
+                  )}
+                  <input type="file" accept="image/*" onChange={handleImageChange} style={{ display: 'none' }} />
+                </label>
               </div>
 
               <div style={styles.formGroup}>
@@ -194,6 +230,22 @@ function StudentManagement() {
             <button style={styles.closeX} onClick={() => setIsEditModalOpen(false)}>X</button>
             <h3 style={styles.modalHeading}>แก้ไขนักเรียน</h3>
             <form onSubmit={handleEditSubmit}>
+              
+              {/* โซนแก้ไขรูปภาพที่ใช้งานได้จริง */}
+              <div style={styles.avatarUploadZone}>
+                <label style={{ cursor: 'pointer', display: 'inline-block' }}>
+                  {formData.Image ? (
+                    <img src={formData.Image} alt="preview" style={{ ...styles.avatarPlaceholder, ...styles.avatarBig, objectFit: 'cover' }} />
+                  ) : (
+                    <div style={{ ...styles.avatarPlaceholder, ...styles.avatarBig }}>
+                      <span style={{ fontSize: '18px' }}>📁<span>+</span></span>
+                      <small style={{ fontSize: '9px' }}>อัปโหลดรูป</small>
+                    </div>
+                  )}
+                  <input type="file" accept="image/*" onChange={handleImageChange} style={{ display: 'none' }} />
+                </label>
+              </div>
+
               <div style={styles.formGroup}>
                 <label style={styles.formLabel}>ชื่อ-นามสกุล</label>
                 <input type="text" required style={styles.formInput} value={formData.Name} onChange={(e) => setFormData({...formData, Name: e.target.value})} />
@@ -259,6 +311,7 @@ const styles = {
   studentCard: { border: '1px solid #cccccc', borderRadius: '14px', padding: '15px', background: '#ffffff', boxShadow: '0 2px 6px rgba(0,0,0,0.04)' },
   cardInfo: { display: 'flex', gap: '15px', alignItems: 'center', marginBottom: '15px' },
   avatarPlaceholder: { border: '1px solid #cccccc', width: '52px', height: '52px', borderRadius: '8px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', color: '#555555', background: '#fcfcfc' },
+  avatarImg: { width: '52px', height: '52px', borderRadius: '8px', objectFit: 'cover', border: '1px solid #cccccc' },
   avatarBig: { width: '65px', height: '65px', margin: '0 auto' },
   detailText: { display: 'flex', flexDirection: 'column' },
   studentNameText: { margin: '0 0 4px 0', fontSize: '15px', fontWeight: '600' },
