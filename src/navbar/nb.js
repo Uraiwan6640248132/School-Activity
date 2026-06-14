@@ -17,7 +17,7 @@ function Navbar({ children }) {
         <Link to="/publicRelations" style={menu("/publicRelations")}>ประชาสัมพันธ์</Link>
         <Link to="/activity" style={menu("/activity")}>กิจกรรม</Link>
         <Link to="/students" style={menu("/students")}>ข้อมูลนักเรียน</Link>
-        <Link to="/notifications" style={menu("/notifications")}>แจ้งเตือนการบ้าน</Link>
+        <Link to="/notification" style={menu("/notification")}>แจ้งเตือนการบ้าน</Link>
         <Link to="/event" style={menu("/event")}>ปฏิทินกิจกรรม</Link>
         <Link to="/participating" style={menu("/participating")}>เข้าร่วมกิจกรรม</Link>
         <Link to="/development" style={menu("/development")}>พัฒนาการนักเรียน</Link>

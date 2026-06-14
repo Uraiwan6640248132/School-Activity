@@ -274,6 +274,95 @@ app.delete("/api/publicrelations/:id", (req, res) => {
     });
 });
 
+// ==========================================
+// 📢 ระบบ API จัดการข้อมูลการแจ้งเตือน (NOTIFICATIONS CRUD) - แก้ไข Error 500
+// ==========================================
+
+// 🟢 [GET] ดึงข้อมูลการแจ้งเตือนทั้งหมด
+app.get("/notifications", (req, res) => {
+  // ใส่ `` ครอบชื่อคอลัมน์เพื่อความปลอดภัย และแก้ไขตัวพิมพ์ตามฐานข้อมูลจริง
+  const sql = "SELECT * FROM notification ORDER BY Notification_id DESC"; 
+  
+  db.query(sql, (err, results) => {
+    if (err) {
+      console.error("❌ SQL Error [GET /notifications]:", err);
+      return res.status(500).json({ error: err.message, details: err });
+    }
+    res.json(results);
+  });
+});
+
+// 🔵 [POST] เพิ่มข้อมูลการแจ้งเตือนใหม่
+app.post("/notifications", (req, res) => {
+  const { User_id, Class_level, Subject, Deadline, Date, Details } = req.body;
+  
+  const cleanDeadline = Deadline || null;
+  const cleanDate = Date || null;
+  const cleanUserId = User_id ? parseInt(User_id, 10) : 1;
+
+  // 🟢 แก้ไข: ใช้เครื่องหมาย ` ครอบชื่อคอลัมน์ `Date` เพื่อไม่ให้ชนกับคำเฉพาะของระบบ SQL
+  const sql = `
+    INSERT INTO notification (User_id, Class_level, Subject, Deadline, \`Date\`, Details) 
+    VALUES (?, ?, ?, ?, ?, ?)
+  `;
+  
+  db.query(
+    sql, 
+    [cleanUserId, Class_level, Subject, cleanDeadline, cleanDate, Details || null], 
+    (err, result) => {
+      if (err) {
+        console.error("❌ SQL Error [POST /notifications]:", err);
+        return res.status(500).json({ error: err.message, details: err });
+      }
+      res.json({ message: "เพิ่มข้อมูลสำเร็จ", id: result.insertId });
+    }
+  );
+});
+
+// 🟡 [PUT] แก้ไขข้อมูลการแจ้งเตือน (อ้างอิงจาก ID)
+app.put("/notifications/:id", (req, res) => {
+  const { id } = req.params;
+  const { User_id, Class_level, Subject, Deadline, Date, Details } = req.body;
+
+  const cleanDeadline = Deadline || null;
+  const cleanDate = Date || null;
+  const cleanUserId = User_id ? parseInt(User_id, 10) : 1;
+
+  // 🟢 แก้ไข: ใช้เครื่องหมาย ` ครอบชื่อคอลัมน์ \`Date\` และตรวจตัวพิมพ์ Notification_id ให้ถูกต้อง
+  const sql = `
+    UPDATE notification 
+    SET User_id = ?, Class_level = ?, Subject = ?, Deadline = ?, \`Date\` = ?, Details = ? 
+    WHERE Notification_id = ?
+  `;
+
+  db.query(
+    sql, 
+    [cleanUserId, Class_level, Subject, cleanDeadline, cleanDate, Details || null, id], 
+    (err, result) => {
+      if (err) {
+        console.error("❌ SQL Error [PUT /notifications]:", err);
+        return res.status(500).json({ error: err.message, details: err });
+      }
+      res.json({ message: "แก้ไขข้อมูลสำเร็จ" });
+    }
+  );
+});
+
+// 🔴 [DELETE] ลบข้อมูลการแจ้งเตือน (อ้างอิงจาก ID)
+app.delete("/notifications/:id", (req, res) => {
+  const { id } = req.params;
+
+  // 🟢 แก้ไข: ตรวจสอบตัวพิมพ์ตัวใหญ่ตรงเงื่อนไข WHERE Notification_id ให้ตรงตารางจริง
+  const sql = "DELETE FROM notification WHERE Notification_id = ?";
+  
+  db.query(sql, [id], (err, result) => {
+    if (err) {
+      console.error("❌ SQL Error [DELETE /notifications]:", err);
+      return res.status(500).json({ error: err.message, details: err });
+    }
+    res.json({ message: "ลบข้อมูลสำเร็จ" });
+  });
+});
 
 // 🚀 รัน Server พอร์ต 3001
 app.listen(3001, () => {

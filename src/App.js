@@ -4,9 +4,7 @@ import Navbar from './navbar/nb';
 import StudentManagement from './teacher/student';
 import Activity from './teacher/activity'; // ดึงไฟล์กิจกรรมตัวจริงมาใช้แล้ว
 import PublicRelations from './teacher/publicrelation';
-
-// สร้างคอมโพเนนต์จำลองหน้าอื่นไว้เพื่อให้ลิงก์กดไปแล้วไม่พัง
-const NotificationsPage = () => <h2 style={{ padding: 20 }}>หน้าแจ้งเตือนการบ้าน (กำลังพัฒนา)</h2>;
+import Notification from "./teacher/notification";
 
 function App() {
   return (
@@ -23,8 +21,8 @@ function App() {
           {/* 3. ลิงก์ไปหน้ากิจกรรมตัวจริงที่เชื่อมฐานข้อมูลแล้ว */}
           <Route path="/activity" element={<Activity />} />
           
-          {/* 4. หน้าแจ้งเตือนการบ้าน */}
-          <Route path="/notifications" element={<NotificationsPage />} />
+        {/* 🟢 แก้ไขจาก /notification เป็น /notifications เพื่อให้ตรงกับลิงก์ระบบ */}
+          <Route path="/notifications" element={<Notification />} />
           <Route path="/publicRelations" element={<PublicRelations />} />
         </Routes>
       </Navbar>
