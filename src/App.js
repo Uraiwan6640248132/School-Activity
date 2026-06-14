@@ -5,6 +5,7 @@ import StudentManagement from './teacher/student';
 import Activity from './teacher/activity'; // ดึงไฟล์กิจกรรมตัวจริงมาใช้แล้ว
 import PublicRelations from './teacher/publicrelation';
 import Notification from "./teacher/notification";
+import CalendarActivity from './teacher/calendar';
 
 function App() {
   return (
@@ -24,6 +25,8 @@ function App() {
         {/* 🟢 แก้ไขจาก /notification เป็น /notifications เพื่อให้ตรงกับลิงก์ระบบ */}
           <Route path="/notifications" element={<Notification />} />
           <Route path="/publicRelations" element={<PublicRelations />} />
+          {/* เปลี่ยนจาก path="/calendar" เป็น path="/event" */}
+          <Route path="/event" element={<CalendarActivity />} />
         </Routes>
       </Navbar>
     </div>
