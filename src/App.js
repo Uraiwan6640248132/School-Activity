@@ -25,6 +25,7 @@ function App() {
           <Route path="/notification" element={<Notification />} />
           {/* เปลี่ยนจาก path="/calendar" เป็น path="/event" */}
           <Route path="/event" element={<CalendarActivity />} />
+          <Route path="/publicrelations" element={<PublicRelations />} />
         </Routes>
       </Navbar>
     </div>
