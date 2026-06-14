@@ -17,6 +17,7 @@ export default function PublicRelations() {
   });
   const [selectedId, setSelectedId] = useState(null); 
 
+
   const API_URL = 'http://localhost:3001/api/publicrelations';
 
   const fetchPRData = async () => {
