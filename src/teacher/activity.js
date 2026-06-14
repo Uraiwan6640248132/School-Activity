@@ -296,4 +296,7 @@ const modal = {
   saveButton: { width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #cbd5e1", background: "#f8fafc", color: "#334155", fontWeight: "normal", fontSize: "14px", cursor: "pointer", marginTop: "8px" }
 };
 
+
+
+
 export default Activity;
