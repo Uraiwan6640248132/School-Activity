@@ -13,10 +13,11 @@ function Navbar({ children }) {
       {/* Sidebar */}
       <div style={styles.sidebar}>
         <h3 style={styles.logo}>📘 School</h3>
+         <Link to="/home" style={menu("/home")}>หน้าหลัก</Link>
         <Link to="/personal" style={menu("/personal")}>ข้อมูลส่วนตัว</Link>
+         <Link to="/students" style={menu("/students")}>ข้อมูลนักเรียน</Link>
+         <Link to="/activity" style={menu("/activity")}>กิจกรรม</Link>
         <Link to="/publicrelations" style={menu("/publicrelations")}>ประชาสัมพันธ์</Link>
-        <Link to="/activity" style={menu("/activity")}>กิจกรรม</Link>
-        <Link to="/students" style={menu("/students")}>ข้อมูลนักเรียน</Link>
         <Link to="/notification" style={menu("/notification")}>แจ้งเตือนการบ้าน</Link>
         <Link to="/event" style={menu("/event")}>ปฏิทินกิจกรรม</Link>
         <Link to="/participating" style={menu("/participating")}>เข้าร่วมกิจกรรม</Link>
