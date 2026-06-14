@@ -22,9 +22,7 @@ function App() {
           {/* 3. ลิงก์ไปหน้ากิจกรรมตัวจริงที่เชื่อมฐานข้อมูลแล้ว */}
           <Route path="/activity" element={<Activity />} />
           
-        {/* 🟢 แก้ไขจาก /notification เป็น /notifications เพื่อให้ตรงกับลิงก์ระบบ */}
-          <Route path="/notifications" element={<Notification />} />
-          <Route path="/publicRelations" element={<PublicRelations />} />
+          <Route path="/notification" element={<Notification />} />
           {/* เปลี่ยนจาก path="/calendar" เป็น path="/event" */}
           <Route path="/event" element={<CalendarActivity />} />
         </Routes>
