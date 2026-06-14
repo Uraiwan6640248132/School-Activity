@@ -1,14 +1,32 @@
 const express = require("express");
 const cors = require("cors");
 const db = require("./db");
+const multer = require("multer");
+const path = require("path");
+const fs = require("fs");
 
 const app = express();
+if (!fs.existsSync("uploads")) {
+  fs.mkdirSync("uploads");
+}
 
 app.use(cors());
 
 // ✅ ตั้งค่า Limit (50MB) เพื่อรองรับการส่งรูปภาพ Base64 ขนาดใหญ่ของทุกระบบ
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
+app.use("/uploads", express.static("uploads"));
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "uploads/");
+  },
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({ storage });
 
 
 // ==========================================
@@ -29,74 +47,102 @@ app.get("/users", (req, res) => {
 // ==========================================
 // 🏃‍♂️ ระบบ API จัดการกิจกรรม (ACTIVITY) - แก้ไขให้ตรงกับตารางจริง
 // ==========================================
+// ==================== GET ====================
 app.get("/activities", (req, res) => {
-  // เปลี่ยนจาก activity_id เป็น Activity_id ตามรูปภาพ
-  const sql = "SELECT * FROM activity ORDER BY Activity_id DESC"; 
+  const sql = "SELECT * FROM activity ORDER BY Activity_id DESC";
+
   db.query(sql, (err, result) => {
-    if (err) {
-      console.log(err);
-      return res.status(500).json(err);
-    }
+    if (err) return res.status(500).json(err);
+
     res.json(result);
   });
 });
 
-app.post("/activities", (req, res) => {
-  // 📥 รับค่าให้ตรงตามคอลัมน์ใน MySQL
-  const { Name_activity, Image, Activity_date, Location, User_id } = req.body;
-  const cleanUserId = User_id ? parseInt(User_id, 10) : 1;
 
-  const sql = "INSERT INTO activity (Name_activity, Image, Activity_date, Location, User_id) VALUES (?, ?, ?, ?, ?)"; 
+// ==================== POST ====================
+// ==================== POST ====================
+app.post("/activities", upload.single("image"), (req, res) => {
 
-  db.query(sql, [Name_activity, Image || null, Activity_date, Location, cleanUserId], (err, result) => {
-    if (err) {
-      console.log("SQL Error ใน POST /activities:", err);
-      return res.status(500).json(err);
-    }
-    res.json({ message: "เพิ่มกิจกรรมสำเร็จ", Activity_id: result.insertId });
-  });
-});
+  const { Name_activity, Activity_date, Location, User_id } = req.body;
 
-app.put("/activities/:id", (req, res) => {
-  // 📥 1. ดักรับค่าแบบยืดหยุ่น (ป้องกันกรณีหน้าบ้านส่งตัวพิมพ์เล็ก/ใหญ่ หรือส่งชื่อตัวแปรอื่นมา)
-  const Name_activity = req.body.Name_activity || req.body.name_activity || req.body.title || null;
-  const Image = req.body.Image || req.body.image || null;
-  const Location = req.body.Location || req.body.location || null;
-  
-  // 📅 2. จัดการเรื่องวันที่ (หากหน้าบ้านส่งค่าว่างมา ต้องเซ็ตเป็น null เพื่อไม่ให้ MySQL พัง)
-  let Activity_date = req.body.Activity_date || req.body.activity_date || req.body.date || null;
-  if (Activity_date === "") Activity_date = null;
+  const Image = req.file
+    ? `http://localhost:3001/uploads/${req.file.filename}`
+    : req.body.Image || null;
 
-  // 👤 3. จัดการเรื่อง User_id (ล้างค่าให้เป็นตัวเลขแท้ๆ และถ้าไม่มีให้ใส่ 1 เสมอ)
-  const incomingUserId = req.body.User_id || req.body.user_id || 1;
-  const cleanUserId = parseInt(incomingUserId, 10) || 1;
-  
-  const activityId = req.params.id;
+  const sql = `
+    INSERT INTO activity
+    (Name_activity, Image, Activity_date, Location, User_id)
+    VALUES (?, ?, ?, ?, ?)
+  `;
 
-  // 📝 คำสั่ง SQL อัปเดตข้อมูลตามโครงสร้างตารางจริง
-  const sql = "UPDATE activity SET Name_activity=?, Image=?, Activity_date=?, Location=?, User_id=? WHERE Activity_id=?"; 
-
-  db.query(sql, [Name_activity, Image, Activity_date, Location, cleanUserId, activityId], (err, result) => {
-    if (err) {
-      // 🚨 จุดสำคัญ: ดูที่หน้าจอ Terminal ของ Node.js เพื่อเช็คสาเหตุที่แท้จริง
-      console.log("\n❌ [MySQL Error ใน PUT /activities]:");
-      console.error(err);
-      console.log("-----------------------------------------\n");
-      return res.status(500).json({ error: "เกิดข้อผิดพลาดในระบบฐานข้อมูล", sqlError: err.message });
-    }
-    res.json({ message: "แก้ไขสำเร็จ" });
-  });
-});
-
-app.delete("/activities/:id", (req, res) => {
-  const sql = "DELETE FROM activity WHERE Activity_id=?"; 
-  db.query(sql, [req.params.id], (err, result) => {
+  db.query(sql, [Name_activity, Image, Activity_date, Location, User_id], (err, result) => {
     if (err) {
       console.log(err);
       return res.status(500).json(err);
     }
-    res.json({ message: "ลบสำเร็จ" });
+    res.json({ message: "เพิ่มกิจกรรมสำเร็จ" });
   });
+});
+
+
+
+// ==================== PUT ====================
+app.put("/activities/:id", upload.single("image"), (req, res) => {
+  const activityId = req.params.id;
+
+  const Name_activity = req.body.Name_activity;
+  const Activity_date = req.body.Activity_date || null;
+  const Location = req.body.Location;
+  const User_id = req.body.User_id || 1;
+
+  if (req.file) {
+    // มีรูปใหม่อัปโหลดมา → ใช้ path ไฟล์ใหม่
+    const Image = `http://localhost:3001/uploads/${req.file.filename}`;
+    runUpdate(Image);
+  } else {
+    // ไม่มีรูปใหม่ → ดึงรูปเดิมจาก DB มาใช้ (ไม่ต้องส่งรูปจาก frontend)
+    db.query("SELECT Image FROM activity WHERE Activity_id=?", [activityId], (err, result) => {
+      if (err) return res.status(500).json(err);
+      const Image = result[0]?.Image || null;
+      runUpdate(Image);
+    });
+  }
+
+  function runUpdate(Image) {
+    const sql = `
+      UPDATE activity
+      SET Name_activity=?, Image=?, Activity_date=?, Location=?, User_id=?
+      WHERE Activity_id=?
+    `;
+    db.query(sql, [Name_activity, Image, Activity_date, Location, User_id, activityId], (err, result) => {
+      if (err) {
+        console.error("===== MYSQL ERROR =====", err);
+        return res.status(500).json(err);
+      }
+      res.json({ message: "แก้ไขสำเร็จ" });
+    });
+  }
+});
+
+
+// ==================== DELETE ====================
+app.delete("/activities/:id", (req, res) => {
+
+  const sql = "DELETE FROM activity WHERE Activity_id=?";
+
+  db.query(sql, [req.params.id], (err, result) => {
+
+    if (err) {
+      console.log(err);
+      return res.status(500).json(err);
+    }
+
+    res.json({
+      message: "ลบข้อมูลสำเร็จ"
+    });
+
+  });
+
 });
 
 // ==========================================
