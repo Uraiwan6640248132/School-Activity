@@ -281,12 +281,11 @@ app.delete("/api/publicrelations/:id", (req, res) => {
 });
 
 // ==========================================
-// 📢 ระบบ API จัดการข้อมูลการแจ้งเตือน (NOTIFICATIONS CRUD) - แก้ไข Error 500
+// 📢 ระบบ API จัดการข้อมูลการแจ้งเตือน (NOTIFICATIONS CRUD) - เวอร์ชันแก้ไขสมบูรณ์
 // ==========================================
 
 // 🟢 [GET] ดึงข้อมูลการแจ้งเตือนทั้งหมด
 app.get("/notifications", (req, res) => {
-  // ใส่ `` ครอบชื่อคอลัมน์เพื่อความปลอดภัย และแก้ไขตัวพิมพ์ตามฐานข้อมูลจริง
   const sql = "SELECT * FROM notification ORDER BY Notification_id DESC"; 
   
   db.query(sql, (err, results) => {
@@ -306,7 +305,7 @@ app.post("/notifications", (req, res) => {
   const cleanDate = Date || null;
   const cleanUserId = User_id ? parseInt(User_id, 10) : 1;
 
-  // 🟢 แก้ไข: ใช้เครื่องหมาย ` ครอบชื่อคอลัมน์ `Date` เพื่อไม่ให้ชนกับคำเฉพาะของระบบ SQL
+  // 🟢 แก้ไข: ใช้เครื่องหมาย ` ครอบคำว่า `Date` ป้องกันระบบ MySQL เข้าใจผิดว่าเป็นฟังก์ชันคำสั่งเฉพาะ
   const sql = `
     INSERT INTO notification (User_id, Class_level, Subject, Deadline, \`Date\`, Details) 
     VALUES (?, ?, ?, ?, ?, ?)
@@ -334,7 +333,7 @@ app.put("/notifications/:id", (req, res) => {
   const cleanDate = Date || null;
   const cleanUserId = User_id ? parseInt(User_id, 10) : 1;
 
-  // 🟢 แก้ไข: ใช้เครื่องหมาย ` ครอบชื่อคอลัมน์ \`Date\` และตรวจตัวพิมพ์ Notification_id ให้ถูกต้อง
+  // 🟢 แก้ไข: ใช้เครื่องหมาย ` ครอบคำว่า \`Date\` และตรวจตัวพิมพ์ใหญ่ Notification_id ให้ตรงฐานข้อมูลจริง
   const sql = `
     UPDATE notification 
     SET User_id = ?, Class_level = ?, Subject = ?, Deadline = ?, \`Date\` = ?, Details = ? 
@@ -358,7 +357,7 @@ app.put("/notifications/:id", (req, res) => {
 app.delete("/notifications/:id", (req, res) => {
   const { id } = req.params;
 
-  // 🟢 แก้ไข: ตรวจสอบตัวพิมพ์ตัวใหญ่ตรงเงื่อนไข WHERE Notification_id ให้ตรงตารางจริง
+  // 🟢 แก้ไข: ปรับคำเงื่อนไขให้ตรงกับชื่อคอลัมน์หลัก Notification_id
   const sql = "DELETE FROM notification WHERE Notification_id = ?";
   
   db.query(sql, [id], (err, result) => {
@@ -369,6 +368,7 @@ app.delete("/notifications/:id", (req, res) => {
     res.json({ message: "ลบข้อมูลสำเร็จ" });
   });
 });
+
 // ==========================================
 // 📅 ระบบ API จัดการปฏิทินกิจกรรม (CALENDAR) - เวอร์ชันรองรับเวลาแบบ VARCHAR ข้อความอิสระ
 // ==========================================
