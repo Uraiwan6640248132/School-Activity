@@ -369,6 +369,63 @@ app.delete("/notifications/:id", (req, res) => {
     res.json({ message: "ลบข้อมูลสำเร็จ" });
   });
 });
+// ==========================================
+// 📅 ระบบ API จัดการปฏิทินกิจกรรม (CALENDAR) - เวอร์ชันรองรับเวลาแบบ VARCHAR ข้อความอิสระ
+// ==========================================
+
+// 1. ดึงข้อมูลปฏิทินทั้งหมด (คงตัวแปลง DATE_FORMAT เอาไว้เพื่อล็อกช่องปฏิทินให้ตรง)
+app.get("/api/calendar", (req, res) => {
+    // 💡 ถอน TIME_FORMAT ออก เพื่อดึงค่าข้อความดิบจากฟิลด์ Time ตรงๆ ไม่ให้โดนแปลงค่า
+    const sql = `
+        SELECT 
+            Calendar_id, 
+            Name, 
+            DATE_FORMAT(Date, '%Y-%m-%d') AS Date, 
+            Time, 
+            User_id 
+        FROM calendar 
+        ORDER BY Date ASC
+    `;
+    db.query(sql, (err, result) => {
+        if (err) {
+            console.error("SQL Error ใน GET /api/calendar:", err);
+            return res.status(500).json(err);
+        }
+        res.json(result);
+    });
+});
+
+// 2. เพิ่มข้อมูลกิจกรรมลงปฏิทินใหม่ (รับค่าแบบ String ตรงๆ จาก React)
+app.post("/api/calendar", (req, res) => {
+    const { Name, Date: actDate, Time, User_id } = req.body;
+    const cleanUserId = User_id ? parseInt(User_id, 10) : 1;
+
+    // ส่งค่าไปบันทึกตรงๆ ไม่ต้องตัดคำ
+    const sql = "INSERT INTO calendar (Name, Date, Time, User_id) VALUES (?, ?, ?, ?)";
+    db.query(sql, [Name, actDate, Time, cleanUserId], (err, result) => {
+        if (err) {
+            console.error("SQL Error ใน POST /api/calendar:", err);
+            return res.status(500).json(err);
+        }
+        res.json({ message: "เพิ่มกิจกรรมลงปฏิทินสำเร็จ", Calendar_id: result.insertId });
+    });
+});
+
+// 3. แก้ไขข้อมูลปฏิทินกิจกรรม
+app.put("/api/calendar/:id", (req, res) => {
+    const calendarId = req.params.id;
+    const { Name, Date: actDate, Time, User_id } = req.body;
+    const cleanUserId = User_id ? parseInt(User_id, 10) : 1;
+
+    const sql = "UPDATE calendar SET Name=?, Date=?, Time=?, User_id=? WHERE Calendar_id=?";
+    db.query(sql, [Name, actDate, Time, cleanUserId, calendarId], (err, result) => {
+        if (err) {
+            console.error("SQL Error ใน PUT /api/calendar:", err);
+            return res.status(500).json({ error: "เกิดข้อผิดพลาดในการแก้ไข", sqlError: err.message });
+        }
+        res.json({ message: "แก้ไขข้อมูลปฏิทินสำเร็จ" });
+    });
+});
 
 // 🚀 รัน Server พอร์ต 3001
 app.listen(3001, () => {

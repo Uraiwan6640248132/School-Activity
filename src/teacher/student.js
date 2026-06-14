@@ -52,7 +52,7 @@ function StudentManagement() {
     }
   };
 
-  
+
 
   // --- จัดการการเพิ่มข้อมูล (Create) ---
   const handleOpenAddModal = () => {
@@ -80,7 +80,7 @@ function StudentManagement() {
     // ปรับรูปแบบวันที่ให้แสดงบน `<input type="date">` ได้ถูกต้อง
     const formattedBirthday = student.Birthday ? student.Birthday.split('T')[0] : '';
     // แปลงค่าเพศกลับมาเป็นคำอ่านเพื่อแสดงใน select
-    const displayGender = student.Gender == 1 ? "ชาย" : "หญิง";
+    const displayGender = student.Gender === 1 ? "ชาย" : "หญิง";
 
     setFormData({
       ...student,
@@ -105,6 +105,7 @@ function StudentManagement() {
     })
     .catch(err => console.error(err));
   };
+
 
   // --- จัดการการลบข้อมูล (Delete) ---
   const handleOpenDeleteModal = (id) => {
@@ -151,7 +152,7 @@ function StudentManagement() {
                 <h4 style={styles.studentNameText}>{student.Name || 'ชื่อ-นามสกุล'}</h4>
                 <p style={styles.studentLevelText}>ระดับชั้น: {student.Class_level || 'ไม่ได้ระบุ'}</p>
                 <small style={{ fontSize: '11px', color: '#888' }}>
-                  เพศ: {student.Gender == 1 ? 'ชาย' : 'หญิง'} | กรุ๊ปเลือด: {student.Blood_group || '-'}
+                  เพศ: {student.Gender === 1 ? 'ชาย' : 'หญิง'} | กรุ๊ปเลือด: {student.Blood_group || '-'}
                 </small>
               </div>
             </div>
