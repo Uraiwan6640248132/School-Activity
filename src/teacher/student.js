@@ -52,7 +52,7 @@ function StudentManagement() {
     }
   };
 
-  
+
 
   // --- จัดการการเพิ่มข้อมูล (Create) ---
   const handleOpenAddModal = () => {
@@ -105,6 +105,7 @@ function StudentManagement() {
     })
     .catch(err => console.error(err));
   };
+  
 
   // --- จัดการการลบข้อมูล (Delete) ---
   const handleOpenDeleteModal = (id) => {
