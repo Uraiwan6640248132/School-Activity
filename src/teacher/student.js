@@ -1,35 +1,51 @@
 import React, { useState, useEffect } from 'react';
 
 function StudentManagement() {
-  // State หลักสำหรับเก็บข้อมูลนักเรียนที่ดึงมาจากฐานข้อมูล
   const [students, setStudents] = useState([]);
-
-  // State สำหรับควบคุมหน้าต่าง Pop-up (Modal)
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
 
-  // State สำหรับพิมพ์กรอกข้อมูล (เพิ่มตัวแปร Image เข้าไปในระบบ)
+  // ตั้งค่า Default เพศเริ่มต้นให้ปลอดภัย ไม่เป็นค่าว่างตัดปัญหาพัง
   const [formData, setFormData] = useState({ 
     Student_id: '', 
     Name: '', 
     Birthday: '', 
-    Gender: '', 
+    Gender: 'ชาย', 
     Class_level: '', 
     Blood_group: '', 
     User_id: 1,
-    Image: '' // รองรับภาพถ่ายนักเรียน
+    Image: '' 
   });
+  
   const [selectedStudentId, setSelectedStudentId] = useState(null);
+  const [viewingStudent, setViewingStudent] = useState(null);
 
   const resetForm = () => {
-    setFormData({ Student_id: '', Name: '', Birthday: '', Gender: '', Class_level: '', Blood_group: '', User_id: 1, Image: '' });
+    setFormData({ 
+      Student_id: '', 
+      Name: '', 
+      Birthday: '', 
+      Gender: 'ชาย', 
+      Class_level: '', 
+      Blood_group: '', 
+      User_id: 1, 
+      Image: '' 
+    });
   };
 
-  // --- ฟังก์ชันดึงข้อมูลจาก Backend มาแสดงผลครั้งแรก ---
+  const handleOpenAddModal = () => {
+    resetForm();
+    setIsAddModalOpen(true);
+  };
+
   const fetchStudents = () => {
     fetch('http://localhost:3001/api/students')
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error("Server response not ok");
+        return res.json();
+      })
       .then(data => {
         if (Array.isArray(data)) setStudents(data);
       })
@@ -40,75 +56,98 @@ function StudentManagement() {
     fetchStudents();
   }, []);
 
-  // 📸 ฟังก์ชันสำหรับแปลงไฟล์ภาพเป็น Base64
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        alert("ขนาดไฟล์ภาพใหญ่เกินไป กรุณาเลือกภาพที่มีขนาดไม่เกิน 2MB");
+        return;
+      }
       const reader = new FileReader();
       reader.onloadend = () => {
-        setFormData((prev) => ({ ...prev, Image: reader.result })); // เก็บภาพลง State
+        setFormData((prev) => ({ ...prev, Image: reader.result }));
       };
       reader.readAsDataURL(file);
     }
   };
 
-
-
-  // --- จัดการการเพิ่มข้อมูล (Create) ---
-  const handleOpenAddModal = () => {
-    resetForm();
-    setIsAddModalOpen(true);
-  };
-
+  /* 🛠️ แก้ไขจุดสำคัญ: ตรวจสอบและจัดส่งโครงสร้างภาพและข้อมูลคนใหม่ส่งพ่วงไปให้ครบถ้วน */
   const handleAddSubmit = (e) => {
     e.preventDefault();
+    
+    // ตรวจสอบค่าตัวเลขเพศให้แม่นยำ 1=ชาย, 2=หญิง
+    const genderValue = formData.Gender === "หญิง" ? 2 : 1;
+
+    const payload = {
+      Name: formData.Name,
+      Birthday: formData.Birthday,
+      Class_level: formData.Class_level,
+      Blood_group: formData.Blood_group || '',
+      User_id: formData.User_id || 1,
+      Image: formData.Image || '', 
+      Gender: genderValue
+    };
+
     fetch('http://localhost:3001/api/students', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(formData)
+      body: JSON.stringify(payload)
     })
-    .then(res => res.json())
+    .then(res => {
+      if (!res.ok) throw new Error("Insert Failed");
+      return res.json();
+    })
     .then(() => {
-      fetchStudents(); // ดึงข้อมูลใหม่จากฐานข้อมูลมาแสดงทันที
+      fetchStudents();
       setIsAddModalOpen(false);
+      resetForm();
     })
-    .catch(err => console.error(err));
+    .catch(err => {
+      console.error(err);
+      alert("ไม่สามารถเพิ่มนักเรียนได้: โปรดเปิดเซิร์ฟเวอร์หลังบ้านพอร์ต 3001 หรือตรวจสอบความยาวของฟิลด์ Image ในฐานข้อมูล");
+    });
   };
 
-  // --- จัดการการแก้ไขข้อมูล (Update) ---
-  const handleOpenEditModal = (student) => {
-    // ปรับรูปแบบวันที่ให้แสดงบน `<input type="date">` ได้ถูกต้อง
+  const handleOpenEditModal = (e, student) => {
+    e.stopPropagation();
     const formattedBirthday = student.Birthday ? student.Birthday.split('T')[0] : '';
-    // แปลงค่าเพศกลับมาเป็นคำอ่านเพื่อแสดงใน select
-    const displayGender = student.Gender === 1 ? "ชาย" : "หญิง";
+    const displayGender = (student.Gender === 2 || student.Gender === "2" || student.Gender === "หญิง") ? "หญิง" : "ชาย";
 
     setFormData({
       ...student,
       Birthday: formattedBirthday,
       Gender: displayGender,
-      Image: student.Image || '' // ดึงภาพเดิมมาแสดงถ้ามี
+      Image: student.Image || ''
     });
     setIsEditModalOpen(true);
   };
 
   const handleEditSubmit = (e) => {
     e.preventDefault();
+    
+    const genderValue = formData.Gender === "หญิง" ? 2 : 1;
+
+    const payload = {
+      ...formData,
+      Gender: genderValue
+    };
+
     fetch(`http://localhost:3001/api/students/${formData.Student_id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(formData)
+      body: JSON.stringify(payload)
     })
     .then(res => res.json())
     .then(() => {
       fetchStudents();
       setIsEditModalOpen(false);
+      resetForm();
     })
-    .catch(err => console.error(err));
+    .catch(err => alert("ไม่สามารถแก้ไขข้อมูลได้สำเร็จ"));
   };
 
-
-  // --- จัดการการลบข้อมูล (Delete) ---
-  const handleOpenDeleteModal = (id) => {
+  const handleOpenDeleteModal = (e, id) => {
+    e.stopPropagation();
     setSelectedStudentId(id);
     setIsDeleteModalOpen(true);
   };
@@ -125,6 +164,21 @@ function StudentManagement() {
     .catch(err => console.error(err));
   };
 
+  const handleOpenViewModal = (student) => {
+    setViewingStudent(student);
+    setIsViewModalOpen(true);
+  };
+
+  const formatThaiDate = (dateString) => {
+    if (!dateString) return 'ไม่ได้ระบุ';
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
+    } catch {
+      return dateString;
+    }
+  };
+
   return (
     <div style={styles.studentContainer}>
       <div style={styles.studentHeader}>
@@ -135,45 +189,84 @@ function StudentManagement() {
         <button style={styles.btnValueAdd} onClick={handleOpenAddModal}>+ เพิ่มนักเรียน</button>
       </div>
 
-      {/* หน้าจอแสดงผลการ์ดนักเรียน */}
       <div style={styles.studentGrid}>
         {students.map((student) => (
-          <div style={styles.studentCard} key={student.Student_id}>
+          <div style={styles.studentCard} key={student.Student_id} onClick={() => handleOpenViewModal(student)}>
             <div style={styles.cardInfo}>
-              {/* แสดงรูปภาพจริงของนักเรียนแทนที่กล่องสี่เหลี่ยมเดิม */}
               {student.Image ? (
                 <img src={student.Image} alt="student" style={styles.avatarImg} />
               ) : (
-                <div style={styles.avatarPlaceholder}>
-                  <span style={{ fontSize: '14px' }}>👤</span>
-                </div>
+                <div style={styles.avatarPlaceholder}><span>👤</span></div>
               )}
               <div style={styles.detailText}>
                 <h4 style={styles.studentNameText}>{student.Name || 'ชื่อ-นามสกุล'}</h4>
                 <p style={styles.studentLevelText}>ระดับชั้น: {student.Class_level || 'ไม่ได้ระบุ'}</p>
-                <small style={{ fontSize: '11px', color: '#888' }}>
-                  เพศ: {student.Gender === 1 ? 'ชาย' : 'หญิง'} | กรุ๊ปเลือด: {student.Blood_group || '-'}
-                </small>
               </div>
             </div>
             <div style={styles.cardActions}>
-              <button style={styles.btnEdit} onClick={() => handleOpenEditModal(student)}>แก้ไข</button>
-              <button style={styles.btnDelete} onClick={() => handleOpenDeleteModal(student.Student_id)}>ลบ</button>
+              <button style={styles.btnEdit} onClick={(e) => handleOpenEditModal(e, student)}>แก้ไข</button>
+              <button style={styles.btnDelete} onClick={(e) => handleOpenDeleteModal(e, student.Student_id)}>ลบ</button>
             </div>
           </div>
         ))}
-        {students.length === 0 && <p style={{ color: '#999' }}>ไม่มีข้อมูลนักเรียนในระบบ</p>}
+        {students.length === 0 && <p style={{ color: '#999' }}>ไม่มีข้อมูลนักเรียนในระบบ (โปรดตรวจสอบเซิร์ฟเวอร์หลังบ้าน)</p>}
       </div>
 
-      {/* MODAL: เพิ่มนักเรียน */}
+      {/* MODAL: แสดงข้อมูลรายละเอียด */}
+      {isViewModalOpen && viewingStudent && (
+        <div style={styles.modalOverlay} onClick={() => setIsViewModalOpen(false)}>
+          <div style={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+            <button style={styles.closeX} onClick={() => setIsViewModalOpen(false)}>X</button>
+            <h3 style={styles.modalHeading}>ข้อมูลนักเรียน</h3>
+            
+            <div style={styles.avatarUploadZone}>
+              {viewingStudent.Image ? (
+                <img src={viewingStudent.Image} alt="profile" style={{ ...styles.avatarImg, ...styles.avatarBig }} />
+              ) : (
+                <div style={{ ...styles.avatarPlaceholder, ...styles.avatarBig }}><span>👤</span></div>
+              )}
+            </div>
+
+            <div style={styles.formGroup}>
+              <label style={styles.formLabel}>ชื่อ-นามสกุล</label>
+              <div style={styles.infoDisplayBox}>{viewingStudent.Name || '-'}</div>
+            </div>
+
+            <div style={styles.formGroup}>
+              <label style={styles.formLabel}>วันเกิด</label>
+              <div style={styles.infoDisplayBox}>{formatThaiDate(viewingStudent.Birthday)}</div>
+            </div>
+
+            <div style={styles.formRow}>
+              <div style={{ ...styles.formGroup, flex: 1 }}>
+                <label style={styles.formLabel}>ระดับชั้น</label>
+                <div style={styles.infoDisplayBox}>{viewingStudent.Class_level || '-'}</div>
+              </div>
+              <div style={{ ...styles.formGroup, flex: 1 }}>
+                <label style={styles.formLabel}>เพศ</label>
+                <div style={styles.infoDisplayBox}>
+                  {(viewingStudent.Gender === 2 || viewingStudent.Gender === "2" || viewingStudent.Gender === "หญิง") ? 'หญิง' : 'ชาย'}
+                </div>
+              </div>
+            </div>
+
+            <div style={styles.formGroup}>
+              <label style={styles.formLabel}>กรุ๊ปเลือด</label>
+              <div style={styles.infoDisplayBox}>{viewingStudent.Blood_group || 'ไม่ได้ระบุ'}</div>
+            </div>
+
+            <button style={styles.btnSubmitSave} onClick={() => setIsViewModalOpen(false)}>ปิดหน้าต่าง</button>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: เพิ่มนักเรียนใหม่ */}
       {isAddModalOpen && (
         <div style={styles.modalOverlay}>
           <div style={styles.modalContent}>
             <button style={styles.closeX} onClick={() => setIsAddModalOpen(false)}>X</button>
             <h3 style={styles.modalHeading}>เพิ่มนักเรียน</h3>
             <form onSubmit={handleAddSubmit}>
-              
-              {/* โซนอัปโหลดรูปภาพที่ใช้งานได้จริง */}
               <div style={styles.avatarUploadZone}>
                 <label style={{ cursor: 'pointer', display: 'inline-block' }}>
                   {formData.Image ? (
@@ -181,7 +274,7 @@ function StudentManagement() {
                   ) : (
                     <div style={{ ...styles.avatarPlaceholder, ...styles.avatarBig }}>
                       <span style={{ fontSize: '18px' }}>📁<span>+</span></span>
-                      <small style={{ fontSize: '9px' }}>อัปโหลดรูป</small>
+                      <small style={{ fontSize: '9px', display: 'block' }}>อัปโหลดรูป</small>
                     </div>
                   )}
                   <input type="file" accept="image/*" onChange={handleImageChange} style={{ display: 'none' }} />
@@ -199,12 +292,11 @@ function StudentManagement() {
               <div style={styles.formRow}>
                 <div style={{ ...styles.formGroup, flex: 1 }}>
                   <label style={styles.formLabel}>ระดับชั้น</label>
-                  <input type="text" placeholder="เช่น 1/2" style={styles.formInput} value={formData.Class_level} onChange={(e) => setFormData({...formData, Class_level: e.target.value})} />
+                  <input type="text" placeholder="เช่น 1/2" required style={styles.formInput} value={formData.Class_level} onChange={(e) => setFormData({...formData, Class_level: e.target.value})} />
                 </div>
                 <div style={{ ...styles.formGroup, flex: 1 }}>
                   <label style={styles.formLabel}>เพศ</label>
                   <select style={styles.formSelect} required value={formData.Gender} onChange={(e) => setFormData({...formData, Gender: e.target.value})}>
-                    <option value="">เลือกเพศ</option>
                     <option value="ชาย">ชาย</option>
                     <option value="หญิง">หญิง</option>
                   </select>
@@ -226,15 +318,13 @@ function StudentManagement() {
         </div>
       )}
 
-      {/* MODAL: แก้ไขนักเรียน */}
+      {/* MODAL: แก้ไขข้อมูล */}
       {isEditModalOpen && (
         <div style={styles.modalOverlay}>
           <div style={styles.modalContent}>
             <button style={styles.closeX} onClick={() => setIsEditModalOpen(false)}>X</button>
             <h3 style={styles.modalHeading}>แก้ไขนักเรียน</h3>
             <form onSubmit={handleEditSubmit}>
-              
-              {/* โซนแก้ไขรูปภาพที่ใช้งานได้จริง */}
               <div style={styles.avatarUploadZone}>
                 <label style={{ cursor: 'pointer', display: 'inline-block' }}>
                   {formData.Image ? (
@@ -242,7 +332,7 @@ function StudentManagement() {
                   ) : (
                     <div style={{ ...styles.avatarPlaceholder, ...styles.avatarBig }}>
                       <span style={{ fontSize: '18px' }}>📁<span>+</span></span>
-                      <small style={{ fontSize: '9px' }}>อัปโหลดรูป</small>
+                      <small style={{ fontSize: '9px', display: 'block' }}>อัปโหลดรูป</small>
                     </div>
                   )}
                   <input type="file" accept="image/*" onChange={handleImageChange} style={{ display: 'none' }} />
@@ -260,7 +350,7 @@ function StudentManagement() {
               <div style={styles.formRow}>
                 <div style={{ ...styles.formGroup, flex: 1 }}>
                   <label style={styles.formLabel}>ระดับชั้น</label>
-                  <input type="text" style={styles.formInput} value={formData.Class_level} onChange={(e) => setFormData({...formData, Class_level: e.target.value})} />
+                  <input type="text" required style={styles.formInput} value={formData.Class_level} onChange={(e) => setFormData({...formData, Class_level: e.target.value})} />
                 </div>
                 <div style={{ ...styles.formGroup, flex: 1 }}>
                   <label style={styles.formLabel}>เพศ</label>
@@ -285,8 +375,7 @@ function StudentManagement() {
         </div>
       )}
 
-
-      {/* MODAL: ยืนยันการลบ */}
+      {/* MODAL: ยืนยันลบ */}
       {isDeleteModalOpen && (
         <div style={styles.modalOverlay}>
           <div style={styles.modalDeleteContent}>
@@ -304,7 +393,6 @@ function StudentManagement() {
   );
 }
 
-
 const styles = {
   studentContainer: { padding: '30px', fontFamily: 'system-ui, -apple-system, sans-serif', backgroundColor: '#ffffff', minHeight: '100vh' },
   studentHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '30px' },
@@ -313,11 +401,11 @@ const styles = {
   btnTab: { background: '#ffffff', border: '1px solid #cccccc', padding: '6px 30px', borderRadius: '6px', boxShadow: '0px 2px 4px rgba(0,0,0,0.08)', fontWeight: 'bold' },
   btnValueAdd: { background: '#ffffff', border: '1px solid #000000', padding: '8px 18px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' },
   studentGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' },
-  studentCard: { border: '1px solid #cccccc', borderRadius: '14px', padding: '15px', background: '#ffffff', boxShadow: '0 2px 6px rgba(0,0,0,0.04)' },
+  studentCard: { border: '1px solid #cccccc', borderRadius: '14px', padding: '15px', background: '#ffffff', boxShadow: '0 2px 6px rgba(0,0,0,0.04)', cursor: 'pointer', transition: 'transform 0.2s' },
   cardInfo: { display: 'flex', gap: '15px', alignItems: 'center', marginBottom: '15px' },
   avatarPlaceholder: { border: '1px solid #cccccc', width: '52px', height: '52px', borderRadius: '8px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', color: '#555555', background: '#fcfcfc' },
   avatarImg: { width: '52px', height: '52px', borderRadius: '8px', objectFit: 'cover', border: '1px solid #cccccc' },
-  avatarBig: { width: '65px', height: '65px', margin: '0 auto' },
+  avatarBig: { width: '65px', height: '65px', margin: '0 auto', display: 'block', borderRadius: '8px', objectFit: 'cover' },
   detailText: { display: 'flex', flexDirection: 'column' },
   studentNameText: { margin: '0 0 4px 0', fontSize: '15px', fontWeight: '600' },
   studentLevelText: { margin: '0', color: '#666666', fontSize: '13px' },
@@ -325,21 +413,33 @@ const styles = {
   btnEdit: { flex: '1', padding: '6px', border: '1px solid #cccccc', background: '#ffffff', borderRadius: '6px', cursor: 'pointer', fontSize: '13px' },
   btnDelete: { flex: '1', padding: '6px', border: '1px solid #cccccc', background: '#ffffff', borderRadius: '6px', cursor: 'pointer', fontSize: '13px' },
   modalOverlay: { position: 'fixed', top: '0', left: '0', width: '100%', height: '100%', background: 'rgba(0, 0, 0, 0.35)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: '999' },
-  modalContent: { background: '#ffffff', padding: '25px', borderRadius: '16px', width: '350px', position: 'relative', boxShadow: '0 10px 25px rgba(0,0,0,0.15)' },
-  modalHeading: { margin: '0 0 20px 0', fontSize: '16px', fontWeight: '600' },
+  modalContent: { background: '#ffffff', padding: '20px 25px', borderRadius: '16px', width: '320px', position: 'relative', boxShadow: '0 10px 25px rgba(0,0,0,0.15)', boxSizing: 'border-box' },
+  modalHeading: { margin: '0 0 15px 0', fontSize: '16px', fontWeight: '600' },
   closeX: { position: 'absolute', top: '15px', right: '15px', background: 'none', border: 'none', fontSize: '15px', cursor: 'pointer', color: '#999999' },
   avatarUploadZone: { textAlign: 'center', marginBottom: '15px' },
-  formGroup: { marginBottom: '12px', display: 'flex', flexDirection: 'column' },
-  formLabel: { fontSize: '12px', color: '#555555', marginBottom: '4px' },
-  formInput: { padding: '8px', border: '1px solid #cccccc', borderRadius: '6px', fontSize: '13px', outline: 'none' },
-  formSelect: { padding: '8px', border: '1px solid #cccccc', borderRadius: '6px', fontSize: '13px', outline: 'none', background: '#ffffff' },
-  formRow: { display: 'flex', gap: '10px' },
-  btnSubmitSave: { width: '100%', padding: '10px', background: '#ffffff', border: '1px solid #333333', borderRadius: '8px', fontWeight: 'bold', marginTop: '15px', cursor: 'pointer' },
+  formGroup: { marginBottom: '10px', display: 'flex', flexDirection: 'column', width: '100%' },
+  formLabel: { fontSize: '12px', color: '#555555', marginBottom: '4px', fontWeight: '500' },
+  formInput: { padding: '6px 10px', border: '1px solid #cccccc', borderRadius: '6px', fontSize: '13px', outline: 'none', boxSizing: 'border-box', width: '100%' },
+  formSelect: { padding: '6px 10px', border: '1px solid #cccccc', borderRadius: '6px', fontSize: '13px', outline: 'none', background: '#ffffff', boxSizing: 'border-box', width: '100%' },
+  formRow: { display: 'flex', gap: '10px', width: '100%' },
+  btnSubmitSave: { width: '100%', padding: '8px', background: '#ffffff', border: '1px solid #333333', borderRadius: '8px', fontWeight: 'bold', marginTop: '10px', cursor: 'pointer', fontSize: '13px', boxSizing: 'border-box' },
   modalDeleteContent: { background: '#ffffff', padding: '30px', borderRadius: '16px', width: '300px', textAlign: 'center', boxShadow: '0 10px 25px rgba(0,0,0,0.15)' },
   modalDeleteActions: { display: 'flex', gap: '15px' },
   btnCancel: { flex: '1', padding: '8px', border: '1px solid #cccccc', background: '#ffffff', borderRadius: '6px', cursor: 'pointer' },
-  btnConfirmDelete: { flex: '1', padding: '8px', border: '1px solid #000000', background: '#ffffff', fontWeight: 'bold', borderRadius: '6px', cursor: 'pointer' }
+  btnConfirmDelete: { flex: '1', padding: '8px', border: '1px solid #000000', background: '#ffffff', fontWeight: 'bold', borderRadius: '6px', cursor: 'pointer' },
+  infoDisplayBox: { 
+    padding: '6px 10px',
+    border: '1px solid #e5e5e5', 
+    borderRadius: '6px', 
+    fontSize: '13px',
+    background: '#f9f9f9', 
+    color: '#333333', 
+    height: '32px',
+    boxSizing: 'border-box',
+    width: '100%',
+    display: 'flex', 
+    alignItems: 'center'
+  }
 };
-
 
 export default StudentManagement;

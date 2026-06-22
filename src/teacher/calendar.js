@@ -4,6 +4,10 @@ export default function CalendarActivity() {
   const [calendarList, setCalendarList] = useState([]);
   const [loading, setLoading] = useState(false);
 
+  // 🌟 1. ใช้ State ในการเก็บปีและเดือนปัจจุบัน (เริ่มต้นที่ สิงหาคม 2569 / August 2026 ตามหน้าจอของคุณ)
+  const [currentYear, setCurrentYear] = useState(2026);
+  const [currentMonth, setCurrentMonth] = useState(8); // เดือน 8 = สิงหาคม
+
   // ควบคุมหน้าต่าง Popups
   const [isAddOpen, setIsAddOpen] = useState(false);      
   const [isDetailOpen, setIsDetailOpen] = useState(false); 
@@ -116,30 +120,28 @@ export default function CalendarActivity() {
     setSelectedEvent(null);
   };
 
-  // 🛠️ ฟังก์ชันจับคู่กิจกรรมลงช่องวัน (เช็คเฉพาะเดือน 08 และวันที่ให้ตรงกัน)
+  // 🌟 2. ปรับฟังก์ชันจับคู่กิจกรรมให้คำนวณตามปีและเดือนที่กำลังเปิดดูอยู่จริง ๆ
   const getEventForDate = (dayNumber) => {
     if (!calendarList || calendarList.length === 0) return null;
 
-    // ทำตัวเลขวันปัจจุบันให้เป็น String 2 หลัก (เช่น 3 -> "03")
     const currentDayStr = String(dayNumber).padStart(2, '0');
+    const currentMonthStr = String(currentMonth).padStart(2, '0');
+    const currentYearStr = String(currentYear);
 
     return calendarList.find(item => {
       const rawDate = item.Date || item.date;
       if (!rawDate) return false;
 
-      // ตัดเอาเฉพาะส่วน ปี-เดือน-วัน ออกมา
-      const cleanDateOnly = String(rawDate).split('T')[0];
+      const cleanDateOnly = String(rawDate).split('T')[0]; // ผลลัพธ์จะเป็น "YYYY-MM-DD"
       const parts = cleanDateOnly.split('-');
       
       if (parts.length >= 3) {
-        const dbMonth = parts[1]; 
+        const dbYear = parts[0];
+        const dbMonth = String(parseInt(parts[1], 10)).padStart(2, '0'); // จัดฟอร์แมตเดือนให้เป็น 2 หลักเสมอ
         const dbDay = parts[2];   
 
-        if ((dbMonth === '08' || dbMonth === '8') && dbDay === currentDayStr) {
-          return true;
-        }
-      } else if (cleanDateOnly.includes(`-08-${currentDayStr}`) || cleanDateOnly.includes(`-8-${currentDayStr}`)) {
-        return true;
+        // เช็คให้ตรงกันทั้ง ปี, เดือน และ วันที่
+        return dbYear === currentYearStr && dbMonth === currentMonthStr && dbDay === currentDayStr;
       }
 
       return false;
@@ -169,22 +171,51 @@ export default function CalendarActivity() {
     setIsDetailOpen(true); 
   };
 
-  // คลิกพื้นที่ช่องว่างปฏิทินเพื่อเริ่มกรอกเพิ่มงานใหม่
+  // คลิกพื้นที่ช่องว่างปฏิทินเพื่อเริ่มกรอกเพิ่มงานใหม่ (จะอิงตามปีและเดือนที่กำลังเปิดดูอยู่)
   const openAddModalOnDate = (dayNumber) => {
     clearForm();
-    const formattedDate = `2026-08-${String(dayNumber).padStart(2, '0')}`;
+    const formattedDate = `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(dayNumber).padStart(2, '0')}`;
     setFormData(prev => ({ ...prev, Date: formattedDate }));
     setIsAddOpen(true);
   };
 
-  // 🛠️ แก้ไขเรียบร้อย: ส่งค่าข้อความเวลาออกไปแสดงตรงๆ ไม่ทำการตัดสปลิตคำให้เกิดบั๊กอีกต่อไป
   const formatTimeDisplay = (timeStr) => {
     if (!timeStr) return '';
     return String(timeStr); 
   };
-  
-  const daysInAugust = Array.from({ length: 31 }, (_, i) => i + 1);
-  const emptyInitialSpaces = Array.from({ length: 4 }, (_, i) => i);
+
+  // 🌟 3. ฟังก์ชันสำหรับเลื่อนเดือนย้อนกลับ (<) และเลื่อนไปข้างหน้า (>)
+  const handlePrevMonth = () => {
+    if (currentMonth === 1) {
+      setCurrentMonth(12);
+      setCurrentYear(prev => prev - 1);
+    } else {
+      setCurrentMonth(prev => prev - 1);
+    }
+  };
+
+  const handleNextMonth = () => {
+    if (currentMonth === 12) {
+      setCurrentMonth(1);
+      setCurrentYear(prev => prev + 1);
+    } else {
+      setCurrentMonth(prev => prev + 1);
+    }
+  };
+
+  // 🌟 4. คำนวณหาจำนวนวันในเดือนนั้น ๆ และวันเริ่มต้นของสัปดาห์แบบอัตโนมัติ
+  const monthNamesThai = [
+    "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
+    "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"
+  ];
+
+  // หาว่าเดือนที่กำลังเปิดอยู่มีกี่วัน (เช่น 30 หรือ 31 วัน)
+  const totalDaysInMonth = new Date(currentYear, currentMonth, 0).getDate();
+  const daysInMonthArray = Array.from({ length: totalDaysInMonth }, (_, i) => i + 1);
+
+  // หาว่าวันแรกของเดือนตรงกับวันอะไรของสัปดาห์ (0 = อาทิตย์, 1 = จันทร์, ..., 6 = เสาร์) เพื่อจัดช่องว่าง
+  const firstDayIndex = new Date(currentYear, currentMonth - 1, 1).getDay();
+  const emptySpacesArray = Array.from({ length: firstDayIndex }, (_, i) => i);
 
   return (
     <div style={styles.contentBody}>
@@ -192,10 +223,14 @@ export default function CalendarActivity() {
       
       <div style={styles.calendarCard}>
         <div style={styles.calendarHeader}>
-          <span style={styles.calendarMonthTitle}>ปฏิทินกิจกรรม - สิงหาคม 2569</span>
+          {/* 🌟 แสดงชื่อเดือนและปี พ.ศ. (ค.ศ. + 543) แบบไดนามิกตามที่เลือก */}
+          <span style={styles.calendarMonthTitle}>
+            ปฏิทินกิจกรรม - {monthNamesThai[currentMonth - 1]} {currentYear + 543}
+          </span>
           <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
-            <button style={styles.arrowBtn}>&lt;</button>
-            <button style={styles.arrowBtn}>&gt;</button>
+            {/* 🌟 ผูกฟังก์ชันเข้ากับปุ่มกด เพื่อให้คลิกเลื่อนเดือนได้แล้วครับ */}
+            <button style={styles.arrowBtn} onClick={handlePrevMonth}>&lt;</button>
+            <button style={styles.arrowBtn} onClick={handleNextMonth}>&gt;</button>
           </div>
         </div>
 
@@ -204,11 +239,13 @@ export default function CalendarActivity() {
             <div key={day} style={styles.dayOfWeekLabel}>{day}</div>
           ))}
 
-          {emptyInitialSpaces.map((val) => (
+          {/* ช่องว่างก่อนเริ่มวันที่ 1 ของเดือน */}
+          {emptySpacesArray.map((val) => (
             <div key={`empty-${val}`} style={styles.dayCellEmpty} />
           ))}
 
-          {daysInAugust.map((day) => {
+          {/* รายการวันที่ในเดือน */}
+          {daysInMonthArray.map((day) => {
             const eventItem = getEventForDate(day);
             const isSelected = selectedEvent && eventItem && 
               ((selectedEvent.Calendar_id && selectedEvent.Calendar_id === eventItem.Calendar_id) || 
@@ -331,6 +368,7 @@ export default function CalendarActivity() {
   );
 }
 
+// Styles คงเดิมเหมือนต้นฉบับของคุณทุกประการ
 const styles = {
   contentBody: { padding: '10px', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', width: '100%' },
   calendarCard: { border: '1px solid #999', borderRadius: '6px', padding: '20px', backgroundColor: '#fff', width: '100%', maxWidth: '780px', boxSizing: 'border-box' },
