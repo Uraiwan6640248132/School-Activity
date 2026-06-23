@@ -9,7 +9,7 @@ function Activity() {
   const [photographer, setPhotographer] = useState(""); 
   const [location, setLocation] = useState("");         
   const [activityDate, setActivityDate] = useState("");   
-  const [image, setImage] = useState(""); // เปลี่ยนมารองรับ string Base64
+  const [image, setImage] = useState(null); // เก็บค่า Base64
   const [previewImage, setPreviewImage] = useState(""); 
   const [editId, setEditId] = useState(null);           
   const [showForm, setShowForm] = useState(false);
@@ -31,20 +31,20 @@ function Activity() {
     }
   };
 
-  // ✅ ปรับปรุง: แปลงไฟล์รูปภาพเป็น Base64 ทันทีที่เลือกไฟล์ (เหมือนระบบนักเรียน)
+  // เปลี่ยนระบบเลือกรูปภาพ: แปลงไฟล์รูปภาพที่เลือกให้เป็น Base64 ทันทีเพื่อส่งในรูปแบบ JSON
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      setPreviewImage(URL.createObjectURL(file));
+
       const reader = new FileReader();
       reader.onloadend = () => {
-        setImage(reader.result);        // สายข้อความ Base64 สำหรับส่งไปหลังบ้าน
-        setPreviewImage(reader.result); // แสดงตัวอย่างรูปภาพบนหน้าฟอร์ม
+        setImage(reader.result); // ได้ข้อมูลรูปภาพเป็น Base64 string เช่น "data:image/jpeg;base64,..."
       };
       reader.readAsDataURL(file);
     }
   };
 
-  // ✅ ปรับปรุง: ส่งข้อมูลเป็น JSON Object ตรงๆ ไม่ใช้ FormData อีกต่อไปเพื่อรับ Base64 สบายๆ
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -52,27 +52,31 @@ function Activity() {
       return alert("กรุณากรอกชื่อกิจกรรม");
     }
 
-    // จัดโครงสร้างส่งแบบ JSON Object ไปให้สัมพันธ์กับหลังบ้าน
-    const payload = {
+    // รวมข้อมูลเป็น JSON Object เพื่อให้สอดรับกับ req.body ของหลังบ้าน
+    const requestData = {
       Name_activity: nameActivity,
-      Photographer: photographer,
       Location: location,
-      Activity_date: activityDate || null,
+      Activity_date: activityDate ? activityDate : null, // ถ้าเป็นค่าว่าง "" ส่งเป็น null ป้องกัน MySQL แจ้งเตือนเรื่องฟอร์แมตวันเวลา
       User_id: 1,
-      Image: image || previewImage || null // ส่ง Base64 หรือใช้ภาพเก่ากรณีแก้ไข
+      Image: image ? image : (editId ? previewImage : null) 
+      // คำอธิบายรูป: ถ้ามีการเลือกรูปใหม่ให้ส่งตัวใหม่ไป, ถ้าไม่มีการเลือกใหม่แต่เป็นการแก้ไขให้ใช้รูปเก่าส่งกลับไป, นอกเหนือจากนั้นส่ง null
     };
 
     try {
       if (editId) {
-        await axios.put(`${API_URL}/${editId}`, payload);
+        // ยิง API แก้ไขด้วย JSON Object ปกติ
+        await axios.put(`${API_URL}/${editId}`, requestData);
+        alert("แก้ไขข้อมูลกิจกรรมสำเร็จ");
       } else {
-        await axios.post(API_URL, payload);
+        // ยิง API เพิ่มข้อมูลด้วย JSON Object ปกติ
+        await axios.post(API_URL, requestData);
+        alert("เพิ่มข้อมูลกิจกรรมสำเร็จ");
       }
       clearForm();
       fetchActivities();
     } catch (err) {
       console.error(err);
-      alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล");
+      alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล: โปรดตรวจสอบข้อความแจ้งเตือน Error บนหน้าจอดำ (Terminal) ของตัวรัน API หลังบ้าน");
     }
   };
 
@@ -93,8 +97,8 @@ function Activity() {
     setPhotographer(item.Photographer || ""); 
     setLocation(item.Location || "");
     setActivityDate(item.Activity_date ? item.Activity_date.split("T")[0] : "");
-    setImage(""); // รีเซ็ตค่าเลือกใหม่
-    setPreviewImage(item.Image || ""); // ดึงรูป Base64 เดิมมาโชว์
+    setImage(null); // เคลียร์ไฟล์รูปภาพที่เพิ่งกดเลือกค้างไว้
+    setPreviewImage(item.Image || ""); // ดึงรูปเก่าในระบบขึ้นมาแสดงผลรอ
     setShowForm(true);
   };
 
@@ -103,14 +107,14 @@ function Activity() {
     setPhotographer(""); 
     setLocation("");
     setActivityDate("");
-    setImage("");
+    setImage(null);
     setPreviewImage("");
     setEditId(null);
     setShowForm(false);
   };
 
   const formatDate = (dateStr) => {
-    if (!dateStr || dateStr.startsWith("0000")) return "ไม่ระบุวันเวลา";
+    if (!dateStr) return "ไม่ระบุวันเวลา";
     const date = new Date(dateStr);
     return date.toLocaleDateString('th-TH', { day: '2-digit', month: '2-digit', year: 'numeric' });
   };
@@ -205,14 +209,7 @@ function Activity() {
                 
                 <div style={page.cardImageContainer}>
                   {item.Image ? (
-                    <img 
-                      src={item.Image.startsWith("data:image") ? item.Image : `data:image/jpeg;base64,${item.Image}`} 
-                      alt={item.Name_activity} 
-                      style={page.cardImage} 
-                      onError={(e) => {
-                        e.target.src = "https://via.placeholder.com/150?text=No+Image";
-                      }}
-                    />
+                    <img src={item.Image} alt={item.Name_activity} style={page.cardImage} />
                   ) : (
                     <div style={page.cardImagePlaceholder}>
                       <svg style={{ width: 36, height: 36, color: "#cbd5e1" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">

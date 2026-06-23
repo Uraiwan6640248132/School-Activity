@@ -639,6 +639,51 @@ app.delete('/api/development/:id', (req, res) => {
   });
 });
 
+app.post("/login", (req, res) => {
+
+  const { UserName, Password } = req.body;
+
+  if (!UserName || !Password) {
+    return res.status(400).json({
+      error: "กรุณากรอกชื่อผู้ใช้และรหัสผ่าน"
+    });
+  }
+
+  const sql = "SELECT * FROM users WHERE UserName = ? AND Password = ?";
+
+  db.query(sql, [UserName, Password], (err, result) => {
+
+    if (err) {
+      console.log(err);
+      return res.status(500).json({
+        error: "เกิดข้อผิดพลาดในระบบฐานข้อมูล"
+      });
+    }
+
+    if (result.length > 0) {
+
+      const user = result[0];
+
+      return res.json({
+        success: true,
+        user: {
+          id: user.User_id,
+          username: user.UserName,
+          name: user.Name,
+          role: user.Role
+        }
+      });
+
+    } else {
+      return res.status(401).json({
+        error: "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง"
+      });
+    }
+
+  });
+
+});
+
 app.listen(3001, () => {
     console.log("Server running on port 3001");
 });
