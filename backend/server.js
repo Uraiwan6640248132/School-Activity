@@ -716,6 +716,27 @@ app.delete('/users/:id', (req, res) => {
         return res.json({ success: true, message: "ลบผู้ใช้งานสำเร็จ" });
     });
 });
+app.put('/users/:id', (req, res) => {
+    const userId = req.params.id;
+    const { Name, Phone, Username, Role, Password } = req.body;
+
+    // ถ้ามีการส่งรหัสผ่านใหม่มา ให้เขียน Query อัปเดตพาสเวิร์ดเพิ่มด้วย
+    let sql = "UPDATE users SET Name = ?, Phone = ?, UserName = ?, Role = ? WHERE User_id = ?";
+    let params = [Name, Phone, Username, Role, userId];
+
+    if (Password !== undefined) {
+        sql = "UPDATE users SET Name = ?, Phone = ?, UserName = ?, Role = ?, Password = ? WHERE User_id = ?";
+        params = [Name, Phone, Username, Role, Password, userId];
+    }
+    
+    db.query(sql, params, (err, result) => {
+        if (err) {
+            console.error("Error updating profile:", err);
+            return res.status(500).json({ error: "ไม่สามารถอัปเดตข้อมูลได้" });
+        }
+        return res.json({ success: true, message: "อัปเดตข้อมูลสำเร็จแล้ว" });
+    });
+});
 
 app.listen(3001, () => {
     console.log("Server running on port 3001");
