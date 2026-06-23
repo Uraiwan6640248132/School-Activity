@@ -666,6 +666,56 @@ app.post("/login", (req, res) => {
     }
   });
 });
+// --------------------------------------------------------
+// ➡️ [เพิ่มใหม่] API สำหรับดึงข้อมูลผู้ใช้ทั้งหมดมาแสดงในตาราง
+// --------------------------------------------------------
+app.get('/users', (req, res) => {
+    // คำสั่งดึงข้อมูลผู้ใช้ทุกคนจากตาราง users
+    const sql = "SELECT User_id, Name, Phone, UserName, Password, Role FROM users";
+    
+    db.query(sql, (err, data) => {
+        if (err) {
+            console.error("Error fetching users:", err);
+            return res.status(500).json({ error: "เกิดข้อผิดพลาดในการดึงข้อมูลฐานข้อมูล" });
+        }
+        return res.json(data); // ส่งข้อมูลกลับไปให้หน้าบ้านแสดงผล
+    });
+});
+
+// --------------------------------------------------------
+// ➡️ [เพิ่มใหม่] API สำหรับบันทึกแก้ไขข้อมูล/อัปเดตสิทธิ์ (เมื่อกดปุ่มบันทึก)
+// --------------------------------------------------------
+app.put('/users/:id', (req, res) => {
+    const userId = req.params.id;
+    const { Name, Phone, Username, Role } = req.body;
+
+    // คำสั่ง SQL สำหรับอัปเดตข้อมูลผู้ใช้รายบุคคลตาม User_id
+    const sql = "UPDATE users SET Name = ?, Phone = ?, UserName = ?, Role = ? WHERE User_id = ?";
+    
+    db.query(sql, [Name, Phone, Username, Role, userId], (err, result) => {
+        if (err) {
+            console.error("Error updating user role:", err);
+            return res.status(500).json({ error: "ไม่สามารถอัปเดตสิทธิ์ได้" });
+        }
+        return res.json({ success: true, message: "อัปเดตข้อมูลและสิทธิ์สำเร็จแล้ว" });
+    });
+});
+
+// --------------------------------------------------------
+// ➡️ [เพิ่มใหม่ เผื่อไว้] API สำหรับลบผู้ใช้งาน (เมื่อกดปุ่มลบ)
+// --------------------------------------------------------
+app.delete('/users/:id', (req, res) => {
+    const userId = req.params.id;
+    const sql = "DELETE FROM users WHERE User_id = ?";
+
+    db.query(sql, [userId], (err, result) => {
+        if (err) {
+            console.error("Error deleting user:", err);
+            return res.status(500).json({ error: "ไม่สามารถลบผู้ใช้ได้ บัญชีนี้อาจมีข้อมูลผูกอยู่กับตารางอื่น" });
+        }
+        return res.json({ success: true, message: "ลบผู้ใช้งานสำเร็จ" });
+    });
+});
 
 app.listen(3001, () => {
     console.log("Server running on port 3001");
