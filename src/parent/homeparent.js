@@ -74,7 +74,7 @@ const HomeParent = () => {
   );
 };
 
-// 🎨 สไตล์ดีไซน์กล่องข้อมูล (อิงตามภาพโครงสร้าง image_d5822f.png ที่ให้มา)
+
 const styles = {
   container: { 
     padding: "20px 10px", 
