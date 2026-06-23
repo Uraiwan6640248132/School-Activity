@@ -9,7 +9,7 @@ function Activity() {
   const [photographer, setPhotographer] = useState(""); 
   const [location, setLocation] = useState("");         
   const [activityDate, setActivityDate] = useState("");   
-  const [image, setImage] = useState(null);
+  const [image, setImage] = useState(null); // เก็บค่า Base64
   const [previewImage, setPreviewImage] = useState(""); 
   const [editId, setEditId] = useState(null);           
   const [showForm, setShowForm] = useState(false);
@@ -31,11 +31,17 @@ function Activity() {
     }
   };
 
+  // เปลี่ยนระบบเลือกรูปภาพ: แปลงไฟล์รูปภาพที่เลือกให้เป็น Base64 ทันทีเพื่อส่งในรูปแบบ JSON
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      setImage(file);
       setPreviewImage(URL.createObjectURL(file));
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImage(reader.result); // ได้ข้อมูลรูปภาพเป็น Base64 string เช่น "data:image/jpeg;base64,..."
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -46,32 +52,31 @@ function Activity() {
       return alert("กรุณากรอกชื่อกิจกรรม");
     }
 
-    const formData = new FormData();
-    formData.append("Name_activity", nameActivity);
-    formData.append("Photographer", photographer);
-    formData.append("Location", location);
-    formData.append("Activity_date", activityDate);
-    formData.append("User_id", 1);
-
-    if (image) {
-  formData.append("image", image);
-}
-// ลบบรรทัด else if (editId && previewImage) ออก → ไม่ต้องส่งรูปเดิมกลับไปแล้ว
-if (!editId && !image) {
-  formData.append("Image", "");
-}
+    // รวมข้อมูลเป็น JSON Object เพื่อให้สอดรับกับ req.body ของหลังบ้าน
+    const requestData = {
+      Name_activity: nameActivity,
+      Location: location,
+      Activity_date: activityDate ? activityDate : null, // ถ้าเป็นค่าว่าง "" ส่งเป็น null ป้องกัน MySQL แจ้งเตือนเรื่องฟอร์แมตวันเวลา
+      User_id: 1,
+      Image: image ? image : (editId ? previewImage : null) 
+      // คำอธิบายรูป: ถ้ามีการเลือกรูปใหม่ให้ส่งตัวใหม่ไป, ถ้าไม่มีการเลือกใหม่แต่เป็นการแก้ไขให้ใช้รูปเก่าส่งกลับไป, นอกเหนือจากนั้นส่ง null
+    };
 
     try {
       if (editId) {
-        await axios.put(`${API_URL}/${editId}`, formData);
+        // ยิง API แก้ไขด้วย JSON Object ปกติ
+        await axios.put(`${API_URL}/${editId}`, requestData);
+        alert("แก้ไขข้อมูลกิจกรรมสำเร็จ");
       } else {
-        await axios.post(API_URL, formData);
+        // ยิง API เพิ่มข้อมูลด้วย JSON Object ปกติ
+        await axios.post(API_URL, requestData);
+        alert("เพิ่มข้อมูลกิจกรรมสำเร็จ");
       }
       clearForm();
       fetchActivities();
     } catch (err) {
       console.error(err);
-      alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล");
+      alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล: โปรดตรวจสอบข้อความแจ้งเตือน Error บนหน้าจอดำ (Terminal) ของตัวรัน API หลังบ้าน");
     }
   };
 
@@ -92,8 +97,8 @@ if (!editId && !image) {
     setPhotographer(item.Photographer || ""); 
     setLocation(item.Location || "");
     setActivityDate(item.Activity_date ? item.Activity_date.split("T")[0] : "");
-    setImage(null);
-    setPreviewImage(item.Image || "");
+    setImage(null); // เคลียร์ไฟล์รูปภาพที่เพิ่งกดเลือกค้างไว้
+    setPreviewImage(item.Image || ""); // ดึงรูปเก่าในระบบขึ้นมาแสดงผลรอ
     setShowForm(true);
   };
 
@@ -252,11 +257,6 @@ if (!editId && !image) {
   );
 }
 
-
-
-
-
-
 const page = {
   container: { backgroundColor: "#ffffff", minHeight: "100vh", padding: "1.5rem", display: "flex", justifyContent: "center", color: "#334155", fontFamily: "'Inter', 'Kanit', sans-serif" },
   wrapper: { width: "100%", maxWidth: "1200px" }, 
@@ -297,8 +297,5 @@ const modal = {
   input: { width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", boxSizing: "border-box", outline: "none", fontSize: "14px", backgroundColor: "#ffffff", fontWeight: "normal", color: "#334155" },
   saveButton: { width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #cbd5e1", background: "#f8fafc", color: "#334155", fontWeight: "normal", fontSize: "14px", cursor: "pointer", marginTop: "8px" }
 };
-
-
-
 
 export default Activity;
