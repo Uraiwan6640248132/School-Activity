@@ -30,6 +30,8 @@ import PersonalDataAd from './admin/personal_dataad';
 import HomeParent from './parent/homeparent';
 import PersonalDataParent from './parent/personal_dataparent'; // นำเข้าหน้าข้อมูลส่วนตัวผู้ปกครอง
 import StudentData from './parent/student_data';
+import Developmentp from './parent/developmentp'; //
+import Calendarp from './parent/calendarp';
 
 function App() {
   const [userRole, setUserRole] = useState(null);
@@ -157,6 +159,8 @@ function App() {
           {/* 🎯 เปิดเส้นทางให้สิทธิ์ผู้ปกครองสามารถเข้าหน้าแก้ไขข้อมูลส่วนตัวตัวเองได้ที่นี่ */}
           <Route path="/personal_dataparent" element={<PersonalDataParent />} />
           <Route path="/student_data" element={<StudentData />} />
+          <Route path="/developmentp" element={<Developmentp />} />
+          <Route path="/calendarp" element={<Calendarp />} />
           <Route path="*" element={<Navigate to="/homeparent" replace />} />
         </Routes>
       </NavbarParent>
