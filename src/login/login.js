@@ -15,10 +15,7 @@ function Login({ onLoginSuccess }) {
       return alert("กรุณากรอกชื่อผู้ใช้และรหัสผ่าน");
     }
 
-    // 🛠️ แก้ไขตรงนี้: เปลี่ยนชื่อ Key เป็นตัวพิมพ์ใหญ่เพื่อให้ตรงกับฟิลด์ใน phpMyAdmin ของคุณ
-    // 🛠️ แก้ไขตรงนี้: ส่งไปให้ครบทั้งตัวพิมพ์เล็กและตัวพิมพ์ใหญ่ เพื่อรองรับหลังบ้านทุกเวอร์ชัน
     const loginData = {
-     
       UserName: username, 
       Password: password  
     };
@@ -27,15 +24,23 @@ function Login({ onLoginSuccess }) {
       const res = await axios.post('http://127.0.0.1:3001/login', loginData);
       
       if (res.data.success) {
-       
-        // บันทึกสถานะลงบนเบราว์เซอร์
+        // 💾 บันทึกสถานะผู้ใช้ลงบน localStorage ทั้งก้อน
         localStorage.setItem("user", JSON.stringify(res.data.user));
         
-        // 🌟 เรียกใช้ฟังก์ชันเพื่อเปิดระบบเมนู Navbar ด้านใน
+        // 🌟 เรียกใช้ฟังก์ชันเพื่ออัปเดตสเตทล็อกอินใน App.js ข้างนอก
         onLoginSuccess();
         
-        // เปลี่ยนหน้าเดินทางเข้าสู่ระบบด้านใน
-        navigate('/home'); 
+        // 🧭 แยกแยะเส้นทางตาม Role ที่ได้มาจากหลังบ้าน
+        // (สมมติว่า key ชื่อ 'role' หรือ 'Status' ให้แก้ตัวพิมพ์เล็ก/ใหญ่ตามเซิร์ฟเวอร์จริงของคุณนะครับ)
+        const userRole = res.data.user.role || res.data.user.Role || res.data.user.status;
+
+        if (userRole === 'admin') {
+          navigate('/homeadmin'); // ไปหน้าจัดการของผู้ดูแลระบบ
+        } else if (userRole === 'teacher') {
+          navigate('/hometeacher'); // ไปหน้าจัดการของคุณครู
+        } else {
+          navigate('/home'); // สิทธิ์ผู้ปกครอง หรือสิทธิ์ทั่วไป ส่งเข้าหน้าหลักปกติ
+        }
       }
     } catch (err) {
       console.error(err);
@@ -47,7 +52,6 @@ function Login({ onLoginSuccess }) {
     }
   };
 
-  // ปรับการดีไซน์ให้อยู่กึ่งกลางหน้าจอแบบเต็มจอ 100vh ปิดพื้นหลังสีเทาคลีนๆ
   return (
     <div style={styles.container}>
       <form onSubmit={handleSubmit} style={styles.box}>
@@ -90,9 +94,9 @@ const styles = {
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
-    minHeight: "100vh", // ดึงให้เต็มหน้าจอจริงข้างนอก
+    minHeight: "100vh",
     width: "100vw",
-    backgroundColor: "#f8fafc", // สีพื้นหลังเทาอมฟ้าสว่างๆ นอกหน้าเว็บ
+    backgroundColor: "#f8fafc",
     fontFamily: "'Inter', 'Kanit', sans-serif",
     position: "absolute",
     top: 0,

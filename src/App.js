@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import './App.css';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import Navbar from './navbar/nb';
+import Navbarp from './navbar/nbp';
 import Home from './teacher/home'; 
 import StudentManagement from './teacher/student';
 import Activity from './teacher/activity'; 
