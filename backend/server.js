@@ -7,7 +7,7 @@ const fs = require("fs");
 
 const app = express();
 
-// ✅ ปรับปรุง CORS: อนุญาตให้รับส่งข้อมูลครอบคลุมทั้ง localhost และ 127.0.0.1 ป้องกันหน้าบ้านหลุดการเชื่อมต่อ
+// ✅ ปรับปรุง CORS: อนุญาตให้รับส่งข้อมูลครอบคลุมทั้ง localhost และ 127.0.0.1
 app.use(cors({
     origin: ["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:5173", "http://127.0.0.1:5173"],
     credentials: true
@@ -53,20 +53,22 @@ const upload = multer({
 });
 
 // ==========================================
-// 👤 ระบบ API จัดการข้อมูลผู้ใช้งาน (USERS)
+// 👤 ระบบ API จัดการข้อมูลผู้ใช้งาน (USERS) - เคลียร์ส่วนซ้ำซ้อนแล้ว
 // ==========================================
+
+// 1. ดึงข้อมูลผู้ใช้ทั้งหมดมาแสดงในตาราง (รองรับสิทธิ์ แอดมิน/ครู/ผู้ปกครอง)
 app.get("/users", (req, res) => {
-    const sql = "SELECT * FROM users";
+    const sql = "SELECT User_id, Name, Phone, UserName, Password, Role FROM users ORDER BY User_id DESC";
     db.query(sql, (err, result) => {
         if (err) {
-            console.log(err);
-            return res.status(500).json(err);
+            console.error("❌ Error fetching users:", err);
+            return res.status(500).json({ error: "เกิดข้อผิดพลาดในการดึงข้อมูลฐานข้อมูล" });
         }
         res.json(result);
     });
 });
 
-// 🌟 เพิ่ม API ตัวนี้: สำหรับดึงข้อมูลผู้ใช้งานเฉพาะคน (เช่น ID: 1) ไปแสดงที่ฟอร์มหน้าบ้าน
+// 2. ดึงข้อมูลผู้ใช้งานเฉพาะบุคคลตาม ID
 app.get("/users/:id", (req, res) => {
     const userId = req.params.id;
     const sql = "SELECT * FROM users WHERE User_id = ?"; 
@@ -83,34 +85,76 @@ app.get("/users/:id", (req, res) => {
     });
 });
 
-// 🌟 เพิ่ม API ตัวนี้: สำหรับบันทึกค่าที่แก้ไขจากหน้าจอข้อมูลส่วนตัว กลับลงตาราง users
+// 3. บันทึกแก้ไขข้อมูลผู้ใช้งาน อัปเดตสิทธิ์ และรหัสผ่าน (รวมร่างสมบูรณ์แบบ ไม่พังแน่นอน)
 app.put("/users/:id", (req, res) => {
     const userId = req.params.id;
-    const { Name, Phone, Username, Password } = req.body;
 
-    let sql, params;
-    if (Password) {
-        sql = "UPDATE users SET Name = ?, Phone = ?, UserName = ?, Password = ? WHERE User_id = ?";
-        params = [Name, Phone, Username, Password, userId];
+    const {
+        Name,
+        Phone,
+        UserName,
+        Role,
+        Password
+    } = req.body;
+
+    console.log(req.body);
+
+    let sql;
+    let params;
+
+    if (Password && Password.trim() !== "") {
+        sql = `
+        UPDATE users
+        SET Name=?,
+            Phone=?,
+            UserName=?,
+            Role=?,
+            Password=?
+        WHERE User_id=?`;
+
+        params = [Name, Phone, UserName, Role, Password, userId];
     } else {
-        sql = "UPDATE users SET Name = ?, Phone = ?, UserName = ? WHERE User_id = ?";
-        params = [Name, Phone, Username, userId];
+        sql = `
+        UPDATE users
+        SET Name=?,
+            Phone=?,
+            UserName=?,
+            Role=?
+        WHERE User_id=?`;
+
+        params = [Name, Phone, UserName, Role, userId];
     }
 
     db.query(sql, params, (err, result) => {
         if (err) {
-            console.error("❌ SQL Error ใน PUT /users/:id:", err);
-            return res.status(500).json({ error: "ไม่สามารถบันทึกข้อมูลส่วนตัวได้", details: err });
+            console.log(err);
+            return res.status(500).json(err);
         }
-        res.json({ message: "อัปเดตข้อมูลส่วนตัวในฐานข้อมูลสำเร็จเรียบร้อยครับ" });
+
+        res.json({
+            success: true,
+            message: "อัปเดตข้อมูลสำเร็จ"
+        });
+    });
+});
+
+// 4. ลบผู้ใช้งานออกจากระบบ
+app.delete('/users/:id', (req, res) => {
+    const userId = req.params.id;
+    const sql = "DELETE FROM users WHERE User_id = ?";
+
+    db.query(sql, [userId], (err, result) => {
+        if (err) {
+            console.error("❌ Error deleting user:", err);
+            return res.status(500).json({ error: "ไม่สามารถลบผู้ใช้ได้ บัญชีนี้อาจมีข้อมูลผูกอยู่กับตารางอื่น" });
+        }
+        return res.json({ success: true, message: "ลบผู้ใช้งานสำเร็จ" });
     });
 });
 
 // ==========================================
-// 🏃‍♂️ ระบบ API จัดการกิจกรรม (ACTIVITY) - ปรับปรุงเพื่อความเสถียร 100%
+// 🏃‍♂️ ระบบ API จัดการกิจกรรม (ACTIVITY)
 // ==========================================
-
-// 1. [GET] ดึงข้อมูลกิจกรรมทั้งหมด
 app.get("/activities", (req, res) => {
   const sql = "SELECT * FROM activity ORDER BY Activity_id DESC"; 
   db.query(sql, (err, result) => {
@@ -122,23 +166,16 @@ app.get("/activities", (req, res) => {
   });
 });
 
-// 2. [POST] เพิ่มกิจกรรมใหม่ (ป้องกันเรื่องค่า Null สมบูรณ์แบบ)
 app.post("/activities", (req, res) => {
   const body = req.body || {};
-  
-  // ดักจับชื่อกิจกรรมจากหน้าบ้านทุกชื่อที่เป็นไปได้
   const Name_activity = body.Name_activity || body.name_activity || body.Name || body.name || body.title || body.activityName || null;
   const Activity_date = body.Activity_date || body.activity_date || body.date || body.Date || null;
   const Location = body.Location || body.location || null;
   const User_id = body.User_id || body.user_id || 1;
   const cleanUserId = parseInt(User_id, 10) || 1;
-  
-  // รับรูปภาพ Base64 ตรงๆ
   const finalImage = body.Image || body.image || null;
 
-  // 🚨 ตรวจสอบก่อนส่งเข้า MySQL: ถ้าชื่อกิจกรรมหลุดมาเป็นค่าว่าง ให้เตือนหน้าบ้านดีๆ ไม่ปล่อยให้คิวรีพัง
   if (!Name_activity) {
-    console.log("⚠️ [Warning] ไม่สามารถบันทึกได้ เนื่องจากหน้าบ้านไม่ได้ส่งชื่อกิจกรรมมา หรือชื่อฟิลด์ไม่ตรง:", body);
     return res.status(400).json({ error: "กรุณาระบุชื่อกิจกรรม (Name_activity) ให้ถูกต้อง" });
   }
 
@@ -146,19 +183,15 @@ app.post("/activities", (req, res) => {
 
   db.query(sql, [Name_activity, finalImage, Activity_date, Location, cleanUserId], (err, result) => {
     if (err) {
-      console.log("\n❌ [MySQL Error ใน POST /activities]:", err.message);
       return res.status(500).json({ error: "เกิดข้อผิดพลาดในการบันทึกกิจกรรม", details: err.message });
     }
     res.json({ message: "เพิ่มกิจกรรมสำเร็จ", Activity_id: result.insertId, imageName: finalImage });
   });
 });
 
-// 3. [PUT] แก้ไขข้อมูลกิจกรรม
 app.put("/activities/:id", (req, res) => {
   const body = req.body || {};
   const activityId = req.params.id;
-
-  // ดักจับชื่อกิจกรรมทุกแบบเผื่อใช้ในขั้นตอนแก้ไข
   const Name_activity = body.Name_activity || body.name_activity || body.title || body.Name || body.name || body.activityName || null;
   const Location = body.Location || body.location || null;
   
@@ -167,7 +200,6 @@ app.put("/activities/:id", (req, res) => {
 
   const incomingUserId = body.User_id || body.user_id || 1;
   const cleanUserId = parseInt(incomingUserId, 10) || 1;
-
   const finalImage = body.Image || body.image || null; 
 
   if (!Name_activity) {
@@ -178,36 +210,28 @@ app.put("/activities/:id", (req, res) => {
 
   db.query(sql, [Name_activity, finalImage, Activity_date, Location, cleanUserId, activityId], (err, result) => {
     if (err) {
-      console.log("\n❌ [MySQL Error ใน PUT /activities]:", err.message);
       return res.status(500).json({ error: "เกิดข้อผิดพลาดในระบบฐานข้อมูล", sqlError: err.message });
     }
     res.json({ message: "แก้ไขสำเร็จ", imageName: finalImage });
   });
 });
 
-// 4. [DELETE] ลบข้อมูลกิจกรรม (เส้นทางหลัก)
 app.delete("/activities/:id", (req, res) => {
   const activityId = req.params.id;
   const sql = "DELETE FROM activity WHERE Activity_id = ?"; 
-  
   db.query(sql, [activityId], (err, result) => {
     if (err) {
-      console.log("❌ [MySQL Error ใน DELETE /activities]:", err.message);
       return res.status(500).json({ error: "ไม่สามารถลบข้อมูลกิจกรรมได้", details: err.message });
     }
     res.json({ message: "ลบกิจกรรมสำเร็จ", id: activityId });
   });
 });
 
-// 5. [DELETE] ลบข้อมูลกิจกรรม สำรองพาร์ทเผื่อมี /api/ นำหน้า
 app.delete("/api/activities/:id", (req, res) => {
   const activityId = req.params.id;
   const sql = "DELETE FROM activity WHERE Activity_id = ?"; 
   db.query(sql, [activityId], (err, result) => {
-    if (err) {
-      console.log("❌ [MySQL Error ใน DELETE /api/activities]:", err.message);
-      return res.status(500).json(err);
-    }
+    if (err) { return res.status(500).json(err); }
     res.json({ message: "ลบกิจกรรมสำเร็จผ่านช่องทางสำรอง" });
   });
 });
@@ -218,10 +242,7 @@ app.delete("/api/activities/:id", (req, res) => {
 app.get("/api/students", (req, res) => {
     const sql = "SELECT * FROM student ORDER BY Student_id DESC";
     db.query(sql, (err, result) => {
-        if (err) {
-            console.log("SQL Error ใน GET /api/students:", err);
-            return res.status(500).json(err);
-        }
+        if (err) { return res.status(500).json(err); }
         res.json(result);
     });
 });
@@ -233,12 +254,8 @@ app.post("/api/students", (req, res) => {
     const finalImage = Image || null;
 
     const sql = `INSERT INTO student (Name, Birthday, Gender, Class_level, User_id, Blood_group, Image) VALUES (?, ?, ?, ?, ?, ?, ?)`;
-                 
     db.query(sql, [Name, Birthday, genderId, Class_level, userId, Blood_group, finalImage], (err, result) => {
-        if (err) {
-            console.log("SQL Error ใน POST /api/students:", err);
-            return res.status(500).json(err);
-        }
+        if (err) { return res.status(500).json(err); }
         res.json({ message: "เพิ่มข้อมูลนักเรียนสำเร็จ", Student_id: result.insertId, imageName: finalImage });
     });
 });
@@ -250,12 +267,8 @@ app.put("/api/students/:id", (req, res) => {
     const finalImage = Image || null;
 
     const sql = `UPDATE student SET Name=?, Birthday=?, Gender=?, Class_level=?, Blood_group=?, Image=? WHERE Student_id=?`;
-
     db.query(sql, [Name, Birthday, genderId, Class_level, Blood_group, finalImage, studentId], (err, result) => {
-        if (err) {
-            console.log("SQL Error ใน PUT /api/students:", err);
-            return res.status(500).json(err);
-        }
+        if (err) { return res.status(500).json(err); }
         res.json({ message: "แก้ไขข้อมูลนักเรียนสำเร็จ", imageName: finalImage });
     });
 });
@@ -263,12 +276,8 @@ app.put("/api/students/:id", (req, res) => {
 app.delete("/api/students/:id", (req, res) => {
     const studentId = req.params.id;
     const sql = "DELETE FROM student WHERE Student_id=?";
-
     db.query(sql, [studentId], (err, result) => {
-        if (err) {
-            console.log("SQL Error ใน DELETE /api/students:", err);
-            return res.status(500).json(err);
-        }
+        if (err) { return res.status(500).json(err); }
         res.json({ message: "ลบข้อมูลนักเรียนสำเร็จ" });
     });
 });
@@ -279,10 +288,7 @@ app.delete("/api/students/:id", (req, res) => {
 app.get("/api/publicrelations", (req, res) => {
     const sql = `SELECT PublicRelation_id, Name_activity, Image, Date, Location, User_id FROM publicrelation ORDER BY PublicRelation_id DESC`;
     db.query(sql, (err, result) => {
-        if (err) {
-            console.error("SQL Error ใน GET /api/publicrelations:", err); 
-            return res.status(500).json(err);
-        }
+        if (err) { return res.status(500).json(err); }
         res.json(result);
     });
 });
@@ -293,12 +299,8 @@ app.post("/api/publicrelations", upload.single('Image'), (req, res) => {
     const imageName = req.file ? req.file.filename : null;
     
     const sql = `INSERT INTO publicrelation (Name_activity, Date, Location, User_id, Image) VALUES (?, ?, ?, ?, ?)`;
-                 
     db.query(sql, [Name, date, Location, cleanUserId, imageName], (err, result) => {
-        if (err) {
-            console.error("SQL Error ใน POST /api/publicrelations:", err);
-            return res.status(500).json({ error: "ไม่สามารถเพิ่มข้อมูลได้", sqlError: err });
-        }
+        if (err) { return res.status(500).json({ error: "ไม่สามารถเพิ่มข้อมูลได้", sqlError: err }); }
         res.json({ message: "เพิ่มประชาสัมพันธ์สำเร็จ", PublicRelation_id: result.insertId, imageName: imageName });
     });
 });
@@ -307,19 +309,12 @@ app.put("/api/publicrelations/:id", upload.single('Image'), (req, res) => {
     const { Name, date, Location, User_id } = req.body;
     const prId = req.params.id;
     const cleanUserId = User_id ? parseInt(User_id, 10) : 1;
-
     let imageName = req.body.Image || req.body.image || null;
-    if (req.file) {
-        imageName = req.file.filename;
-    }
+    if (req.file) { imageName = req.file.filename; }
 
     const sql = `UPDATE publicrelation SET Name_activity=?, Date=?, Location=?, User_id=?, Image=? WHERE PublicRelation_id=?`;
-
     db.query(sql, [Name, date, Location, cleanUserId, imageName, prId], (err, result) => {
-        if (err) {
-            console.error("SQL Error ใน PUT /api/publicrelations:", err);
-            return res.status(500).json({ error: "ไม่สามารถแก้ไขข้อมูลได้", sqlError: err });
-        }
+        if (err) { return res.status(500).json({ error: "ไม่สามารถแก้ไขข้อมูลได้", sqlError: err }); }
         res.json({ message: "แก้ไขประชาสัมพันธ์สำเร็จ", imageName: imageName });
     });
 });
@@ -327,12 +322,8 @@ app.put("/api/publicrelations/:id", upload.single('Image'), (req, res) => {
 app.delete("/api/publicrelations/:id", (req, res) => {
     const prId = req.params.id;
     const sql = "DELETE FROM publicrelation WHERE PublicRelation_id=?";
-
     db.query(sql, [prId], (err, result) => {
-        if (err) {
-            console.error("SQL Error ใน DELETE /api/publicrelations:", err);
-            return res.status(500).json(err);
-        }
+        if (err) { return res.status(500).json(err); }
         res.json({ message: "ลบประชาสัมพันธ์สำเร็จ" });
     });
 });
@@ -343,10 +334,7 @@ app.delete("/api/publicrelations/:id", (req, res) => {
 app.get("/notifications", (req, res) => {
   const sql = "SELECT * FROM notification ORDER BY Notification_id DESC"; 
   db.query(sql, (err, results) => {
-    if (err) {
-      console.error("❌ SQL Error [GET /notifications]:", err);
-      return res.status(500).json({ error: err.message, details: err });
-    }
+    if (err) { return res.status(500).json({ error: err.message, details: err }); }
     res.json(results);
   });
 });
@@ -356,14 +344,10 @@ app.post("/notifications", (req, res) => {
   const cleanDeadline = Deadline || null;
   const cleanDate = Date || null;
   const cleanUserId = User_id ? parseInt(User_id, 10) : 1;
-
   const sql = `INSERT INTO notification (User_id, Class_level, Subject, Deadline, \`Date\`, Details) VALUES (?, ?, ?, ?, ?, ?)`;
   
   db.query(sql, [cleanUserId, Class_level, Subject, cleanDeadline, cleanDate, Details || null], (err, result) => {
-      if (err) {
-        console.error("❌ SQL Error [POST /notifications]:", err);
-        return res.status(500).json({ error: err.message, details: err });
-      }
+      if (err) { return res.status(500).json({ error: err.message, details: err }); }
       res.json({ message: "เพิ่มข้อมูลสำเร็จ", id: result.insertId });
     }
   );
@@ -375,14 +359,10 @@ app.put("/notifications/:id", (req, res) => {
   const cleanDeadline = Deadline || null;
   const cleanDate = Date || null;
   const cleanUserId = User_id ? parseInt(User_id, 10) : 1;
-
   const sql = `UPDATE notification SET User_id = ?, Class_level = ?, Subject = ?, Deadline = ?, \`Date\` = ?, Details = ? WHERE Notification_id = ?`;
 
   db.query(sql, [cleanUserId, Class_level, Subject, cleanDeadline, cleanDate, Details || null, id], (err, result) => {
-      if (err) {
-        console.error("❌ SQL Error [PUT /notifications]:", err);
-        return res.status(500).json({ error: err.message, details: err });
-      }
+      if (err) { return res.status(500).json({ error: err.message, details: err }); }
       res.json({ message: "แก้ไขข้อมูลสำเร็จ" });
     }
   );
@@ -394,10 +374,7 @@ app.put("/notifications/:id", (req, res) => {
 app.get("/api/calendar", (req, res) => {
     const sql = `SELECT Calendar_id, Name, DATE_FORMAT(Date, '%Y-%m-%d') AS Date, Time, User_id FROM calendar ORDER BY Date ASC`;
     db.query(sql, (err, result) => {
-        if (err) {
-            console.error("SQL Error ใน GET /api/calendar:", err);
-            return res.status(500).json(err);
-        }
+        if (err) { return res.status(500).json(err); }
         res.json(result);
     });
 });
@@ -405,13 +382,9 @@ app.get("/api/calendar", (req, res) => {
 app.post("/api/calendar", (req, res) => {
     const { Name, Date: actDate, Time, User_id } = req.body;
     const cleanUserId = User_id ? parseInt(User_id, 10) : 1;
-
     const sql = "INSERT INTO calendar (Name, Date, Time, User_id) VALUES (?, ?, ?, ?)";
     db.query(sql, [Name, actDate, Time, cleanUserId], (err, result) => {
-        if (err) {
-            console.error("SQL Error ใน POST /api/calendar:", err);
-            return res.status(500).json(err);
-        }
+        if (err) { return res.status(500).json(err); }
         res.json({ message: "เพิ่มกิจกรรมลงปฏิทินสำเร็จ", Calendar_id: result.insertId });
     });
 });
@@ -420,13 +393,9 @@ app.put("/api/calendar/:id", (req, res) => {
     const calendarId = req.params.id;
     const { Name, Date: actDate, Time, User_id } = req.body;
     const cleanUserId = User_id ? parseInt(User_id, 10) : 1;
-
     const sql = "UPDATE calendar SET Name=?, Date=?, Time=?, User_id=? WHERE Calendar_id=?";
     db.query(sql, [Name, actDate, Time, cleanUserId, calendarId], (err, result) => {
-        if (err) {
-            console.error("SQL Error ใน PUT /api/calendar:", err);
-            return res.status(500).json({ error: "เกิดข้อผิดพลาดในการแก้ไข", sqlError: err.message });
-        }
+        if (err) { return res.status(500).json({ error: "เกิดข้อผิดพลาดในการแก้ไข", sqlError: err.message }); }
         res.json({ message: "แก้ไขข้อมูลปฏิทินสำเร็จ" });
     });
 });
@@ -437,10 +406,7 @@ app.put("/api/calendar/:id", (req, res) => {
 app.get("/attendance/activities", (req, res) => {
     const sql = "SELECT Activity_id AS id, Name_activity AS name FROM activity ORDER BY Activity_id DESC";
     db.query(sql, (err, result) => {
-        if (err) {
-            console.error("SQL Error [GET /attendance/activities]:", err);
-            return res.status(500).json(err);
-        }
+        if (err) { return res.status(500).json(err); }
         res.json(result);
     });
 });
@@ -448,10 +414,7 @@ app.get("/attendance/activities", (req, res) => {
 app.get("/attendance/classes", (req, res) => {
     const sql = "SELECT DISTINCT Class_level AS id, Class_level AS name FROM student WHERE Class_level IS NOT NULL AND Class_level != '' ORDER BY Class_level ASC";
     db.query(sql, (err, result) => {
-        if (err) {
-            console.error("SQL Error [GET /attendance/classes]:", err);
-            return res.status(500).json(err);
-        }
+        if (err) { return res.status(500).json(err); }
         res.json(result);
     });
 });
@@ -459,62 +422,35 @@ app.get("/attendance/classes", (req, res) => {
 app.get("/attendance/students", (req, res) => {
     const { activity, class: classLevel } = req.query;
     const sql = `
-        SELECT s.Student_id AS id, s.Name AS name, 
-               IF(p.Student_id IS NOT NULL, 1, 0) AS attended
-        FROM student s
-        LEFT JOIN participating_activities p ON s.Student_id = p.Student_id AND p.Activity_id = ?
-        WHERE s.Class_level = ?
-        ORDER BY s.Student_id ASC
-    `;
+        SELECT s.Student_id AS id, s.Name AS name, IF(p.Student_id IS NOT NULL, 1, 0) AS attended
+        FROM student s LEFT JOIN participating_activities p ON s.Student_id = p.Student_id AND p.Activity_id = ?
+        WHERE s.Class_level = ? ORDER BY s.Student_id ASC`;
 
     db.query(sql, [activity, classLevel], (err, result) => {
-        if (err) {
-            console.error("SQL Error [GET /attendance/students]:", err);
-            return res.status(500).json(err);
-        }
-        const formattedResult = result.map(row => ({
-            id: row.id,
-            name: row.name,
-            attended: row.attended === 1
-        }));
+        if (err) { return res.status(500).json(err); }
+        const formattedResult = result.map(row => ({ id: row.id, name: row.name, attended: row.attended === 1 }));
         res.json(formattedResult);
     });
 });
 
 app.post("/attendance/save", (req, res) => {
     const { activity_id, attendance_list } = req.body;
-
     if (!activity_id || !attendance_list || !Array.isArray(attendance_list) || attendance_list.length === 0) {
         return res.status(400).json({ error: "ข้อมูลไม่ครบถ้วน" });
     }
-
     const studentIds = attendance_list.map(s => s.student_id);
     const deleteSql = "DELETE FROM participating_activities WHERE Activity_id = ? AND Student_id IN (?)";
     
     db.query(deleteSql, [activity_id, studentIds], (err, deleteResult) => {
-        if (err) {
-            console.error("SQL Error [DELETE เก่า]:", err);
-            return res.status(500).json(err);
-        }
-
+        if (err) { return res.status(500).json(err); }
         const attendingStudents = attendance_list.filter(s => s.attended === true);
+        if (attendingStudents.length === 0) { return res.json({ message: "บันทึกข้อมูลเรียบร้อยแล้ว" }); }
 
-        if (attendingStudents.length === 0) {
-            return res.json({ message: "บันทึกข้อมูลเรียบร้อยแล้ว" });
-        }
-
-        const values = attendingStudents.map(s => [
-            s.student_id,
-            activity_id
-        ]);
-
+        const values = attendingStudents.map(s => [s.student_id, activity_id]);
         const insertSql = "INSERT INTO participating_activities (Student_id, Activity_id) VALUES ?";
         
         db.query(insertSql, [values], (err, insertResult) => {
-            if (err) {
-                console.error("SQL Error [INSERT ใหม่]:", err);
-                return res.status(500).json(err);
-            }
+            if (err) { return res.status(500).json(err); }
             res.json({ message: "บันทึกการเข้าร่วมกิจกรรมสำเร็จเรียบร้อยแล้ว" });
         });
     });
@@ -526,10 +462,7 @@ app.post("/attendance/save", (req, res) => {
 app.get('/api/development', (req, res) => {
   const sql = 'SELECT *, DATE_FORMAT(`Date`, "%Y-%m-%d") AS date_clean FROM development ORDER BY `Date` DESC, Development_id DESC';
   db.query(sql, (err, results) => {
-    if (err) {
-      console.error("❌ Error ใน GET /api/development:", err);
-      return res.status(500).json({ error: 'เกิดข้อผิดพลาดในการดึงข้อมูลพัฒนาการ' });
-    }
+    if (err) { return res.status(500).json({ error: 'เกิดข้อผิดพลาดในการดึงข้อมูลพัฒนาการ' }); }
     res.json(results);
   });
 });
@@ -551,8 +484,7 @@ app.post('/api/development', (req, res) => {
   const sql = `
     INSERT INTO development 
     (Student_id, Year, Term, \`Date\`, Physical, Weight, Height, Dental_health, Vaccination, Motor_skills, Emotional, Emotion, Emotion_control, Confidence, Social, Stress, Interaction, Assistance, Intellectual, Problem_solving, Communication, Remembering) 
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `;
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
   const values = [
     cleanStudentId, cleanYear, cleanTerm, cleanDate,
@@ -563,10 +495,7 @@ app.post('/api/development', (req, res) => {
   ];
 
   db.query(sql, values, (err, result) => {
-    if (err) {
-      console.error("❌ Error ใน POST /api/development:", err);
-      return res.status(500).json({ error: 'ไม่สามารถบันทึกข้อมูลได้', details: err.message });
-    }
+    if (err) { return res.status(500).json({ error: 'ไม่สามารถบันทึกข้อมูลได้', details: err.message }); }
     res.status(201).json({ message: 'บันทึกพัฒนาการสำเร็จ', id: result.insertId });
   });
 });
@@ -588,26 +517,19 @@ app.put('/api/development/:id', (req, res) => {
   const sql = `
     UPDATE development 
     SET Year=?, Term=?, \`Date\`=?, Physical=?, Weight=?, Height=?, Dental_health=?, Vaccination=?, Motor_skills=?, 
-        Emotional=?, Emotion=?, Emotion_control=?, Confidence=?, 
-        Social=?, Stress=?, Interaction=?, Assistance=?, 
-        Intellectual=?, Problem_solving=?, Communication=?, Remembering=?
-    WHERE Development_id = ?
-  `;
+        Emotional=?, Emotion=?, Emotion_control=?, Confidence=?, Social=?, Stress=?, Interaction=?, Assistance=?, 
+        Intellectual=?, Problem_solving=?, Communication=?, Remembering=? WHERE Development_id = ?`;
 
   const values = [
     cleanYear, cleanTerm, cleanDate,
     Physical || null, Weight || null, Height || null, Dental_health || null, Vaccination || null, Motor_skills || null,
     Emotional || null, Emotion || null, Emotion_control || null, Confidence || null,
     Social || null, Stress || null, Interaction || null, Assistance || null,
-    Intellectual || null, Problem_solving || null, Communication || null, Remembering || null,
-    id
+    Intellectual || null, Problem_solving || null, Communication || null, Remembering || null, id
   ];
 
   db.query(sql, values, (err, result) => {
-    if (err) {
-      console.error("❌ Error ใน PUT /api/development:", err);
-      return res.status(500).json({ error: 'ไม่สามารถแก้ไขข้อมูลได้' });
-    }
+    if (err) { return res.status(500).json({ error: 'ไม่สามารถแก้ไขข้อมูลได้' }); }
     res.json({ message: 'แก้ไขข้อมูลสำเร็จ' });
   });
 });
@@ -615,24 +537,17 @@ app.put('/api/development/:id', (req, res) => {
 app.delete('/api/development/:id', (req, res) => {
   const { id } = req.params;
   const sql = 'DELETE FROM development WHERE Development_id = ?';
-
   db.query(sql, [id], (err, result) => {
-    if (err) {
-      console.error("❌ Error ใน DELETE /api/development:", err);
-      return res.status(500).json({ error: 'เกิดข้อผิดพลาดทางเซิร์ฟเวอร์ ไม่สามารถลบข้อมูลได้', details: err.message });
-    }
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ error: 'ไม่พบ ID ข้อมูลประเมินที่ต้องการลบในระบบ' });
-    }
+    if (err) { return res.status(500).json({ error: 'เกิดข้อผิดพลาดทางเซิร์ฟเวอร์ ไม่สามารถลบข้อมูลได้', details: err.message }); }
+    if (result.affectedRows === 0) { return res.status(404).json({ error: 'ไม่พบ ID ข้อมูลประเมินที่ต้องการลบในระบบ' }); }
     res.json({ message: 'ลบข้อมูลการประเมินพัฒนาการเรียบร้อยแล้ว!' });
   });
 });
 
 // ==========================================
-// 🔐 ระบบตรวจสอบการเข้าสู่ระบบ (LOGIN API สมบูรณ์แบบ)
+// 🔐 ระบบตรวจสอบการเข้าสู่ระบบ (LOGIN API)
 // ==========================================
 app.post("/login", (req, res) => {
-  // รองรับทั้งตัวพิมพ์เล็กและตัวพิมพ์ใหญ่ที่หน้าบ้านอาจส่งมา
   const username = req.body.UserName || req.body.username;
   const password = req.body.Password || req.body.password;
 
@@ -640,142 +555,23 @@ app.post("/login", (req, res) => {
     return res.status(400).json({ success: false, error: "กรุณากรอกชื่อผู้ใช้และรหัสผ่าน" });
   }
 
-  // ✅ แก้ไข SQL: ดึงข้อมูลโดยเทียบค่ากับฟิลด์ตัวพิมพ์ใหญ่ตามฐานข้อมูลจริงใน phpMyAdmin (UserName, Password)
   const sql = "SELECT * FROM users WHERE UserName = ? AND Password = ?";
-
   db.query(sql, [username, password], (err, result) => {
-    if (err) {
-      console.log("❌ [SQL Error ใน POST /login]:", err);
-      return res.status(500).json({ success: false, error: "เกิดข้อผิดพลาดในระบบฐานข้อมูล" });
-    }
+    if (err) { return res.status(500).json({ success: false, error: "เกิดข้อผิดพลาดในระบบฐานข้อมูล" }); }
 
     if (result.length > 0) {
       const user = result[0];
       return res.json({
         success: true,
         message: "เข้าสู่ระบบสำเร็จ",
-        user: {
-          id: user.User_id,
-          username: user.UserName,
-          name: user.Name,
-          role: user.Role // ส่งค่า Role (ตัวใหญ่) กลับไปให้หน้าบ้านเช็คสิทธิ์แอดมิน/ครู
-        }
+        user: { id: user.User_id, username: user.UserName, name: user.Name, role: user.Role }
       });
     } else {
       return res.status(401).json({ success: false, error: "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง" });
     }
   });
 });
-// --------------------------------------------------------
-// ➡️ [เพิ่มใหม่] API สำหรับดึงข้อมูลผู้ใช้ทั้งหมดมาแสดงในตาราง
-// --------------------------------------------------------
-app.get('/users', (req, res) => {
-    // คำสั่งดึงข้อมูลผู้ใช้ทุกคนจากตาราง users
-    const sql = "SELECT User_id, Name, Phone, UserName, Password, Role FROM users";
-    
-    db.query(sql, (err, data) => {
-        if (err) {
-            console.error("Error fetching users:", err);
-            return res.status(500).json({ error: "เกิดข้อผิดพลาดในการดึงข้อมูลฐานข้อมูล" });
-        }
-        return res.json(data); // ส่งข้อมูลกลับไปให้หน้าบ้านแสดงผล
-    });
-});
-
-// --------------------------------------------------------
-// ➡️ [เพิ่มใหม่] API สำหรับบันทึกแก้ไขข้อมูล/อัปเดตสิทธิ์ (เมื่อกดปุ่มบันทึก)
-// --------------------------------------------------------
-app.put('/users/:id', (req, res) => {
-    const userId = req.params.id;
-    const { Name, Phone, Username, Role } = req.body;
-
-    // คำสั่ง SQL สำหรับอัปเดตข้อมูลผู้ใช้รายบุคคลตาม User_id
-    const sql = "UPDATE users SET Name = ?, Phone = ?, UserName = ?, Role = ? WHERE User_id = ?";
-    
-    db.query(sql, [Name, Phone, Username, Role, userId], (err, result) => {
-        if (err) {
-            console.error("Error updating user role:", err);
-            return res.status(500).json({ error: "ไม่สามารถอัปเดตสิทธิ์ได้" });
-        }
-        return res.json({ success: true, message: "อัปเดตข้อมูลและสิทธิ์สำเร็จแล้ว" });
-    });
-});
-
-// --------------------------------------------------------
-// ➡️ [เพิ่มใหม่ เผื่อไว้] API สำหรับลบผู้ใช้งาน (เมื่อกดปุ่มลบ)
-// --------------------------------------------------------
-app.delete('/users/:id', (req, res) => {
-    const userId = req.params.id;
-    const sql = "DELETE FROM users WHERE User_id = ?";
-
-    db.query(sql, [userId], (err, result) => {
-        if (err) {
-            console.error("Error deleting user:", err);
-            return res.status(500).json({ error: "ไม่สามารถลบผู้ใช้ได้ บัญชีนี้อาจมีข้อมูลผูกอยู่กับตารางอื่น" });
-        }
-        return res.json({ success: true, message: "ลบผู้ใช้งานสำเร็จ" });
-    });
-});
-app.put('/users/:id', (req, res) => {
-    const userId = req.params.id;
-    const { Name, Phone, Username, Role, Password } = req.body;
-
-    // ถ้ามีการส่งรหัสผ่านใหม่มา ให้เขียน Query อัปเดตพาสเวิร์ดเพิ่มด้วย
-    let sql = "UPDATE users SET Name = ?, Phone = ?, UserName = ?, Role = ? WHERE User_id = ?";
-    let params = [Name, Phone, Username, Role, userId];
-
-    if (Password !== undefined) {
-        sql = "UPDATE users SET Name = ?, Phone = ?, UserName = ?, Role = ?, Password = ? WHERE User_id = ?";
-        params = [Name, Phone, Username, Role, Password, userId];
-    }
-    
-    db.query(sql, params, (err, result) => {
-        if (err) {
-            console.error("Error updating profile:", err);
-            return res.status(500).json({ error: "ไม่สามารถอัปเดตข้อมูลได้" });
-        }
-        return res.json({ success: true, message: "อัปเดตข้อมูลสำเร็จแล้ว" });
-    });
-});
-// --------------------------------------------------------
-// 📡 API ดึงข้อมูลผู้ใช้ทั้งหมด (หน้าหน้าบ้านของผู้ปกครองจะใช้ตัวนี้มา Find หาข้อมูลตัวเอง)
-// --------------------------------------------------------
-app.get('/users', (req, res) => {
-    const sql = "SELECT User_id, Name, Phone, UserName, Password, Role FROM users";
-    db.query(sql, (err, data) => {
-        if (err) {
-            console.error("Error fetching users:", err);
-            return res.status(500).json({ error: "เกิดข้อผิดพลาดในระบบฐานข้อมูล" });
-        }
-        return res.json(data);
-    });
-});
-
-// --------------------------------------------------------
-// 📝 API อัปเดตข้อมูลผู้ใช้รายบุคคล (รองรับทั้งแอดมิน ครู และผู้ปกครองเวลาแก้ไขโปรไฟล์)
-// --------------------------------------------------------
-app.put('/users/:id', (req, res) => {
-    const userId = req.params.id;
-    const { Name, Phone, Username, Role, Password } = req.body;
-
-    let sql = "UPDATE users SET Name = ?, Phone = ?, UserName = ?, Role = ? WHERE User_id = ?";
-    let params = [Name, Phone, Username, Role, userId];
-
-    // ดักจับกรณีผู้ปกครองมีการกรอกรหัสผ่านใหม่เข้ามา (Password จะถูกส่งมา)
-    if (Password !== undefined && Password !== '') {
-        sql = "UPDATE users SET Name = ?, Phone = ?, UserName = ?, Role = ?, Password = ? WHERE User_id = ?";
-        params = [Name, Phone, Username, Role, Password, userId];
-    }
-    
-    db.query(sql, params, (err, result) => {
-        if (err) {
-            console.error("Error updating profile:", err);
-            return res.status(500).json({ error: "ไม่สามารถอัปเดตข้อมูลส่วนตัวได้" });
-        }
-        return res.json({ success: true, message: "อัปเดตข้อมูลสำเร็จแล้ว" });
-    });
-});
 
 app.listen(3001, () => {
-    console.log("Server running on port 3001");
+    console.log("🚀 Server running on port 3001");
 });
