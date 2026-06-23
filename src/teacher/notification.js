@@ -1,7 +1,6 @@
 import axios from "axios";
 import { useEffect, useState } from "react";
 
-
 const BASE_URL = "http://localhost:3001";
 
 function Notification() {
@@ -16,6 +15,16 @@ function Notification() {
   const [details, setDetails] = useState("");
   const [deadline, setDeadline] = useState("");
   const [date, setDate] = useState("");
+
+  // 🟢 รายการระดับชั้นเรียนแบบตัวเลือก (อนุบาล 1 - อนุบาล 3)
+  const classOptions = [
+    "อนุบาล 1 ห้องปกติ",
+    "อนุบาล 1 ห้อง 3 ภาษา",
+    "อนุบาล 2 ห้องปกติ",
+    "อนุบาล 2 ห้อง 3 ภาษา",
+    "อนุบาล 3 ห้องปกติ",
+    "อนุบาล 3 ห้อง 3 ภาษา",
+  ];
 
   useEffect(() => {
     getData();
@@ -43,29 +52,21 @@ function Notification() {
   const saveData = async (e) => {
     e.preventDefault();
 
-    // 🟢 ปรับโครงสร้างข้อมูลให้ตรงตาม Column ในฐานข้อมูลจริง (ใช้คีย์ Date ตัวใหญ่)
     const data = {
       User_id: 1, 
       Class_level: class_level, 
       Subject: subject, 
       Deadline: deadline || null, 
-      Date: date || null, // 👈 ใช้คีย์ "Date" ตามภาพจริงในฐานข้อมูลของคุณ
+      Date: date || null, 
       Details: details || null 
     };
 
     try {
       if (editId) {
-        await axios.put(
-          `${BASE_URL}/notifications/${editId}`,
-          data
-        );
+        await axios.put(`${BASE_URL}/notifications/${editId}`, data);
       } else {
-        await axios.post(
-          `${BASE_URL}/notifications`,
-          data
-        );
+        await axios.post(`${BASE_URL}/notifications`, data);
       }
-
       resetForm();
       getData();
     } catch (err) {
@@ -74,22 +75,18 @@ function Notification() {
   };
 
   const openEdit = (item) => {
-    // 🟢 ดึงข้อมูลมาใส่ Form โดยเช็กทั้งแบบพิมพ์ใหญ่-เล็กให้ปลอดภัย
     setEditId(item.Notification_id || item.notification_id);
     setClassLevel(item.Class_level || item.class_level || "");
     setSubject(item.Subject || item.subject || "");
     setDetails(item.Details || item.details || "");
     setDeadline((item.Deadline || item.deadline)?.split("T")[0] || "");
-    setDate((item.Date || item.date)?.split("T")[0] || ""); // 👈 อ้างอิงจากฟิลด์ Date
+    setDate((item.Date || item.date)?.split("T")[0] || ""); 
     setShowModal(true);
   };
 
   const deleteData = async (id) => {
     try {
-      await axios.delete(
-        `${BASE_URL}/notifications/${id}`
-      );
-
+      await axios.delete(`${BASE_URL}/notifications/${id}`);
       setDeleteId(null);
       getData();
     } catch (err) {
@@ -101,123 +98,93 @@ function Notification() {
     <>
       <div style={page.header}>
         <h2>แจ้งเตือนการบ้าน</h2>
-
-        <button
-          style={page.addBtn}
-          onClick={() => setShowModal(true)}
-        >
+        <button style={page.addBtn} onClick={() => setShowModal(true)}>
           + แจ้งเตือนใหม่
         </button>
       </div>
 
       <div style={page.grid}>
         {list.map((item) => (
-          <div
-            key={item.Notification_id || item.notification_id}
-            style={page.card}
-          >
+          <div key={item.Notification_id || item.notification_id} style={page.card}>
             <h3>{item.Class_level || item.class_level}</h3>
-
-            <p>
-              <b>วิชา :</b> {item.Subject || item.subject}
-            </p>
-
+            <p><b>วิชา :</b> {item.Subject || item.subject}</p>
             <p>{item.Details || item.details}</p>
-
-            <p>
-              📅 ส่งงาน : 
-              {(item.Deadline || item.deadline) ? (item.Deadline || item.deadline).split("T")[0] : "-"}
-            </p>
-
-            <p>
-              🔔 แจ้งเมื่อ : 
-              {(item.Date || item.date) ? (item.Date || item.date).split("T")[0] : "-"}
-            </p>
+            <p>📅 ส่งงาน : {(item.Deadline || item.deadline) ? (item.Deadline || item.deadline).split("T")[0] : "-"}</p>
+            <p>🔔 แจ้งเมื่อ : {(item.Date || item.date) ? (item.Date || item.date).split("T")[0] : "-"}</p>
 
             <div style={page.actions}>
-              <button
-                style={page.editBtn}
-                onClick={() => openEdit(item)}
-              >
-                แก้ไข
-              </button>
-
-              <button
-                style={page.deleteBtn}
-                onClick={() =>
-                  setDeleteId(item.Notification_id || item.notification_id)
-                }
-              >
-                ลบ
-              </button>
+              <button style={page.editBtn} onClick={() => openEdit(item)}>แก้ไข</button>
+              <button style={page.deleteBtn} onClick={() => setDeleteId(item.Notification_id || item.notification_id)}>ลบ</button>
             </div>
           </div>
         ))}
       </div>
 
-
-
-
       {showModal && (
         <div style={modal.overlay}>
           <div style={modal.box}>
-            <h3>
-              {editId
-                ? "แก้ไขการแจ้งเตือน"
-                : "เพิ่มการแจ้งเตือน"}
-            </h3>
+            <h3>{editId ? "แก้ไขการแจ้งเตือน" : "เพิ่มการแจ้งเตือน"}</h3>
 
             <form onSubmit={saveData}>
+              {/* 🟢 ส่วนตัวเลือกอันดับชั้นเรียนที่ปรับปรุงใหม่ */}
               <div style={modal.field}>
-                <label>ระดับชั้น</label>
-                <input
+                <label style={modal.label}>ระดับชั้น</label>
+                <select
                   value={class_level}
                   onChange={(e) => setClassLevel(e.target.value)}
                   required
+                  style={modal.select}
+                >
+                  <option value="" disabled>-- เลือกรดับชั้น --</option>
+                  {classOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={modal.field}>
+                <label style={modal.label}>วิชา</label>
+                <input 
+                  value={subject} 
+                  onChange={(e) => setSubject(e.target.value)} 
+                  required 
+                  style={modal.input}
                 />
               </div>
 
               <div style={modal.field}>
-                <label>วิชา</label>
-                <input
-                  value={subject}
-                  onChange={(e) => setSubject(e.target.value)}
-                  required
+                <label style={modal.label}>รายละเอียด</label>
+                <textarea 
+                  value={details} 
+                  onChange={(e) => setDetails(e.target.value)} 
+                  style={modal.textarea}
                 />
               </div>
 
               <div style={modal.field}>
-                <label>รายละเอียด</label>
-                <textarea
-                  value={details}
-                  onChange={(e) => setDetails(e.target.value)}
+                <label style={modal.label}>กำหนดส่ง</label>
+                <input 
+                  type="date" 
+                  value={deadline} 
+                  onChange={(e) => setDeadline(e.target.value)} 
+                  style={modal.input}
                 />
               </div>
 
               <div style={modal.field}>
-                <label>กำหนดส่ง</label>
-                <input
-                  type="date"
-                  value={deadline}
-                  onChange={(e) => setDeadline(e.target.value)}
-                />
-              </div>
-
-              <div style={modal.field}>
-                <label>วันที่แจ้ง</label>
-                <input
-                  type="date"
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
+                <label style={modal.label}>วันที่แจ้ง</label>
+                <input 
+                  type="date" 
+                  value={date} 
+                  onChange={(e) => setDate(e.target.value)} 
+                  style={modal.input}
                 />
               </div>
 
               <div style={{ display: "flex", gap: 10, marginTop: 15 }}>
-                <button 
-                  type="button" 
-                  onClick={resetForm}
-                  style={{ flex: 1, padding: 10, borderRadius: 10, border: "1px solid #ccc", background: "#fff" }}
-                >
+                <button type="button" onClick={resetForm} style={{ flex: 1, padding: 10, borderRadius: 10, border: "1px solid #ccc", background: "#fff", cursor: "pointer" }}>
                   ยกเลิก
                 </button>
                 <button type="submit" style={{ ...modal.saveBtn, flex: 1 }}>
@@ -234,16 +201,10 @@ function Notification() {
           <div style={modal.box}>
             <h3>ยืนยันการลบ</h3>
             <div style={{ display: "flex", gap: 10, marginTop: 15 }}>
-              <button
-                onClick={() => setDeleteId(null)}
-                style={{ flex: 1, padding: 10, borderRadius: 10, border: "1px solid #ccc", background: "#fff" }}
-              >
+              <button onClick={() => setDeleteId(null)} style={{ flex: 1, padding: 10, borderRadius: 10, border: "1px solid #ccc", background: "#fff", cursor: "pointer" }}>
                 ยกเลิก
               </button>
-              <button
-                style={page.deleteBtn}
-                onClick={() => deleteData(deleteId)}
-              >
+              <button style={page.deleteBtn} onClick={() => deleteData(deleteId)}>
                 ลบ
               </button>
             </div>
@@ -324,6 +285,36 @@ const modal = {
     display: "flex",
     flexDirection: "column",
     marginBottom: 12,
+  },
+  label: {
+    marginBottom: 5,
+    fontWeight: "bold",
+    fontSize: "14px",
+  },
+  // 🟢 สไตล์สำหรับอินพุตและ select เพื่อความกว้างที่เท่ากันและสวยงาม
+  select: {
+    padding: "10px",
+    borderRadius: "10px",
+    border: "1px solid #ccc",
+    background: "#fff",
+    fontSize: "14px",
+    outline: "none",
+  },
+  input: {
+    padding: "10px",
+    borderRadius: "10px",
+    border: "1px solid #ccc",
+    fontSize: "14px",
+    outline: "none",
+  },
+  textarea: {
+    padding: "10px",
+    borderRadius: "10px",
+    border: "1px solid #ccc",
+    fontSize: "14px",
+    outline: "none",
+    minHeight: "60px",
+    resize: "vertical",
   },
   saveBtn: {
     padding: 10,
