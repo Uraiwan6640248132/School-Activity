@@ -20,7 +20,7 @@ import CalendarActivity from './teacher/calendar';
 import PersonalData from './teacher/personal_data';
 import Development from './teacher/development';
 import ParticipatingActivities from './teacher/participating_activities';
-
+import Homeparent from './parent/homeparent';
 // Admin
 import HomeAdmin from './admin/homeadmin';
 import UserInformation from './admin/user_information'; 
@@ -131,6 +131,7 @@ function App() {
           <Route path="/publicrelations" element={<PublicRelations />} />
           <Route path="/personal" element={<PersonalData />} />
           <Route path="/development" element={<Development />} />
+          <Route path="/homeparent" element={<HomeParent />} />
           <Route path="*" element={<Navigate to="/home" replace />} />
         </Routes>
       </NavbarTeacher>
