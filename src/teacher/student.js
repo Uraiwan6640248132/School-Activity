@@ -7,13 +7,23 @@ function StudentManagement() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
 
-  // ตั้งค่า Default เพศเริ่มต้นให้ปลอดภัย ไม่เป็นค่าว่างตัดปัญหาพัง
+  // 🎯 State สำหรับเก็บว่าตอนนี้เลือกดูห้องไหนอยู่ (ถ้าเป็น null จะแสดงหน้าเลือกห้องเรียน)
+  const [selectedClass, setSelectedClass] = useState(null);
+
+  // รายชื่อระดับชั้นเรียนทั้งหมดตามระบบของโรงเรียน
+  const classList = [
+    "อนุบาล1 ห้องปกติ", "อนุบาล1 ห้อง 3 ภาษา",
+    "อนุบาล2 ห้องปกติ", "อนุบาล2 ห้อง 3 ภาษา",
+    "อนุบาล3 ห้องปกติ", "อนุบาล3 ห้อง 3 ภาษา"
+  ];
+
+  // 📝 โครงสร้าง formData ดั้งเดิมของพี่
   const [formData, setFormData] = useState({ 
     Student_id: '', 
     Name: '', 
     Birthday: '', 
     Gender: 'ชาย', 
-    Class_level: '', 
+    Class_level: 'อนุบาล1 ห้องปกติ', 
     Blood_group: '', 
     User_id: 1,
     Image: '' 
@@ -28,7 +38,7 @@ function StudentManagement() {
       Name: '', 
       Birthday: '', 
       Gender: 'ชาย', 
-      Class_level: '', 
+      Class_level: selectedClass || 'อนุบาล1 ห้องปกติ', // ✨ ล็อกห้องให้อัตโนมัติตามห้องที่ครูกำลังเปิดดูอยู่
       Blood_group: '', 
       User_id: 1, 
       Image: '' 
@@ -71,11 +81,8 @@ function StudentManagement() {
     }
   };
 
-  /* 🛠️ แก้ไขจุดสำคัญ: ตรวจสอบและจัดส่งโครงสร้างภาพและข้อมูลคนใหม่ส่งพ่วงไปให้ครบถ้วน */
   const handleAddSubmit = (e) => {
     e.preventDefault();
-    
-    // ตรวจสอบค่าตัวเลขเพศให้แม่นยำ 1=ชาย, 2=หญิง
     const genderValue = formData.Gender === "หญิง" ? 2 : 1;
 
     const payload = {
@@ -104,7 +111,7 @@ function StudentManagement() {
     })
     .catch(err => {
       console.error(err);
-      alert("ไม่สามารถเพิ่มนักเรียนได้: โปรดเปิดเซิร์ฟเวอร์หลังบ้านพอร์ต 3001 หรือตรวจสอบความยาวของฟิลด์ Image ในฐานข้อมูล");
+      alert("ไม่สามารถเพิ่มนักเรียนได้: โปรดตรวจสอบฐานข้อมูลหลังบ้าน");
     });
   };
 
@@ -112,19 +119,21 @@ function StudentManagement() {
     e.stopPropagation();
     const formattedBirthday = student.Birthday ? student.Birthday.split('T')[0] : '';
     const displayGender = (student.Gender === 2 || student.Gender === "2" || student.Gender === "หญิง") ? "หญิง" : "ชาย";
+    const displayClass = student.Class_level || 'อนุบาล1 ห้องปกติ';
 
     setFormData({
       ...student,
       Birthday: formattedBirthday,
       Gender: displayGender,
-      Image: student.Image || ''
+      Class_level: displayClass,
+      Image: student.Image || '',
+      Blood_group: student.Blood_group || ''
     });
     setIsEditModalOpen(true);
   };
 
   const handleEditSubmit = (e) => {
     e.preventDefault();
-    
     const genderValue = formData.Gender === "หญิง" ? 2 : 1;
 
     const payload = {
@@ -179,46 +188,82 @@ function StudentManagement() {
     }
   };
 
+  // 🔍 ฟังก์ชันคำนวณจำนวนนักเรียนในห้องเรียนนั้นๆ
+  const getStudentCount = (className) => {
+    return students.filter(s => s.Class_level === className).length;
+  };
+
+  // 📝 กรองรายชื่อเฉพาะเด็กที่อยู่ห้องที่ถูกคลิกเลือก
+  const filteredStudents = students.filter(s => s.Class_level === selectedClass);
+
   return (
     <div style={styles.studentContainer}>
       <div style={styles.studentHeader}>
         <div style={styles.titleSection}>
-          <button style={styles.btnTab}>นักเรียน</button>
-          <h3 style={styles.headerTitle}>จัดการข้อมูลนักเรียนระดับปฐมวัย</h3>
+          <button style={styles.btnTab} onClick={() => setSelectedClass(null)}>ระดับปฐมวัย</button>
+          <h3 style={styles.headerTitle}>
+            {selectedClass ? `รายชื่อนักเรียนชั้น: ${selectedClass}` : "จัดการข้อมูลนักเรียนระดับปฐมวัย (เลือกห้องเรียน)"}
+          </h3>
         </div>
-        <button style={styles.btnValueAdd} onClick={handleOpenAddModal}>+ เพิ่มนักเรียน</button>
+        {/* แสดงปุ่มควบคุมเมื่ออยู่ในห้องเรียนแล้วเท่านั้น */}
+        {selectedClass && (
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button style={styles.btnBack} onClick={() => setSelectedClass(null)}>⬅️ ย้อนกลับ</button>
+            <button style={styles.btnValueAdd} onClick={handleOpenAddModal}>+ เพิ่มนักเรียนในห้องนี้</button>
+          </div>
+        )}
       </div>
 
-      <div style={styles.studentGrid}>
-        {students.map((student) => (
-          <div style={styles.studentCard} key={student.Student_id} onClick={() => handleOpenViewModal(student)}>
-            <div style={styles.cardInfo}>
-              {student.Image ? (
-                <img src={student.Image} alt="student" style={styles.avatarImg} />
-              ) : (
-                <div style={styles.avatarPlaceholder}><span>👤</span></div>
-              )}
-              <div style={styles.detailText}>
-                <h4 style={styles.studentNameText}>{student.Name || 'ชื่อ-นามสกุล'}</h4>
-                <p style={styles.studentLevelText}>ระดับชั้น: {student.Class_level || 'ไม่ได้ระบุ'}</p>
+      {/* ================= หน้าที่ 1: แสดงห้องเรียนทั้งหมด (เมื่อ selectedClass เป็น null) ================= */}
+      {!selectedClass ? (
+        <div style={styles.classGrid}>
+          {classList.map((className) => (
+            <div key={className} style={styles.classCard} onClick={() => setSelectedClass(className)}>
+              <div style={styles.classIcon}>🏫</div>
+              <h4 style={styles.classNameText}>{className}</h4>
+              <p style={styles.classCountText}>นักเรียนในระบบ: <b>{getStudentCount(className)}</b> คน</p>
+              <button style={styles.btnEnterClass}>คลิกเข้าดูรายชื่อ ➡️</button>
+            </div>
+          ))}
+        </div>
+      ) : (
+        /* ================= หน้าที่ 2: แสดงรายชื่อนักเรียนในห้องที่เลือก (หน้าเดิมของพี่) ================= */
+        <div style={styles.studentGrid}>
+          {filteredStudents.map((student) => (
+            <div style={styles.studentCard} key={student.Student_id} onClick={() => handleOpenViewModal(student)}>
+              <div style={styles.cardInfo}>
+                {student.Image ? (
+                  <img src={student.Image} alt="student" style={styles.avatarImg} />
+                ) : (
+                  <div style={styles.avatarPlaceholder}><span>👤</span></div>
+                )}
+                <div style={styles.detailText}>
+                  <h4 style={styles.studentNameText}>{student.Name || 'ชื่อ-นามสกุล'}</h4>
+                  <p style={styles.studentLevelText}>ระดับชั้น: {student.Class_level || 'ไม่ได้ระบุ'}</p>
+                </div>
+              </div>
+              <div style={styles.cardActions}>
+                <button style={styles.btnEdit} onClick={(e) => handleOpenEditModal(e, student)}>แก้ไข</button>
+                <button style={styles.btnDelete} onClick={(e) => handleOpenDeleteModal(e, student.Student_id)}>ลบ</button>
               </div>
             </div>
-            <div style={styles.cardActions}>
-              <button style={styles.btnEdit} onClick={(e) => handleOpenEditModal(e, student)}>แก้ไข</button>
-              <button style={styles.btnDelete} onClick={(e) => handleOpenDeleteModal(e, student.Student_id)}>ลบ</button>
-            </div>
-          </div>
-        ))}
-        {students.length === 0 && <p style={{ color: '#999' }}>ไม่มีข้อมูลนักเรียนในระบบ (โปรดตรวจสอบเซิร์ฟเวอร์หลังบ้าน)</p>}
-      </div>
+          ))}
+          {filteredStudents.length === 0 && (
+            <p style={{ color: '#999', gridColumn: '1/-1', textAlign: 'center', padding: '40px' }}>
+              ยังไม่มีข้อมูลนักเรียนในห้องเรียนนี้ คุณครูสามารถกดปุ่ม "+ เพิ่มนักเรียนในห้องนี้" ด้านบนได้เลยครับ
+            </p>
+          )}
+        </div>
+      )}
 
+      {/* ================= MODAL ทั้งหมดคงเดิมตามรูปแบบเดิมของพี่ร้อยเปอร์เซ็นต์ครับ ================= */}
+      
       {/* MODAL: แสดงข้อมูลรายละเอียด */}
       {isViewModalOpen && viewingStudent && (
         <div style={styles.modalOverlay} onClick={() => setIsViewModalOpen(false)}>
           <div style={styles.modalContent} onClick={(e) => e.stopPropagation()}>
             <button style={styles.closeX} onClick={() => setIsViewModalOpen(false)}>X</button>
             <h3 style={styles.modalHeading}>ข้อมูลนักเรียน</h3>
-            
             <div style={styles.avatarUploadZone}>
               {viewingStudent.Image ? (
                 <img src={viewingStudent.Image} alt="profile" style={{ ...styles.avatarImg, ...styles.avatarBig }} />
@@ -226,17 +271,14 @@ function StudentManagement() {
                 <div style={{ ...styles.avatarPlaceholder, ...styles.avatarBig }}><span>👤</span></div>
               )}
             </div>
-
             <div style={styles.formGroup}>
               <label style={styles.formLabel}>ชื่อ-นามสกุล</label>
               <div style={styles.infoDisplayBox}>{viewingStudent.Name || '-'}</div>
             </div>
-
             <div style={styles.formGroup}>
               <label style={styles.formLabel}>วันเกิด</label>
               <div style={styles.infoDisplayBox}>{formatThaiDate(viewingStudent.Birthday)}</div>
             </div>
-
             <div style={styles.formRow}>
               <div style={{ ...styles.formGroup, flex: 1 }}>
                 <label style={styles.formLabel}>ระดับชั้น</label>
@@ -249,12 +291,10 @@ function StudentManagement() {
                 </div>
               </div>
             </div>
-
             <div style={styles.formGroup}>
               <label style={styles.formLabel}>กรุ๊ปเลือด</label>
               <div style={styles.infoDisplayBox}>{viewingStudent.Blood_group || 'ไม่ได้ระบุ'}</div>
             </div>
-
             <button style={styles.btnSubmitSave} onClick={() => setIsViewModalOpen(false)}>ปิดหน้าต่าง</button>
           </div>
         </div>
@@ -280,7 +320,6 @@ function StudentManagement() {
                   <input type="file" accept="image/*" onChange={handleImageChange} style={{ display: 'none' }} />
                 </label>
               </div>
-
               <div style={styles.formGroup}>
                 <label style={styles.formLabel}>ชื่อ-นามสกุล</label>
                 <input type="text" required style={styles.formInput} value={formData.Name} onChange={(e) => setFormData({...formData, Name: e.target.value})} />
@@ -292,7 +331,9 @@ function StudentManagement() {
               <div style={styles.formRow}>
                 <div style={{ ...styles.formGroup, flex: 1 }}>
                   <label style={styles.formLabel}>ระดับชั้น</label>
-                  <input type="text" placeholder="เช่น 1/2" required style={styles.formInput} value={formData.Class_level} onChange={(e) => setFormData({...formData, Class_level: e.target.value})} />
+                  <select style={styles.formSelect} required value={formData.Class_level} onChange={(e) => setFormData({...formData, Class_level: e.target.value})}>
+                    {classList.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
                 </div>
                 <div style={{ ...styles.formGroup, flex: 1 }}>
                   <label style={styles.formLabel}>เพศ</label>
@@ -338,7 +379,6 @@ function StudentManagement() {
                   <input type="file" accept="image/*" onChange={handleImageChange} style={{ display: 'none' }} />
                 </label>
               </div>
-
               <div style={styles.formGroup}>
                 <label style={styles.formLabel}>ชื่อ-นามสกุล</label>
                 <input type="text" required style={styles.formInput} value={formData.Name} onChange={(e) => setFormData({...formData, Name: e.target.value})} />
@@ -350,7 +390,9 @@ function StudentManagement() {
               <div style={styles.formRow}>
                 <div style={{ ...styles.formGroup, flex: 1 }}>
                   <label style={styles.formLabel}>ระดับชั้น</label>
-                  <input type="text" required style={styles.formInput} value={formData.Class_level} onChange={(e) => setFormData({...formData, Class_level: e.target.value})} />
+                  <select style={styles.formSelect} required value={formData.Class_level} onChange={(e) => setFormData({...formData, Class_level: e.target.value})}>
+                    {classList.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
                 </div>
                 <div style={{ ...styles.formGroup, flex: 1 }}>
                   <label style={styles.formLabel}>เพศ</label>
@@ -393,15 +435,24 @@ function StudentManagement() {
   );
 }
 
-
-
+// 🎨 นำสไตล์ดั้งเดิมของพี่มาใช้ทั้งหมด และเสริมในส่วนของ UI การแสดงผลกล่องห้องเรียนให้กลมกลืนกันครับ
 const styles = {
   studentContainer: { padding: '30px', fontFamily: 'system-ui, -apple-system, sans-serif', backgroundColor: '#ffffff', minHeight: '100vh' },
   studentHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '30px' },
   titleSection: { display: 'flex', flexDirection: 'column' },
   headerTitle: { marginTop: '15px', fontSize: '15px', color: '#000000', fontWeight: '600' },
-  btnTab: { background: '#ffffff', border: '1px solid #cccccc', padding: '6px 30px', borderRadius: '6px', boxShadow: '0px 2px 4px rgba(0,0,0,0.08)', fontWeight: 'bold' },
-  btnValueAdd: { background: '#ffffff', border: '1px solid #000000', padding: '8px 18px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' },
+  btnTab: { background: '#ffffff', border: '1px solid #cccccc', padding: '6px 30px', borderRadius: '6px', boxShadow: '0px 2px 4px rgba(0,0,0,0.08)', fontWeight: 'bold', cursor: 'pointer', width: 'fit-content' },
+  btnValueAdd: { background: '#ffffff', border: '1px solid #000000', padding: '8px 18px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' },
+  btnBack: { background: '#ffffff', border: '1px solid #cccccc', padding: '8px 18px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' },
+  
+  // 🏫 เพิ่มสไตล์สวยๆ มินิมอลสำหรับ Grid ห้องเรียนหน้าแรก (กลมกลืนกับธีมเดิมที่เป็นขาว-ดำ-เทา)
+  classGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '25px' },
+  classCard: { background: '#ffffff', border: '1px solid #cccccc', borderRadius: '16px', padding: '25px', textAlign: 'center', boxShadow: '0 2px 6px rgba(0,0,0,0.04)', cursor: 'pointer', transition: 'transform 0.2s' },
+  classIcon: { fontSize: '40px', marginBottom: '12px' },
+  classNameText: { margin: '0 0 6px 0', fontSize: '15px', fontWeight: '600', color: '#000000' },
+  classCountText: { margin: '0 0 18px 0', fontSize: '13px', color: '#666666' },
+  btnEnterClass: { background: '#ffffff', border: '1px solid #cccccc', color: '#333333', padding: '8px 16px', borderRadius: '8px', fontWeight: '500', fontSize: '12px', cursor: 'pointer', width: '100%' },
+
   studentGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' },
   studentCard: { border: '1px solid #cccccc', borderRadius: '14px', padding: '15px', background: '#ffffff', boxShadow: '0 2px 6px rgba(0,0,0,0.04)', cursor: 'pointer', transition: 'transform 0.2s' },
   cardInfo: { display: 'flex', gap: '15px', alignItems: 'center', marginBottom: '15px' },
