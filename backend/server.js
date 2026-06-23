@@ -582,7 +582,73 @@ app.get('/api/development', (req, res) => {
     res.json(results);
   });
 });
+// =================================================================
+// 📢 API ระบบข่าวสารประชาสัมพันธ์ (Public Relations)
+// =================================================================
 
+// 1. GET: ดึงข้อมูลข่าวสารทั้งหมด (ใช้ร่วมกันทั้งฝั่งคุณครู และ ฝั่งผู้ปกครอง)
+app.get('/api/publicrelations', (req, res) => {
+  // คำสั่ง SQL ดึงข้อมูลจากตาราง publicrelations เรียงตามวันที่ล่าสุด
+  const sql = "SELECT * FROM publicrelations ORDER BY Date DESC, PublicRelation_id DESC";
+  
+  db.query(sql, (err, results) => {
+    if (err) {
+      console.error("Database error (GET PR):", err);
+      return res.status(500).json({ error: "เกิดข้อผิดพลาดในการดึงข้อมูลประชาสัมพันธ์" });
+    }
+    // ส่งข้อมูลออกไปเป็น JSON ให้ฝั่ง Frontend (React) นำไปวนลูปแสดงผล
+    res.json(results);
+  });
+});
+
+// 2. POST: เพิ่มข่าวประชาสัมพันธ์ใหม่ (ฝั่งคุณครูเป็นคนกรอกส่งมา)
+app.post('/api/publicrelations', (req, res) => {
+  const { Name, date, Location, User_id, Image } = req.body;
+  
+  // คำสั่ง SQL ตรวจสอบตามโครงสร้างฟิลด์ฝั่งครูที่ส่งมา
+  const sql = "INSERT INTO publicrelations (Name_activity, Date, Location, User_id, Image) VALUES (?, ?, ?, ?, ?)";
+  const values = [Name, date, Location, User_id, Image];
+
+  db.query(sql, values, (err, result) => {
+    if (err) {
+      console.error("Database error (POST PR):", err);
+      return res.status(500).json({ error: "ไม่สามารถบันทึกข้อมูลประชาสัมพันธ์ได้" });
+    }
+    res.status(201).json({ message: "เพิ่มประชาสัมพันธ์สำเร็จ", id: result.insertId });
+  });
+});
+
+// 3. PUT: แก้ไขข้อมูลข่าวประชาสัมพันธ์ (ฝั่งคุณครู)
+app.put('/api/publicrelations/:id', (req, res) => {
+  const prId = req.params.id;
+  const { Name, date, Location, User_id, Image } = req.body;
+
+  const sql = "UPDATE publicrelations SET Name_activity = ?, Date = ?, Location = ?, User_id = ?, Image = ? WHERE PublicRelation_id = ?";
+  const values = [Name, date, Location, User_id, Image, prId];
+
+  db.query(sql, values, (err, result) => {
+    if (err) {
+      console.error("Database error (PUT PR):", err);
+      return res.status(500).json({ error: "ไม่สามารถอัปเดตข้อมูลประชาสัมพันธ์ได้" });
+    }
+    res.json({ message: "แก้ไขข้อมูลประชาสัมพันธ์สำเร็จ" });
+  });
+});
+
+// 4. DELETE: ลบข่าวประชาสัมพันธ์ออกจากระบบ (ฝั่งคุณครู)
+app.delete('/api/publicrelations/:id', (req, res) => {
+  const prId = req.params.id;
+  
+  const sql = "DELETE FROM publicrelations WHERE PublicRelation_id = ?";
+
+  db.query(sql, [prId], (err, result) => {
+    if (err) {
+      console.error("Database error (DELETE PR):", err);
+      return res.status(500).json({ error: "ไม่สามารถลบข้อมูลประชาสัมพันธ์ได้" });
+    }
+    res.json({ message: "ลบข้อมูลประชาสัมพันธ์เรียบร้อยแล้ว" });
+  });
+});
 app.listen(3001, () => {
     console.log("🚀 Server running on port 3001");
 });
