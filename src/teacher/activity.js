@@ -3,22 +3,33 @@ import axios from "axios";
 
 function Activity() {
   const [activities, setActivities] = useState([]);
-  const [searchTerm, setSearchTerm] = useState(""); 
-  
-  const [nameActivity, setNameActivity] = useState(""); 
-  const [photographer, setPhotographer] = useState(""); 
-  const [location, setLocation] = useState("");         
-  const [activityDate, setActivityDate] = useState("");   
-  const [image, setImage] = useState(null); // เก็บค่า Base64
-  const [previewImage, setPreviewImage] = useState(""); 
-  const [editId, setEditId] = useState(null);           
+  const [searchTerm, setSearchTerm] = useState("");
+  const [users, setUsers] = useState([]);
+
+  const [nameActivity, setNameActivity] = useState("");
+  const [photographer, setPhotographer] = useState(""); // สำหรับแสดงค่าชื่อครูในช่อง Input Text
+  const [location, setLocation] = useState("");
+  const [activityDate, setActivityDate] = useState("");
+  const [image, setImage] = useState(null);
+  const [previewImage, setPreviewImage] = useState("");
+  const [editId, setEditId] = useState(null);
   const [showForm, setShowForm] = useState(false);
 
-  const API_URL = "http://127.0.0.1:3001/activities"; 
+  const API_URL = "http://127.0.0.1:3001/activities";
 
   useEffect(() => {
     fetchActivities();
+    fetchUsers();
   }, []);
+
+  const fetchUsers = async () => {
+    try {
+      const res = await axios.get("http://127.0.0.1:3001/users");
+      setUsers(res.data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const fetchActivities = async () => {
     try {
@@ -31,7 +42,6 @@ function Activity() {
     }
   };
 
-  // เปลี่ยนระบบเลือกรูปภาพ: แปลงไฟล์รูปภาพที่เลือกให้เป็น Base64 ทันทีเพื่อส่งในรูปแบบ JSON
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -39,7 +49,7 @@ function Activity() {
 
       const reader = new FileReader();
       reader.onloadend = () => {
-        setImage(reader.result); // ได้ข้อมูลรูปภาพเป็น Base64 string เช่น "data:image/jpeg;base64,..."
+        setImage(reader.result);
       };
       reader.readAsDataURL(file);
     }
@@ -52,23 +62,23 @@ function Activity() {
       return alert("กรุณากรอกชื่อกิจกรรม");
     }
 
-    // รวมข้อมูลเป็น JSON Object เพื่อให้สอดรับกับ req.body ของหลังบ้าน
+    // 🔍 ค้นหาข้อมูลครูจาก State `users` โดยเช็กว่าชื่อจริงสอดคล้องกับที่ระบุในฟอร์มไหม
+    const selectedUser = users.find((user) => user.Name === photographer);
+
     const requestData = {
       Name_activity: nameActivity,
       Location: location,
-      Activity_date: activityDate ? activityDate : null, // ถ้าเป็นค่าว่าง "" ส่งเป็น null ป้องกัน MySQL แจ้งเตือนเรื่องฟอร์แมตวันเวลา
-      User_id: 1,
-      Image: image ? image : (editId ? previewImage : null) 
-      // คำอธิบายรูป: ถ้ามีการเลือกรูปใหม่ให้ส่งตัวใหม่ไป, ถ้าไม่มีการเลือกใหม่แต่เป็นการแก้ไขให้ใช้รูปเก่าส่งกลับไป, นอกเหนือจากนั้นส่ง null
+      Activity_date: activityDate ? activityDate : null,
+      // 🔗 เชื่อมโยง User_id: ถ้าชื่อที่เลือกตรงกับตาราง user จะส่ง id ของครูคนนั้นไป ถ้าไม่พบจะให้ default เป็น 1
+      User_id: selectedUser ? selectedUser.User_id : 1,
+      Image: image ? image : (editId ? previewImage : null)
     };
 
     try {
       if (editId) {
-        // ยิง API แก้ไขด้วย JSON Object ปกติ
         await axios.put(`${API_URL}/${editId}`, requestData);
         alert("แก้ไขข้อมูลกิจกรรมสำเร็จ");
       } else {
-        // ยิง API เพิ่มข้อมูลด้วย JSON Object ปกติ
         await axios.post(API_URL, requestData);
         alert("เพิ่มข้อมูลกิจกรรมสำเร็จ");
       }
@@ -76,7 +86,7 @@ function Activity() {
       fetchActivities();
     } catch (err) {
       console.error(err);
-      alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล: โปรดตรวจสอบข้อความแจ้งเตือน Error บนหน้าจอดำ (Terminal) ของตัวรัน API หลังบ้าน");
+      alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล: โปรดตรวจสอบ Console หลังบ้าน");
     }
   };
 
@@ -94,17 +104,20 @@ function Activity() {
   const handleEdit = (item) => {
     setEditId(item.Activity_id);
     setNameActivity(item.Name_activity || "");
-    setPhotographer(item.Photographer || ""); 
+
+    // 🔍 ตรวจสอบเพื่อแปลงกลับ: ดึงค่าชื่อครูจากฟิลด์ Photographer ที่ LEFT JOIN ออกมา เพื่อเอาไปแสดงผลบนฟอร์ม
+    setPhotographer(item.Photographer || "");
+
     setLocation(item.Location || "");
     setActivityDate(item.Activity_date ? item.Activity_date.split("T")[0] : "");
-    setImage(null); // เคลียร์ไฟล์รูปภาพที่เพิ่งกดเลือกค้างไว้
-    setPreviewImage(item.Image || ""); // ดึงรูปเก่าในระบบขึ้นมาแสดงผลรอ
+    setImage(null);
+    setPreviewImage(item.Image || "");
     setShowForm(true);
   };
 
   const clearForm = () => {
     setNameActivity("");
-    setPhotographer(""); 
+    setPhotographer("");
     setLocation("");
     setActivityDate("");
     setImage(null);
@@ -130,13 +143,13 @@ function Activity() {
   return (
     <div style={page.container}>
       <div style={page.wrapper}>
-        
+
         <div style={page.header}>
           <div>
             <button style={page.titleBtn}>กิจกรรม</button>
             <h1 style={page.pageTitle}>จัดการข้อมูลกิจกรรม</h1>
           </div>
-          <button onClick={() => { if(showForm) clearForm(); else setShowForm(true); }} style={page.toggleBtn}>
+          <button onClick={() => { if (showForm) clearForm(); else setShowForm(true); }} style={page.toggleBtn}>
             {showForm ? "✕ ปิดแผงคุม" : "➕ เพิ่มกิจกรรมใหม่"}
           </button>
         </div>
@@ -158,7 +171,7 @@ function Activity() {
                 <h2 style={modal.mainTitle}>{editId ? "แก้ไขกิจกรรม" : "เพิ่มกิจกรรม"}</h2>
                 <button type="button" onClick={clearForm} style={modal.closeBtn}>✕</button>
               </div>
-              
+
               <div style={modal.imageUploadWrapper}>
                 <label style={modal.imageSelectorLabel}>
                   <input type="file" accept="image/*" onChange={handleImageChange} style={{ display: "none" }} />
@@ -174,7 +187,7 @@ function Activity() {
                   )}
                 </label>
               </div>
-              
+
               <div style={modal.field}>
                 <label style={modal.label}>ชื่อกิจกรรม</label>
                 <input type="text" placeholder="กรอกชื่อกิจกรรม" value={nameActivity} onChange={(e) => setNameActivity(e.target.value)} style={modal.input} />
@@ -182,7 +195,23 @@ function Activity() {
 
               <div style={modal.field}>
                 <label style={modal.label}>ผู้บันทึกภาพ</label>
-                <input type="text" placeholder="กรอกชื่อผู้บันทึกภาพ" value={photographer} onChange={(e) => setPhotographer(e.target.value)} style={modal.input} />
+                <input
+                  list="teacherList"
+                  type="text"
+                  placeholder="เลือกผู้บันทึกภาพ"
+                  value={photographer}
+                  onChange={(e) => setPhotographer(e.target.value)}
+                  style={modal.input}
+                />
+
+                <datalist id="teacherList">
+                  {users.map((user) => (
+                    <option
+                      key={user.User_id}
+                      value={user.Name}
+                    />
+                  ))}
+                </datalist>
               </div>
 
               <div style={modal.field}>
@@ -194,7 +223,7 @@ function Activity() {
                 <label style={modal.label}>สถานที่</label>
                 <input type="text" placeholder="กรอกสถานที่" value={location} onChange={(e) => setLocation(e.target.value)} style={modal.input} />
               </div>
-              
+
               <button type="submit" style={modal.saveButton}>บันทึก</button>
             </form>
           </div>
@@ -206,7 +235,7 @@ function Activity() {
           ) : (
             filteredActivities.map((item) => (
               <div key={item.Activity_id} style={page.card}>
-                
+
                 <div style={page.cardImageContainer}>
                   {item.Image ? (
                     <img src={item.Image} alt={item.Name_activity} style={page.cardImage} />
@@ -224,6 +253,7 @@ function Activity() {
                     {item.Name_activity || "ชื่อกิจกรรม"}
                   </h2>
                   <div style={page.infoList}>
+                    {/* ดึงข้อมูลชื่อจากตาราง u.Name (Photographer) ขึ้นมาแสดงผล */}
                     <p style={page.infoText}>ผู้บันทึกภาพ: {item.Photographer || "ไม่ระบุชื่อ"}</p>
                     <p style={page.infoText}>วัน/เดือน/ปี: {formatDate(item.Activity_date)}</p>
                     <p style={page.infoText}>สถานที่: {item.Location || "ไม่ระบุสถานที่"}</p>
@@ -259,7 +289,7 @@ function Activity() {
 
 const page = {
   container: { backgroundColor: "#ffffff", minHeight: "100vh", padding: "1.5rem", display: "flex", justifyContent: "center", color: "#334155", fontFamily: "'Inter', 'Kanit', sans-serif" },
-  wrapper: { width: "100%", maxWidth: "1200px" }, 
+  wrapper: { width: "100%", maxWidth: "1200px" },
   header: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.2rem" },
   titleBtn: { backgroundColor: "#ffffff", border: "1px solid #cbd5e1", color: "#334155", fontWeight: "normal", padding: "4px 16px", borderRadius: "6px", fontSize: "14px", marginBottom: "6px", cursor: "default" },
   pageTitle: { fontSize: "18px", fontWeight: "normal", paddingLeft: "2px", margin: 0, color: "#1e293b" },
