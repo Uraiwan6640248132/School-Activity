@@ -9,11 +9,10 @@ export default function Development() {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [selectedId, setSelectedId] = useState(null);
 
-  // 🌟 อัปเดตโครงสร้างฟอร์ม: เพิ่ม Term (ภาคเรียน) และเปิดรองรับทั้งคีย์พิมพ์เล็ก-ใหญ่
   const [formData, setFormData] = useState({
-    Student_id: 1,           
+    Student_id: 1,          
     Year: 2569,             
-    Term: 'ภาคเรียนที่ 1',   // 👈 เพิ่มมารองรับช่องภาคเรียนใน UX/UI แล้วครับ
+    Term: 'ภาคเรียนที่ 1',   
     date: '',               
     Physical: '',           
     Weight: '',             
@@ -76,7 +75,7 @@ export default function Development() {
     setFormData({
       Student_id: 1,
       Year: 2569,
-      Term: 'ภาคเรียนที่ 1', // รีเซ็ตกลับมาเป็นค่าเริ่มต้น
+      Term: 'ภาคเรียนที่ 1', 
       date: today,
       Physical: '',         
       Weight: '',
@@ -118,7 +117,6 @@ export default function Development() {
   const openEditModal = (item) => {
     setSelectedId(item.Development_id || item.development_id);
     
-    // 💡 คลีนจัดการฟอร์แมตวันที่ดักไว้ทุกคีย์
     let cleanDate = '';
     if (item.date_clean) {
       cleanDate = item.date_clean;
@@ -128,10 +126,16 @@ export default function Development() {
       cleanDate = String(item.date).split('T')[0];
     }
 
+    // ดักจับข้อมูลตอนกดแก้ไข ถ้าในเบสโดนตัดคำเหลือแค่ "ภาคเรียนที่" ให้ตั้งค่าเริ่มต้นให้เต็มคำ
+    let dbTerm = item.Term || item.term || 'ภาคเรียนที่ 1';
+    if (dbTerm.trim() === 'ภาคเรียนที่') {
+      dbTerm = 'ภาคเรียนที่ 1';
+    }
+
     setFormData({
       Student_id: item.Student_id || 1,
       Year: item.Year || 2569,
-      Term: item.Term || item.term || 'ภาคเรียนที่ 1', // 👈 โหลดค่า Term เดิมมาใส่ฟอร์มตอนแก้
+      Term: dbTerm, 
       date: cleanDate,
       Physical: item.Physical || '', 
       Weight: item.Weight || '',
@@ -225,17 +229,21 @@ export default function Development() {
               const scoreSocial = calculateSectionScore([item.Stress, item.Interaction, item.Assistance]);
               const scoreIntellect = calculateSectionScore([item.Problem_solving, item.Communication, item.Remembering]);
               
-              // 💡 🛠️ แก้ไข: จัดการดักคีย์วันที่ทุกรูปแบบ เพื่อการันตีว่าวันที่โชว์บนการ์ดแน่นอน
               const displayDate = item.date_clean || 
                                   (item.Date ? String(item.Date).split('T')[0] : '') || 
                                   (item.date ? String(item.date).split('T')[0] : 'ไม่ได้ระบุ');
 
+              // 🛠️ ตรวจสอบข้อมูลดิบ: ถ้าค่าดึงมาจากเบสโดนตัดขาดเหลือแค่ "ภาคเรียนที่" ให้บังคับแสดงผลเติม "1" ให้เต็มคำ
+              let displayTerm = item.Term || item.term || "ภาคเรียนที่ 1";
+              if (displayTerm.trim() === 'ภาคเรียนที่') {
+                displayTerm = 'ภาคเรียนที่ 1';
+              }
+
               return (
                 <div key={idx} style={styles.devCardItem}>
                   <div style={styles.cardItemHeader}>
-                    {/* 🌟 🛠️ แก้ไข: แสดง "ปีการศึกษา - ภาคเรียน" และ "วันที่ประเมิน" ตามโครงสร้างฐานข้อมูลใหม่ */}
                     <span style={styles.yearText}>
-                      ปีการศึกษา {item.Year || item.year} - {item.Term || item.term || "ภาคเรียนที่ 1"}<br />
+                      ปีการศึกษา {item.Year || item.year || '2569'} - {displayTerm}<br />
                       <span style={{ fontSize: '12px', color: '#666', fontWeight: 'normal' }}>วันที่ประเมิน: {displayDate}</span>
                     </span>
                     <div style={styles.actionGroup}>
@@ -280,7 +288,6 @@ export default function Development() {
 
             <form onSubmit={isAddOpen ? handleAddSubmit : handleEditSubmit} style={styles.formScrollable}>
               
-              {/* 🌟 🛠️ เพิ่มช่องเลือก ภาคเรียน (Term) เข้าไปในฟอร์มของ UI หน้าต่าง Modal ตรงนี้ครับ */}
               <div style={{...styles.bodyMetricsRow, marginBottom: '15px'}}>
                 <div style={{...styles.inputMiniGroup, width: '31%'}}>
                   <label style={styles.labelMini}>ปีการศึกษา (พ.ศ.)</label>
@@ -415,7 +422,6 @@ export default function Development() {
   );
 }
 
-// Styles โครงสร้างคงเดิมเหมือนเวอร์ชันของพี่ครับ
 const styles = {
   container: { padding: '20px', width: '100%', display: 'flex', justifyContent: 'center', fontFamily: 'sans-serif' },
   cardMain: { border: '1px solid #ccc', borderRadius: '8px', padding: '20px', width: '100%', maxWidth: '650px', backgroundColor: '#fff', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' },

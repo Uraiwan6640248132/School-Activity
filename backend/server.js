@@ -571,6 +571,17 @@ app.post("/login", (req, res) => {
     }
   });
 });
+// ดึงข้อมูลประเมินพัฒนาการทั้งหมด (ใช้สำหรับการดึงไปคัดกรองต่อฝั่งผู้ปกครอง)
+app.get('/api/development', (req, res) => {
+  const sql = "SELECT * FROM development ORDER BY Year DESC, Term DESC";
+  db.query(sql, (err, results) => {
+    if (err) {
+      console.error("Database error:", err);
+      return res.status(500).json({ error: "เกิดข้อผิดพลาดในการดึงข้อมูลจากฐานข้อมูล" });
+    }
+    res.json(results);
+  });
+});
 
 app.listen(3001, () => {
     console.log("🚀 Server running on port 3001");
