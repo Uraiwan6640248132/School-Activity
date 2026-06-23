@@ -493,8 +493,6 @@ const styles = {
     display: 'flex', 
     alignItems: 'center'
   }
-
-  
 };
 
 export default StudentManagement;
