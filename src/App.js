@@ -24,6 +24,7 @@ import Homeparent from './parent/homeparent';
 // Admin
 import HomeAdmin from './admin/homeadmin';
 import UserInformation from './admin/user_information'; 
+import PersonalDataAd from './admin/personal_dataad';
 
 // Parent
 import HomeParent from './parent/homeparent';
@@ -103,6 +104,7 @@ function App() {
           <Route path="/homeadmin" element={<HomeAdmin />} />
           {/* ✨ [แก้ไข] เปิดเส้นทางหน้าจัดการสิทธิ์ผู้ใช้งานให้แอดมิน และตั้งชื่อให้ตรงเนฟบาร์ */}
           <Route path="/user_information" element={<UserInformation />} /> 
+          <Route path="/personal_dataad" element={<PersonalDataAd />} />
           <Route path="*" element={<Navigate to="/homeadmin" replace />} />
         </Routes>
       </NavbarAdmin>
