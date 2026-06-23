@@ -63,6 +63,7 @@ export default function PublicRelationsP() {
           </div>
         ))}
         
+        
         {/* ดักกรณีที่คุณครูยังไม่ได้กดประกาศข่าวใดๆ เลยในระบบ */}
         {!loading && prList.length === 0 && (
           <p style={{ color: '#999', textAlign: 'center', marginTop: '40px' }}>
