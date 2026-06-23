@@ -5,10 +5,12 @@ const StudentData = () => {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // 🌐 ดึงรูปภาพจากโฟลเดอร์ uploads ของฝั่ง Server หลังบ้าน
+  const BACKEND_IMAGE_URL = "http://localhost:3001/uploads/";
+
   useEffect(() => {
     const fetchStudentData = async () => {
       try {
-        // 🌐 ดึงข้อมูลรายชื่อนักเรียนจาก API หลังบ้าน
         const res = await axios.get("http://localhost:3001/api/students");
         setStudents(res.data);
         setLoading(false);
@@ -17,61 +19,81 @@ const StudentData = () => {
         setLoading(false);
       }
     };
-
     fetchStudentData();
   }, []);
 
   return (
-    <div style={styles.container}>
-      {/* 🏷️ ส่วนหัวข้อปุ่ม (อิงตามกรอบ "ข้อมูลนักเรียน" ใน image_0a2e80.png) */}
-      <div style={styles.headerButton}>
+    <div style={studentStyles.container}>
+      <div style={studentStyles.headerButton}>
         ข้อมูลนักเรียน
       </div>
 
-      {/* 🗂️ ส่วนพื้นที่แสดงการ์ดโปรไฟล์นักเรียน */}
-      <div style={styles.cardContainer}>
+      <div style={studentStyles.cardContainer}>
         {loading ? (
-          <p style={styles.messageText}>กำลังโหลดข้อมูลนักเรียน...</p>
+          <p style={studentStyles.messageText}>กำลังโหลดข้อมูลนักเรียน...</p>
         ) : students.length > 0 ? (
-          students.map((student, index) => (
-            <div key={index} style={styles.studentCard}>
-              {/* ฝั่งซ้าย: กล่องรูปภาพโปรไฟล์ (จำลองไอคอนรูปตามพิมพ์เขียว) */}
-              <div style={styles.avatarBox}>
-                {student.Image_url || student.image ? (
-                  <img 
-                    src={student.Image_url || student.image} 
-                    alt="Student" 
-                    style={styles.avatarImage} 
-                  />
-                ) : (
-                  <div style={styles.placeholderIcon}>
-                    🖼️
-                    <span style={styles.addText}>Add Image</span>
-                  </div>
-                )}
-              </div>
+          students.map((student, index) => {
+            const currentImage = student.Image || student.Image_url || student.image;
+            
+            // ตรวจสอบโครงสร้างชื่อไฟล์ภาพ หากพบข้อมูลประเภท Base64 ยาวๆ 
+            // จะไม่นำไปเชื่อมต่อพอร์ตเพื่อป้องกัน HTTP Error 431 
+            const finalImageUrl = currentImage && !currentImage.startsWith("data:")
+              ? currentImage.startsWith("http") ? currentImage : `${BACKEND_IMAGE_URL}${currentImage}`
+              : null;
 
-              {/* ฝั่งขวา: รายละเอียด ชื่อ-นามสกุล และระดับชั้น */}
-              <div style={styles.detailsBox}>
-                <h4 style={styles.studentName}>
-                  {student.Firstname || student.name || "ชื่อ-นามสกุลนักเรียน"} {student.Lastname || ""}
-                </h4>
-                <p style={styles.studentClass}>
-                  ระดับชั้น: {student.Class_level || student.class || "ไม่ระบุชั้นเรียน"}
-                </p>
+            return (
+              <div key={index} style={studentStyles.studentCard}>
+                <div style={studentStyles.avatarBox}>
+                  {finalImageUrl ? (
+                    <img 
+                      src={finalImageUrl} 
+                      alt="Student" 
+                      style={studentStyles.avatarImage} 
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        const parent = e.target.parentElement;
+                        if (parent && !parent.querySelector('.fallback-icon')) {
+                          const fallback = document.createElement('div');
+                          fallback.className = 'fallback-icon';
+                          fallback.style.display = 'flex';
+                          fallback.style.flexDirection = 'column';
+                          fallback.style.alignItems = 'center';
+                          fallback.style.color = '#94a3b8';
+                          fallback.style.fontSize = '20px';
+                          fallback.innerHTML = '🖼️<span style="font-size:9px; margin-top:2px; color:#94a3b8;">No File</span>';
+                          parent.appendChild(fallback);
+                        }
+                      }}
+                    />
+                  ) : (
+                    <div style={studentStyles.placeholderIcon}>
+                      🖼️
+                      <span style={studentStyles.addText}>Add Image</span>
+                    </div>
+                  )}
+                </div>
+
+                <div style={studentStyles.detailsBox}>
+                  <h4 style={studentStyles.studentName}>
+                    {student.Firstname || student.name || "ชื่อ-นามสกุลนักเรียน"} {student.Lastname || ""}
+                  </h4>
+                  <p style={studentStyles.studentClass}>
+                    ระดับชั้น: {student.Class_level || student.class || "ไม่ระบุชั้นเรียน"}
+                  </p>
+                </div>
               </div>
-            </div>
-          ))
+            );
+          })
         ) : (
-          <p style={styles.messageText}>ไม่พบข้อมูลนักเรียนผูกกับบัญชีนี้</p>
+          <p style={studentStyles.messageText}>ไม่พบข้อมูลนักเรียนผูกกับบัญชีนี้</p>
         )}
       </div>
     </div>
   );
 };
 
-// 🎨 ถอดแบบ CSS Styles จาก Mockup ของผู้ปกครอง (Clean & Minimalist Line-art)
-const styles = {
+// 🎨 เปลี่ยนชื่อตัวแปรสไตล์เป็น studentStyles ป้องกันระบบสับสนชนกับตัวแปรหน้าอื่น
+const studentStyles = {
   container: {
     padding: "20px 10px",
     fontFamily: "sans-serif",
@@ -94,7 +116,7 @@ const styles = {
     display: "flex",
     flexDirection: "column",
     gap: "20px",
-    maxWidth: "550px" // คุมความกว้างการ์ดให้สมดุลตามหน้าจอตัวอย่างของคุณ
+    maxWidth: "550px"
   },
   studentCard: {
     display: "flex",
@@ -156,4 +178,4 @@ const styles = {
   }
 };
 
-export default StudentData;
+export default StudentData; // 
