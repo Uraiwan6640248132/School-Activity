@@ -41,7 +41,7 @@ function Login({ onLoginSuccess }) {
   return (
     <div style={styles.container}>
       <form onSubmit={handleSubmit} style={styles.box}>
-        <h2 style={styles.title}>ระบบบริหารจัดการห้องเรียน</h2>
+        <h2 style={styles.title}>ระบบบันทึกกิจกรรมนักเรียน</h2>
         
         <div style={styles.field}>
           <label style={styles.label}>ชื่อผู้ใช้</label>
