@@ -90,10 +90,10 @@ app.put("/users/:id", (req, res) => {
 
     let sql, params;
     if (Password) {
-        sql = "UPDATE users SET Name = ?, Phone = ?, Username = ?, Password = ? WHERE User_id = ?";
+        sql = "UPDATE users SET Name = ?, Phone = ?, UserName = ?, Password = ? WHERE User_id = ?";
         params = [Name, Phone, Username, Password, userId];
     } else {
-        sql = "UPDATE users SET Name = ?, Phone = ?, Username = ? WHERE User_id = ?";
+        sql = "UPDATE users SET Name = ?, Phone = ?, UserName = ? WHERE User_id = ?";
         params = [Name, Phone, Username, userId];
     }
 
@@ -211,6 +211,7 @@ app.delete("/api/activities/:id", (req, res) => {
     res.json({ message: "ลบกิจกรรมสำเร็จผ่านช่องทางสำรอง" });
   });
 });
+
 // ==========================================
 // 🚀 ระบบ API จัดการข้อมูลนักเรียน (STUDENTS CRUD)
 // ==========================================
@@ -385,18 +386,6 @@ app.put("/notifications/:id", (req, res) => {
       res.json({ message: "แก้ไขข้อมูลสำเร็จ" });
     }
   );
-});
-
-app.delete("/notifications/:id", (req, res) => {
-  const { id } = req.params;
-  const sql = "DELETE FROM notification WHERE Notification_id = ?";
-  db.query(sql, [id], (err, result) => {
-    if (err) {
-      console.error("❌ SQL Error [DELETE /notifications]:", err);
-      return res.status(500).json({ error: err.message, details: err });
-    }
-    res.json({ message: "ลบข้อมูลสำเร็จ" });
-  });
 });
 
 // ==========================================
@@ -639,49 +628,43 @@ app.delete('/api/development/:id', (req, res) => {
   });
 });
 
+// ==========================================
+// 🔐 ระบบตรวจสอบการเข้าสู่ระบบ (LOGIN API สมบูรณ์แบบ)
+// ==========================================
 app.post("/login", (req, res) => {
+  // รองรับทั้งตัวพิมพ์เล็กและตัวพิมพ์ใหญ่ที่หน้าบ้านอาจส่งมา
+  const username = req.body.UserName || req.body.username;
+  const password = req.body.Password || req.body.password;
 
-  const { UserName, Password } = req.body;
-
-  if (!UserName || !Password) {
-    return res.status(400).json({
-      error: "กรุณากรอกชื่อผู้ใช้และรหัสผ่าน"
-    });
+  if (!username || !password) {
+    return res.status(400).json({ success: false, error: "กรุณากรอกชื่อผู้ใช้และรหัสผ่าน" });
   }
 
+  // ✅ แก้ไข SQL: ดึงข้อมูลโดยเทียบค่ากับฟิลด์ตัวพิมพ์ใหญ่ตามฐานข้อมูลจริงใน phpMyAdmin (UserName, Password)
   const sql = "SELECT * FROM users WHERE UserName = ? AND Password = ?";
 
-  db.query(sql, [UserName, Password], (err, result) => {
-
+  db.query(sql, [username, password], (err, result) => {
     if (err) {
-      console.log(err);
-      return res.status(500).json({
-        error: "เกิดข้อผิดพลาดในระบบฐานข้อมูล"
-      });
+      console.log("❌ [SQL Error ใน POST /login]:", err);
+      return res.status(500).json({ success: false, error: "เกิดข้อผิดพลาดในระบบฐานข้อมูล" });
     }
 
     if (result.length > 0) {
-
       const user = result[0];
-
       return res.json({
         success: true,
+        message: "เข้าสู่ระบบสำเร็จ",
         user: {
           id: user.User_id,
           username: user.UserName,
           name: user.Name,
-          role: user.Role
+          role: user.Role // ส่งค่า Role (ตัวใหญ่) กลับไปให้หน้าบ้านเช็คสิทธิ์แอดมิน/ครู
         }
       });
-
     } else {
-      return res.status(401).json({
-        error: "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง"
-      });
+      return res.status(401).json({ success: false, error: "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง" });
     }
-
   });
-
 });
 
 app.listen(3001, () => {
