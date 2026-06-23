@@ -737,6 +737,44 @@ app.put('/users/:id', (req, res) => {
         return res.json({ success: true, message: "อัปเดตข้อมูลสำเร็จแล้ว" });
     });
 });
+// --------------------------------------------------------
+// 📡 API ดึงข้อมูลผู้ใช้ทั้งหมด (หน้าหน้าบ้านของผู้ปกครองจะใช้ตัวนี้มา Find หาข้อมูลตัวเอง)
+// --------------------------------------------------------
+app.get('/users', (req, res) => {
+    const sql = "SELECT User_id, Name, Phone, UserName, Password, Role FROM users";
+    db.query(sql, (err, data) => {
+        if (err) {
+            console.error("Error fetching users:", err);
+            return res.status(500).json({ error: "เกิดข้อผิดพลาดในระบบฐานข้อมูล" });
+        }
+        return res.json(data);
+    });
+});
+
+// --------------------------------------------------------
+// 📝 API อัปเดตข้อมูลผู้ใช้รายบุคคล (รองรับทั้งแอดมิน ครู และผู้ปกครองเวลาแก้ไขโปรไฟล์)
+// --------------------------------------------------------
+app.put('/users/:id', (req, res) => {
+    const userId = req.params.id;
+    const { Name, Phone, Username, Role, Password } = req.body;
+
+    let sql = "UPDATE users SET Name = ?, Phone = ?, UserName = ?, Role = ? WHERE User_id = ?";
+    let params = [Name, Phone, Username, Role, userId];
+
+    // ดักจับกรณีผู้ปกครองมีการกรอกรหัสผ่านใหม่เข้ามา (Password จะถูกส่งมา)
+    if (Password !== undefined && Password !== '') {
+        sql = "UPDATE users SET Name = ?, Phone = ?, UserName = ?, Role = ?, Password = ? WHERE User_id = ?";
+        params = [Name, Phone, Username, Role, Password, userId];
+    }
+    
+    db.query(sql, params, (err, result) => {
+        if (err) {
+            console.error("Error updating profile:", err);
+            return res.status(500).json({ error: "ไม่สามารถอัปเดตข้อมูลส่วนตัวได้" });
+        }
+        return res.json({ success: true, message: "อัปเดตข้อมูลสำเร็จแล้ว" });
+    });
+});
 
 app.listen(3001, () => {
     console.log("Server running on port 3001");
