@@ -29,6 +29,7 @@ import PersonalDataAd from './admin/personal_dataad';
 // Parent
 import HomeParent from './parent/homeparent';
 import PersonalDataParent from './parent/personal_dataparent'; // นำเข้าหน้าข้อมูลส่วนตัวผู้ปกครอง
+import StudentData from './parent/student_data';
 
 function App() {
   const [userRole, setUserRole] = useState(null);
@@ -155,7 +156,7 @@ function App() {
           
           {/* 🎯 เปิดเส้นทางให้สิทธิ์ผู้ปกครองสามารถเข้าหน้าแก้ไขข้อมูลส่วนตัวตัวเองได้ที่นี่ */}
           <Route path="/personal_dataparent" element={<PersonalDataParent />} />
-          
+          <Route path="/student_data" element={<StudentData />} />
           <Route path="*" element={<Navigate to="/homeparent" replace />} />
         </Routes>
       </NavbarParent>
