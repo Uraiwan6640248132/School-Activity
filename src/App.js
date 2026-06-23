@@ -5,7 +5,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 // Navbar
 import NavbarTeacher from './navbar/nb';
 import NavbarAdmin from './navbar/nba';
-import NavbarParent from './navbar/nbp';
+import NavbarParent from './navbar/nbp'; // นำเข้าเนฟบาร์ผู้ปกครอง
 
 // Login
 import Login from './login/login';
@@ -28,6 +28,7 @@ import PersonalDataAd from './admin/personal_dataad';
 
 // Parent
 import HomeParent from './parent/homeparent';
+import PersonalDataParent from './parent/personal_dataparent'; // นำเข้าหน้าข้อมูลส่วนตัวผู้ปกครอง
 
 function App() {
   const [userRole, setUserRole] = useState(null);
@@ -90,7 +91,7 @@ function App() {
   }
 
   // --------------------------------------------------------
-  // 🛡️ ADMIN ACCESS (แก้ไขจุดนี้ ย้ายหน้ากำหนดสิทธิ์มาอยู่นี่แล้ว)
+  // 🛡️ ADMIN ACCESS
   // --------------------------------------------------------
   if (
     userRole === "admin" ||
@@ -102,7 +103,6 @@ function App() {
         <Routes>
           <Route path="/" element={<Navigate to="/homeadmin" replace />} />
           <Route path="/homeadmin" element={<HomeAdmin />} />
-          {/* ✨ [แก้ไข] เปิดเส้นทางหน้าจัดการสิทธิ์ผู้ใช้งานให้แอดมิน และตั้งชื่อให้ตรงเนฟบาร์ */}
           <Route path="/user_information" element={<UserInformation />} /> 
           <Route path="/personal_dataad" element={<PersonalDataAd />} />
           <Route path="*" element={<Navigate to="/homeadmin" replace />} />
@@ -140,7 +140,7 @@ function App() {
   }
 
   // --------------------------------------------------------
-  // 👨‍👩‍👦 PARENT ACCESS
+  // 👨‍👩‍👦 PARENT ACCESS (ย้ายเส้นทางข้อมูลส่วนตัวผู้ปกครองมากลุ่มนี้แล้ว ✨)
   // --------------------------------------------------------
   if (
     userRole === "parent" ||
@@ -152,6 +152,10 @@ function App() {
         <Routes>
           <Route path="/" element={<Navigate to="/homeparent" replace />} />
           <Route path="/homeparent" element={<HomeParent />} />
+          
+          {/* 🎯 เปิดเส้นทางให้สิทธิ์ผู้ปกครองสามารถเข้าหน้าแก้ไขข้อมูลส่วนตัวตัวเองได้ที่นี่ */}
+          <Route path="/personal_dataparent" element={<PersonalDataParent />} />
+          
           <Route path="*" element={<Navigate to="/homeparent" replace />} />
         </Routes>
       </NavbarParent>

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+// 🎯 ลบ import { useNavigate } ออกจากตรงนี้แล้ว คำเตือนจะหายไปทันทีครับพี่!
 
 function Login({ onLoginSuccess }) {
   const [username, setUsername] = useState('');
