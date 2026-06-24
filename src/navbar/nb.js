@@ -1,4 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
+// Import ตราสัญลักษณ์โรงเรียนเข้ามาจากโฟลเดอร์ src หลัก
+import logoSchool from "../logo_school.png"; 
 
 function Navbar({ children }) {
   const location = useLocation();
@@ -20,7 +22,16 @@ function Navbar({ children }) {
     <div style={styles.layout}>
       {/* Sidebar */}
       <div style={styles.sidebar}>
-        <h3 style={styles.logo}>📘 School</h3>
+        
+        {/* 🌟 ปรับปรุงพื้นที่ส่วนโลโก้: ขยับความห่างให้ชิดกับเมนูหน้าหลักลงมาเรียบร้อยแล้ว */}
+        <div style={styles.logoSection}>
+          <img 
+            src={logoSchool} 
+            alt="ตราสัญลักษณ์โรงเรียน" 
+            style={styles.logoImage} 
+          />
+        </div>
+
         <Link to="/home" style={menu("/home")}>หน้าหลัก</Link>
         <Link to="/personal" style={menu("/personal")}>ข้อมูลส่วนตัว</Link>
         <Link to="/students" style={menu("/students")}>ข้อมูลนักเรียน</Link>
@@ -57,7 +68,22 @@ const styles = {
     display: "flex",
     flexDirection: "column" // เพื่อตั้งค่าให้จัดเมนูแบบแนวตั้งและดันปุ่มลงล่างได้ง่ายขึ้น
   },
-  logo: { padding: 20, fontSize: 20, fontWeight: "bold" },
+  
+  // 🎨 จุดสำคัญ: ปรับแก้ระยะตรงนี้ให้กระชับขึ้นเพื่อขยับให้ชิดเมนู "หน้าหลัก"
+  logoSection: {
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: "16px 16px 12px 16px", // 🌟 ลดความกว้างพื้นที่บน-ล่างลง (จากเดิม 24px/20px)
+    borderBottom: "1px solid rgba(255, 255, 255, 0.15)", // เส้นแบ่งบาง ๆ ใต้โลโก้
+    marginBottom: "4px",            // 🌟 ลดระยะขอบล่างก่อนถึงเมนูหน้าหลัก (จากเดิม 10px) ให้ชิดขึ้นพอดี ๆ ครับ
+  },
+  logoImage: {
+    width: "110px",        // ขนาดสัดส่วนความกว้างของโลโก้เท่าเดิมตามความสวยงาม
+    height: "auto",        
+    objectFit: "contain",
+  },
+
   menu: {
     display: "block",
     padding: "12px 20px",

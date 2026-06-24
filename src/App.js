@@ -34,6 +34,7 @@ import Developmentp from './parent/developmentp'; //
 import Calendarp from './parent/calendarp';
 import Notificationp from './parent/notificationp';
 import PublicRelationsp from './parent/publicrelationp'; // นำเข้าหน้าประชาสัมพันธ์ผู้ปกครอง
+import ActivityP from "./parent/activityp"; 
 
 
 function App() {
@@ -167,7 +168,7 @@ function App() {
           <Route path="/calendarp" element={<Calendarp />} />
           <Route path="/notificationp" element={<Notificationp />} />
           <Route path="/publicrelationp" element={<PublicRelationsp />} />
-         
+          <Route path="/activityp" element={<ActivityP />} />
           <Route path="*" element={<Navigate to="/homeparent" replace />} />
         </Routes>
       </NavbarParent>

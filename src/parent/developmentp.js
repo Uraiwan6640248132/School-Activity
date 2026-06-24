@@ -1,15 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 
 export default function Developmentp() {
   const [devList, setDevList] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [studentInfo, setStudentInfo] = useState({ id: 1, name: "เด็กชายสมชาย ดีใจ" }); // ข้อมูลจำลองของนักเรียน
+
+  // 💡 [แก้ไข] นำ [studentInfo, setStudentInfo] ที่ไม่ได้ใช้งานออก เพื่อแก้ Warning: no-unused-vars
 
   // ดึงรหัสนักเรียน (Student_id) จาก localStorage ที่ผู้ปกครองล็อกอินเข้ามา หรือใช้ค่าเริ่มต้นเป็น 1
   const STUDENT_ID = Number(localStorage.getItem('student_id_of_parent')) || 1; 
   const API_URL = `http://localhost:3001/api/development`;
 
-  const fetchDevelopmentData = async () => {
+  // 💡 [แก้ไข] ใช้ useCallback ครอบฟังก์ชันเพื่อใช้ใน useEffect ได้อย่างถูกต้อง และแก้ข้อความเตือนเรื่อง react-hooks/exhaustive-deps
+  const fetchDevelopmentData = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch(API_URL);
@@ -28,11 +30,11 @@ export default function Developmentp() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [API_URL, STUDENT_ID]);
 
   useEffect(() => {
     fetchDevelopmentData();
-  }, []);
+  }, [fetchDevelopmentData]); // 💡 [แก้ไข] ใส่ fetchDevelopmentData เป็น dependency เพื่อความปลอดภัยและถูกต้องตามมาตรฐาน React
 
   // ฟังก์ชันคำนวณคะแนนเฉลี่ยแปลงเป็นเปอร์เซ็นต์เต็ม 100
   const calculateSectionScore = (scores) => {
