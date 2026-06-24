@@ -1,4 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
+// 🌟 Import ตราสัญลักษณ์โรงเรียนเข้ามาจากโฟลเดอร์ src หลัก
+import logoSchool from "../logo_school.png"; 
 
 function Navbar({ children }) {
   const location = useLocation();
@@ -20,9 +22,17 @@ function Navbar({ children }) {
     <div style={styles.layout}>
       {/* Sidebar */}
       <div style={styles.sidebar}>
-        <h3 style={styles.logo}>LOGO</h3>
         
-        {/* รายการเมนูตามรูปภาพ image_d5822f.png */}
+        {/* 🌟 ปรับปรุงใหม่: เอาคำว่า LOGO ออก และใส่ตราสัญลักษณ์โรงเรียนแบบกระชับระยะชิดหน้าหลัก */}
+        <div style={styles.logoSection}>
+          <img 
+            src={logoSchool} 
+            alt="ตราสัญลักษณ์โรงเรียน" 
+            style={styles.logoImage} 
+          />
+        </div>
+        
+        {/* รายการเมนูตามรูปภาพ */}
         <Link to="/homeparent" style={menu("/homeparent")}>หน้าหลัก</Link>
         <Link to="/personal_dataparent" style={menu("/personal_dataparent")}>ข้อมูลส่วนตัว</Link>
         <Link to="/student_data" style={menu("/student_data")}>ข้อมูลนักเรียน</Link>
@@ -60,12 +70,22 @@ const styles = {
     display: "flex",
     flexDirection: "column"
   },
-  logo: { 
-    padding: "30px 20px 20px 20px", 
-    fontSize: 22, 
-    fontWeight: "bold",
-    textAlign: "left"
+  
+  // 🎨 ปรับแก้ระยะความห่างพิกเซลในจุดนี้ให้กระชับ เพื่อดันตราโรงเรียนลงมาอยู่ใกล้เมนูหน้าหลัก
+  logoSection: {
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: "16px 16px 12px 16px", // 🌟 ลดขนาด padding พื้นที่บน-ล่างให้บางลง
+    borderBottom: "1px solid rgba(255, 255, 255, 0.15)", // เส้นแบ่งบาง ๆ ใต้โลโก้ก่อนเริ่มรายการเมนู
+    marginBottom: "4px",            // 🌟 ขยับระยะขอบล่างให้ชิดเกยติดแถบสีไฮไลท์ "หน้าหลัก" พอดี
   },
+  logoImage: {
+    width: "110px",        // ขนาดสัดส่วนความกว้างของตราขยายใหญ่คมชัดเท่ากันทุกฝั่ง
+    height: "auto",        
+    objectFit: "contain",
+  },
+
   menu: {
     display: "block",
     padding: "12px 20px",
@@ -91,7 +111,7 @@ const styles = {
   content: { flex: 1, background: "#f3f4f6" },
   topbar: {
     height: 60,
-    background: "#fff", // ปรับเป็นสีขาวตามโครงร่างรูปภาพ
+    background: "#fff", 
     color: "#333",
     display: "flex",
     justifyContent: "flex-end",

@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+// 🌟 Import ตราสัญลักษณ์โรงเรียนเข้ามาจากโฟลเดอร์ src หลัก
+import logoSchool from "../logo_school.png"; 
 
 function Navbar({ children }) {
   const location = useLocation();
@@ -16,7 +18,7 @@ function Navbar({ children }) {
     } else {
       try {
         const userData = JSON.parse(storedUser);
-        // ✨ [แก้ไข] ดึงคีย์ให้ตรงกับข้อมูลที่เราส่งมาจากฐานข้อมูล (Name หรือ UserName)
+        // ✨ ดึงคีย์ให้ตรงกับข้อมูลที่เราส่งมาจากฐานข้อมูล (Name หรือ UserName)
         if (userData.Name) {
           setAdminName(userData.Name);
         } else if (userData.UserName) {
@@ -47,7 +49,15 @@ function Navbar({ children }) {
     <div style={styles.layout}>
       {/* Sidebar */}
       <div style={styles.sidebar}>
-        <h3 style={styles.logo}>📘 ADMIN PANEL</h3>
+        
+        {/* 🌟 ปรับปรุงใหม่: เอาคำว่า ADMIN PANEL ออก และใส่ตราสัญลักษณ์โรงเรียนแบบกระชับระยะไม่ให้ห่างหน้าหลัก */}
+        <div style={styles.logoSection}>
+          <img 
+            src={logoSchool} 
+            alt="ตราสัญลักษณ์โรงเรียน" 
+            style={styles.logoImage} 
+          />
+        </div>
         
         {/* รายการเมนูสำหรับแอดมิน */}
         <Link to="/homeadmin" style={menu("/homeadmin")}>🏠 หน้าหลัก</Link>
@@ -85,15 +95,22 @@ const styles = {
     display: "flex",
     flexDirection: "column"
   },
-  logo: { 
-    padding: "30px 20px 20px 20px", 
-    fontSize: 20, 
-    fontWeight: "bold",
-    textAlign: "left",
-    letterSpacing: "1px",
-    borderBottom: "1px solid rgba(255, 255, 255, 0.05)",
-    marginBottom: "10px"
+  
+  // 🎨 จัดวางและตั้งค่าความห่างของตราโรงเรียนให้กระชับเข้าคู่กับปุ่มหน้าหลักพอดี
+  logoSection: {
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: "16px 16px 12px 16px", // 🌟 ใช้ระยะความสูงที่หดลงมาให้สมดุลชิดสวยงาม
+    borderBottom: "1px solid rgba(255, 255, 255, 0.1)", // เส้นคั่นบางๆ โทน Dark ใต้โลโก้แอดมิน
+    marginBottom: "4px",            // 🌟 ระยะช่องไฟขอบล่างให้ชิดติดกับปุ่มเมนูหน้าหลัก
   },
+  logoImage: {
+    width: "110px",        // ขนาดกว้างขยายใหญ่เต็มสายตาคมชัด
+    height: "auto",        // สัดส่วนวงกลมของตราไม่ยืดโย้บี้แบน
+    objectFit: "contain",
+  },
+
   menu: {
     display: "block",
     padding: "14px 20px",

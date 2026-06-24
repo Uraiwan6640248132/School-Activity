@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+// 🛠️ ปรับ Path ให้วิ่งย้อนกลับไปดึงไฟล์รูปภาพจากโฟลเดอร์ src ให้ถูกต้องตามโครงสร้างของพี่ครับ
+import schoolImg from '../school-building.jpg.JPG'; 
 
 function Login({ onLoginSuccess }) {
   const [username, setUsername] = useState('');
@@ -21,10 +23,7 @@ function Login({ onLoginSuccess }) {
       const res = await axios.post('http://127.0.0.1:3001/login', loginData);
 
       if (res.data.success) {
-        // 💾 1. บันทึกข้อมูลสิทธิ์ลงในเบราว์เซอร์
         localStorage.setItem("user", JSON.stringify(res.data.user));
-
-        // 🌟 2. อัปเดตสิทธิ์ให้หน้า App.js รับทราบระบบหลักจะพา Redirect ไปยังหน้าสิทธิ์นั้นอัตโนมัติ
         onLoginSuccess();
       }
     } catch (err) {
@@ -40,32 +39,19 @@ function Login({ onLoginSuccess }) {
   return (
     <div style={styles.container}>
       <div style={styles.card}>
-        {/* 🎨 ฝั่งซ้าย: พื้นหลังสีฟ้าและกราฟิก 3D จำลอง */}
-        <div style={styles.leftPanel}>
-          <div style={styles.logoArea}>
-            <div>
-              <div style={styles.logoText}>โรงเรียนสาธิตมหาวิทยาลัยราชภัฏเลย</div>
-              <div style={styles.logoSubText}>ระบบบันทึกกิจกรรมนักเรียน</div>
-            </div>
-          </div>
+        
+        {/* 🎨 ฝั่งซ้าย: พื้นหลังรูปตึกโรงเรียน */}
+        <div style={{...styles.leftPanel, backgroundImage: `url(${schoolImg})`}}>
           
-          {/* 🌟 ส่วนกราฟิก 3D จำลอง (ใช้ CSS สร้างรูปทรงพื้นฐาน) */}
-          <div style={styles.graphicContainer}>
-            <div style={{...styles.graphicShape, ...styles.shape1}}></div>
-            <div style={{...styles.graphicShape, ...styles.shape2}}></div>
-            <div style={{...styles.graphicShape, ...styles.shape3}}></div>
-            <div style={styles.main3DWindow}>
-              {/* ส่วนหน้าต่างจำลอง */}
-            </div>
+          {/* ข้อความขยับขึ้นมาและเปลี่ยนเป็นสีน้ำเงินเรียบร้อยครับ */}
+          <div style={styles.logoArea}>
+            <h2 style={styles.logoText}>โรงเรียนสาธิตมหาวิทยาลัยราชภัฏเลย</h2>
+            <p style={styles.logoSubText}>ระบบบันทึกกิจกรรมนักเรียน</p>
           </div>
         </div>
 
-        {/* 📝 ฝั่งขวา: ฟอร์มเข้าสู่ระบบ */}
+        {/* 📝 ฝั่งขวา: ฟอร์มเข้าสู่ระบบ (คงเดิม) */}
         <div style={styles.rightPanel}>
-          <div style={styles.headerRight}>
-      
-          </div>
-
           <form onSubmit={handleSubmit} style={styles.formContent}>
             <h2 style={styles.title}>เข้าสู่ระบบ</h2>
 
@@ -96,15 +82,14 @@ function Login({ onLoginSuccess }) {
             <button type="submit" style={styles.button}>
               เข้าสู่ระบบ
             </button>
-
           </form>
         </div>
+
       </div>
     </div>
   );
 }
 
-// ✨ อัปเดตสไตล์ใหม่ทั้งหมดเพื่อให้เหมือนดีไซน์ 3D
 const styles = {
   container: {
     display: "flex",
@@ -112,7 +97,7 @@ const styles = {
     alignItems: "center",
     minHeight: "100vh",
     width: "100vw",
-    backgroundColor: "#e0f2fe", // สีพื้นหลังภายนอกแบบอ่อน
+    backgroundColor: "#e0f2fe", 
     fontFamily: "'Inter', 'Kanit', sans-serif",
     position: "absolute",
     top: 0,
@@ -121,128 +106,66 @@ const styles = {
   },
   card: {
     display: "grid",
-    gridTemplateColumns: "1fr 1fr", // แบ่งครึ่งซ้ายขวา
+    gridTemplateColumns: "1fr 1fr", 
     backgroundColor: "#ffffff",
-    borderRadius: "20px", // ขอบมนมากขึ้นตามดีไซน์
-    width: "900px", // ขยายขนาดการ์ด
+    borderRadius: "20px", 
+    width: "900px", 
     height: "600px",
-    boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.1)", // เงาแบบนุ่มนวล
-    overflow: "hidden", // ให้ขอบมนตัดส่วนที่ล้น
+    boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.1)", 
+    overflow: "hidden", 
   },
   
-  // สไตล์ฝั่งซ้าย (Blue Panel)
+  // สไตล์ฝั่งซ้ายรองรับภาพปกโรงเรียน
   leftPanel: {
-    backgroundColor: "#60a5fa", // สีฟ้าหลัก
-    color: "#ffffff",
+    backgroundSize: "cover", 
+    backgroundPosition: "center", 
+    backgroundRepeat: "no-repeat",
+    color: "#1d4ed8", // 🌟 เปลี่ยนสีข้อความหลัก (Fallback) เป็นสีน้ำเงินเข้ม (Blue-700)
     padding: "40px",
     display: "flex",
     flexDirection: "column",
-    justifyContent: "space-between",
+    justifyContent: "flex-end", 
+    alignItems: "center",    
     position: "relative",
+    textAlign: "center"
   },
   logoArea: {
     display: "flex",
-    alignItems: "center",
-    gap: "10px",
-  },
-  logoIcon: {
-    width: "30px",
-    height: "30px",
-    backgroundColor: "rgba(255,255,255,0.2)",
-    borderRadius: "50%",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    fontWeight: "bold",
-    fontSize: "18px"
+    flexDirection: "column",
+    gap: "8px",
+    zIndex: 2, 
+    marginBottom: "60px" // 🌟 เพิ่มระยะห่างขอบล่างจาก 20px เป็น 60px เพื่อขยับข้อความลอยขึ้นมาอีกนิด
   },
   logoText: {
+    margin: 0,
     fontWeight: "700",
-    fontSize: "18px",
+    fontSize: "22px",
+    lineHeight: "1.4",
+    color: "#1d4ed8", // 🌟 กำหนดสีตัวหนังสือเป็นสีน้ำเงินเข้ม
+    textShadow: "0 1px 4px rgba(255, 255, 255, 0.6)" // ปรับเงาหลังตัวหนังสือให้เป็นสีขาวจางๆ เพื่อช่วยให้ตัวหนังสือสีน้ำเงินเด่นขึ้นเมื่อทับกับส่วนที่มืดในรูปภาพ
   },
   logoSubText: {
-    fontSize: "12px",
-    opacity: 0.8,
-  },
-  graphicContainer: {
-    flex: 1,
-    position: "relative",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  // จำลองรูปทรง 3D ด้วย CSS
-  main3DWindow: {
-    width: "200px",
-    height: "150px",
-    backgroundColor: "#93c5fd",
-    borderRadius: "15px",
-    position: "relative",
-    boxShadow: "inset 0 0 15px rgba(255,255,255,0.5), 10px 10px 20px rgba(0,0,0,0.1)",
-  },
-  graphicShape: {
-    position: "absolute",
-    borderRadius: "50%",
-  },
-  shape1: { // ทรงกลมสีม่วง
-    width: "40px", height: "40px",
-    backgroundColor: "#c084fc",
-    top: "20%", left: "10%",
-    boxShadow: "inset -5px -5px 10px rgba(0,0,0,0.2)",
-  },
-  shape2: { // ทรงกระบอกสีชมพู
-    width: "20px", height: "60px",
-    backgroundColor: "#f472b6",
-    borderRadius: "10px",
-    bottom: "20%", right: "15%",
-    transform: "rotate(30deg)",
-    boxShadow: "inset -3px -3px 8px rgba(0,0,0,0.2)",
-  },
-  shape3: { // กรวยสีม่วงอ่อน
-    width: "0", height: "0",
-    borderLeft: "25px solid transparent",
-    borderRight: "25px solid transparent",
-    borderBottom: "50px solid #a78bfa",
-    borderRadius: "0", // triangle doesn't need border radius
-    top: "10%", right: "20%",
-    transform: "rotate(-15deg)",
-    filter: "drop-shadow(5px 5px 5px rgba(0,0,0,0.1))"
-  },
-  footerLinkLeft: {
+    margin: 0,
     fontSize: "14px",
-    textAlign: "left",
-    opacity: 0.9,
-  },
-  linkLeft: {
-    color: "#ffffff",
-    textDecoration: "underline",
-    fontWeight: "500",
+    fontWeight: "600",
+    color: "#2563eb", // 🌟 กำหนดสีตัวหนังสือรองเป็นสีน้ำเงิน (Blue-600)
+    textShadow: "0 1px 4px rgba(255, 255, 255, 0.6)"
   },
 
-  // สไตล์ฝั่งขวา (Form Panel)
+  // สไตล์ฝั่งขวา (ฟอร์มเข้าสู่ระบบ)
   rightPanel: {
     padding: "40px 60px",
     display: "flex",
     flexDirection: "column",
   },
-  headerRight: {
-    display: "flex",
-    justifyContent: "flex-end",
-    marginBottom: "40px",
-  },
-  langSelector: {
-    fontSize: "12px",
-    color: "#94a3b8",
-    cursor: "pointer",
-  },
   formContent: {
     display: "flex",
     flexDirection: "column",
     flex: 1,
-    justifyContent: "center", // จัดฟอร์มให้อยู่ตรงกลางแนวตั้ง
+    justifyContent: "center", 
   },
   title: {
-    fontSize: "28px", // ขนาดใหญ่ขึ้นตามดีไซน์
+    fontSize: "28px", 
     fontWeight: "700",
     margin: "0 0 40px 0",
     color: "#1e293b",
@@ -269,77 +192,20 @@ const styles = {
     outline: "none",
     fontSize: "14px",
     color: "#334155",
-    backgroundColor: "#f8fafc", // สีพื้นหลังช่อง Input แบบอ่อน
-    transition: "border-color 0.2s",
-    ":focus": {
-      borderColor: "#60a5fa",
-    }
+    backgroundColor: "#f8fafc", 
   },
   button: {
     width: "100%",
     padding: "14px",
     borderRadius: "8px",
     border: "none",
-    background: "#60a5fa", // สีปุ่มฟ้าเดียวกับฝั่งซ้าย
+    background: "#60a5fa", 
     color: "#ffffff",
     fontWeight: "600",
     fontSize: "16px",
     cursor: "pointer",
     marginTop: "10px",
     boxShadow: "0 4px 6px -1px rgba(96, 165, 250, 0.3)",
-    transition: "background 0.2s",
-    ":hover": {
-      background: "#3b82f6",
-    }
-  },
-  
-  // สไตล์ Social Login
-  divider: {
-    display: "flex",
-    alignItems: "center",
-    margin: "30px 0",
-  },
-  dividerText: {
-    padding: "0 10px",
-    color: "#94a3b8",
-    fontSize: "14px",
-  },
-  socialButtons: {
-    display: "flex",
-    gap: "10px",
-    alignItems: "center",
-  },
-  socialButton: {
-    flex: 1,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: "10px",
-    padding: "12px",
-    borderRadius: "8px",
-    border: "1px solid #e2e8f0",
-    background: "#ffffff",
-    color: "#334155",
-    fontSize: "14px",
-    fontWeight: "500",
-    cursor: "pointer",
-  },
-  socialIcon: {
-    width: "18px",
-    height: "18px",
-  },
-  socialIconButton: { // สำหรับ Facebook, Twitter
-    width: "45px",
-    height: "45px",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    borderRadius: "8px",
-    border: "1px solid #e2e8f0",
-    background: "#ffffff",
-    color: "#334155",
-    fontWeight: "bold",
-    cursor: "pointer",
   }
 };
 

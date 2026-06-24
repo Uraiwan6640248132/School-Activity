@@ -667,6 +667,73 @@ app.delete('/api/publicrelations/:id', (req, res) => {
     res.json({ message: "ลบข้อมูลประชาสัมพันธ์เรียบร้อยแล้ว" });
   });
 });
+
+// =================================================================
+// 📸 API ระบบกิจกรรม (Activities - รองรับภาพแบบกลุ่ม)
+// =================================================================
+
+// 1. GET: ดึงข้อมูลกิจกรรมทั้งหมด (คุณครู และ ผู้ปกครอง ใช้เส้นเดียวกัน)
+app.get('/activities', (req, res) => {
+  // ใช้การ LEFT JOIN เพื่อดึงชื่อครู (Photographer) ออกมาแสดงผลด้วยตามโค้ดเดิมของพี่
+  const sql = `
+    SELECT a.*, u.Name as Photographer 
+    FROM activities a
+    LEFT JOIN users u ON a.User_id = u.User_id
+    ORDER BY a.Activity_date DESC, a.Activity_id DESC
+  `;
+  
+  db.query(sql, (err, results) => {
+    if (err) {
+      console.error("Database error (GET Activities):", err);
+      return res.status(500).json({ error: "เกิดข้อผิดพลาดในการดึงข้อมูล" });
+    }
+    res.json(results);
+  });
+});
+
+// 2. POST: เพิ่มกิจกรรมใหม่
+app.post('/activities', (req, res) => {
+  const { Name_activity, Location, Activity_date, User_id, Image } = req.body;
+  const sql = "INSERT INTO activities (Name_activity, Location, Activity_date, User_id, Image) VALUES (?, ?, ?, ?, ?)";
+  
+  db.query(sql, [Name_activity, Location, Activity_date, User_id, Image], (err, result) => {
+    if (err) {
+      console.error("Database error (POST Activity):", err);
+      return res.status(500).json({ error: "ไม่สามารถเพิ่มข้อมูลได้" });
+    }
+    res.status(201).json({ message: "เพิ่มข้อมูลกิจกรรมสำเร็จ" });
+  });
+});
+
+// 3. PUT: แก้ไขข้อมูลกิจกรรม
+app.put('/activities/:id', (req, res) => {
+  const activityId = req.params.id;
+  const { Name_activity, Location, Activity_date, User_id, Image } = req.body;
+  const sql = "UPDATE activities SET Name_activity = ?, Location = ?, Activity_date = ?, User_id = ?, Image = ? WHERE Activity_id = ?";
+  
+  db.query(sql, [Name_activity, Location, Activity_date, User_id, Image, activityId], (err, result) => {
+    if (err) {
+      console.error("Database error (PUT Activity):", err);
+      return res.status(500).json({ error: "ไม่สามารถแก้ไขข้อมูลได้" });
+    }
+    res.json({ message: "แก้ไขข้อมูลกิจกรรมสำเร็จ" });
+  });
+});
+
+// 4. DELETE: ลบกิจกรรม
+app.delete('/activities/:id', (req, res) => {
+  const activityId = req.params.id;
+  const sql = "DELETE FROM activities WHERE Activity_id = ?";
+  
+  db.query(sql, [activityId], (err, result) => {
+    if (err) {
+      console.error("Database error (DELETE Activity):", err);
+      return res.status(500).json({ error: "ไม่สามารถลบข้อมูลได้" });
+    }
+    res.json({ message: "ลบกิจกรรมสำเร็จ" });
+  });
+});
+
 app.listen(3001, () => {
   console.log("🚀 Server running on port 3001");
 });
