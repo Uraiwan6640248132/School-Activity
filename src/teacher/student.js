@@ -495,5 +495,4 @@ const styles = {
   }
 };
 
-
 export default StudentManagement;
