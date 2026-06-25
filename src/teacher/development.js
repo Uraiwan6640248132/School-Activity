@@ -1,8 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 
 export default function Development() {
   const [devList, setDevList] = useState([]);
   const [loading, setLoading] = useState(false);
+  
+  // 🌟 1. เพิ่ม State สำหรับเก็บข้อมูลนักเรียนทั้งหมดในระบบเพื่อนำมาจับคู่ชื่อ
+  const [students, setStudents] = useState([]);
 
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -13,7 +16,7 @@ export default function Development() {
     Student_id: 1,          
     Year: 2569,             
     Term: 'ภาคเรียนที่ 1',   
-    date: '',               
+    date: '',              
     Physical: '',           
     Weight: '',             
     Height: '',             
@@ -35,6 +38,21 @@ export default function Development() {
   });
 
   const API_URL = 'http://localhost:3001/api/development';
+  // 🌟 2. เส้น API สำหรับดึงรายชื่อนักเรียน (ปรับให้ตรงกับหลังบ้านของพี่ได้เลยครับ)
+  const STUDENTS_API_URL = 'http://localhost:3001/api/students';
+
+  // 🌟 3. ฟังก์ชันดึงรายชื่อนักเรียนจากฐานข้อมูลมาเก็บไว้แมปชื่อ
+  const fetchStudentsData = async () => {
+    try {
+      const res = await fetch(STUDENTS_API_URL);
+      if (res.ok) {
+        const data = await res.json();
+        setStudents(Array.isArray(data) ? data : []);
+      }
+    } catch (err) {
+      console.error("Error fetching students list:", err);
+    }
+  };
 
   const fetchDevelopmentData = async () => {
     setLoading(true);
@@ -52,8 +70,20 @@ export default function Development() {
   };
 
   useEffect(() => {
+    fetchStudentsData();    // 🌟 ดึงรายชื่อนักเรียนเมื่อเปิดหน้าจอครั้งแรก
     fetchDevelopmentData();
   }, []);
+
+  // 🌟 4. ฟังก์ชันสำหรับหาชื่อนักเรียนจาก Student_id เพื่อนำมาแสดงผลบน UI
+  const getStudentName = useCallback((studentId) => {
+    if (!students || students.length === 0) return `รหัส: ${studentId}`;
+    const found = students.find(s => Number(s.Student_id || s.id || s.student_id) === Number(studentId));
+    if (found) {
+      // ดึงฟิลด์ชื่อตามโครงสร้างตาราง เช่น Name หรือ First_name + Last_name
+      return found.Name || found.name || `${found.First_name || ''} ${found.Last_name || ''}`.trim();
+    }
+    return `รหัสนักเรียน: ${studentId} (ไม่พบรายชื่อ)`;
+  }, [students]);
 
   const calculateSectionScore = (scores) => {
     if (!scores || scores.length === 0) return 0;
@@ -126,7 +156,6 @@ export default function Development() {
       cleanDate = String(item.date).split('T')[0];
     }
 
-    // ดักจับข้อมูลตอนกดแก้ไข ถ้าในเบสโดนตัดคำเหลือแค่ "ภาคเรียนที่" ให้ตั้งค่าเริ่มต้นให้เต็มคำ
     let dbTerm = item.Term || item.term || 'ภาคเรียนที่ 1';
     if (dbTerm.trim() === 'ภาคเรียนที่') {
       dbTerm = 'ภาคเรียนที่ 1';
@@ -212,7 +241,10 @@ export default function Development() {
         <div style={styles.headerRow}>
           <div>
             <h2 style={styles.mainTitle}>บันทึกพัฒนาการเด็ก</h2>
-            <p style={styles.studentNameDisplay}>รหัสนักเรียนประเมิน: {formData.Student_id}</p>
+            {/* 🌟 5. แสดงชื่อของนักเรียนคนที่เราเลือกประเมินปัจจุบันบนหัวข้อหลัก */}
+            <p style={styles.studentNameDisplay}>
+              <strong>กำลังแสดงผล:</strong> {getStudentName(formData.Student_id)}
+            </p>
           </div>
           <button style={styles.btnAddDev} onClick={() => { resetForm(); setIsAddOpen(true); }}>+ พัฒนาการ</button>
         </div>
@@ -233,7 +265,6 @@ export default function Development() {
                                   (item.Date ? String(item.Date).split('T')[0] : '') || 
                                   (item.date ? String(item.date).split('T')[0] : 'ไม่ได้ระบุ');
 
-              // 🛠️ ตรวจสอบข้อมูลดิบ: ถ้าค่าดึงมาจากเบสโดนตัดขาดเหลือแค่ "ภาคเรียนที่" ให้บังคับแสดงผลเติม "1" ให้เต็มคำ
               let displayTerm = item.Term || item.term || "ภาคเรียนที่ 1";
               if (displayTerm.trim() === 'ภาคเรียนที่') {
                 displayTerm = 'ภาคเรียนที่ 1';
@@ -243,6 +274,8 @@ export default function Development() {
                 <div key={idx} style={styles.devCardItem}>
                   <div style={styles.cardItemHeader}>
                     <span style={styles.yearText}>
+                      {/* 🌟 6. แนบชื่อนักเรียนลงไปในการ์ดประเมินแต่ละใบ เพื่อให้แอดมินแยกแยะได้ง่ายขึ้น */}
+                      <strong style={{color: '#1e3a8a'}}>{getStudentName(item.Student_id)}</strong><br />
                       ปีการศึกษา {item.Year || item.year || '2569'} - {displayTerm}<br />
                       <span style={{ fontSize: '12px', color: '#666', fontWeight: 'normal' }}>วันที่ประเมิน: {displayDate}</span>
                     </span>
@@ -288,6 +321,28 @@ export default function Development() {
 
             <form onSubmit={isAddOpen ? handleAddSubmit : handleEditSubmit} style={styles.formScrollable}>
               
+              {/* 🌟 7. เปลี่ยน Input รหัสนักเรียนเป็นแบบเลือกรวมชื่อ (Dropdown Select) เพื่อให้ครูเลือกประเมินตามชื่อจริงได้ง่าย ไม่ต้องพิมพ์เลขเอง */}
+              <div style={{ marginBottom: '15px' }}>
+                <label style={styles.labelMini}>เลือกนักเรียนที่ต้องการประเมิน</label>
+                <select 
+                  name="Student_id" 
+                  value={formData.Student_id} 
+                  onChange={handleChange} 
+                  style={{...styles.inputMini, padding: '6px'}}
+                  required
+                >
+                  {students.map((std) => {
+                    const id = std.Student_id || std.id || std.student_id;
+                    const name = std.Name || std.name || `${std.First_name || ''} ${std.Last_name || ''}`;
+                    return (
+                      <option key={id} value={id}>
+                        รหัส {id} - {name}
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+
               <div style={{...styles.bodyMetricsRow, marginBottom: '15px'}}>
                 <div style={{...styles.inputMiniGroup, width: '31%'}}>
                   <label style={styles.labelMini}>ปีการศึกษา (พ.ศ.)</label>
@@ -422,6 +477,7 @@ export default function Development() {
   );
 }
 
+// styles คงเดิมจากที่ส่งมา...
 const styles = {
   container: { padding: '20px', width: '100%', display: 'flex', justifyContent: 'center', fontFamily: 'sans-serif' },
   cardMain: { border: '1px solid #ccc', borderRadius: '8px', padding: '20px', width: '100%', maxWidth: '650px', backgroundColor: '#fff', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' },
