@@ -7,41 +7,53 @@ function StudentManagement() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
 
-  // 🎯 State สำหรับเก็บว่าตอนนี้เลือกดูห้องไหนอยู่ (ถ้าเป็น null จะแสดงหน้าเลือกห้องเรียน)
-  const [selectedClass, setSelectedClass] = useState(null);
+  // 🔐 1. ดึงข้อมูลห้องประจำชั้นของครูที่ล็อกอินอยู่ (สมมติว่าเก็บไว้ใน localStorage ตอน login สำเร็จ)
+  // หากไม่มีข้อมูล หรือเป็น Admin/อาจารย์ใหญ่ ให้ default เป็น null (เผื่อไว้ดูได้ทุกห้อง)
+  const [teacherClass, setTeacherClass] = useState(() => {
+    return localStorage.getItem('user_class_level') || null;
+    // โน้ต: ตอนล็อกอินสำเร็จ อย่าลืมสั่ง localStorage.setItem('user_class_level', 'อนุบาล1 ห้องปกติ') นะครับ
+  });
 
-  // รายชื่อระดับชั้นเรียนทั้งหมดตามระบบของโรงเรียน
+  // 🎯 State สำหรับเก็บว่าตอนนี้เปิดดูห้องไหนอยู่ 
+  // ถ้าครูมีห้องประจำชั้นอยู่แล้ว ให้ล็อกห้องนั้นเป็นห้องเริ่มต้นทันที!
+  const [selectedClass, setSelectedClass] = useState(teacherClass);
+
+  // อัปเดต selectedClass อีกครั้งเมื่อค่า teacherClass เปลี่ยนแปลง
+  useEffect(() => {
+    setSelectedClass(teacherClass);
+  }, [teacherClass]);
+
   const classList = [
     "อนุบาล1 ห้องปกติ", "อนุบาล1 ห้อง 3 ภาษา",
     "อนุบาล2 ห้องปกติ", "อนุบาล2 ห้อง 3 ภาษา",
     "อนุบาล3 ห้องปกติ", "อนุบาล3 ห้อง 3 ภาษา"
   ];
 
-  // 📝 โครงสร้าง formData ดั้งเดิมของพี่
-  const [formData, setFormData] = useState({ 
-    Student_id: '', 
-    Name: '', 
-    Birthday: '', 
-    Gender: 'ชาย', 
-    Class_level: 'อนุบาล1 ห้องปกติ', 
-    Blood_group: '', 
+  const [formData, setFormData] = useState({
+    Student_id: '',
+    Name: '',
+    Birthday: '',
+    Gender: 'ชาย',
+    Class_level: selectedClass || 'อนุบาล1 ห้องปกติ',
+    Blood_group: '',
     User_id: 1,
-    Image: '' 
+    Image: ''
   });
-  
+
   const [selectedStudentId, setSelectedStudentId] = useState(null);
   const [viewingStudent, setViewingStudent] = useState(null);
 
   const resetForm = () => {
-    setFormData({ 
-      Student_id: '', 
-      Name: '', 
-      Birthday: '', 
-      Gender: 'ชาย', 
-      Class_level: selectedClass || 'อนุบาล1 ห้องปกติ', // ✨ ล็อกห้องให้อัตโนมัติตามห้องที่ครูกำลังเปิดดูอยู่
-      Blood_group: '', 
-      User_id: 1, 
-      Image: '' 
+    setFormData({
+      Student_id: '',
+      Name: '',
+      Birthday: '',
+      Gender: 'ชาย',
+      // 🔐 2. ล็อกระดับชั้นตอนเพิ่มข้อมูลให้ตรงกับห้องที่ครูประจำชั้นอยู่เสมอ เปลี่ยนแปลงไม่ได้
+      Class_level: selectedClass || 'อนุบาล1 ห้องปกติ',
+      Blood_group: '',
+      User_id: 1,
+      Image: ''
     });
   };
 
@@ -88,10 +100,10 @@ function StudentManagement() {
     const payload = {
       Name: formData.Name,
       Birthday: formData.Birthday,
-      Class_level: formData.Class_level,
+      Class_level: formData.Class_level, // ห้องเรียนที่ถูกล็อกไว้
       Blood_group: formData.Blood_group || '',
       User_id: formData.User_id || 1,
-      Image: formData.Image || '', 
+      Image: formData.Image || '',
       Gender: genderValue
     };
 
@@ -100,19 +112,19 @@ function StudentManagement() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     })
-    .then(res => {
-      if (!res.ok) throw new Error("Insert Failed");
-      return res.json();
-    })
-    .then(() => {
-      fetchStudents();
-      setIsAddModalOpen(false);
-      resetForm();
-    })
-    .catch(err => {
-      console.error(err);
-      alert("ไม่สามารถเพิ่มนักเรียนได้: โปรดตรวจสอบฐานข้อมูลหลังบ้าน");
-    });
+      .then(res => {
+        if (!res.ok) throw new Error("Insert Failed");
+        return res.json();
+      })
+      .then(() => {
+        fetchStudents();
+        setIsAddModalOpen(false);
+        resetForm();
+      })
+      .catch(err => {
+        console.error(err);
+        alert("ไม่สามารถเพิ่มนักเรียนได้: โปรดตรวจสอบฐานข้อมูลหลังบ้าน");
+      });
   };
 
   const handleOpenEditModal = (e, student) => {
@@ -146,13 +158,13 @@ function StudentManagement() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     })
-    .then(res => res.json())
-    .then(() => {
-      fetchStudents();
-      setIsEditModalOpen(false);
-      resetForm();
-    })
-    .catch(err => alert("ไม่สามารถแก้ไขข้อมูลได้สำเร็จ"));
+      .then(res => res.json())
+      .then(() => {
+        fetchStudents();
+        setIsEditModalOpen(false);
+        resetForm();
+      })
+      .catch(err => alert("ไม่สามารถแก้ไขข้อมูลได้สำเร็จ"));
   };
 
   const handleOpenDeleteModal = (e, id) => {
@@ -165,12 +177,12 @@ function StudentManagement() {
     fetch(`http://localhost:3001/api/students/${selectedStudentId}`, {
       method: 'DELETE'
     })
-    .then(res => res.json())
-    .then(() => {
-      fetchStudents();
-      setIsDeleteModalOpen(false);
-    })
-    .catch(err => console.error(err));
+      .then(res => res.json())
+      .then(() => {
+        fetchStudents();
+        setIsDeleteModalOpen(false);
+      })
+      .catch(err => console.error(err));
   };
 
   const handleOpenViewModal = (student) => {
@@ -188,33 +200,38 @@ function StudentManagement() {
     }
   };
 
-  // 🔍 ฟังก์ชันคำนวณจำนวนนักเรียนในห้องเรียนนั้นๆ
   const getStudentCount = (className) => {
     return students.filter(s => s.Class_level === className).length;
   };
 
-  // 📝 กรองรายชื่อเฉพาะเด็กที่อยู่ห้องที่ถูกคลิกเลือก
+  // 🔐 3. กรองข้อมูลนักเรียนให้อิงตามห้องเรียนที่เลือกเสมอ
   const filteredStudents = students.filter(s => s.Class_level === selectedClass);
 
   return (
     <div style={styles.studentContainer}>
       <div style={styles.studentHeader}>
         <div style={styles.titleSection}>
-          <button style={styles.btnTab} onClick={() => setSelectedClass(null)}>ระดับปฐมวัย</button>
+          {/* ซ่อนปุ่มแท็บระดับปฐมวัยถ้าครูถูกล็อกห้องไว้แล้วเพื่อไม่ให้กดกลับไปหน้าหลัก */}
+          {!teacherClass && (
+            <button style={styles.btnTab} onClick={() => setSelectedClass(null)}>ระดับปฐมวัย</button>
+          )}
           <h3 style={styles.headerTitle}>
             {selectedClass ? `รายชื่อนักเรียนชั้น: ${selectedClass}` : "จัดการข้อมูลนักเรียนระดับปฐมวัย (เลือกห้องเรียน)"}
           </h3>
         </div>
-        {/* แสดงปุ่มควบคุมเมื่ออยู่ในห้องเรียนแล้วเท่านั้น */}
+
         {selectedClass && (
           <div style={{ display: 'flex', gap: '10px' }}>
-            <button style={styles.btnBack} onClick={() => setSelectedClass(null)}>⬅️ ย้อนกลับ</button>
+            {/* 🔐 4. ปุ่มย้อนกลับจะโชว์เฉพาะคนที่เป็น Admin หรือผู้ที่ไม่มีห้องประจำชั้นล็อกไว้เท่านั้น */}
+            {!teacherClass && (
+              <button style={styles.btnBack} onClick={() => setSelectedClass(null)}>⬅️ ย้อนกลับ</button>
+            )}
             <button style={styles.btnValueAdd} onClick={handleOpenAddModal}>+ เพิ่มนักเรียนในห้องนี้</button>
           </div>
         )}
       </div>
 
-      {/* ================= หน้าที่ 1: แสดงห้องเรียนทั้งหมด (เมื่อ selectedClass เป็น null) ================= */}
+      {/* ================= หน้าที่ 1: เลือกห้องเรียน (แสดงเมื่อไม่มีการเลือกห้อง และไม่มีการล็อกห้องครู) ================= */}
       {!selectedClass ? (
         <div style={styles.classGrid}>
           {classList.map((className) => (
@@ -227,7 +244,7 @@ function StudentManagement() {
           ))}
         </div>
       ) : (
-        /* ================= หน้าที่ 2: แสดงรายชื่อนักเรียนในห้องที่เลือก (หน้าเดิมของพี่) ================= */
+        /* ================= หน้าที่ 2: แสดงรายชื่อเด็กในห้องเรียนที่ถูกล็อกไว้ ================= */
         <div style={styles.studentGrid}>
           {filteredStudents.map((student) => (
             <div style={styles.studentCard} key={student.Student_id} onClick={() => handleOpenViewModal(student)}>
@@ -256,8 +273,6 @@ function StudentManagement() {
         </div>
       )}
 
-      {/* ================= MODAL ทั้งหมดคงเดิมตามรูปแบบเดิมของพี่ร้อยเปอร์เซ็นต์ครับ ================= */}
-      
       {/* MODAL: แสดงข้อมูลรายละเอียด */}
       {isViewModalOpen && viewingStudent && (
         <div style={styles.modalOverlay} onClick={() => setIsViewModalOpen(false)}>
@@ -322,22 +337,29 @@ function StudentManagement() {
               </div>
               <div style={styles.formGroup}>
                 <label style={styles.formLabel}>ชื่อ-นามสกุล</label>
-                <input type="text" required style={styles.formInput} value={formData.Name} onChange={(e) => setFormData({...formData, Name: e.target.value})} />
+                <input type="text" required style={styles.formInput} value={formData.Name} onChange={(e) => setFormData({ ...formData, Name: e.target.value })} />
               </div>
               <div style={styles.formGroup}>
                 <label style={styles.formLabel}>วันเกิด</label>
-                <input type="date" required style={styles.formInput} value={formData.Birthday} onChange={(e) => setFormData({...formData, Birthday: e.target.value})} />
+                <input type="date" required style={styles.formInput} value={formData.Birthday} onChange={(e) => setFormData({ ...formData, Birthday: e.target.value })} />
               </div>
               <div style={styles.formRow}>
                 <div style={{ ...styles.formGroup, flex: 1 }}>
                   <label style={styles.formLabel}>ระดับชั้น</label>
-                  <select style={styles.formSelect} required value={formData.Class_level} onChange={(e) => setFormData({...formData, Class_level: e.target.value})}>
+                  {/* 🔐 5. ล็อกไม่ให้ครูเปลี่ยนห้องเรียน (แสดงเป็นข้อมูลนิ่งๆ หรือปิดการเลือก) */}
+                  <select
+                    style={{ ...styles.formSelect, backgroundColor: '#f0f0f0', cursor: 'not-allowed' }}
+                    disabled={!!teacherClass}
+                    required
+                    value={formData.Class_level}
+                    onChange={(e) => setFormData({ ...formData, Class_level: e.target.value })}
+                  >
                     {classList.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
                 <div style={{ ...styles.formGroup, flex: 1 }}>
                   <label style={styles.formLabel}>เพศ</label>
-                  <select style={styles.formSelect} required value={formData.Gender} onChange={(e) => setFormData({...formData, Gender: e.target.value})}>
+                  <select style={styles.formSelect} required value={formData.Gender} onChange={(e) => setFormData({ ...formData, Gender: e.target.value })}>
                     <option value="ชาย">ชาย</option>
                     <option value="หญิง">หญิง</option>
                   </select>
@@ -345,7 +367,7 @@ function StudentManagement() {
               </div>
               <div style={styles.formGroup}>
                 <label style={styles.formLabel}>กรุ๊ปเลือด</label>
-                <select style={styles.formSelect} value={formData.Blood_group} onChange={(e) => setFormData({...formData, Blood_group: e.target.value})}>
+                <select style={styles.formSelect} value={formData.Blood_group} onChange={(e) => setFormData({ ...formData, Blood_group: e.target.value })}>
                   <option value="">เลือกกรุ๊ปเลือด</option>
                   <option value="A">A</option>
                   <option value="B">B</option>
@@ -381,22 +403,29 @@ function StudentManagement() {
               </div>
               <div style={styles.formGroup}>
                 <label style={styles.formLabel}>ชื่อ-นามสกุล</label>
-                <input type="text" required style={styles.formInput} value={formData.Name} onChange={(e) => setFormData({...formData, Name: e.target.value})} />
+                <input type="text" required style={styles.formInput} value={formData.Name} onChange={(e) => setFormData({ ...formData, Name: e.target.value })} />
               </div>
               <div style={styles.formGroup}>
                 <label style={styles.formLabel}>วันเกิด</label>
-                <input type="date" required style={styles.formInput} value={formData.Birthday} onChange={(e) => setFormData({...formData, Birthday: e.target.value})} />
+                <input type="date" required style={styles.formInput} value={formData.Birthday} onChange={(e) => setFormData({ ...formData, Birthday: e.target.value })} />
               </div>
               <div style={styles.formRow}>
                 <div style={{ ...styles.formGroup, flex: 1 }}>
                   <label style={styles.formLabel}>ระดับชั้น</label>
-                  <select style={styles.formSelect} required value={formData.Class_level} onChange={(e) => setFormData({...formData, Class_level: e.target.value})}>
+                  {/* 🔐 6. ล็อกระดับชั้นตอนแก้ไขข้อมูลด้วยเช่นกัน */}
+                  <select
+                    style={{ ...styles.formSelect, backgroundColor: '#f0f0f0', cursor: 'not-allowed' }}
+                    disabled={!!teacherClass}
+                    required
+                    value={formData.Class_level}
+                    onChange={(e) => setFormData({ ...formData, Class_level: e.target.value })}
+                  >
                     {classList.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
                 <div style={{ ...styles.formGroup, flex: 1 }}>
                   <label style={styles.formLabel}>เพศ</label>
-                  <select style={styles.formSelect} value={formData.Gender} onChange={(e) => setFormData({...formData, Gender: e.target.value})}>
+                  <select style={styles.formSelect} value={formData.Gender} onChange={(e) => setFormData({ ...formData, Gender: e.target.value })}>
                     <option value="ชาย">ชาย</option>
                     <option value="หญิง">หญิง</option>
                   </select>
@@ -404,7 +433,7 @@ function StudentManagement() {
               </div>
               <div style={styles.formGroup}>
                 <label style={styles.formLabel}>กรุ๊ปเลือด</label>
-                <select style={styles.formSelect} value={formData.Blood_group} onChange={(e) => setFormData({...formData, Blood_group: e.target.value})}>
+                <select style={styles.formSelect} value={formData.Blood_group} onChange={(e) => setFormData({ ...formData, Blood_group: e.target.value })}>
                   <option value="A">A</option>
                   <option value="B">B</option>
                   <option value="O">O</option>
@@ -435,7 +464,7 @@ function StudentManagement() {
   );
 }
 
-// 🎨 นำสไตล์ดั้งเดิมของพี่มาใช้ทั้งหมด และเสริมในส่วนของ UI การแสดงผลกล่องห้องเรียนให้กลมกลืนกันครับ
+// Styles คงเดิมทั้งหมดครับ...
 const styles = {
   studentContainer: { padding: '30px', fontFamily: 'system-ui, -apple-system, sans-serif', backgroundColor: '#ffffff', minHeight: '100vh' },
   studentHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '30px' },
@@ -444,15 +473,12 @@ const styles = {
   btnTab: { background: '#ffffff', border: '1px solid #cccccc', padding: '6px 30px', borderRadius: '6px', boxShadow: '0px 2px 4px rgba(0,0,0,0.08)', fontWeight: 'bold', cursor: 'pointer', width: 'fit-content' },
   btnValueAdd: { background: '#ffffff', border: '1px solid #000000', padding: '8px 18px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' },
   btnBack: { background: '#ffffff', border: '1px solid #cccccc', padding: '8px 18px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' },
-  
-  // 🏫 เพิ่มสไตล์สวยๆ มินิมอลสำหรับ Grid ห้องเรียนหน้าแรก (กลมกลืนกับธีมเดิมที่เป็นขาว-ดำ-เทา)
   classGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '25px' },
   classCard: { background: '#ffffff', border: '1px solid #cccccc', borderRadius: '16px', padding: '25px', textAlign: 'center', boxShadow: '0 2px 6px rgba(0,0,0,0.04)', cursor: 'pointer', transition: 'transform 0.2s' },
   classIcon: { fontSize: '40px', marginBottom: '12px' },
   classNameText: { margin: '0 0 6px 0', fontSize: '15px', fontWeight: '600', color: '#000000' },
   classCountText: { margin: '0 0 18px 0', fontSize: '13px', color: '#666666' },
   btnEnterClass: { background: '#ffffff', border: '1px solid #cccccc', color: '#333333', padding: '8px 16px', borderRadius: '8px', fontWeight: '500', fontSize: '12px', cursor: 'pointer', width: '100%' },
-
   studentGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' },
   studentCard: { border: '1px solid #cccccc', borderRadius: '14px', padding: '15px', background: '#ffffff', boxShadow: '0 2px 6px rgba(0,0,0,0.04)', cursor: 'pointer', transition: 'transform 0.2s' },
   cardInfo: { display: 'flex', gap: '15px', alignItems: 'center', marginBottom: '15px' },
@@ -480,18 +506,8 @@ const styles = {
   modalDeleteActions: { display: 'flex', gap: '15px' },
   btnCancel: { flex: '1', padding: '8px', border: '1px solid #cccccc', background: '#ffffff', borderRadius: '6px', cursor: 'pointer' },
   btnConfirmDelete: { flex: '1', padding: '8px', border: '1px solid #000000', background: '#ffffff', fontWeight: 'bold', borderRadius: '6px', cursor: 'pointer' },
-  infoDisplayBox: { 
-    padding: '6px 10px',
-    border: '1px solid #e5e5e5', 
-    borderRadius: '6px', 
-    fontSize: '13px',
-    background: '#f9f9f9', 
-    color: '#333333', 
-    height: '32px',
-    boxSizing: 'border-box',
-    width: '100%',
-    display: 'flex', 
-    alignItems: 'center'
+  infoDisplayBox: {
+    padding: '6px 10px', border: '1px solid #e5e5e5', borderRadius: '6px', fontSize: '13px', background: '#f9f9f9', color: '#333333', height: '32px', boxSizing: 'border-box', width: '100%', display: 'flex', alignItems: 'center'
   }
 };
 
