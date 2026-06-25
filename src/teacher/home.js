@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { Link } from "react-router-dom"; 
+import { Link } from "react-router-dom";
 
 const Home = () => {
   const [counts, setCounts] = useState({ students: 0, users: 0, activities: 0 });
@@ -35,7 +35,7 @@ const Home = () => {
 
   return (
     <div style={styles.container}>
-      {/* 🟢 ส่วนบน: เมนูการ์ดตัวนับจำนวนและลิงก์เชื่อมหน้าตามภาพดีไซน์ */}
+      {/* 🟢 ส่วนบน: เมนูการ์ดตัวนับจำนวนและลิงก์เชื่อมหน้า (ลบผู้ปกครองออกแล้ว) */}
       <div style={styles.cardRow}>
         <Link to="/students" style={styles.card}>
           <div style={styles.cardTitle}>นักเรียน</div>
@@ -51,14 +51,9 @@ const Home = () => {
           <div style={styles.cardTitle}>กิจกรรม</div>
           <div style={styles.cardCount}>{loading ? "..." : `${counts.activities} กิจกรรม`}</div>
         </Link>
-
-        <Link to="/users" style={styles.card}>
-          <div style={styles.cardTitle}>ผู้ปกครอง</div>
-          <div style={styles.cardCount}>{loading ? "..." : "ดูข้อมูล"}</div>
-        </Link>
       </div>
 
-      {/* 🔵 ส่วนล่าง: กล่องข้อมูลอัปเดตล่าสุด 2 ฝั่งแยกตามภาพดีไซน์ */}
+      {/* 🔵 ส่วนล่าง: กล่องข้อมูลอัปเดตล่าสุด 2 ฝั่ง */}
       <div style={styles.contentRow}>
         {/* กล่องการบ้านล่าสุด */}
         <div style={styles.infoBox}>
@@ -69,7 +64,7 @@ const Home = () => {
             ) : latestNotifications.length > 0 ? (
               latestNotifications.map((item, index) => (
                 <div key={index} style={styles.listItem}>
-                  <strong>{item.Subject}</strong> - {item.Details || "ไม่มีรายละเอียด"} 
+                  <strong>{item.Subject}</strong> - {item.Details || "ไม่มีรายละเอียด"}
                   <span style={styles.itemDate}> (ชั้น: {item.Class_level})</span>
                 </div>
               ))
@@ -87,10 +82,11 @@ const Home = () => {
               <p style={styles.emptyText}>กำลังโหลดข้อมูล...</p>
             ) : latestActivities.length > 0 ? (
               latestActivities.map((item, index) => (
-                <div key={index} style={styles.listItem}>
+                /* 🌟 ปรับปรุงใหม่: เปลี่ยนเป็น Link เพื่อให้กดคลิกเข้าไปดูหน้ารายละเอียดกิจกรรมได้ */
+                <Link to="/activity" key={index} style={styles.linkItem}>
                   <strong>{item.Name_activity}</strong>
                   <span style={styles.itemDate}> 📍 {item.Location || "ไม่ระบุสถานที่"}</span>
-                </div>
+                </Link>
               ))
             ) : (
               <p style={styles.emptyText}>ไม่มีข้อมูลกิจกรรมล่าสุด</p>
@@ -113,8 +109,21 @@ const styles = {
   boxTitle: { fontSize: "20px", fontWeight: "bold", margin: "0 0 20px 0", color: "#000000" },
   listBox: { display: "flex", flexDirection: "column", gap: "12px" },
   listItem: { padding: "10px 0", borderBottom: "1px solid #eee", fontSize: "15px", color: "#333" },
+
+  // 🌟 เพิ่มสไตล์ใหม่สำหรับลิงก์กิจกรรมล่าสุด เพื่อให้เวลาเอาเมาส์ไปชี้ (Hover) แล้วแสดงว่าเป็นปุ่มกดได้
+  linkItem: {
+    display: "block",
+    padding: "10px 0",
+    borderBottom: "1px solid #eee",
+    fontSize: "15px",
+    color: "#333",
+    textDecoration: "none",
+    transition: "background-color 0.2s",
+    cursor: "pointer"
+  },
+
   itemDate: { fontSize: "13px", color: "#888888", float: "right" },
   emptyText: { color: "#999999", textAlign: "center", padding: "20px" },
 };
 
-export default Home; // ✅ Export ชื่อคอมโพเนนต์ตัวใหญ่ให้สัมพันธ์กับหน้า App.js
+export default Home;
