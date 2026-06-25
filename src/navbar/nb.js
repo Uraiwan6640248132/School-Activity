@@ -46,6 +46,10 @@ function Navbar({ children }) {
     }
   };
 
+
+
+
+  
   return (
     <div style={styles.layout}>
       {/* Sidebar */}
