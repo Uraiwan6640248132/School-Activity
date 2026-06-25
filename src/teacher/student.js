@@ -494,4 +494,6 @@ const styles = {
     alignItems: 'center'
   }
 };
+
+
 export default StudentManagement;
