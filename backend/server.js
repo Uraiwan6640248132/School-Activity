@@ -238,12 +238,11 @@ app.put("/notifications/:id", (req, res) => {
 });
 
 // =================================================================
-// 📢 API ระบบข่าวสารประชาสัมพันธ์ (Public Relations) - แก้ไขตามโครงสร้างจริง
+// 📢 API ระบบข่าวสารประชาสัมพันธ์ (Public Relations) - เพิ่มฟิลด์ Detail เรียบร้อยแล้ว
 // =================================================================
 
-// 1. GET: ดึงข้อมูลข่าวสารทั้งหมดพร้อมชื่อคนโพสต์
+// 1. GET: ดึงข้อมูลข่าวสารทั้งหมดพร้อมชื่อคนโพสต์ (คงเดิม)
 app.get('/api/publicrelations', (req, res) => {
-  // 🌟 แก้ไขตรงนี้: เปลี่ยนชื่อตารางเป็น publicrelation (ไม่มี s) ให้ตรงกับ phpMyAdmin ของพี่
   const sql = `
     SELECT pr.*, u.Name AS CreatedBy_Name 
     FROM publicrelation pr
@@ -260,18 +259,21 @@ app.get('/api/publicrelations', (req, res) => {
   });
 });
 
-// 2. POST: เพิ่มข่าวประชาสัมพันธ์ใหม่
+// 2. POST: เพิ่มข่าวประชาสัมพันธ์ใหม่ 🌟 (แก้ไขจุดที่ 1)
 app.post('/api/publicrelations', (req, res) => {
   const body = req.body || {};
   const Name_activity = body.Name || body.Name_activity || null;
   const cleanDate = body.date || body.Date || new Date().toISOString().split('T')[0];
   const Location = body.Location || null;
+  const Detail = body.Detail || null; // 👈 1. รับค่า Detail ที่ส่งมาจาก React หน้าบ้าน
   const User_id = parseInt(body.User_id || body.user_id, 10) || 1;
   const Image = body.Image || null;
 
-  // 🌟 เปลี่ยนจาก publicrelations เป็น publicrelation (ไม่มี s)
-  const sql = "INSERT INTO publicrelation (Name_activity, Date, Location, User_id, Image) VALUES (?, ?, ?, ?, ?)";
-  const values = [Name_activity, cleanDate, Location, User_id, Image];
+  // 👈 2. เพิ่มคอลัมน์ Detail และ เครื่องหมาย ? ในคำสั่ง SQL
+  const sql = "INSERT INTO publicrelation (Name_activity, Date, Location, Detail, User_id, Image) VALUES (?, ?, ?, ?, ?, ?)";
+
+  // 👈 3. ใส่ตัวแปร Detail เข้าไปในวงเล็บ values (ต้องเรียงลำดับให้ตรงกับเครื่องหมาย ?)
+  const values = [Name_activity, cleanDate, Location, Detail, User_id, Image];
 
   db.query(sql, values, (err, result) => {
     if (err) {
@@ -282,19 +284,22 @@ app.post('/api/publicrelations', (req, res) => {
   });
 });
 
-// 3. PUT: แก้ไขข้อมูลข่าวประชาสัมพันธ์
+// 3. PUT: แก้ไขข้อมูลข่าวประชาสัมพันธ์ 🌟 (แก้ไขจุดที่ 2)
 app.put('/api/publicrelations/:id', (req, res) => {
   const prId = req.params.id;
   const body = req.body || {};
   const Name_activity = body.Name || body.Name_activity || null;
   const cleanDate = body.date || body.Date || new Date().toISOString().split('T')[0];
   const Location = body.Location || null;
+  const Detail = body.Detail || null; // 👈 1. รับค่า Detail ที่ส่งมาจากฟอร์มแก้ไขหน้าบ้าน
   const User_id = parseInt(body.User_id || body.user_id, 10) || 1;
   const Image = body.Image || null;
 
-  // 🌟 เปลี่ยนจาก publicrelations เป็น publicrelation (ไม่มี s)
-  const sql = "UPDATE publicrelation SET Name_activity = ?, Date = ?, Location = ?, User_id = ?, Image = ? WHERE PublicRelation_id = ?";
-  const values = [Name_activity, cleanDate, Location, User_id, Image, prId];
+  // 👈 2. เพิ่ม Detail = ? เข้าไปในคำสั่งอัปเดต SQL
+  const sql = "UPDATE publicrelation SET Name_activity = ?, Date = ?, Location = ?, Detail = ?, User_id = ?, Image = ? WHERE PublicRelation_id = ?";
+
+  // 👈 3. ใส่ตัวแปร Detail เรียงตามลำดับของเครื่องหมาย ? ด้านบน
+  const values = [Name_activity, cleanDate, Location, Detail, User_id, Image, prId];
 
   db.query(sql, values, (err, result) => {
     if (err) {
@@ -305,10 +310,9 @@ app.put('/api/publicrelations/:id', (req, res) => {
   });
 });
 
-// 4. DELETE: ลบข่าวประชาสัมพันธ์ออกจากระบบ
+// 4. DELETE: ลบข่าวประชาสัมพันธ์ออกจากระบบ (คงเดิม)
 app.delete('/api/publicrelations/:id', (req, res) => {
   const prId = req.params.id;
-  // 🌟 เปลี่ยนจาก publicrelations เป็น publicrelation (ไม่มี s)
   const sql = "DELETE FROM publicrelation WHERE PublicRelation_id = ?";
 
   db.query(sql, [prId], (err, result) => {
@@ -319,6 +323,7 @@ app.delete('/api/publicrelations/:id', (req, res) => {
     res.json({ message: "ลบข้อมูลประชาสัมพันธ์เรียบร้อยแล้ว" });
   });
 });
+
 // ==========================================
 // 📅 ระบบ API จัดการปฏิทินกิจกรรม (CALENDAR) - [แก้ไขบั๊ก Location บันทึกเป็น NULL]
 // ==========================================
@@ -334,19 +339,19 @@ app.post("/api/calendar", (req, res) => {
   const Name = body.Name || body.name || null;
   const cleanDate = parseDateForMySQL(body.Date || body.date);
   const Time = body.Time || body.time || null;
-  
+
   // 🌟 ดักจับทั้ง Location (หน้าบ้านส่งอันนี้มา) และ location เพื่อไม่ให้หลุดเป็นค่า NULL อีกต่อไป
-  const Location = body.Location || body.location || null; 
+  const Location = body.Location || body.location || null;
   const finalUserId = parseInt(body.User_id || body.user_id, 10) || 2;
 
-  db.query("INSERT INTO calendar (Name, Date, Time, Location, User_id) VALUES (?, ?, ?, ?, ?)", 
+  db.query("INSERT INTO calendar (Name, Date, Time, Location, User_id) VALUES (?, ?, ?, ?, ?)",
     [Name, cleanDate, Time, Location, finalUserId], (err, result) => {
       if (err) {
         console.error("❌ ล้มเหลวในการเพิ่มปฏิทิน:", err.message);
         return res.status(500).json(err);
       }
       res.json({ message: "เพิ่มกิจกรรมลงปฏิทินสำเร็จ", Calendar_id: result.insertId });
-  });
+    });
 });
 
 app.put("/api/calendar/:id", (req, res) => {
@@ -354,19 +359,19 @@ app.put("/api/calendar/:id", (req, res) => {
   const Name = body.Name || body.name || null;
   const cleanDate = parseDateForMySQL(body.Date || body.date);
   const Time = body.Time || body.time || null;
-  
+
   // 🌟 ดักจับทั้ง Location และ location สำหรับงานแก้ไข
   const Location = body.Location || body.location || null;
   const finalUserId = parseInt(body.User_id || body.user_id, 10) || 2;
 
-  db.query("UPDATE calendar SET Name=?, Date=?, Time=?, Location=?, User_id=? WHERE Calendar_id=?", 
+  db.query("UPDATE calendar SET Name=?, Date=?, Time=?, Location=?, User_id=? WHERE Calendar_id=?",
     [Name, cleanDate, Time, Location, finalUserId, req.params.id], (err, result) => {
       if (err) {
         console.error("❌ ล้มเหลวในการแก้ไขปฏิทิน:", err.message);
         return res.status(500).json({ error: err.message });
       }
       res.json({ message: "แก้ไขข้อมูลปฏิทินสำเร็จ" });
-  });
+    });
 });
 
 // ==========================================
