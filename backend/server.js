@@ -446,6 +446,66 @@ app.post('/api/development', (req, res) => {
   });
 });
 
+// 4. PUT: แก้ไข/อัปเดตข้อมูลประเมินพัฒนาการเด็ก
+app.put('/api/development/:id', (req, res) => {
+  const devId = req.params.id;
+  const body = req.body || {};
+
+  // รับค่าฟิลด์ต่าง ๆ ที่ส่งมาจากฟอร์มแก้ไขหน้าบ้าน
+  const {
+    Student_id, student_id,
+    Year, year,
+    Term, term,
+    Physical, Weight, Height, Dental_health, Vaccination,
+    Motor_skills, Emotional, Emotion, Emotion_control, Confidence,
+    Social, Stress, Interaction, Assistance,
+    Intellectual, Problem_solving, Communication, Remembering
+  } = body;
+
+  const sql = `
+    UPDATE development 
+    SET 
+      Student_id = ?, Year = ?, Term = ?, 
+      Physical = ?, Weight = ?, Height = ?, Dental_health = ?, Vaccination = ?, 
+      Motor_skills = ?, Emotional = ?, Emotion = ?, Emotion_control = ?, Confidence = ?, 
+      Social = ?, Stress = ?, Interaction = ?, Assistance = ?, 
+      Intellectual = ?, Problem_solving = ?, Communication = ?, Remembering = ?
+    WHERE Development_id = ?
+  `;
+
+  const values = [
+    Student_id || student_id || 1,
+    Year || year || "2569",
+    Term || term || "ภาคเรียนที่ 1",
+    Physical || null, Weight || null, Height || null, Dental_health || null, Vaccination || null,
+    Motor_skills || null, Emotional || null, Emotion || null, Emotion_control || null, Confidence || null,
+    Social || null, Stress || null, Interaction || null, Assistance || null,
+    Intellectual || null, Problem_solving || null, Communication || null, Remembering || null,
+    devId // เงื่อนไข WHERE ปิดท้าย
+  ];
+
+  db.query(sql, values, (err, result) => {
+    if (err) {
+      console.error("Database error (PUT DEV):", err);
+      return res.status(500).json({ error: "ไม่สามารถอัปเดตข้อมูลพัฒนาการได้", details: err.message });
+    }
+    res.json({ message: "แก้ไขข้อมูลประเมินพัฒนาการสำเร็จ" });
+  });
+});
+// 3. DELETE: ลบข้อมูลประเมินพัฒนาการเด็กออกจากระบบ
+app.delete('/api/development/:id', (req, res) => {
+  const devId = req.params.id;
+  const sql = "DELETE FROM development WHERE Development_id = ?";
+
+  db.query(sql, [devId], (err, result) => {
+    if (err) {
+      console.error("Database error (DELETE DEV):", err);
+      return res.status(500).json({ error: "ไม่สามารถลบข้อมูลพัฒนาการได้", details: err.message });
+    }
+    res.json({ message: "ลบข้อมูลประเมินพัฒนาการเรียบร้อยแล้ว" });
+  });
+});
+
 // ==========================================
 // 🔐 ระบบตรวจสอบการเข้าสู่ระบบ (LOGIN API)
 // ==========================================
