@@ -158,4 +158,6 @@ const styles = {
   main: { padding: 25, flex: 1 },
 };
 
+
+
 export default Navbar;
