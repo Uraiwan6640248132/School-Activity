@@ -7,21 +7,22 @@ export default function PublicRelations() {
   // 🌟 เก็บข้อมูลผู้ใช้งานทั้งหมดเพื่อใช้สำหรับปุ่มตัวเลือก (Dropdown Select) ตอนเพิ่ม/แก้ไขข้อมูล
   const [users, setUsers] = useState([]);
 
-  const [isAddOpen, setIsAddOpen] = useState(false);       
-  const [isEditOpen, setIsEditOpen] = useState(false);     
-  const [isDeleteOpen, setIsDeleteOpen] = useState(false); 
+  const [isAddOpen, setIsAddOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
   const [formData, setFormData] = useState({
     Name: '',
     date: '',
     Location: '',
-    User_id: 1, 
+    Detail: '', // 🌟 เพิ่มฟิลด์ Detail รองรับข้อมูลในฐานข้อมูล
+    User_id: 1,
     Image: ''
   });
-  const [selectedId, setSelectedId] = useState(null); 
+  const [selectedId, setSelectedId] = useState(null);
 
   const API_URL = 'http://localhost:3001/api/publicrelations';
-  
+
   // 🛠️ แก้ไขตัด /api ออกให้ตรงกับเส้นทางหลังบ้านจริง (แก้ไขปัญหา 404 เพื่อให้ดึงรายชื่อลง Select ได้ถูกต้อง)
   const USERS_API_URL = 'http://localhost:3001/users';
 
@@ -54,7 +55,7 @@ export default function PublicRelations() {
   };
 
   useEffect(() => {
-    fetchUsersData(); 
+    fetchUsersData();
     fetchPRData();
   }, []);
 
@@ -79,7 +80,7 @@ export default function PublicRelations() {
       });
       if (res.ok) {
         alert("เพิ่มข่าวประชาสัมพันธ์สำเร็จ!");
-        setIsAddOpen(false); 
+        setIsAddOpen(false);
         clearForm();
         fetchPRData();
       }
@@ -98,7 +99,7 @@ export default function PublicRelations() {
       });
       if (res.ok) {
         alert("แก้ไขข้อมูลสำเร็จ!");
-        setIsEditOpen(false); 
+        setIsEditOpen(false);
         clearForm();
         fetchPRData();
       }
@@ -112,7 +113,7 @@ export default function PublicRelations() {
       const res = await fetch(`${API_URL}/${selectedId}`, { method: 'DELETE' });
       if (res.ok) {
         alert("ลบข้อมูลสำเร็จ!");
-        setIsDeleteOpen(false); 
+        setIsDeleteOpen(false);
         fetchPRData();
       }
     } catch (err) {
@@ -121,31 +122,33 @@ export default function PublicRelations() {
   };
 
   const clearForm = () => {
-    setFormData({ 
-      Name: '', 
-      date: '', 
-      Location: '', 
-      User_id: users.length > 0 ? (users[0].User_id || 1) : 1, // กำหนดค่าเริ่มต้นเป็นผู้ใช้คนแรกในระบบที่มีจริง
-      Image: '' 
+    setFormData({
+      Name: '',
+      date: '',
+      Location: '',
+      Detail: '', // 🌟 ล้างค่าฝั่ง Detail
+      User_id: users.length > 0 ? (users[0].User_id || 1) : 1,
+      Image: ''
     });
     setSelectedId(null);
   };
 
   const openEditModal = (item) => {
-    setSelectedId(item.PublicRelation_id); 
+    setSelectedId(item.PublicRelation_id);
     setFormData({
-      Name: item.Name_activity || '', 
-      date: item.Date ? item.Date.substring(0, 10) : '', 
+      Name: item.Name_activity || '',
+      date: item.Date ? item.Date.substring(0, 10) : '',
       Location: item.Location || '',
+      Detail: item.Detail || '', // 🌟 ดึงค่า Detail เดิมมาใส่ในฟอร์มแก้ไข
       User_id: item.User_id || 1,
       Image: item.Image || ''
     });
-    setIsEditOpen(true); 
+    setIsEditOpen(true);
   };
 
   const openDeleteModal = (id) => {
     setSelectedId(id);
-    setIsDeleteOpen(true); 
+    setIsDeleteOpen(true);
   };
 
   return (
@@ -173,11 +176,12 @@ export default function PublicRelations() {
                 <strong>ชื่อเรื่อง:</strong> {item.Name_activity} <br />
                 <strong>วัน/เดือน/ปี:</strong> {item.Date ? item.Date.substring(0, 10) : '-'} <br />
                 <strong>สถานที่:</strong> {item.Location} <br />
-                
-                {/* 🌟 แก้ไขจุดนี้: เรียกใช้ค่า CreatedBy_Name ที่ดึงผ่าน JOIN จากหลังบ้านได้ทันที */}
+                {/* 🌟 แสดงรายละเอียดเพิ่มเติมใน Card หน้ารายการ */}
+                <strong>รายละเอียด:</strong> {item.Detail || '-'} <br />
+
                 <strong>ประชาสัมพันธ์โดย:</strong>{' '}
-                  <span style={{ color: '#2563eb', fontWeight: '500' }}>
-  {item.CreatedBy_Name || (users.find(u => Number(u.User_id) === Number(item.User_id))?.Name) || `ผู้ใช้งานรหัส: ${item.User_id}`}
+                <span style={{ color: '#2563eb', fontWeight: '500' }}>
+                  {item.CreatedBy_Name || (users.find(u => Number(u.User_id) === Number(item.User_id))?.Name) || `ผู้ใช้งานรหัส: ${item.User_id}`}
                 </span>
               </div>
             </div>
@@ -219,10 +223,14 @@ export default function PublicRelations() {
               <label style={styles.label}>สถานที่</label>
               <input type="text" style={styles.input} value={formData.Location} onChange={(e) => setFormData({ ...formData, Location: e.target.value })} required />
 
+              {/* 🌟 เพิ่มช่องกรอก รายละเอียด (เพิ่มข่าว) */}
+              <label style={styles.label}>รายละเอียด</label>
+              <textarea style={styles.textarea} value={formData.Detail} onChange={(e) => setFormData({ ...formData, Detail: e.target.value })} rows={3} />
+
               <label style={styles.label}>ประชาสัมพันธ์โดย</label>
-              <select 
-                style={styles.input} 
-                value={formData.User_id} 
+              <select
+                style={styles.input}
+                value={formData.User_id}
                 onChange={(e) => setFormData({ ...formData, User_id: Number(e.target.value) })}
               >
                 {users.map((u) => {
@@ -271,10 +279,14 @@ export default function PublicRelations() {
               <label style={styles.label}>สถานที่</label>
               <input type="text" style={styles.input} value={formData.Location} onChange={(e) => setFormData({ ...formData, Location: e.target.value })} required />
 
+              {/* 🌟 เพิ่มช่องกรอก รายละเอียด (แก้ไขข่าว) */}
+              <label style={styles.label}>รายละเอียด</label>
+              <textarea style={styles.textarea} value={formData.Detail} onChange={(e) => setFormData({ ...formData, Detail: e.target.value })} rows={3} />
+
               <label style={styles.label}>ประชาสัมพันธ์โดย</label>
-              <select 
-                style={styles.input} 
-                value={formData.User_id} 
+              <select
+                style={styles.input}
+                value={formData.User_id}
                 onChange={(e) => setFormData({ ...formData, User_id: Number(e.target.value) })}
               >
                 {users.map((u) => {
@@ -301,7 +313,7 @@ export default function PublicRelations() {
             <div style={{ fontSize: '50px', margin: '10px 0' }}>🗑️</div>
             <strong style={{ fontSize: '18px', display: 'block', marginBottom: '5px' }}>ยืนยันการลบ</strong>
             <p style={{ color: '#666', fontSize: '14px', margin: '0 0 20px 0' }}>คุณต้องการลบข้อมูลนี้หรือไม่</p>
-            
+
             <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
               <button style={styles.btnCancel} onClick={() => { setIsDeleteOpen(false); clearForm(); }}>ยกเลิก</button>
               <button style={styles.btnConfirmDelete} onClick={handleDeleteSubmit}>ลบ</button>
@@ -332,6 +344,8 @@ const styles = {
   uploadBox: { width: '70px', height: '70px', border: '1px dashed #ccc', margin: '0 auto 15px auto', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' },
   label: { display: 'block', fontSize: '13px', color: '#555', marginBottom: '4px', marginTop: '10px' },
   input: { width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '4px', boxSizing: 'border-box' },
+  // 🌟 เพิ่มสไตล์สำหรับกล่องรายละเอียด (Textarea)
+  textarea: { width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '4px', boxSizing: 'border-box', fontFamily: 'sans-serif', resize: 'vertical' },
   btnSubmit: { width: '100%', padding: '10px', marginTop: '20px', backgroundColor: '#fff', border: '1px solid #ccc', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' },
   btnCancel: { padding: '8px 25px', backgroundColor: '#fff', border: '1px solid #ccc', borderRadius: '4px', cursor: 'pointer' },
   btnConfirmDelete: { padding: '8px 25px', backgroundColor: '#d9534f', color: '#fff', border: '1px solid #d43f3a', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }
