@@ -5,17 +5,29 @@ const StudentData = () => {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   
-  // 🎯 State สำหรับเปิด/ปิด และเก็บข้อมูลนักเรียนคนที่จะคลิกดูรายละเอียดทั้งหมด
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [viewingStudent, setViewingStudent] = useState(null);
 
-  // 🌐 ดึงไฟล์ภาพผ่าน Path โฟลเดอร์ uploads ของหลังบ้าน
   const BACKEND_IMAGE_URL = "http://localhost:3001/uploads/";
 
   useEffect(() => {
     const fetchStudentData = async () => {
       try {
-        const res = await axios.get("http://localhost:3001/api/students");
+        // 🔑 1. ดึงข้อมูล User ที่ล็อกอินมาจาก localStorage (ปรับโครงสร้างตามระบบ Login ของคุณ)
+        const storedUser = localStorage.getItem("user");
+        
+        if (!storedUser) {
+          console.error("ไม่พบข้อมูลการเข้าสู่ระบบ กรุณาล็อกอินใหม่");
+          setLoading(false);
+          return;
+        }
+
+        const userData = JSON.parse(storedUser);
+        const userId = userData.User_id; // ดึงรหัส User_id ของผู้ปกครองออกมารองรับงานค้นหา
+
+        // 🔗 2. ส่ง userId แนบไปเป็น Query Parameter ให้ฝั่งหลังบ้าน (Backend)
+        const res = await axios.get(`http://localhost:3001/api/students?userId=${userId}`);
+        
         setStudents(res.data);
         setLoading(false);
       } catch (error) {
@@ -26,7 +38,6 @@ const StudentData = () => {
     fetchStudentData();
   }, []);
 
-  // 📝 ฟังก์ชันแปลงฟอร์แมตวันที่ให้เป็นแบบไทยอ่านง่าย
   const formatThaiDate = (dateString) => {
     if (!dateString) return 'ไม่ได้ระบุ';
     try {
@@ -37,7 +48,6 @@ const StudentData = () => {
     }
   };
 
-  // 🎯 ฟังก์ชันจัดการเมื่อผู้ปกครองคลิกการ์ดนักเรียนเพื่อเปิดดูข้อมูลทั้งหมด
   const handleOpenViewModal = (student) => {
     setViewingStudent(student);
     setIsViewModalOpen(true);
@@ -58,7 +68,6 @@ const StudentData = () => {
               : null;
 
             return (
-              /* ✨ เมื่อคลิกที่การ์ดจะเรียกฟังก์ชันเปิดดูข้อมูลตัวเต็มของเด็กคนนั้น */
               <div key={index} style={styles.studentCard} onClick={() => handleOpenViewModal(student)}>
                 <div style={styles.avatarBox}>
                   {finalImageUrl ? (
@@ -92,11 +101,11 @@ const StudentData = () => {
             );
           })
         ) : (
-          <p style={styles.messageText}>ไม่พบข้อมูลนักเรียนในระบบขณะนี้</p>
+          <p style={styles.messageText}>ไม่พบข้อมูลนักเรียนที่เชื่อมโยงกับบัญชีนี้ในระบบ</p>
         )}
       </div>
 
-      {/* ================= 📦 MODAL: แสดงข้อมูลทั้งหมดของนักเรียนเมื่อผู้ปกครองคลิกเลือก ================= */}
+      {/* ================= 📦 MODAL ================= */}
       {isViewModalOpen && viewingStudent && (
         <div style={styles.modalOverlay} onClick={() => setIsViewModalOpen(false)}>
           <div style={styles.modalContent} onClick={(e) => e.stopPropagation()}>
@@ -151,7 +160,6 @@ const StudentData = () => {
   );
 };
 
-// 🎨 เติม CSS สไตล์ของชุดกล่องรายละเอียดทั้งหมด (Modal) ลงไปให้อ่านง่ายขึ้น
 const styles = {
   container: { padding: "20px 10px", fontFamily: "sans-serif", width: "100%", boxSizing: "border-box" },
   headerButton: { display: "inline-block", backgroundColor: "#ffffff", border: "1px solid #94a3b8", padding: "10px 24px", borderRadius: "6px", fontSize: "16px", fontWeight: "bold", color: "#1e293b", boxShadow: "0 2px 4px rgba(0,0,0,0.05)", marginBottom: "40px" },
@@ -165,7 +173,6 @@ const styles = {
   studentClass: { margin: 0, fontSize: "14px", color: "#64748b" },
   messageText: { color: "#94a3b8", fontSize: "14px" },
 
-  // Styles สำหรับโครงสร้างกล่อง Modal (ดึงมาจากดีไซน์ที่ครูเห็นให้เข้าคู่กัน)
   modalOverlay: { position: 'fixed', top: '0', left: '0', width: '100%', height: '100%', background: 'rgba(0, 0, 0, 0.35)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: '999' },
   modalContent: { background: '#ffffff', padding: '20px 25px', borderRadius: '16px', width: '320px', position: 'relative', boxShadow: '0 10px 25px rgba(0,0,0,0.15)', boxSizing: 'border-box' },
   modalHeading: { margin: '0 0 15px 0', fontSize: '15px', fontWeight: '600', color: '#000' },

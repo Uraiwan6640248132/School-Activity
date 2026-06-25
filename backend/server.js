@@ -13,7 +13,7 @@ app.use(cors({
   credentials: true
 }));
 
-// ปรับปรุงขนาดการรับส่งข้อมูล (ป้องกันปัญหาภาพ Base64 ขนาดใหญ่ส่งมาไม่ผ่าน)
+// ปรับเพิ่มความจุการรับข้อความจากเดิมไม่กี่ KB ให้กลายเป็น 50MB เพื่อรองรับ Base64 ของรูปภาพเยอะ ๆ
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
@@ -61,7 +61,6 @@ function parseDateForMySQL(dateStr) {
 // ==========================================
 // 👤 ระบบ API จัดการข้อมูลผู้ใช้งาน (USERS)
 // ==========================================
-// 🛠️ เพิ่มจุดเชื่อม /api/users เพื่อรองรับหน้าบ้านทุกรูปแบบไม่ให้เกิดปัญหา 404
 app.get(["/users", "/api/users"], (req, res) => {
   const sql = "SELECT User_id, Name, Phone, UserName, Password, Role FROM users ORDER BY User_id DESC";
   db.query(sql, (err, result) => {
@@ -107,7 +106,7 @@ app.delete('/users/:id', (req, res) => {
 });
 
 // ==========================================
-// 🏃‍♂️ ระบบ API จัดการกิจกรรม (ACTIVITY) - แก้ไขบั๊ก User_id = 2
+// 🏃‍♂️ ระบบ API จัดการกิจกรรม (ACTIVITY) - ✨ แก้ไขเพื่อแปลงฐานข้อมูลอาเรย์รูปภาพให้สมบูรณ์
 // ==========================================
 app.get("/activities", (req, res) => {
   const sql = `SELECT a.*, u.Name AS Photographer FROM activity a LEFT JOIN users u ON a.User_id = u.User_id ORDER BY a.Activity_date DESC, a.Activity_id DESC`;
@@ -117,32 +116,58 @@ app.get("/activities", (req, res) => {
   });
 });
 
+// ✨ แก้ไขระบบ POST บันทึกกิจกรรมเพื่อทำการ Stringify ข้อมูลให้ MySQL ยอมรับอย่างปลอดภัย
 app.post("/activities", (req, res) => {
   const body = req.body || {};
   const Name_activity = body.Name_activity || body.name_activity || body.Name || body.title || null;
   const Activity_date = parseDateForMySQL(body.Activity_date || body.activity_date);
-  const User_id = parseInt(body.User_id || body.user_id, 10) || 2;
+  const User_id = parseInt(body.User_id || body.user_id, 10) || 1; 
+  
+  // ดึงค่าภาพที่ส่งมา
+  let rawImage = body.Image || body.image || body.Images || body.images || null;
+  let DB_IMAGE_VALUE = null;
+
+  if (rawImage) {
+    // ถ้าหน้าบ้านส่งมาเป็น Object หรือ Array ตรงๆ ให้ทำการเปลี่ยนรูปเล่มให้เป็น String ก่อนบันทึก
+    if (typeof rawImage === "object") {
+      DB_IMAGE_VALUE = JSON.stringify(rawImage);
+    } else {
+      DB_IMAGE_VALUE = rawImage;
+    }
+  }
 
   if (!Name_activity) return res.status(400).json({ error: "กรุณาระบุชื่อกิจกรรม" });
 
   const sql = "INSERT INTO activity (Name_activity, Image, Activity_date, Location, User_id) VALUES (?, ?, ?, ?, ?)";
-  db.query(sql, [Name_activity, body.Image || body.image || null, Activity_date, body.Location || body.location || null, User_id], (err, result) => {
+  db.query(sql, [Name_activity, DB_IMAGE_VALUE, Activity_date, body.Location || body.location || null, User_id], (err, result) => {
     if (err) { console.error(err); return res.status(500).json({ error: "ตรวจสอบคีย์เชื่อมโยงผู้ใช้งาน", details: err.message }); }
     res.status(201).json({ message: "เพิ่มกิจกรรมสำเร็จ", Activity_id: result.insertId });
   });
 });
 
+// ✨ แก้ไขระบบ PUT อัปเดตกิจกรรมเพื่อทำการแปลงชุดอาเรย์รูปภาพเช่นเดียวกัน ป้องกัน Error 500
 app.put("/activities/:id", (req, res) => {
   const body = req.body || {};
   const Name_activity = body.Name_activity || body.name_activity || body.title || body.Name || null;
   const Activity_date = parseDateForMySQL(body.Activity_date || body.activity_date);
-  const User_id = parseInt(body.User_id || body.user_id, 10) || 2;
+  const User_id = parseInt(body.User_id || body.user_id, 10) || 1;
+  
+  let rawImage = body.Image || body.image || body.Images || body.images || null;
+  let DB_IMAGE_VALUE = null;
+
+  if (rawImage) {
+    if (typeof rawImage === "object") {
+      DB_IMAGE_VALUE = JSON.stringify(rawImage);
+    } else {
+      DB_IMAGE_VALUE = rawImage;
+    }
+  }
 
   if (!Name_activity) return res.status(400).json({ error: "กรุณาระบุชื่อกิจกรรม" });
 
   const sql = "UPDATE activity SET Name_activity=?, Image=?, Activity_date=?, Location=?, User_id=? WHERE Activity_id=?";
-  db.query(sql, [Name_activity, body.Image || body.image || null, Activity_date, body.Location || body.location || null, User_id, req.params.id], (err, result) => {
-    if (err) { console.error(err); return res.status(500).json({ error: "ไม่สามารถอัปเดตกิจกรรมได้เนื่องจากคีย์ล็อกอินขัดแย้ง", details: err.message }); }
+  db.query(sql, [Name_activity, DB_IMAGE_VALUE, Activity_date, body.Location || body.location || null, User_id, req.params.id], (err, result) => {
+    if (err) { console.error(err); return res.status(500).json({ error: "ไม่สามารถอัปเดตกิจกรรมได้", details: err.message }); }
     res.json({ success: true, message: "แก้ไขกิจกรรมสำเร็จ" });
   });
 });
@@ -154,52 +179,32 @@ app.delete("/activities/:id", (req, res) => {
   });
 });
 
-// ==========================================
-// 🚀 ระบบ API จัดการข้อมูลนักเรียน (STUDENTS CRUD) - แก้ไขบั๊ก User_id = 2
-// ==========================================
-app.get("/api/students", (req, res) => {
-  db.query("SELECT * FROM student ORDER BY Student_id DESC", (err, result) => {
-    if (err) return res.status(500).json(err);
-    res.json(result);
-  });
-});
+// ตัวอย่าง API เส้นทาง /api/students ฝั่งหลังบ้าน (Backend)
+app.get('/api/students', (req, res) => {
+  // 📥 ดึงค่า userId ที่ส่งมาจาก Frontend (ได้จาก req.query)
+  const userId = req.query.userId;
 
-app.post("/api/students", (req, res) => {
-  const body = req.body || {};
-  const { Name, Class_level, Blood_group, Image } = body;
-  const Birthday = parseDateForMySQL(body.Birthday || body.birthday);
-  const Gender = body.Gender || body.gender || null;
-  const User_id = parseInt(body.User_id || body.user_id, 10) || 2;
+  if (!userId) {
+    return res.status(400).json({ error: "ระบุข้อมูลผู้ใช้ไม่ถูกต้อง (Missing userId)" });
+  }
 
-  const sql = `INSERT INTO student (Name, Birthday, Gender, Class_level, User_id, Blood_group, Image) VALUES (?, ?, ?, ?, ?, ?, ?)`;
-  db.query(sql, [Name, Birthday, Gender, Class_level, User_id, Blood_group, Image || null], (err, result) => {
-    if (err) { console.error(err); return res.status(500).json({ error: "เกิดข้อผิดพลาดในการเพิ่มข้อมูลนักเรียน", details: err.message }); }
-    res.json({ message: "เพิ่มข้อมูลนักเรียนสำเร็จ", Student_id: result.insertId });
-  });
-});
+  // 🔍 เลือกคำสั่ง SQL คัดกรองข้อมูลตามฟิลด์ตารางนักเรียนในระบบของคุณ
+  // (สมมติว่าตารางชื่อ student และมีคอลัมน์เชื่อมโยงถึงผู้ปกครองระบุเป็น User_id หรือ Parent_id)
+  const sql = "SELECT * FROM student WHERE User_id = ?"; 
 
-app.put("/api/students/:id", (req, res) => {
-  const body = req.body || {};
-  const { Name, Class_level, Blood_group, Image } = body;
-  const Birthday = parseDateForMySQL(body.Birthday || body.birthday);
-  const Gender = body.Gender || body.gender || null;
-
-  const sql = `UPDATE student SET Name=?, Birthday=?, Gender=?, Class_level=?, Blood_group=?, Image=? WHERE Student_id=?`;
-  db.query(sql, [Name, Birthday, Gender, Class_level, Blood_group, Image || null, req.params.id], (err, result) => {
-    if (err) { console.error(err); return res.status(500).json({ error: "เกิดข้อผิดพลาดในการแก้ไขข้อมูลนักเรียน", details: err.message }); }
-    res.json({ message: "แก้ไขข้อมูลนักเรียนสำเร็จ" });
-  });
-});
-
-app.delete("/api/students/:id", (req, res) => {
-  db.query("DELETE FROM student WHERE Student_id=?", [req.params.id], (err, result) => {
-    if (err) return res.status(500).json(err);
-    res.json({ message: "ลบข้อมูลนักเรียนสำเร็จ" });
+  db.query(sql, [userId], (err, results) => {
+    if (err) {
+      console.error("เกิดข้อผิดพลาดในระบบฐานข้อมูล:", err);
+      return res.status(500).json({ error: "Database internal error" });
+    }
+    
+    // 📤 ส่งข้อมูลนักเรียนที่คัดเฉพาะของลูกผู้ปกครองรายนี้กลับไปให้หน้าบ้านแสดงผล
+    res.json(results);
   });
 });
 
 // ==========================================
-// 📢 ระบบ API จัดการข้อมูลการแจ้งเตือน (NOTIFICATIONS) - แก้ไขบั๊ก User_id = 2
+// 📢 ระบบ API จัดการข้อมูลการแจ้งเตือน (NOTIFICATIONS)
 // ==========================================
 app.get("/notifications", (req, res) => {
   const sql = "SELECT Notification_id, User_id, Class_level, Subject, DATE_FORMAT(Deadline, '%Y-%m-%d') AS Deadline, DATE_FORMAT(\`Date\`, '%Y-%m-%d') AS Date, Details FROM notification ORDER BY Notification_id DESC";
@@ -238,10 +243,8 @@ app.put("/notifications/:id", (req, res) => {
 });
 
 // =================================================================
-// 📢 API ระบบข่าวสารประชาสัมพันธ์ (Public Relations) - เพิ่มฟิลด์ Detail เรียบร้อยแล้ว
+// 📢 API ระบบข่าวสารประชาสัมพันธ์ (Public Relations)
 // =================================================================
-
-// 1. GET: ดึงข้อมูลข่าวสารทั้งหมดพร้อมชื่อคนโพสต์ (คงเดิม)
 app.get('/api/publicrelations', (req, res) => {
   const sql = `
     SELECT pr.*, u.Name AS CreatedBy_Name 
@@ -249,83 +252,60 @@ app.get('/api/publicrelations', (req, res) => {
     LEFT JOIN users u ON pr.User_id = u.User_id
     ORDER BY pr.PublicRelation_id DESC
   `;
-
   db.query(sql, (err, results) => {
-    if (err) {
-      console.error("Database error (GET PR):", err);
-      return res.status(500).json({ error: "เกิดข้อผิดพลาดในการดึงข้อมูลประชาสัมพันธ์" });
-    }
+    if (err) { console.error("Database error (GET PR):", err); return res.status(500).json({ error: "เกิดข้อผิดพลาดในการดึงข้อมูลประชาสัมพันธ์" }); }
     res.json(results);
   });
 });
 
-// 2. POST: เพิ่มข่าวประชาสัมพันธ์ใหม่ 🌟 (แก้ไขจุดที่ 1)
 app.post('/api/publicrelations', (req, res) => {
   const body = req.body || {};
   const Name_activity = body.Name || body.Name_activity || null;
   const cleanDate = body.date || body.Date || new Date().toISOString().split('T')[0];
   const Location = body.Location || null;
-  const Detail = body.Detail || null; // 👈 1. รับค่า Detail ที่ส่งมาจาก React หน้าบ้าน
+  const Detail = body.Detail || null;
   const User_id = parseInt(body.User_id || body.user_id, 10) || 1;
   const Image = body.Image || null;
 
-  // 👈 2. เพิ่มคอลัมน์ Detail และ เครื่องหมาย ? ในคำสั่ง SQL
   const sql = "INSERT INTO publicrelation (Name_activity, Date, Location, Detail, User_id, Image) VALUES (?, ?, ?, ?, ?, ?)";
-
-  // 👈 3. ใส่ตัวแปร Detail เข้าไปในวงเล็บ values (ต้องเรียงลำดับให้ตรงกับเครื่องหมาย ?)
   const values = [Name_activity, cleanDate, Location, Detail, User_id, Image];
 
   db.query(sql, values, (err, result) => {
-    if (err) {
-      console.error("Database error (POST PR):", err);
-      return res.status(500).json({ error: "ไม่สามารถบันทึกข้อมูลประชาสัมพันธ์ได้", details: err.message });
-    }
+    if (err) { console.error("Database error (POST PR):", err); return res.status(500).json({ error: "ไม่สามารถบันทึกข้อมูลประชาสัมพันธ์ได้", details: err.message }); }
     res.status(201).json({ message: "เพิ่มประชาสัมพันธ์สำเร็จ", id: result.insertId });
   });
 });
 
-// 3. PUT: แก้ไขข้อมูลข่าวประชาสัมพันธ์ 🌟 (แก้ไขจุดที่ 2)
 app.put('/api/publicrelations/:id', (req, res) => {
   const prId = req.params.id;
   const body = req.body || {};
   const Name_activity = body.Name || body.Name_activity || null;
   const cleanDate = body.date || body.Date || new Date().toISOString().split('T')[0];
   const Location = body.Location || null;
-  const Detail = body.Detail || null; // 👈 1. รับค่า Detail ที่ส่งมาจากฟอร์มแก้ไขหน้าบ้าน
+  const Detail = body.Detail || null;
   const User_id = parseInt(body.User_id || body.user_id, 10) || 1;
   const Image = body.Image || null;
 
-  // 👈 2. เพิ่ม Detail = ? เข้าไปในคำสั่งอัปเดต SQL
   const sql = "UPDATE publicrelation SET Name_activity = ?, Date = ?, Location = ?, Detail = ?, User_id = ?, Image = ? WHERE PublicRelation_id = ?";
-
-  // 👈 3. ใส่ตัวแปร Detail เรียงตามลำดับของเครื่องหมาย ? ด้านบน
   const values = [Name_activity, cleanDate, Location, Detail, User_id, Image, prId];
 
   db.query(sql, values, (err, result) => {
-    if (err) {
-      console.error("Database error (PUT PR):", err);
-      return res.status(500).json({ error: "ไม่สามารถอัปเดตข้อมูลประชาสัมพันธ์ได้", details: err.message });
-    }
+    if (err) { console.error("Database error (PUT PR):", err); return res.status(500).json({ error: "ไม่สามารถอัปเดตข้อมูลประชาสัมพันธ์ได้", details: err.message }); }
     res.json({ message: "แก้ไขข้อมูลประชาสัมพันธ์สำเร็จ" });
   });
 });
 
-// 4. DELETE: ลบข่าวประชาสัมพันธ์ออกจากระบบ (คงเดิม)
 app.delete('/api/publicrelations/:id', (req, res) => {
   const prId = req.params.id;
   const sql = "DELETE FROM publicrelation WHERE PublicRelation_id = ?";
-
   db.query(sql, [prId], (err, result) => {
-    if (err) {
-      console.error("Database error (DELETE PR):", err);
-      return res.status(500).json({ error: "ไม่สามารถลบข้อมูลประชาสัมพันธ์ได้" });
-    }
+    if (err) { console.error("Database error (DELETE PR):", err); return res.status(500).json({ error: "ไม่สามารถลบข้อมูลประชาสัมพันธ์ได้" }); }
     res.json({ message: "ลบข้อมูลประชาสัมพันธ์เรียบร้อยแล้ว" });
   });
 });
 
 // ==========================================
-// 📅 ระบบ API จัดการปฏิทินกิจกรรม (CALENDAR) - [แก้ไขบั๊ก Location บันทึกเป็น NULL]
+// 📅 ระบบ API จัดการปฏิทินกิจกรรม (CALENDAR)
 // ==========================================
 app.get("/api/calendar", (req, res) => {
   db.query(`SELECT Calendar_id, Name, DATE_FORMAT(Date, '%Y-%m-%d') AS Date, Time, Location, User_id FROM calendar ORDER BY Date ASC`, (err, result) => {
@@ -339,17 +319,12 @@ app.post("/api/calendar", (req, res) => {
   const Name = body.Name || body.name || null;
   const cleanDate = parseDateForMySQL(body.Date || body.date);
   const Time = body.Time || body.time || null;
-
-  // 🌟 ดักจับทั้ง Location (หน้าบ้านส่งอันนี้มา) และ location เพื่อไม่ให้หลุดเป็นค่า NULL อีกต่อไป
   const Location = body.Location || body.location || null;
   const finalUserId = parseInt(body.User_id || body.user_id, 10) || 2;
 
   db.query("INSERT INTO calendar (Name, Date, Time, Location, User_id) VALUES (?, ?, ?, ?, ?)",
     [Name, cleanDate, Time, Location, finalUserId], (err, result) => {
-      if (err) {
-        console.error("❌ ล้มเหลวในการเพิ่มปฏิทิน:", err.message);
-        return res.status(500).json(err);
-      }
+      if (err) { console.error("❌ ล้มเหลวในการเพิ่มปฏิทิน:", err.message); return res.status(500).json(err); }
       res.json({ message: "เพิ่มกิจกรรมลงปฏิทินสำเร็จ", Calendar_id: result.insertId });
     });
 });
@@ -359,17 +334,12 @@ app.put("/api/calendar/:id", (req, res) => {
   const Name = body.Name || body.name || null;
   const cleanDate = parseDateForMySQL(body.Date || body.date);
   const Time = body.Time || body.time || null;
-
-  // 🌟 ดักจับทั้ง Location และ location สำหรับงานแก้ไข
   const Location = body.Location || body.location || null;
   const finalUserId = parseInt(body.User_id || body.user_id, 10) || 2;
 
   db.query("UPDATE calendar SET Name=?, Date=?, Time=?, Location=?, User_id=? WHERE Calendar_id=?",
     [Name, cleanDate, Time, Location, finalUserId, req.params.id], (err, result) => {
-      if (err) {
-        console.error("❌ ล้มเหลวในการแก้ไขปฏิทิน:", err.message);
-        return res.status(500).json({ error: err.message });
-      }
+      if (err) { console.error("❌ ล้มเหลวในการแก้ไขปฏิทิน:", err.message); return res.status(500).json({ error: err.message }); }
       res.json({ message: "แก้ไขข้อมูลปฏิทินสำเร็จ" });
     });
 });
@@ -446,21 +416,10 @@ app.post('/api/development', (req, res) => {
   });
 });
 
-// 4. PUT: แก้ไข/อัปเดตข้อมูลประเมินพัฒนาการเด็ก
 app.put('/api/development/:id', (req, res) => {
   const devId = req.params.id;
   const body = req.body || {};
-
-  // รับค่าฟิลด์ต่าง ๆ ที่ส่งมาจากฟอร์มแก้ไขหน้าบ้าน
-  const {
-    Student_id, student_id,
-    Year, year,
-    Term, term,
-    Physical, Weight, Height, Dental_health, Vaccination,
-    Motor_skills, Emotional, Emotion, Emotion_control, Confidence,
-    Social, Stress, Interaction, Assistance,
-    Intellectual, Problem_solving, Communication, Remembering
-  } = body;
+  const { Student_id, student_id, Year, year, Term, term, Physical, Weight, Height, Dental_health, Vaccination, Motor_skills, Emotional, Emotion, Emotion_control, Confidence, Social, Stress, Interaction, Assistance, Intellectual, Problem_solving, Communication, Remembering } = body;
 
   const sql = `
     UPDATE development 
@@ -474,34 +433,25 @@ app.put('/api/development/:id', (req, res) => {
   `;
 
   const values = [
-    Student_id || student_id || 1,
-    Year || year || "2569",
-    Term || term || "ภาคเรียนที่ 1",
+    Student_id || student_id || 1, Year || year || "2569", Term || term || "ภาคเรียนที่ 1",
     Physical || null, Weight || null, Height || null, Dental_health || null, Vaccination || null,
     Motor_skills || null, Emotional || null, Emotion || null, Emotion_control || null, Confidence || null,
     Social || null, Stress || null, Interaction || null, Assistance || null,
     Intellectual || null, Problem_solving || null, Communication || null, Remembering || null,
-    devId // เงื่อนไข WHERE ปิดท้าย
+    devId
   ];
 
   db.query(sql, values, (err, result) => {
-    if (err) {
-      console.error("Database error (PUT DEV):", err);
-      return res.status(500).json({ error: "ไม่สามารถอัปเดตข้อมูลพัฒนาการได้", details: err.message });
-    }
+    if (err) { console.error("Database error (PUT DEV):", err); return res.status(500).json({ error: "ไม่สามารถอัปเดตข้อมูลพัฒนาการได้", details: err.message }); }
     res.json({ message: "แก้ไขข้อมูลประเมินพัฒนาการสำเร็จ" });
   });
 });
-// 3. DELETE: ลบข้อมูลประเมินพัฒนาการเด็กออกจากระบบ
+
 app.delete('/api/development/:id', (req, res) => {
   const devId = req.params.id;
   const sql = "DELETE FROM development WHERE Development_id = ?";
-
   db.query(sql, [devId], (err, result) => {
-    if (err) {
-      console.error("Database error (DELETE DEV):", err);
-      return res.status(500).json({ error: "ไม่สามารถลบข้อมูลพัฒนาการได้", details: err.message });
-    }
+    if (err) { console.error("Database error (DELETE DEV):", err); return res.status(500).json({ error: "ไม่สามารถลบข้อมูลพัฒนาการได้", details: err.message }); }
     res.json({ message: "ลบข้อมูลประเมินพัฒนาการเรียบร้อยแล้ว" });
   });
 });

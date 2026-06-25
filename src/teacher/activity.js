@@ -16,6 +16,15 @@ function Activity() {
   const [editId, setEditId] = useState(null);
   const [showForm, setShowForm] = useState(false);
 
+  // 🌟 State สำหรับเปิดดูป๊อปอัปคลังรูปภาพแบบ Grid View
+  const [galleryTitle, setGalleryTitle] = useState(""); // เก็บชื่อกิจกรรมมาแสดงเป็นหัวข้อป๊อปอัป
+  const [activeGalleryImages, setActiveGalleryImages] = useState(null); // เก็บ Array รูปภาพทั้งหมดที่จะเอามาเรียง
+
+  // 🌟 ----------------- เพิ่ม State สำหรับระบบสไลด์ภาพขนาดใหญ่ซ้อนอีกชั้น (LightBox) -----------------
+  const [lightBoxImage, setLightBoxImage] = useState(null); // เก็บรูปภาพที่กำลังขยายใหญ่
+  const [currentLightBoxIndex, setCurrentLightBoxIndex] = useState(0); // เก็บตำแหน่งดัชนีภาพที่กำลังเปิดดู
+  // -----------------------------------------------------------------------------------------
+
   const API_URL = "http://127.0.0.1:3001/activities";
 
   useEffect(() => {
@@ -36,19 +45,47 @@ function Activity() {
   const handleImageChange = (e) => {
     const files = Array.from(e.target.files);
     if (files.length > 0) {
+      // 1. แสดงรูปภาพพรีวิวตัวอย่างทันที
       const objectUrls = files.map(file => URL.createObjectURL(file));
       setPreviewImages(objectUrls);
 
-      const base64Promises = files.map(file => {
+      // 2. ฟังก์ชันย่อขนาดภาพอัตโนมัติด้วย HTML5 Canvas ก่อนแปลงเป็น Base64
+      const resizeAndCompress = (file) => {
         return new Promise((resolve) => {
           const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result);
+          reader.onload = (event) => {
+            const img = new Image();
+            img.onload = () => {
+              const canvas = document.createElement("canvas");
+              let width = img.width;
+              let height = img.height;
+
+              // กำหนดความกว้างสูงสุดไม่เกิน 1024px (ชัดเพียงพอสำหรับเปิดดูในป๊อปอัป)
+              const MAX_WIDTH = 1024;
+              if (width > MAX_WIDTH) {
+                height = Math.round((height * MAX_WIDTH) / width);
+                width = MAX_WIDTH;
+              }
+
+              canvas.width = width;
+              canvas.height = height;
+              const ctx = canvas.getContext("2d");
+              ctx.drawImage(img, 0, 0, width, height);
+
+              // บีบอัดคุณภาพรูปภาพเหลือ 70% (ช่วยลดขนาดไฟล์จากหลาย MB เหลือไม่กี่ KB แต่ภาพยังชัดสวย)
+              const compressedBase64 = canvas.toDataURL("image/jpeg", 0.7);
+              resolve(compressedBase64);
+            };
+            img.src = event.target.result;
+          };
           reader.readAsDataURL(file);
         });
-      });
+      };
 
-      Promise.all(base64Promises).then(base64Strings => {
-        setImages(base64Strings);
+      // วนลูปบีบอัดรูปภาพผู้ปกครองทุกภาพที่เลือกมาพร้อมกันเยอะ ๆ
+      const compressPromises = files.map(file => resizeAndCompress(file));
+      Promise.all(compressPromises).then(base64Strings => {
+        setImages(base64Strings); // บันทึกก้อนข้อมูลที่ย่อขนาดแล้วเตรียมส่งไปหลังบ้าน
       });
     }
   };
@@ -73,7 +110,7 @@ function Activity() {
       Location: location,
       Activity_date: activityDate ? activityDate : null,
       User_id: 1,
-      Images: finalImages
+      Image: finalImages ? JSON.stringify(finalImages) : null 
     };
 
     try {
@@ -88,7 +125,7 @@ function Activity() {
       fetchActivities();
     } catch (err) {
       console.error(err);
-      alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล: โปรดตรวจสอบหลังบ้านว่ารองรับข้อมูลแบบ Array ของรูปภาพ (หรือ JSON string) หรือยัง");
+      alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล");
     }
   };
 
@@ -113,11 +150,24 @@ function Activity() {
     setImages([]);
 
     let oldImages = [];
-    if (item.Images) {
-      oldImages = typeof item.Images === "string" ? JSON.parse(item.Images) : item.Images;
-    } else if (item.Image) {
-      oldImages = [item.Image];
+    const rawImage = item.Image || item.Images;
+
+    if (rawImage) {
+      if (typeof rawImage === "string") {
+        if (rawImage.startsWith("[")) {
+          try {
+            oldImages = JSON.parse(rawImage);
+          } catch (e) {
+            oldImages = [rawImage];
+          }
+        } else {
+          oldImages = [rawImage];
+        }
+      } else if (Array.isArray(rawImage)) {
+        oldImages = rawImage;
+      }
     }
+    
     setPreviewImages(oldImages);
     setShowForm(true);
   };
@@ -230,17 +280,38 @@ function Activity() {
           ) : (
             filteredActivities.map((item) => {
               let itemImages = [];
-              if (item.Images) {
-                itemImages = typeof item.Images === "string" ? JSON.parse(item.Images) : item.Images;
-              } else if (item.Image) {
-                itemImages = [item.Image];
+              const targetField = item.Image || item.Images;
+
+              if (targetField) {
+                if (typeof targetField === "string") {
+                  if (targetField.startsWith("[")) {
+                    try {
+                      itemImages = JSON.parse(targetField);
+                    } catch (e) {
+                      itemImages = [targetField];
+                    }
+                  } else {
+                    itemImages = [targetField];
+                  }
+                } else if (Array.isArray(targetField)) {
+                  itemImages = targetField;
+                }
               }
 
               return (
                 <div key={item.Activity_id} style={page.card}>
 
-                  <div style={page.cardImageContainer}>
-                    {itemImages.length > 0 ? (
+                  {/* 🛠️ เมื่อกดคลิกที่พื้นที่รูปภาพปก จะทำการเปิดกล่อง Grid คลังรูปภาพทั้งหมด */}
+                  <div 
+                    style={{ ...page.cardImageContainer, cursor: itemImages.length > 0 ? "pointer" : "default" }}
+                    onClick={() => {
+                      if (itemImages.length > 0) {
+                        setGalleryTitle(item.Name_activity || "คลังรูปภาพกิจกรรม");
+                        setActiveGalleryImages(itemImages);
+                      }
+                    }}
+                  >
+                    {itemImages.length > 0 && itemImages[0] ? (
                       <div style={{ width: "100%", height: "100%", position: "relative" }}>
                         <img src={itemImages[0]} alt={item.Name_activity} style={page.cardImage} />
                         {itemImages.length > 1 && (
@@ -280,6 +351,96 @@ function Activity() {
           )}
         </div>
 
+        {/* 🌟 ป๊อปอัปดีไซน์คลังภาพแบบ Grid View (ไม่มีปุ่มดาวน์โหลด ป้องกันภาพหน้าผู้ปกครอง) */}
+        {activeGalleryImages && activeGalleryImages.length > 0 && (
+          <div style={gridGalleryModal.overlay} onClick={() => setActiveGalleryImages(null)}>
+            <div style={gridGalleryModal.box} onClick={(e) => e.stopPropagation()}>
+              
+              {/* ส่วนหัวแสดงชื่อกิจกรรม และปุ่มปิดสีเทาตัวใหญ่ตัว 'X' ด้านขวา */}
+              <div style={gridGalleryModal.header}>
+                <div style={{ display: "flex", flexDirection: "column" }}>
+                  <h2 style={gridGalleryModal.mainTitle}>{galleryTitle}</h2>
+                  <span style={gridGalleryModal.subTitle}>ภาพทั้งหมด ({activeGalleryImages.length} ภาพ)</span>
+                </div>
+                <button onClick={() => setActiveGalleryImages(null)} style={gridGalleryModal.closeBtn}>X</button>
+              </div>
+
+              {/* พื้นที่แสดงรูปภาพเรียงกันเยอะ ๆ เป็น Grid */}
+              <div style={gridGalleryModal.gridScrollArea} className="modal-gallery-scrollbar">
+                {activeGalleryImages.map((imgSrc, idx) => (
+                  <div 
+                    key={idx} 
+                    style={{ ...gridGalleryModal.imageCard, cursor: "zoom-in" }} // ✨ เปลี่ยน Cursor ให้เป็นรูปแว่นขยาย
+                    onClick={() => {
+                      // ✨ เมื่อกดที่รูปเล็ก ให้เซ็ตค่าเปิดหน้าต่างขยายรูปใหญ่ซ้อนอีกชั้น
+                      setLightBoxImage(imgSrc);
+                      setCurrentLightBoxIndex(idx);
+                    }}
+                  >
+                    <img src={imgSrc} alt={`gallery-item-${idx}`} style={gridGalleryModal.imageItem} />
+                  </div>
+                ))}
+              </div>
+
+            </div>
+          </div>
+        )}
+
+        {/* 🌟 ----------------- เพิ่มระบบป๊อปอัปสไลด์ภาพขนาดใหญ่ (LightBox Carousel) ซ้อนอีกชั้น ----------------- */}
+        {lightBoxImage && (
+          <div style={lightBoxModal.overlay} onClick={() => setLightBoxImage(null)}>
+            {/* สกัดคลิกโดนกล่องรูปภาพใหญ่ ไม่ให้ม่านดำปิด */}
+            <div style={lightBoxModal.box} onClick={(e) => e.stopPropagation()}>
+              
+              {/* ปุ่มปิดสีขาวมุมขวาบน */}
+              <button onClick={() => setLightBoxImage(null)} style={lightBoxModal.closeBtn}>✕</button>
+
+              {/* ส่วนแสดงรูปภาพใหญ่และปุ่มลูกศรเลื่อน */}
+              <div style={lightBoxModal.viewerRow}>
+                {/* ปุ่มลูกศรซ้าย (◀) แสดงผลเมื่อมีภาพก่อนหน้า */}
+                {currentLightBoxIndex > 0 ? (
+                  <button 
+                    onClick={() => {
+                      const nextIndex = currentLightBoxIndex - 1;
+                      setCurrentLightBoxIndex(nextIndex);
+                      setLightBoxImage(activeGalleryImages[nextIndex]);
+                    }} 
+                    style={lightBoxModal.navBtn}
+                  >
+                    ◀
+                  </button>
+                ) : <div style={{ width: 45 }} />}
+
+                {/* ตัวรูปภาพขยายใหญ่ */}
+                <div style={lightBoxModal.imageWrapper}>
+                  <img src={lightBoxImage} alt="ขยายใหญ่" style={lightBoxModal.mainImage} />
+                </div>
+
+                {/* ปุ่มลูกศรขวา (▶) แสดงผลเมื่อยังมีภาพถัดไป */}
+                {currentLightBoxIndex < activeGalleryImages.length - 1 ? (
+                  <button 
+                    onClick={() => {
+                      const nextIndex = currentLightBoxIndex + 1;
+                      setCurrentLightBoxIndex(nextIndex);
+                      setLightBoxImage(activeGalleryImages[nextIndex]);
+                    }} 
+                    style={lightBoxModal.navBtn}
+                  >
+                    ▶
+                  </button>
+                ) : <div style={{ width: 45 }} />}
+              </div>
+
+              {/* ข้อความบอกตำแหน่งรูปภาพ เช่น รูปภาพที่ 2 / 8 */}
+              <p style={lightBoxModal.counterText}>
+                รูปภาพที่ {currentLightBoxIndex + 1} จาก {activeGalleryImages.length}
+              </p>
+
+            </div>
+          </div>
+        )}
+        {/* ------------------------------------------------------------------------------------------------------ */}
+
         <style>{`
           @media (max-width: 1100px) {
             .activity-responsive-grid { grid-template-columns: repeat(3, 1fr) !important; }
@@ -290,6 +451,11 @@ function Activity() {
           @media (max-width: 480px) {
             .activity-responsive-grid { grid-template-columns: 1fr !important; }
           }
+          /* ซ่อน/ปรับแต่ง Scrollbar ในกล่องคลังรูปภาพให้สวยงามสไตล์มินิมอล */
+          .modal-gallery-scrollbar::-webkit-scrollbar { width: 6px; }
+          .modal-gallery-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 10px; }
+          .modal-gallery-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+          .modal-gallery-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
         `}</style>
 
       </div>
@@ -297,7 +463,6 @@ function Activity() {
   );
 }
 
-// 🌟 ประกาศโครงสร้าง Style ออบเจกต์เพื่อแก้ปัญหาตัวแปรอันเดฟายด์ (no-undef)
 const page = {
   container: { padding: '20px', minHeight: '100vh', backgroundColor: '#f8fafc', width: '100%', boxSizing: 'border-box' },
   wrapper: { maxWidth: '1200px', margin: '0 auto', width: '100%' },
@@ -335,5 +500,38 @@ const modal = {
   input: { width: '100%', padding: '9px 12px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '13px', boxSizing: 'border-box', backgroundColor: '#fff' },
   saveButton: { width: '100%', padding: '11px', marginTop: '10px', backgroundColor: '#4f46e5', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px' }
 };
+
+const gridGalleryModal = {
+  overlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(15, 23, 42, 0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, padding: '16px' },
+  box: { backgroundColor: '#fff', border: '2.5px solid #38bdf8', borderRadius: '24px', width: '100%', maxWidth: '580px', padding: '24px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.15)', display: 'flex', flexDirection: 'column', position: 'relative', boxSizing: 'border-box', maxHeight: '85vh' },
+  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', width: '100%', marginBottom: '16px' },
+  mainTitle: { fontSize: '20px', fontWeight: 'bold', color: '#0f172a', margin: 0, textAlign: 'left' },
+  subTitle: { fontSize: '12px', color: '#94a3b8', marginTop: '2px', textAlign: 'left' },
+  closeBtn: { background: 'none', border: 'none', color: '#94a3b8', fontSize: '24px', cursor: 'pointer', lineHeight: '20px', padding: '0 4px', fontWeight: '300', transition: 'color 0.2s' },
+  gridScrollArea: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px', overflowY: 'auto', paddingRight: '4px', width: '100%', boxSizing: 'border-box' },
+  imageCard: { width: '100%', aspectRatio: '1/1', borderRadius: '16px', border: '1.5px solid #cbd5e1', overflow: 'hidden', backgroundColor: '#f8fafc', position: 'relative', boxSizing: 'border-box' },
+  imageItem: { width: '100%', height: '100%', objectFit: 'cover' }
+};
+
+// 🌟 ----------------- เพิ่มสไตล์ Object สำหรับระบบสไลด์ภาพขนาดใหญ่ (LightBox) -----------------
+const lightBoxModal = {
+  // ม่านดำซ้อนทับชั้นบนสุด
+  overlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0, 0, 0, 0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 11000, padding: '16px' },
+  // กล่องบรรจุรูปภาพใหญ่
+  box: { backgroundColor: 'transparent', width: '100%', maxWidth: '800px', display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', boxSizing: 'border-box' },
+  // ปุ่มปิดสีขาวมุมขวาบน
+  closeBtn: { position: 'absolute', top: '-40px', right: '0px', background: 'none', border: 'none', color: '#fff', fontSize: '24px', cursor: 'pointer', fontWeight: '300' },
+  // ส่วนแสดงรูปภาพและปุ่มเลื่อน
+  viewerRow: { display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'space-between', gap: '12px' },
+  // ปุ่มลูกศร ซ้าย-ขวา
+  navBtn: { width: '45px', height: '45px', borderRadius: '50%', border: '1px solid rgba(255,255,255,0.4)', backgroundColor: 'rgba(255,255,255,0.1)', fontSize: '18px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', transition: 'background-color 0.2s' },
+  // พื้นที่ครอบรูปภาพ
+  imageWrapper: { flex: 1, height: '70vh', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  // ตัวรูปภาพขนาดใหญ่
+  mainImage: { maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', borderRadius: '8px' },
+  // ข้อความบอกตำแหน่ง
+  counterText: { margin: '16px 0 0 0', fontSize: '14px', color: 'rgba(255,255,255,0.7)', fontWeight: '400' }
+};
+// ------------------------------------------------------------------------------------------------------
 
 export default Activity;
