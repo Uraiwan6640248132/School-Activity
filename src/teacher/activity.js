@@ -9,8 +9,11 @@ function Activity() {
   const [photographer, setPhotographer] = useState(""); 
   const [location, setLocation] = useState("");         
   const [activityDate, setActivityDate] = useState("");   
-  const [image, setImage] = useState(null); // เก็บค่า Base64
-  const [previewImage, setPreviewImage] = useState(""); 
+  
+  // 1. เปลี่ยนโครงสร้างจากรูปเดี่ยวเป็น Array สำหรับรองรับหลายรูป
+  const [images, setImages] = useState([]);         // เก็บ Base64 ของทุกรูป เช่น ["data:...", "data:..."]
+  const [previewImages, setPreviewImages] = useState([]); // เก็บ ObjectURL สำหรับพรีวิวรูป
+  
   const [editId, setEditId] = useState(null);           
   const [showForm, setShowForm] = useState(false);
 
@@ -31,17 +34,26 @@ function Activity() {
     }
   };
 
-  // เปลี่ยนระบบเลือกรูปภาพ: แปลงไฟล์รูปภาพที่เลือกให้เป็น Base64 ทันทีเพื่อส่งในรูปแบบ JSON
+  // 2. ปรับฟังก์ชันการเลือกรูปภาพให้วนลูปอ่านไฟล์ทั้งหมดที่เลือก
   const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setPreviewImage(URL.createObjectURL(file));
+    const files = Array.from(e.target.files); // แปลง FileList ให้เป็น Array ปกติ
+    if (files.length > 0) {
+      // ทำการพรีวิวรูปภาพทั้งหมดที่เลือก
+      const objectUrls = files.map(file => URL.createObjectURL(file));
+      setPreviewImages(objectUrls);
 
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImage(reader.result); // ได้ข้อมูลรูปภาพเป็น Base64 string เช่น "data:image/jpeg;base64,..."
-      };
-      reader.readAsDataURL(file);
+      // วนลูปแปลงทุกไฟล์เป็น Base64
+      const base64Promises = files.map(file => {
+        return new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result);
+          reader.readAsDataURL(file);
+        });
+      });
+
+      Promise.all(base64Promises).then(base64Strings => {
+        setImages(base64Strings); // บันทึก Array ของ Base64 เข้า State
+      });
     }
   };
 
@@ -52,23 +64,28 @@ function Activity() {
       return alert("กรุณากรอกชื่อกิจกรรม");
     }
 
-    // รวมข้อมูลเป็น JSON Object เพื่อให้สอดรับกับ req.body ของหลังบ้าน
+    // กำหนดค่ารูปภาพที่จะส่งไปหลังบ้าน
+    let finalImages = null;
+    if (images.length > 0) {
+      finalImages = images; // ส่ง Array ของรูปใหม่
+    } else if (editId && previewImages.length > 0) {
+      finalImages = previewImages; // หากเป็นการแก้ไขและไม่มีการอัปโหลดใหม่ ให้ส่งรูปเดิมกลับไป
+    }
+
     const requestData = {
       Name_activity: nameActivity,
+      Photographer: photographer, // เพิ่มส่งค่า Photographer ไปที่ API หลังบ้านด้วย
       Location: location,
-      Activity_date: activityDate ? activityDate : null, // ถ้าเป็นค่าว่าง "" ส่งเป็น null ป้องกัน MySQL แจ้งเตือนเรื่องฟอร์แมตวันเวลา
+      Activity_date: activityDate ? activityDate : null, 
       User_id: 1,
-      Image: image ? image : (editId ? previewImage : null) 
-      // คำอธิบายรูป: ถ้ามีการเลือกรูปใหม่ให้ส่งตัวใหม่ไป, ถ้าไม่มีการเลือกใหม่แต่เป็นการแก้ไขให้ใช้รูปเก่าส่งกลับไป, นอกเหนือจากนั้นส่ง null
+      Images: finalImages // เปลี่ยนชื่อ Key เป็นสัญกรณ์พหูพจน์ (Images) เพื่อให้สอดคล้องกับ Array 
     };
 
     try {
       if (editId) {
-        // ยิง API แก้ไขด้วย JSON Object ปกติ
         await axios.put(`${API_URL}/${editId}`, requestData);
         alert("แก้ไขข้อมูลกิจกรรมสำเร็จ");
       } else {
-        // ยิง API เพิ่มข้อมูลด้วย JSON Object ปกติ
         await axios.post(API_URL, requestData);
         alert("เพิ่มข้อมูลกิจกรรมสำเร็จ");
       }
@@ -76,7 +93,7 @@ function Activity() {
       fetchActivities();
     } catch (err) {
       console.error(err);
-      alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล: โปรดตรวจสอบข้อความแจ้งเตือน Error บนหน้าจอดำ (Terminal) ของตัวรัน API หลังบ้าน");
+      alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล: โปรดตรวจสอบหลังบ้านว่ารองรับข้อมูลแบบ Array ของรูปภาพ (หรือ JSON string) หรือยัง");
     }
   };
 
@@ -97,8 +114,18 @@ function Activity() {
     setPhotographer(item.Photographer || ""); 
     setLocation(item.Location || "");
     setActivityDate(item.Activity_date ? item.Activity_date.split("T")[0] : "");
-    setImage(null); // เคลียร์ไฟล์รูปภาพที่เพิ่งกดเลือกค้างไว้
-    setPreviewImage(item.Image || ""); // ดึงรูปเก่าในระบบขึ้นมาแสดงผลรอ
+    
+    setImages([]); // เคลียร์ไฟล์รูปภาพที่เพิ่งกดเลือกค้างไว้
+    
+    // ตรวจสอบข้อมูลรูปภาพจากหลังบ้าน (กรณีหลังบ้านส่งมาเป็น JSON String หรือ Array อยู่แล้ว)
+    let oldImages = [];
+    if (item.Images) {
+      oldImages = typeof item.Images === "string" ? JSON.parse(item.Images) : item.Images;
+    } else if (item.Image) {
+      // ตัวช่วยเผื่อหลังบ้านยังเป็นคอลัมน์ Image ตัวเดิม (เก็บเป็นสายอักษรเดียว)
+      oldImages = [item.Image];
+    }
+    setPreviewImages(oldImages); 
     setShowForm(true);
   };
 
@@ -107,8 +134,8 @@ function Activity() {
     setPhotographer(""); 
     setLocation("");
     setActivityDate("");
-    setImage(null);
-    setPreviewImage("");
+    setImages([]);
+    setPreviewImages([]);
     setEditId(null);
     setShowForm(false);
   };
@@ -159,20 +186,27 @@ function Activity() {
                 <button type="button" onClick={clearForm} style={modal.closeBtn}>✕</button>
               </div>
               
+              {/* ส่วนอัปโหลดรูปภาพที่ปรับปรุงใหม่ */}
               <div style={modal.imageUploadWrapper}>
                 <label style={modal.imageSelectorLabel}>
-                  <input type="file" accept="image/*" onChange={handleImageChange} style={{ display: "none" }} />
-                  {previewImage ? (
-                    <img src={previewImage} alt="preview" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                  ) : (
-                    <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" }}>
-                      <svg width="32" height="32" fill="none" stroke="#64748b" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                      <span style={{ marginTop: "6px", fontSize: "12px", color: "#64748b" }}>Add Image</span>
-                    </div>
-                  )}
+                  {/* ใส่ attribute multiple เพื่อให้เลือกได้มากกว่า 1 รูป */}
+                  <input type="file" accept="image/*" multiple onChange={handleImageChange} style={{ display: "none" }} />
+                  <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" }}>
+                    <svg width="24" height="24" fill="none" stroke="#64748b" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.2" d="M12 4v16m8-8H4" />
+                    </svg>
+                    <span style={{ marginTop: "4px", fontSize: "11px", color: "#64748b" }}>อัปโหลดรูป</span>
+                  </div>
                 </label>
+
+                {/* แสดงรายการรูปภาพทั้งหมดที่เลือกพรีวิว */}
+                <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", flex: 1, marginLeft: "10px" }}>
+                  {previewImages.map((src, index) => (
+                    <div key={index} style={{ width: "45px", height: "45px", borderRadius: "6px", overflow: "hidden", border: "1px solid #e2e8f0" }}>
+                      <img src={src} alt={`preview-${index}`} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    </div>
+                  ))}
+                </div>
               </div>
               
               <div style={modal.field}>
@@ -204,39 +238,57 @@ function Activity() {
           {filteredActivities.length === 0 ? (
             <p style={page.noData}>ไม่พบข้อมูลกิจกรรมในระบบ</p>
           ) : (
-            filteredActivities.map((item) => (
-              <div key={item.Activity_id} style={page.card}>
-                
-                <div style={page.cardImageContainer}>
-                  {item.Image ? (
-                    <img src={item.Image} alt={item.Name_activity} style={page.cardImage} />
-                  ) : (
-                    <div style={page.cardImagePlaceholder}>
-                      <svg style={{ width: 36, height: 36, color: "#cbd5e1" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                    </div>
-                  )}
-                </div>
+            filteredActivities.map((item) => {
+              // จัดการแปลงข้อมูลรูปภาพที่มาจากหลังบ้านให้เป็น Array
+              let itemImages = [];
+              if (item.Images) {
+                itemImages = typeof item.Images === "string" ? JSON.parse(item.Images) : item.Images;
+              } else if (item.Image) {
+                itemImages = [item.Image]; // รองรับฟิลด์เก่า
+              }
 
-                <div style={page.cardContent}>
-                  <h2 style={page.cardTitle} title={item.Name_activity}>
-                    {item.Name_activity || "ชื่อกิจกรรม"}
-                  </h2>
-                  <div style={page.infoList}>
-                    <p style={page.infoText}>ผู้บันทึกภาพ: {item.Photographer || "ไม่ระบุชื่อ"}</p>
-                    <p style={page.infoText}>วัน/เดือน/ปี: {formatDate(item.Activity_date)}</p>
-                    <p style={page.infoText}>สถานที่: {item.Location || "ไม่ระบุสถานที่"}</p>
+              return (
+                <div key={item.Activity_id} style={page.card}>
+                  
+                  {/* ส่วนแสดงรูปภาพบนหน้า Card: แสดงรูปแรกเป็นรูปหลัก และแสดงรูปเล็กๆ ด้านล่างภาพหลัก */}
+                  <div style={page.cardImageContainer}>
+                    {itemImages.length > 0 ? (
+                      <div style={{ width: "100%", height: "100%", position: "relative" }}>
+                        <img src={itemImages[0]} alt={item.Name_activity} style={page.cardImage} />
+                        {itemImages.length > 1 && (
+                          <div style={{ position: "absolute", bottom: "4px", right: "4px", background: "rgba(0,0,0,0.6)", color: "#fff", fontSize: "10px", padding: "2px 6px", borderRadius: "4px" }}>
+                            +{itemImages.length - 1} รูป
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div style={page.cardImagePlaceholder}>
+                        <svg style={{ width: 36, height: 36, color: "#cbd5e1" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                    )}
                   </div>
-                </div>
 
-                <div style={page.actionsRow}>
-                  <button onClick={() => handleEdit(item)} style={page.editBtn}>แก้ไข</button>
-                  <button onClick={() => handleDelete(item.Activity_id)} style={page.deleteBtn}>ลบ</button>
-                </div>
+                  <div style={page.cardContent}>
+                    <h2 style={page.cardTitle} title={item.Name_activity}>
+                      {item.Name_activity || "ชื่อกิจกรรม"}
+                    </h2>
+                    <div style={page.infoList}>
+                      <p style={page.infoText}>ผู้บันทึกภาพ: {item.Photographer || "ไม่ระบุชื่อ"}</p>
+                      <p style={page.infoText}>วัน/เดือน/ปี: {formatDate(item.Activity_date)}</p>
+                      <p style={page.infoText}>สถานที่: {item.Location || "ไม่ระบุสถานที่"}</p>
+                    </div>
+                  </div>
 
-              </div>
-            ))
+                  <div style={page.actionsRow}>
+                    <button onClick={() => handleEdit(item)} style={page.editBtn}>แก้ไข</button>
+                    <button onClick={() => handleDelete(item.Activity_id)} style={page.deleteBtn}>ลบ</button>
+                  </div>
+
+                </div>
+              );
+            })
           )}
         </div>
 
@@ -257,45 +309,5 @@ function Activity() {
   );
 }
 
-const page = {
-  container: { backgroundColor: "#ffffff", minHeight: "100vh", padding: "1.5rem", display: "flex", justifyContent: "center", color: "#334155", fontFamily: "'Inter', 'Kanit', sans-serif" },
-  wrapper: { width: "100%", maxWidth: "1200px" }, 
-  header: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.2rem" },
-  titleBtn: { backgroundColor: "#ffffff", border: "1px solid #cbd5e1", color: "#334155", fontWeight: "normal", padding: "4px 16px", borderRadius: "6px", fontSize: "14px", marginBottom: "6px", cursor: "default" },
-  pageTitle: { fontSize: "18px", fontWeight: "normal", paddingLeft: "2px", margin: 0, color: "#1e293b" },
-  toggleBtn: { backgroundColor: "#ffffff", border: "1px solid #cbd5e1", color: "#334155", fontSize: "13px", fontWeight: "normal", padding: "6px 12px", borderRadius: "6px", cursor: "pointer" },
-  searchContainer: { marginBottom: "1.5rem" },
-  searchInput: { width: "100%", border: "1px solid #cbd5e1", borderRadius: "6px", padding: "8px 12px", fontSize: "14px", outline: "none", color: "#334155", boxSizing: "border-box", fontWeight: "normal" },
-  grid: { display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px" },
-  noData: { gridColumn: "span 4", textAlign: "center", padding: "3rem 0", fontSize: "14px", color: "#94a3b8" },
-  card: { backgroundColor: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "10px", padding: "0px", display: "flex", flexDirection: "column", justifyContent: "space-between", minHeight: "280px", overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.02)" },
-  cardImageContainer: { width: "100%", height: "120px", borderBottom: "1px solid #f1f5f9", backgroundColor: "#f8fafc" },
-  cardImage: { width: "100%", height: "100%", objectFit: "cover" },
-  cardImagePlaceholder: { width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" },
-  cardContent: { padding: "12px 14px 4px 14px" },
-  cardTitle: { fontSize: "16px", fontWeight: "600", margin: "0 0 6px 0", color: "#1e293b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
-  infoList: { display: "flex", flexDirection: "column", gap: "4px", marginBottom: "10px" },
-  infoText: { color: "#64748b", fontSize: "13px", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontWeight: "normal" },
-  actionsRow: { display: "flex", gap: "8px", marginTop: "auto", padding: "0 14px 14px 14px" },
-  editBtn: { flex: 1, backgroundColor: "#ffffff", border: "1px solid #cbd5e1", color: "#334155", fontSize: "12px", fontWeight: "normal", padding: "5px 0", borderRadius: "6px", cursor: "pointer", textAlign: "center" },
-  deleteBtn: { flex: 1, backgroundColor: "#ffffff", border: "1px solid #cbd5e1", color: "#ef4444", fontSize: "12px", fontWeight: "normal", padding: "5px 0", borderRadius: "6px", cursor: "pointer", textAlign: "center" }
-};
-
-const modal = {
-  overlay: { position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,.25)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 100 },
-  box: { background: "#ffffff", padding: "20px 20px", borderRadius: "10px", width: "360px", maxHeight: "90vh", overflowY: "auto", display: "flex", flexDirection: "column", boxSizing: "border-box", border: "1px solid #e2e8f0" },
-  header: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" },
-  mainTitle: { fontSize: "18px", fontWeight: "600", margin: 0, color: "#1e293b" },
-  closeBtn: { background: "none", border: "none", fontSize: "20px", color: "#94a3b8", cursor: "pointer" },
-  imageUploadWrapper: { display: "flex", justifyContent: "center", marginBottom: "16px" },
-  imageSelectorLabel: { width: "90px", height: "90px", border: "1px dashed #cbd5e1", borderRadius: "8px", display: "flex", justifyContent: "center", alignItems: "center", cursor: "pointer", backgroundColor: "#f8fafc" },
-  uploadPlaceholder: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" },
-  uploadText: { fontSize: "12px", fontWeight: "normal", marginTop: "4px", color: "#64748b" },
-  imagePreview: { width: "100%", height: "100%", objectFit: "cover" },
-  field: { display: "flex", flexDirection: "column", marginBottom: "12px" },
-  label: { fontSize: "14px", fontWeight: "normal", marginBottom: "4px", color: "#475569" },
-  input: { width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", boxSizing: "border-box", outline: "none", fontSize: "14px", backgroundColor: "#ffffff", fontWeight: "normal", color: "#334155" },
-  saveButton: { width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #cbd5e1", background: "#f8fafc", color: "#334155", fontWeight: "normal", fontSize: "14px", cursor: "pointer", marginTop: "8px" }
-};
 
 export default Activity;

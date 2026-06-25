@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 
-export default function CalendarActivity() {
+function CalendarActivity() {
   const [calendarList, setCalendarList] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // 🌟 1. ใช้ State ในการเก็บปีและเดือนปัจจุบัน (เริ่มต้นที่ สิงหาคม 2569 / August 2026 ตามหน้าจอของคุณ)
+  // 🌟 ใช้ State ในการเก็บปีและเดือนปัจจุบัน (เริ่มต้นที่ สิงหาคม 2026)
   const [currentYear, setCurrentYear] = useState(2026);
   const [currentMonth, setCurrentMonth] = useState(8); // เดือน 8 = สิงหาคม
 
@@ -17,11 +17,12 @@ export default function CalendarActivity() {
   // กิจกรรมที่ถูกเลือก
   const [selectedEvent, setSelectedEvent] = useState(null);
 
-  // โครงสร้าง state ฟอร์มส่งข้อมูลไปยังฐานข้อมูล
+  // โครงสร้าง state ฟอร์มส่งข้อมูลไปยังฐานข้อมูล (🟢 เพิ่ม Location)
   const [formData, setFormData] = useState({
     Name: '',
     Date: '',
     Time: '',
+    Location: '', // 🟢 เพิ่มฟิลด์สถานที่ตรงนี้
     User_id: 1
   });
 
@@ -116,11 +117,11 @@ export default function CalendarActivity() {
   };
 
   const clearForm = () => {
-    setFormData({ Name: '', Date: '', Time: '', User_id: 1 });
+    setFormData({ Name: '', Date: '', Time: '', Location: '', User_id: 1 }); // 🟢 ล้างค่า Location ด้วย
     setSelectedEvent(null);
   };
 
-  // 🌟 2. ปรับฟังก์ชันจับคู่กิจกรรมให้คำนวณตามปีและเดือนที่กำลังเปิดดูอยู่จริง ๆ
+  // ปรับฟังก์ชันจับคู่กิจกรรมให้คำนวณตามปีและเดือนที่กำลังเปิดดูอยู่จริง ๆ
   const getEventForDate = (dayNumber) => {
     if (!calendarList || calendarList.length === 0) return null;
 
@@ -132,15 +133,14 @@ export default function CalendarActivity() {
       const rawDate = item.Date || item.date;
       if (!rawDate) return false;
 
-      const cleanDateOnly = String(rawDate).split('T')[0]; // ผลลัพธ์จะเป็น "YYYY-MM-DD"
+      const cleanDateOnly = String(rawDate).split('T')[0];
       const parts = cleanDateOnly.split('-');
       
       if (parts.length >= 3) {
         const dbYear = parts[0];
-        const dbMonth = String(parseInt(parts[1], 10)).padStart(2, '0'); // จัดฟอร์แมตเดือนให้เป็น 2 หลักเสมอ
+        const dbMonth = String(parseInt(parts[1], 10)).padStart(2, '0');
         const dbDay = parts[2];   
 
-        // เช็คให้ตรงกันทั้ง ปี, เดือน และ วันที่
         return dbYear === currentYearStr && dbMonth === currentMonthStr && dbDay === currentDayStr;
       }
 
@@ -155,6 +155,7 @@ export default function CalendarActivity() {
     const rawDate = eventItem.Date || eventItem.date;
     const rawName = eventItem.Name || eventItem.name;
     const rawTime = eventItem.Time || eventItem.time;
+    const rawLocation = eventItem.Location || eventItem.location; // 🟢 ดึงค่าสถานที่
     const rawUserId = eventItem.User_id || eventItem.user_id;
 
     let cleanDate = '';
@@ -166,12 +167,13 @@ export default function CalendarActivity() {
       Name: rawName || '',
       Date: cleanDate,
       Time: rawTime || '',
+      Location: rawLocation || '', // 🟢 จัดเก็บสถานที่เข้า State ฟอร์ม
       User_id: rawUserId || 1
     });
     setIsDetailOpen(true); 
   };
 
-  // คลิกพื้นที่ช่องว่างปฏิทินเพื่อเริ่มกรอกเพิ่มงานใหม่ (จะอิงตามปีและเดือนที่กำลังเปิดดูอยู่)
+  // คลิกพื้นที่ช่องว่างปฏิทินเพื่อเริ่มกรอกเพิ่มงานใหม่
   const openAddModalOnDate = (dayNumber) => {
     clearForm();
     const formattedDate = `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(dayNumber).padStart(2, '0')}`;
@@ -184,7 +186,7 @@ export default function CalendarActivity() {
     return String(timeStr); 
   };
 
-  // 🌟 3. ฟังก์ชันสำหรับเลื่อนเดือนย้อนกลับ (<) และเลื่อนไปข้างหน้า (>)
+  // ฟังก์ชันสำหรับเลื่อนเดือนย้อนกลับ (<) และเลื่อนไปข้างหน้า (>)
   const handlePrevMonth = () => {
     if (currentMonth === 1) {
       setCurrentMonth(12);
@@ -203,17 +205,13 @@ export default function CalendarActivity() {
     }
   };
 
-  // 🌟 4. คำนวณหาจำนวนวันในเดือนนั้น ๆ และวันเริ่มต้นของสัปดาห์แบบอัตโนมัติ
   const monthNamesThai = [
     "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
     "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"
   ];
 
-  // หาว่าเดือนที่กำลังเปิดอยู่มีกี่วัน (เช่น 30 หรือ 31 วัน)
   const totalDaysInMonth = new Date(currentYear, currentMonth, 0).getDate();
   const daysInMonthArray = Array.from({ length: totalDaysInMonth }, (_, i) => i + 1);
-
-  // หาว่าวันแรกของเดือนตรงกับวันอะไรของสัปดาห์ (0 = อาทิตย์, 1 = จันทร์, ..., 6 = เสาร์) เพื่อจัดช่องว่าง
   const firstDayIndex = new Date(currentYear, currentMonth - 1, 1).getDay();
   const emptySpacesArray = Array.from({ length: firstDayIndex }, (_, i) => i);
 
@@ -223,12 +221,10 @@ export default function CalendarActivity() {
       
       <div style={styles.calendarCard}>
         <div style={styles.calendarHeader}>
-          {/* 🌟 แสดงชื่อเดือนและปี พ.ศ. (ค.ศ. + 543) แบบไดนามิกตามที่เลือก */}
           <span style={styles.calendarMonthTitle}>
             ปฏิทินกิจกรรม - {monthNamesThai[currentMonth - 1]} {currentYear + 543}
           </span>
           <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
-            {/* 🌟 ผูกฟังก์ชันเข้ากับปุ่มกด เพื่อให้คลิกเลื่อนเดือนได้แล้วครับ */}
             <button style={styles.arrowBtn} onClick={handlePrevMonth}>&lt;</button>
             <button style={styles.arrowBtn} onClick={handleNextMonth}>&gt;</button>
           </div>
@@ -239,12 +235,10 @@ export default function CalendarActivity() {
             <div key={day} style={styles.dayOfWeekLabel}>{day}</div>
           ))}
 
-          {/* ช่องว่างก่อนเริ่มวันที่ 1 ของเดือน */}
           {emptySpacesArray.map((val) => (
             <div key={`empty-${val}`} style={styles.dayCellEmpty} />
           ))}
 
-          {/* รายการวันที่ในเดือน */}
           {daysInMonthArray.map((day) => {
             const eventItem = getEventForDate(day);
             const isSelected = selectedEvent && eventItem && 
@@ -271,9 +265,9 @@ export default function CalendarActivity() {
                 {eventItem && (
                   <div style={styles.eventBadgeContent}>
                     <div style={styles.eventTitleText}>• {eventItem.Name || eventItem.name}</div>
-                    <div style={styles.eventTimeText}>
-                      {formatTimeDisplay(eventItem.Time || eventItem.time)}
-                    </div>
+                    <div style={styles.eventTimeText}>🕒 {formatTimeDisplay(eventItem.Time || eventItem.time)}</div>
+                    {/* 🟢 แสดงสถานที่ย่อๆ บนตารางช่องวัน */}
+                    <div style={styles.eventLocationText}>📍 {eventItem.Location || eventItem.location || 'ไม่ระบุ'}</div>
                   </div>
                 )}
               </div>
@@ -282,9 +276,7 @@ export default function CalendarActivity() {
         </div>
       </div>
 
-      {/* ========================================== */}
-      {/* 📥 POPUP 1: เพิ่มปฏิทิน                     */}
-      {/* ========================================== */}
+      {/* 📥 POPUP 1: เพิ่มปฏิทิน */}
       {isAddOpen && (
         <div style={styles.overlay}>
           <div style={styles.modal}>
@@ -295,10 +287,17 @@ export default function CalendarActivity() {
             <form onSubmit={handleAddSubmit}>
               <label style={styles.label}>ชื่อกิจกรรม</label>
               <input type="text" style={styles.input} value={formData.Name} onChange={(e) => setFormData({ ...formData, Name: e.target.value })} required />
+              
               <label style={styles.label}>วัน/เดือน/ปี</label>
               <input type="date" style={styles.input} value={formData.Date} onChange={(e) => setFormData({ ...formData, Date: e.target.value })} required />
+              
               <label style={styles.label}>เวลาที่จัด</label>
               <input type="text" style={styles.input} placeholder="เช่น 09:00 - 12:00 น." value={formData.Time} onChange={(e) => setFormData({ ...formData, Time: e.target.value })} required />
+              
+              {/* 🟢 เพิ่มช่องรับข้อมูลสถานที่ */}
+              <label style={styles.label}>สถานที่</label>
+              <input type="text" style={styles.input} placeholder="กรอกสถานที่จัดกิจกรรม" value={formData.Location} onChange={(e) => setFormData({ ...formData, Location: e.target.value })} required />
+              
               <button type="submit" style={styles.btnSubmit}>บันทึก</button>
             </form>
           </div>
@@ -320,6 +319,11 @@ export default function CalendarActivity() {
               <input type="text" style={styles.inputReadOnly} value={formData.Date} readOnly />
               <label style={styles.label}>เวลาที่จัด</label>
               <input type="text" style={styles.inputReadOnly} value={formatTimeDisplay(formData.Time)} readOnly />
+              
+              {/* 🟢 เพิ่มช่องแสดงสถานที่ในหน้าดูรายละเอียด */}
+              <label style={styles.label}>สถานที่</label>
+              <input type="text" style={styles.inputReadOnly} value={formData.Location || 'ไม่ระบุสถานที่'} readOnly />
+              
               <div style={styles.modalActionRow}>
                 <button type="button" style={styles.iconActionBtn} onClick={() => { setIsDetailOpen(false); setIsDeleteOpen(true); }}>🗑️</button>
                 <button type="button" style={styles.iconActionBtn} onClick={() => { setIsDetailOpen(false); setIsEditOpen(true); }}>📝</button>
@@ -344,6 +348,11 @@ export default function CalendarActivity() {
               <input type="date" style={styles.input} value={formData.Date} onChange={(e) => setFormData({ ...formData, Date: e.target.value })} required />
               <label style={styles.label}>เวลาที่จัด</label>
               <input type="text" style={styles.input} value={formData.Time} onChange={(e) => setFormData({ ...formData, Time: e.target.value })} required />
+              
+              {/* 🟢 เพิ่มช่องแก้ไขสถานที่ */}
+              <label style={styles.label}>สถานที่</label>
+              <input type="text" style={styles.input} value={formData.Location} onChange={(e) => setFormData({ ...formData, Location: e.target.value })} required />
+              
               <button type="submit" style={styles.btnSubmit}>บันทึก</button>
             </form>
           </div>
@@ -368,10 +377,6 @@ export default function CalendarActivity() {
   );
 }
 
-
-
-
-// Styles คงเดิมเหมือนต้นฉบับของคุณทุกประการ
 const styles = {
   contentBody: { padding: '10px', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', width: '100%' },
   calendarCard: { border: '1px solid #999', borderRadius: '6px', padding: '20px', backgroundColor: '#fff', width: '100%', maxWidth: '780px', boxSizing: 'border-box' },
@@ -380,12 +385,14 @@ const styles = {
   arrowBtn: { padding: '3px 8px', backgroundColor: '#f5f5f5', border: '1px solid #dcdcdc', borderRadius: '4px', cursor: 'pointer', fontSize: '11px' },
   calendarGrid: { display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '6px', width: '100%' },
   dayOfWeekLabel: { textAlign: 'center', fontSize: '13px', paddingBottom: '8px', color: '#222', fontWeight: 'bold' },
-  dayCell: { border: '1px solid #cccccc', borderRadius: '6px', minHeight: '80px', padding: '6px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', boxSizing: 'border-box', cursor: 'pointer' },
-  dayCellEmpty: { minHeight: '80px', boxSizing: 'border-box' },
+  dayCell: { border: '1px solid #cccccc', borderRadius: '6px', minHeight: '90px', padding: '6px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', boxSizing: 'border-box', cursor: 'pointer' }, // เพิ่มความสูงช่องตารางเล็กน้อย
+  dayCellEmpty: { minHeight: '90px', boxSizing: 'border-box' },
   dayNumberText: { alignSelf: 'flex-start', fontSize: '11px', color: '#444' },
   eventBadgeContent: { display: 'flex', flexDirection: 'column', width: '100%', textAlign: 'left', gap: '2px', marginTop: '4px' },
   eventTitleText: { fontSize: '10px', fontWeight: 'bold', color: '#000', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' },
-  eventTimeText: { fontSize: '9px', color: '#555', paddingLeft: '6px' },
+  eventTimeText: { fontSize: '9px', color: '#555', paddingLeft: '4px' },
+  // 🟢 สไตล์ตัวหนังสือสถานที่ในตารางช่องวัน
+  eventLocationText: { fontSize: '9px', color: '#0284c7', paddingLeft: '4px', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', fontWeight: '500' },
   overlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 },
   modal: { backgroundColor: '#fff', width: '350px', padding: '25px', borderRadius: '12px', border: '1px solid #999', position: 'relative', boxSizing: 'border-box' },
   modalHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' },
@@ -401,3 +408,6 @@ const styles = {
   btnCancel: { padding: '8px 24px', backgroundColor: '#fff', border: '1px solid #ccc', borderRadius: '5px', cursor: 'pointer', fontSize: '13px', color: '#333' },
   btnConfirmDelete: { padding: '8px 24px', backgroundColor: '#d9534f', border: '1px solid #d43f3a', borderRadius: '5px', cursor: 'pointer', fontSize: '13px', color: '#fff', fontWeight: 'bold' }
 };
+
+
+export default CalendarActivity;

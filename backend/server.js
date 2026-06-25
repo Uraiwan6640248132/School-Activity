@@ -299,31 +299,34 @@ app.delete("/api/publicrelations/:id", (req, res) => {
 // 📅 ระบบ API จัดการปฏิทินกิจกรรม (CALENDAR)
 // ==========================================
 app.get("/api/calendar", (req, res) => {
-  db.query(`SELECT Calendar_id, Name, DATE_FORMAT(Date, '%Y-%m-%d') AS Date, Time, User_id FROM calendar ORDER BY Date ASC`, (err, result) => {
+  // 🟢 เพิ่ม Location เข้าไปในคำสั่ง SELECT เพื่อส่งค่ากลับไปหน้าบ้าน
+  db.query(`SELECT Calendar_id, Name, DATE_FORMAT(Date, '%Y-%m-%d') AS Date, Time, Location, User_id FROM calendar ORDER BY Date ASC`, (err, result) => {
     if (err) return res.status(500).json(err);
     res.json(result);
   });
 });
 
 app.post("/api/calendar", (req, res) => {
-  const { Name, Date: actDate, Time, User_id } = req.body;
+  // 🟢 รับค่า Location เพิ่มมาจาก req.body ของหน้าบ้าน
+  const { Name, Date: actDate, Time, Location, User_id } = req.body;
   const cleanDate = parseDateForMySQL(actDate);
-  // 🛠️ เปลี่ยนค่าเริ่มต้นสำรองเป็นเลข 2
   const finalUserId = parseInt(User_id, 10) || 2;
 
-  db.query("INSERT INTO calendar (Name, Date, Time, User_id) VALUES (?, ?, ?, ?)", [Name, cleanDate, Time, finalUserId], (err, result) => {
+  // 🟢 เพิ่ม Location เข้าไปในแถวและค่าพารามิเตอร์ที่จะบันทึก (INSERT)
+  db.query("INSERT INTO calendar (Name, Date, Time, Location, User_id) VALUES (?, ?, ?, ?, ?)", [Name, cleanDate, Time, Location, finalUserId], (err, result) => {
     if (err) return res.status(500).json(err);
     res.json({ message: "เพิ่มกิจกรรมลงปฏิทินสำเร็จ", Calendar_id: result.insertId });
   });
 });
 
 app.put("/api/calendar/:id", (req, res) => {
-  const { Name, Date: actDate, Time, User_id } = req.body;
+  // 🟢 รับค่า Location เพิ่มมาจาก req.body สำหรับงานแก้ไข
+  const { Name, Date: actDate, Time, Location, User_id } = req.body;
   const cleanDate = parseDateForMySQL(actDate);
-  // 🛠️ เปลี่ยนค่าเริ่มต้นสำรองเป็นเลข 2
   const finalUserId = parseInt(User_id, 10) || 2;
 
-  db.query("UPDATE calendar SET Name=?, Date=?, Time=?, User_id=? WHERE Calendar_id=?", [Name, cleanDate, Time, finalUserId, req.params.id], (err, result) => {
+  // 🟢 เพิ่ม Location=? เข้าไปในคำสั่งแก้ไข (UPDATE)
+  db.query("UPDATE calendar SET Name=?, Date=?, Time=?, Location=?, User_id=? WHERE Calendar_id=?", [Name, cleanDate, Time, Location, finalUserId, req.params.id], (err, result) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json({ message: "แก้ไขข้อมูลปฏิทินสำเร็จ" });
   });
