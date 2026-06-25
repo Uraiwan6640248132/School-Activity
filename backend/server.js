@@ -179,17 +179,18 @@ app.delete("/activities/:id", (req, res) => {
   });
 });
 
-// ตัวอย่าง API เส้นทาง /api/students ฝั่งหลังบ้าน (Backend)
+// ==========================================
+// 🚀 ระบบ API จัดการข้อมูลนักเรียน (STUDENTS CRUD)
+// ==========================================
 app.get('/api/students', (req, res) => {
-  // 📥 ดึงค่า userId ที่ส่งมาจาก Frontend (ได้จาก req.query)
   const userId = req.query.userId;
+  console.log("== [BACKEND API] ได้รับคำขอรหัสผู้ใช้ ID == :", userId);
 
   if (!userId) {
     return res.status(400).json({ error: "ระบุข้อมูลผู้ใช้ไม่ถูกต้อง (Missing userId)" });
   }
 
-  // 🔍 เลือกคำสั่ง SQL คัดกรองข้อมูลตามฟิลด์ตารางนักเรียนในระบบของคุณ
-  // (สมมติว่าตารางชื่อ student และมีคอลัมน์เชื่อมโยงถึงผู้ปกครองระบุเป็น User_id หรือ Parent_id)
+  // คำสั่ง Query ข้อมูลกรองจากตาราง
   const sql = "SELECT * FROM student WHERE User_id = ?"; 
 
   db.query(sql, [userId], (err, results) => {
@@ -198,7 +199,7 @@ app.get('/api/students', (req, res) => {
       return res.status(500).json({ error: "Database internal error" });
     }
     
-    // 📤 ส่งข้อมูลนักเรียนที่คัดเฉพาะของลูกผู้ปกครองรายนี้กลับไปให้หน้าบ้านแสดงผล
+    console.log("== [BACKEND API] จำนวนแถวผลลัพธ์ SQL ที่เจอ == :", results.length);
     res.json(results);
   });
 });
@@ -468,7 +469,19 @@ app.post("/login", (req, res) => {
     if (err) return res.status(500).json({ success: false, error: "ฐานข้อมูลมีปัญหา" });
     if (result.length > 0) {
       const user = result[0];
-      return res.json({ success: true, message: "สำเร็จ", user: { id: user.User_id, username: user.UserName, name: user.Name, role: user.Role } });
+      
+      // ✨ แก้ไขจุดนี้: เพิ่มคีย์ User_id ส่งกลับไป เพื่อให้ฝั่ง React หน้าบ้านดึงไปค้นหาลูกได้ถูกต้องตามตาราง SQL
+      return res.json({ 
+        success: true, 
+        message: "สำเร็จ", 
+        user: { 
+          id: user.User_id, 
+          User_id: user.User_id, // 👈 เพิ่มบรรทัดนี้เข้าไปครับ
+          username: user.UserName, 
+          name: user.Name, 
+          role: user.Role 
+        } 
+      });
     }
     res.status(401).json({ success: false, error: "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง" });
   });

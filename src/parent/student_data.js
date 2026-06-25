@@ -10,33 +10,47 @@ const StudentData = () => {
 
   const BACKEND_IMAGE_URL = "http://localhost:3001/uploads/";
 
-  useEffect(() => {
-    const fetchStudentData = async () => {
-      try {
-        // 🔑 1. ดึงข้อมูล User ที่ล็อกอินมาจาก localStorage (ปรับโครงสร้างตามระบบ Login ของคุณ)
-        const storedUser = localStorage.getItem("user");
-        
-        if (!storedUser) {
-          console.error("ไม่พบข้อมูลการเข้าสู่ระบบ กรุณาล็อกอินใหม่");
-          setLoading(false);
-          return;
-        }
+ useEffect(() => {
+  const fetchStudentData = async () => {
+    try {
+      // 1. ดึงข้อมูลดิบจาก localStorage
+      const storedUser = localStorage.getItem("user");
+      console.log("== [FRONTEND CHECK 1] ข้อมูลดิบใน LocalStorage == :", storedUser);
 
-        const userData = JSON.parse(storedUser);
-        const userId = userData.User_id; // ดึงรหัส User_id ของผู้ปกครองออกมารองรับงานค้นหา
-
-        // 🔗 2. ส่ง userId แนบไปเป็น Query Parameter ให้ฝั่งหลังบ้าน (Backend)
-        const res = await axios.get(`http://localhost:3001/api/students?userId=${userId}`);
-        
-        setStudents(res.data);
+      if (!storedUser) {
+        console.error("ไม่พบข้อมูลการเข้าสู่ระบบในระบบ LocalStorage");
         setLoading(false);
-      } catch (error) {
-        console.error("เกิดข้อผิดพลาดในการดึงข้อมูลนักเรียน:", error);
-        setLoading(false);
+        return;
       }
-    };
-    fetchStudentData();
-  }, []);
+
+      // 2. แปลงข้อมูล JSON object 
+      const userData = JSON.parse(storedUser);
+      console.log("== [FRONTEND CHECK 2] วัตถุหลังจากแตกตัวแปร == :", userData);
+
+      // 3. ดักจับคีย์ไอดีผู้ปกครองทุกรูปแบบที่เป็นไปได้ (ป้องกันการพิมพ์ผิด)
+      const userId = userData.User_id || userData.user_id || userData.id;
+      console.log("== [FRONTEND CHECK 3] ค่ารหัสผู้ปกครองที่จะส่งไป == :", userId);
+
+      if (!userId) {
+        console.error("ระบบไม่สามารถดึงข้อมูล ID จากตัวตนผู้ใช้ที่ล็อกอินอยู่ได้");
+        setLoading(false);
+        return;
+      }
+
+      // 4. ส่ง Request ไปยัง API หลังบ้าน
+      const res = await axios.get(`http://localhost:3001/api/students?userId=${userId}`);
+      console.log("== [FRONTEND CHECK 4] ข้อมูลส่งกลับมาจาก API หลังบ้าน == :", res.data);
+
+      setStudents(res.data);
+      setLoading(false);
+    } catch (error) {
+      console.error("เกิดข้อผิดพลาดในการเรียกดูข้อมูลนักเรียน:", error);
+      setLoading(false);
+    }
+  };
+  
+  fetchStudentData();
+}, []);
 
   const formatThaiDate = (dateString) => {
     if (!dateString) return 'ไม่ได้ระบุ';
