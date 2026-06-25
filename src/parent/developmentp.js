@@ -3,14 +3,30 @@ import React, { useState, useEffect, useCallback } from 'react';
 export default function Developmentp() {
   const [devList, setDevList] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [students, setStudents] = useState([]); // 🌟 ดึงข้อมูลนักเรียนมาเก็บไว้เพื่อหาชื่อเหมือนฝั่งครู
 
-  // 💡 [แก้ไข] นำ [studentInfo, setStudentInfo] ที่ไม่ได้ใช้งานออก เพื่อแก้ Warning: no-unused-vars
+  // State สำหรับเปิด-ปิดหน้าต่าง Pop-up รายละเอียดพัฒนาการ
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [selectedDetailItem, setSelectedDetailItem] = useState(null);
 
   // ดึงรหัสนักเรียน (Student_id) จาก localStorage ที่ผู้ปกครองล็อกอินเข้ามา หรือใช้ค่าเริ่มต้นเป็น 1
   const STUDENT_ID = Number(localStorage.getItem('student_id_of_parent')) || 1; 
   const API_URL = `http://localhost:3001/api/development`;
+  const STUDENTS_API_URL = 'http://localhost:3001/api/students'; // 🌟 API สำหรับดึงรายชื่อมาแมตช์
 
-  // 💡 [แก้ไข] ใช้ useCallback ครอบฟังก์ชันเพื่อใช้ใน useEffect ได้อย่างถูกต้อง และแก้ข้อความเตือนเรื่อง react-hooks/exhaustive-deps
+  // 🌟 ฟังก์ชันดึงรายชื่อนักเรียนทั้งหมด (แกะมาจากฝั่งครู)
+  const fetchStudentsData = async () => {
+    try {
+      const res = await fetch(STUDENTS_API_URL);
+      if (res.ok) {
+        const data = await res.json();
+        setStudents(Array.isArray(data) ? data : []);
+      }
+    } catch (err) {
+      console.error("Error fetching students list:", err);
+    }
+  };
+
   const fetchDevelopmentData = useCallback(async () => {
     setLoading(true);
     try {
@@ -18,7 +34,7 @@ export default function Developmentp() {
       if (res.ok) {
         const data = await res.json();
         
-        // กรองข้อมูลเฉพาะของลูก (Student_id) ฝั่ง Frontend เพื่อป้องกัน Error หาก API ส่งมาทั้งหมด
+        // กรองข้อมูลเฉพาะของลูก (Student_id) ฝั่ง Frontend
         const filteredData = Array.isArray(data) 
           ? data.filter(item => Number(item.Student_id || item.student_id) === STUDENT_ID)
           : [];
@@ -32,9 +48,21 @@ export default function Developmentp() {
     }
   }, [API_URL, STUDENT_ID]);
 
+  // 🌟 เรียกใช้ฟังก์ชันดึงข้อมูลทั้ง 2 ส่วนตอนโหลดหน้าเว็บ
   useEffect(() => {
+    fetchStudentsData();
     fetchDevelopmentData();
-  }, [fetchDevelopmentData]); // 💡 [แก้ไข] ใส่ fetchDevelopmentData เป็น dependency เพื่อความปลอดภัยและถูกต้องตามมาตรฐาน React
+  }, [fetchDevelopmentData]);
+
+  // 🌟 ฟังก์ชันค้นหาชื่อนักเรียนตามรหัส (แกะโครงสร้างมาจากฝั่งครูเพื่อความแม่นยำ)
+  const getStudentName = useCallback((studentId) => {
+    if (!students || students.length === 0) return `รหัส: ${studentId}`;
+    const found = students.find(s => Number(s.Student_id || s.id || s.student_id) === Number(studentId));
+    if (found) {
+      return found.Name || found.name || `${found.First_name || ''} ${found.Last_name || ''}`.trim();
+    }
+    return `รหัสนักเรียน: ${studentId} (ไม่พบรายชื่อ)`;
+  }, [students]);
 
   // ฟังก์ชันคำนวณคะแนนเฉลี่ยแปลงเป็นเปอร์เซ็นต์เต็ม 100
   const calculateSectionScore = (scores) => {
@@ -42,6 +70,24 @@ export default function Developmentp() {
     const sum = scores.reduce((a, b) => Number(a) + Number(b), 0);
     const avg = sum / scores.length;
     return Math.round(avg * 20); 
+  };
+
+  const openDetailModal = (item) => {
+    setSelectedDetailItem(item);
+    setIsDetailOpen(true);
+  };
+
+  const scoreLevels = [
+    { label: 'ดีมาก', val: 5 },
+    { label: 'ดี', val: 4 },
+    { label: 'ปานกลาง', val: 3 },
+    { label: 'พอใช้', val: 2 },
+    { label: 'ปรับปรุง', val: 1 }
+  ];
+
+  const getScoreLabel = (val) => {
+    const found = scoreLevels.find(l => String(l.val) === String(val));
+    return found ? `${found.label} (${val})` : val || 'ไม่มีข้อมูล';
   };
 
   return (
@@ -53,7 +99,8 @@ export default function Developmentp() {
           <div>
             <h2 style={styles.mainTitle}>สรุปผลพัฒนาการนักเรียน</h2>
             <p style={styles.studentNameDisplay}>
-              รหัสนักเรียนประเมิน: {STUDENT_ID}
+              {/* 🌟 เปลี่ยนมาแสดงชื่อนักเรียนจริงผ่านฟังก์ชัน getStudentName */}
+              <strong>นักเรียน:</strong> <span style={{ color: '#1e3a8a', fontWeight: 'bold' }}>{getStudentName(STUDENT_ID)}</span>
             </p>
           </div>
           <div style={styles.badgeParent}>ฝั่งผู้ปกครอง</div>
@@ -67,21 +114,17 @@ export default function Developmentp() {
             <div style={styles.emptyState}>ยังไม่มีข้อมูลการประเมินพัฒนาการจากคุณครูในขณะนี้</div>
           ) : (
             devList.map((item, idx) => {
-              // คำนวณคะแนนแต่ละด้านตามข้อมูลใน Database
               const scoreBody = item.Weight && item.Height ? 100 : 75; 
               const scoreIntellect = calculateSectionScore([item.Problem_solving, item.Communication, item.Remembering]);
               const scoreEmotion = calculateSectionScore([item.Emotion, item.Emotion_control, item.Confidence]);
               const scoreSocial = calculateSectionScore([item.Stress, item.Interaction, item.Assistance]);
               
-              // จัดการรูปแบบวันที่
               const displayDate = item.date_clean || 
                                   (item.Date ? String(item.Date).split('T')[0] : '') || 
                                   (item.date ? String(item.date).split('T')[0] : 'ไม่ได้ระบุ');
 
-              // ดักจับข้อมูลภาคเรียนกรณีข้อความโดนตัดคำจาก Database
               let displayTerm = item.Term || item.term || "ภาคเรียนที่ 1";
               if (displayTerm.trim() === 'ภาคเรียนที่') {
-                // ถ้าในเบสโดนตัดคำ ให้แสดงตัวเลขภาคเรียนตามลำดับข้อมูลจริงที่แสดงบนหน้าเว็บ
                 displayTerm = idx === 0 ? 'ภาคเรียนที่ 1' : 'ภาคเรียนที่ 2'; 
               }
 
@@ -89,13 +132,19 @@ export default function Developmentp() {
                 <div key={idx} style={styles.devCardItem}>
                   <div style={styles.cardItemHeader}>
                     <span style={styles.yearText}>
+                      {/* 🌟 แสดงชื่อนักเรียนบนหัวการ์ดของแต่ละเทอมด้วย */}
+                      <strong style={{ color: '#1e3a8a' }}>{getStudentName(item.Student_id)}</strong><br />
                       ปีการศึกษา {item.Year || item.year || '2569'} - {displayTerm}
                     </span>
                     <span style={styles.dateText}>วันที่ประเมิน: {displayDate}</span>
                   </div>
 
-                  {/* แสดงผลวงกลมคะแนน 4 ด้านหลัก (ไม่มีปุ่มแก้ไขและลบ) */}
-                  <div style={styles.circlesRow}>
+                  {/* แถววงกลมคะแนน 4 ด้านหลัก (คลิกได้เพื่อเปิดดู Pop-up สรุปผลรายละเอียด) */}
+                  <div 
+                    style={{ ...styles.circlesRow, cursor: 'pointer' }} 
+                    onClick={() => openDetailModal(item)}
+                    title="คลิกเพื่อดูรายละเอียดเพิ่มเติม"
+                  >
                     <div style={styles.circleUnit}>
                       <div style={styles.circleScore}>{scoreBody}</div>
                       <span style={styles.circleLabel}>ด้านร่างกาย</span>
@@ -126,11 +175,110 @@ export default function Developmentp() {
           )}
         </div>
       </div>
+
+      {/* 📥 หน้าต่าง POPUP: แสดงรายละเอียดรายข้อการประเมินแบบอ่านอย่างเดียวสำหรับผู้ปกครอง */}
+      {isDetailOpen && selectedDetailItem && (
+        <div style={styles.overlay} onClick={() => setIsDetailOpen(false)}>
+          <div style={styles.modalDev} onClick={(e) => e.stopPropagation()}>
+            <div style={styles.modalHeader}>
+              <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#666' }}>
+                ปีการศึกษา {selectedDetailItem.Year || '2569'} ({selectedDetailItem.Term || 'ภาคเรียนที่ 1'})
+              </span>
+              <strong style={{ fontSize: '16px', color: '#1e3a8a' }}>รายงานพัฒนาการเด็กอย่างละเอียด</strong>
+              <span style={styles.closeX} onClick={() => setIsDetailOpen(false)}>X</span>
+            </div>
+
+            <div style={styles.formScrollable}>
+              {/* บล็อกหัวข้อแสดงชื่อของลูกนักเรียนในหน้าต่าง Popup */}
+              <div style={{ backgroundColor: '#f0f4f8', padding: '12px', borderRadius: '8px', marginBottom: '15px' }}>
+                <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#000' }}>
+                  {/* 🌟 แสดงชื่อจริงใน Popup */}
+                  นักเรียน: {getStudentName(selectedDetailItem.Student_id)}
+                </div>
+                <div style={{ fontSize: '12px', color: '#555', marginTop: '3px' }}>
+                  วันที่ประเมินล่าสุด: {selectedDetailItem.date_clean || (selectedDetailItem.date ? String(selectedDetailItem.date).split('T')[0] : 'ไม่ระบุ')}
+                </div>
+              </div>
+
+              {/* รายละเอียดดัชนีร่างกาย */}
+              <h4 style={{ ...styles.tableSectionTitle, marginTop: '0px', color: '#1e3a8a' }}>📊 1. ข้อมูลพัฒนาการด้านร่างกาย</h4>
+              <div style={{ ...styles.bodyMetricsRow, flexWrap: 'wrap', backgroundColor: '#fafafa', padding: '10px', borderRadius: '6px', gap: '8px', border: '1px solid #eee' }}>
+                <div style={{ width: '47%', fontSize: '13px' }}><strong>น้ำหนัก:</strong> {selectedDetailItem.Weight || '-'} กก.</div>
+                <div style={{ width: '47%', fontSize: '13px' }}><strong>ส่วนสูง:</strong> {selectedDetailItem.Height || '-'} ซม.</div>
+                <div style={{ width: '47%', fontSize: '13px' }}><strong>สุขภาพฟัน:</strong> {selectedDetailItem.Dental_health || 'ปกติ'}</div>
+                <div style={{ width: '47%', fontSize: '13px' }}><strong>การได้รับวัคซีน:</strong> {selectedDetailItem.Vaccination || 'ครบตามเกณฑ์'}</div>
+                <div style={{ width: '98%', fontSize: '13px' }}><strong>การเคลื่อนไหว:</strong> {selectedDetailItem.Motor_skills || 'สมวัย'}</div>
+              </div>
+
+              {/* รายละเอียดตารางคะแนนแบบประเมินย่อย */}
+              <h4 style={{ ...styles.tableSectionTitle, color: '#1e3a8a' }}>🎭 2. รายละเอียดการประเมินรายหัวข้อย่อย</h4>
+              <table style={{ ...styles.evalTable, border: '1px solid #e5e7eb' }}>
+                <thead>
+                  <tr style={{ backgroundColor: '#f8fafc' }}>
+                    <th style={{ ...styles.thLeft, padding: '8px' }}>หัวข้อประเมินพัฒนาการ</th>
+                    <th style={{ ...styles.thCenter, padding: '8px', width: '120px' }}>ระดับพัฒนาการ</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr style={{ borderBottom: '1px solid #f1f5f9' }}><td style={{ ...styles.tdLeft, fontWeight: 'bold', color: '#555' }} colSpan="2">ด้านอารมณ์</td></tr>
+                  <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+                    <td style={{ ...styles.tdLeft, paddingLeft: '15px' }}>• การแสดงออกทางอารมณ์</td>
+                    <td style={styles.tdCenter}>{getScoreLabel(selectedDetailItem.Emotion)}</td>
+                  </tr>
+                  <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+                    <td style={{ ...styles.tdLeft, paddingLeft: '15px' }}>• การควบคุมอารมณ์</td>
+                    <td style={styles.tdCenter}>{getScoreLabel(selectedDetailItem.Emotion_control)}</td>
+                  </tr>
+                  <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+                    <td style={{ ...styles.tdLeft, paddingLeft: '15px' }}>• ความมั่นใจในตนเอง</td>
+                    <td style={styles.tdCenter}>{getScoreLabel(selectedDetailItem.Confidence)}</td>
+                  </tr>
+
+                  <tr style={{ borderBottom: '1px solid #f1f5f9' }}><td style={{ ...styles.tdLeft, fontWeight: 'bold', color: '#555' }} colSpan="2">ด้านสังคม</td></tr>
+                  <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+                    <td style={{ ...styles.tdLeft, paddingLeft: '15px' }}>• การจัดการความเครียด</td>
+                    <td style={styles.tdCenter}>{getScoreLabel(selectedDetailItem.Stress)}</td>
+                  </tr>
+                  <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+                    <td style={{ ...styles.tdLeft, paddingLeft: '15px' }}>• การมีปฏิสัมพันธ์กับผู้อื่น</td>
+                    <td style={styles.tdCenter}>{getScoreLabel(selectedDetailItem.Interaction)}</td>
+                  </tr>
+                  <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+                    <td style={{ ...styles.tdLeft, paddingLeft: '15px' }}>• การช่วยเหลือเอื้อเฟื้อ</td>
+                    <td style={styles.tdCenter}>{getScoreLabel(selectedDetailItem.Assistance)}</td>
+                  </tr>
+
+                  <tr style={{ borderBottom: '1px solid #f1f5f9' }}><td style={{ ...styles.tdLeft, fontWeight: 'bold', color: '#555' }} colSpan="2">ด้านสติปัญญา</td></tr>
+                  <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+                    <td style={{ ...styles.tdLeft, paddingLeft: '15px' }}>• การคิดแก้ปัญหา</td>
+                    <td style={styles.tdCenter}>{getScoreLabel(selectedDetailItem.Problem_solving)}</td>
+                  </tr>
+                  <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+                    <td style={{ ...styles.tdLeft, paddingLeft: '15px' }}>• ทักษะด้านการสื่อสาร</td>
+                    <td style={styles.tdCenter}>{getScoreLabel(selectedDetailItem.Communication)}</td>
+                  </tr>
+                  <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+                    <td style={{ ...styles.tdLeft, paddingLeft: '15px' }}>• ความสามารถด้านการจดจำ</td>
+                    <td style={styles.tdCenter}>{getScoreLabel(selectedDetailItem.Remembering)}</td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <button 
+                type="button" 
+                style={styles.btnCloseDetail} 
+                onClick={() => setIsDetailOpen(false)}
+              >
+                ปิดหน้ารายงานรายละเอียด
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-// Styles การจัดวางหน้าตาแบบระบบบันทึกพัฒนาการ
 const styles = {
   container: { padding: '20px', width: '100%', display: 'flex', justifyContent: 'center', fontFamily: "sans-serif" },
   cardMain: { border: '1px solid #ccc', borderRadius: '8px', padding: '20px', width: '100%', maxWidth: '650px', backgroundColor: '#fff', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' },
@@ -142,12 +290,27 @@ const styles = {
   listContainer: { display: 'flex', flexDirection: 'column', gap: '16px' },
   emptyState: { textAlign: 'center', color: '#888', padding: '30px', border: '1px dashed #ccc', borderRadius: '8px', fontSize: '14px' },
   devCardItem: { border: '1px solid #e0e0e0', borderRadius: '8px', padding: '16px', backgroundColor: '#fafafa' },
-  cardItemHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' },
-  yearText: { fontSize: '14px', fontWeight: 'bold', color: '#444' },
+  cardItemHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px' },
+  yearText: { fontSize: '14px', fontWeight: 'bold', color: '#444', lineHeight: '1.5' },
   dateText: { fontSize: '12px', color: '#666' },
   circlesRow: { display: 'flex', justifyContent: 'space-around', alignItems: 'center', marginTop: '10px', marginBottom: '14px' },
   circleUnit: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' },
   circleScore: { width: '50px', height: '50px', borderRadius: '50%', border: '1px solid #888', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: 'bold', backgroundColor: '#fff', color: '#333' },
   circleLabel: { fontSize: '11px', color: '#555' },
-  bodyDetailsSummary: { display: 'flex', justifyContent: 'space-between', backgroundColor: '#fff', padding: '8px 12px', borderRadius: '6px', fontSize: '12px', color: '#555', border: '1px solid #eee' }
+  bodyDetailsSummary: { display: 'flex', justifyContent: 'space-between', backgroundColor: '#fff', padding: '8px 12px', borderRadius: '6px', fontSize: '12px', color: '#555', border: '1px solid #eee' },
+
+  // สไตล์โมดอลป๊อปอัพรายข้อ
+  overlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 },
+  modalDev: { backgroundColor: '#fff', width: '90%', maxWidth: '520px', height: '82vh', borderRadius: '12px', border: '1px solid #ccc', padding: '20px', display: 'flex', flexDirection: 'column', boxSizing: 'border-box', boxShadow: '0 8px 24px rgba(0,0,0,0.15)' },
+  modalHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '10px', borderBottom: '1px solid #eee' },
+  closeX: { cursor: 'pointer', fontWeight: 'bold', color: '#999', fontSize: '16px' },
+  formScrollable: { overflowY: 'auto', flex: 1, paddingRight: '5px', marginTop: '15px' },
+  bodyMetricsRow: { display: 'flex', gap: '10px', justifyContent: 'space-between' },
+  tableSectionTitle: { fontSize: '13px', margin: '16px 0 6px 0', borderBottom: '1px solid #ddd', paddingBottom: '3px', fontWeight: 'bold' },
+  evalTable: { width: '100%', borderCollapse: 'collapse', marginBottom: '10px' },
+  thLeft: { textAlign: 'left', fontSize: '11px', color: '#333', fontWeight: 'bold', backgroundColor: '#f5f5f5' },
+  thCenter: { textAlign: 'center', fontSize: '11px', color: '#333', fontWeight: 'bold', minWidth: '80px', backgroundColor: '#f5f5f5' },
+  tdLeft: { fontSize: '12px', padding: '7px 5px', borderBottom: '1px solid #eee', color: '#444' },
+  tdCenter: { textAlign: 'center', padding: '7px 5px', borderBottom: '1px solid #eee', fontSize: '12px', color: '#000' },
+  btnCloseDetail: { width: '100%', padding: '10px', marginTop: '15px', backgroundColor: '#1e3a8a', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }
 };

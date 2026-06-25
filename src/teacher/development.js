@@ -3,13 +3,16 @@ import React, { useState, useEffect, useCallback } from 'react';
 export default function Development() {
   const [devList, setDevList] = useState([]);
   const [loading, setLoading] = useState(false);
-  
-  // 🌟 1. เพิ่ม State สำหรับเก็บข้อมูลนักเรียนทั้งหมดในระบบเพื่อนำมาจับคู่ชื่อ
   const [students, setStudents] = useState([]);
 
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  
+  // 🌟 1. เพิ่ม State สำหรับเปิด-ปิดหน้าต่างรายละเอียด และเก็บชิ้นข้อมูลที่ถูกเลือกดู
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [selectedDetailItem, setSelectedDetailItem] = useState(null);
+  
   const [selectedId, setSelectedId] = useState(null);
 
   const [formData, setFormData] = useState({
@@ -38,10 +41,8 @@ export default function Development() {
   });
 
   const API_URL = 'http://localhost:3001/api/development';
-  // 🌟 2. เส้น API สำหรับดึงรายชื่อนักเรียน (ปรับให้ตรงกับหลังบ้านของพี่ได้เลยครับ)
   const STUDENTS_API_URL = 'http://localhost:3001/api/students';
 
-  // 🌟 3. ฟังก์ชันดึงรายชื่อนักเรียนจากฐานข้อมูลมาเก็บไว้แมปชื่อ
   const fetchStudentsData = async () => {
     try {
       const res = await fetch(STUDENTS_API_URL);
@@ -70,16 +71,14 @@ export default function Development() {
   };
 
   useEffect(() => {
-    fetchStudentsData();    // 🌟 ดึงรายชื่อนักเรียนเมื่อเปิดหน้าจอครั้งแรก
+    fetchStudentsData();    
     fetchDevelopmentData();
   }, []);
 
-  // 🌟 4. ฟังก์ชันสำหรับหาชื่อนักเรียนจาก Student_id เพื่อนำมาแสดงผลบน UI
   const getStudentName = useCallback((studentId) => {
     if (!students || students.length === 0) return `รหัส: ${studentId}`;
     const found = students.find(s => Number(s.Student_id || s.id || s.student_id) === Number(studentId));
     if (found) {
-      // ดึงฟิลด์ชื่อตามโครงสร้างตาราง เช่น Name หรือ First_name + Last_name
       return found.Name || found.name || `${found.First_name || ''} ${found.Last_name || ''}`.trim();
     }
     return `รหัสนักเรียน: ${studentId} (ไม่พบรายชื่อ)`;
@@ -137,11 +136,17 @@ export default function Development() {
         resetForm();
         fetchDevelopmentData();
       } else {
-        alert("ไม่สามารถบันทึกข้อมูลได้ กรุณาตรวจสอบ API หรือโครงสร้าง JSON");
+        alert("ไม่สามารถบันทึกข้อมูลได้");
       }
     } catch (err) {
       alert("เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
     }
+  };
+
+  // 🌟 2. เพิ่มฟังก์ชันเปิดหน้าต่างรายละเอียดแบบเจาะลึกเมื่อคลิกที่กลุ่มคะแนน/การ์ด
+  const openDetailModal = (item) => {
+    setSelectedDetailItem(item);
+    setIsDetailOpen(true);
   };
 
   const openEditModal = (item) => {
@@ -235,13 +240,17 @@ export default function Development() {
     { label: 'ปรับปรุง', val: 1 }
   ];
 
+  const getScoreLabel = (val) => {
+    const found = scoreLevels.find(l => String(l.val) === String(val));
+    return found ? `${found.label} (${val})` : val || 'ไม่มีข้อมูล';
+  };
+
   return (
     <div style={styles.container}>
       <div style={styles.cardMain}>
         <div style={styles.headerRow}>
           <div>
             <h2 style={styles.mainTitle}>บันทึกพัฒนาการเด็ก</h2>
-            {/* 🌟 5. แสดงชื่อของนักเรียนคนที่เราเลือกประเมินปัจจุบันบนหัวข้อหลัก */}
             <p style={styles.studentNameDisplay}>
               <strong>กำลังแสดงผล:</strong> {getStudentName(formData.Student_id)}
             </p>
@@ -274,7 +283,6 @@ export default function Development() {
                 <div key={idx} style={styles.devCardItem}>
                   <div style={styles.cardItemHeader}>
                     <span style={styles.yearText}>
-                      {/* 🌟 6. แนบชื่อนักเรียนลงไปในการ์ดประเมินแต่ละใบ เพื่อให้แอดมินแยกแยะได้ง่ายขึ้น */}
                       <strong style={{color: '#1e3a8a'}}>{getStudentName(item.Student_id)}</strong><br />
                       ปีการศึกษา {item.Year || item.year || '2569'} - {displayTerm}<br />
                       <span style={{ fontSize: '12px', color: '#666', fontWeight: 'normal' }}>วันที่ประเมิน: {displayDate}</span>
@@ -285,7 +293,8 @@ export default function Development() {
                     </div>
                   </div>
 
-                  <div style={styles.circlesRow}>
+                  {/* 🌟 3. ปรับปรุงที่แถววงกลม: เพิ่ม cursor pointer และฟังก์ชัน onClick ให้กดแล้วแสดงรายละเอียดรายข้อ */}
+                  <div style={{ ...styles.circlesRow, cursor: 'pointer' }} onClick={() => openDetailModal(item)} title="คลิกเพื่อดูรายละเอียดเพิ่มเติม">
                     <div style={styles.circleUnit}>
                       <div style={styles.circleScore}>{scoreBody}</div>
                       <span style={styles.circleLabel}>ด้านร่างกาย</span>
@@ -310,6 +319,102 @@ export default function Development() {
         </div>
       </div>
 
+      {/* 📥 4. หน้าต่างใหม่ POPUP: แสดงรายละเอียดรายข้อการประเมิน (เมื่อกดที่กลุ่มวงกลมคะแนน) */}
+      {isDetailOpen && selectedDetailItem && (
+        <div style={styles.overlay} onClick={() => setIsDetailOpen(false)}>
+          <div style={styles.modalDev} onClick={(e) => e.stopPropagation()}>
+            <div style={styles.modalHeader}>
+              <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#666' }}>
+                ปีการศึกษา {selectedDetailItem.Year || '2569'} ({selectedDetailItem.Term || 'ภาคเรียนที่ 1'})
+              </span>
+              <strong style={{ fontSize: '16px', color: '#1e3a8a' }}>รายละเอียดพัฒนาการเด็ก</strong>
+              <span style={styles.closeX} onClick={() => setIsDetailOpen(false)}>X</span>
+            </div>
+
+            <div style={styles.formScrollable}>
+              <div style={{ backgroundColor: '#f0f4f8', padding: '12px', borderRadius: '8px', marginBottom: '15px' }}>
+                <div style={{ fontSize: '15px', fontWeight: 'bold', marginBottom: '4px', color: '#000' }}>
+                  นักเรียน: {getStudentName(selectedDetailItem.Student_id)}
+                </div>
+                <div style={{ fontSize: '12px', color: '#555' }}>
+                  วันที่ทำรายการประเมิน: {selectedDetailItem.date_clean || (selectedDetailItem.date ? String(selectedDetailItem.date).split('T')[0] : 'ไม่ระบุ')}
+                </div>
+              </div>
+
+              <h4 style={{ ...styles.tableSectionTitle, marginTop: '0px', color: '#1e3a8a' }}>📊 1. ข้อมูลด้านร่างกาย</h4>
+              <div style={{ ...styles.bodyMetricsRow, flexWrap: 'wrap', backgroundColor: '#fafafa', padding: '10px', borderRadius: '6px', gap: '8px' }}>
+                <div style={{ width: '47%', fontSize: '13px' }}><strong>น้ำหนัก:</strong> {selectedDetailItem.Weight || '-'} กก.</div>
+                <div style={{ width: '47%', fontSize: '13px' }}><strong>ส่วนสูง:</strong> {selectedDetailItem.Height || '-'} ซม.</div>
+                <div style={{ width: '47%', fontSize: '13px' }}><strong>สุขภาพฟัน:</strong> {selectedDetailItem.Dental_health || 'ไม่ได้ระบุ'}</div>
+                <div style={{ width: '47%', fontSize: '13px' }}><strong>การได้รับวัคซีน:</strong> {selectedDetailItem.Vaccination || 'ไม่ได้ระบุ'}</div>
+                <div style={{ width: '98%', fontSize: '13px' }}><strong>การเคลื่อนไหว (Motor):</strong> {selectedDetailItem.Motor_skills || 'ไม่ได้ระบุ'}</div>
+              </div>
+
+              <h4 style={{ ...styles.tableSectionTitle, color: '#1e3a8a' }}>🎭 2. รายละเอียดคะแนนหัวข้อย่อย</h4>
+              <table style={{ ...styles.evalTable, border: '1px solid #e5e7eb' }}>
+                <thead>
+                  <tr style={{ backgroundColor: '#f8fafc' }}>
+                    <th style={{ ...styles.thLeft, padding: '8px' }}>หัวข้อพัฒนาการ</th>
+                    <th style={{ ...styles.thCenter, padding: '8px', width: '120px' }}>ระดับผลประเมิน</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr style={{ borderBottom: '1px solid #f1f5f9' }}><td style={{ ...styles.tdLeft, fontWeight: 'bold' }} colSpan="2">ด้านอารมณ์</td></tr>
+                  <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+                    <td style={{ ...styles.tdLeft, paddingLeft: '15px' }}>• การแสดงออกทางอารมณ์</td>
+                    <td style={styles.tdCenter}>{getScoreLabel(selectedDetailItem.Emotion)}</td>
+                  </tr>
+                  <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+                    <td style={{ ...styles.tdLeft, paddingLeft: '15px' }}>• การควบคุมอารมณ์</td>
+                    <td style={styles.tdCenter}>{getScoreLabel(selectedDetailItem.Emotion_control)}</td>
+                  </tr>
+                  <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+                    <td style={{ ...styles.tdLeft, paddingLeft: '15px' }}>• ความมั่นใจในตัวเอง</td>
+                    <td style={styles.tdCenter}>{getScoreLabel(selectedDetailItem.Confidence)}</td>
+                  </tr>
+
+                  <tr style={{ borderBottom: '1px solid #f1f5f9' }}><td style={{ ...styles.tdLeft, fontWeight: 'bold' }} colSpan="2">ด้านสังคม</td></tr>
+                  <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+                    <td style={{ ...styles.tdLeft, paddingLeft: '15px' }}>• การจัดการความเครียด</td>
+                    <td style={styles.tdCenter}>{getScoreLabel(selectedDetailItem.Stress)}</td>
+                  </tr>
+                  <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+                    <td style={{ ...styles.tdLeft, paddingLeft: '15px' }}>• การมีปฏิสัมพันธ์กับผู้อื่น</td>
+                    <td style={styles.tdCenter}>{getScoreLabel(selectedDetailItem.Interaction)}</td>
+                  </tr>
+                  <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+                    <td style={{ ...styles.tdLeft, paddingLeft: '15px' }}>• การเอื้อเฟื้อช่วยเหลือ</td>
+                    <td style={styles.tdCenter}>{getScoreLabel(selectedDetailItem.Assistance)}</td>
+                  </tr>
+
+                  <tr style={{ borderBottom: '1px solid #f1f5f9' }}><td style={{ ...styles.tdLeft, fontWeight: 'bold' }} colSpan="2">ด้านสติปัญญา</td></tr>
+                  <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+                    <td style={{ ...styles.tdLeft, paddingLeft: '15px' }}>• การคิดแก้ปัญหา</td>
+                    <td style={styles.tdCenter}>{getScoreLabel(selectedDetailItem.Problem_solving)}</td>
+                  </tr>
+                  <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+                    <td style={{ ...styles.tdLeft, paddingLeft: '15px' }}>• ทักษะการสื่อสาร</td>
+                    <td style={styles.tdCenter}>{getScoreLabel(selectedDetailItem.Communication)}</td>
+                  </tr>
+                  <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+                    <td style={{ ...styles.tdLeft, paddingLeft: '15px' }}>• ความสามารถในการจดจำ</td>
+                    <td style={styles.tdCenter}>{getScoreLabel(selectedDetailItem.Remembering)}</td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <button 
+                type="button" 
+                style={{ ...styles.btnSaveEvaluation, backgroundColor: '#3b82f6', color: '#fff', border: 'none', marginTop: '15px' }} 
+                onClick={() => setIsDetailOpen(false)}
+              >
+                ปิดหน้าต่างรายละเอียด
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {(isAddOpen || isEditOpen) && (
         <div style={styles.overlay}>
           <div style={styles.modalDev}>
@@ -320,8 +425,6 @@ export default function Development() {
             </div>
 
             <form onSubmit={isAddOpen ? handleAddSubmit : handleEditSubmit} style={styles.formScrollable}>
-              
-              {/* 🌟 7. เปลี่ยน Input รหัสนักเรียนเป็นแบบเลือกรวมชื่อ (Dropdown Select) เพื่อให้ครูเลือกประเมินตามชื่อจริงได้ง่าย ไม่ต้องพิมพ์เลขเอง */}
               <div style={{ marginBottom: '15px' }}>
                 <label style={styles.labelMini}>เลือกนักเรียนที่ต้องการประเมิน</label>
                 <select 
@@ -477,7 +580,6 @@ export default function Development() {
   );
 }
 
-// styles คงเดิมจากที่ส่งมา...
 const styles = {
   container: { padding: '20px', width: '100%', display: 'flex', justifyContent: 'center', fontFamily: 'sans-serif' },
   cardMain: { border: '1px solid #ccc', borderRadius: '8px', padding: '20px', width: '100%', maxWidth: '650px', backgroundColor: '#fff', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' },
