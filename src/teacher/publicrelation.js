@@ -1,8 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 
 export default function PublicRelations() {
   const [prList, setPrList] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  // 🌟 1. เพิ่ม State สำหรับเก็บข้อมูลผู้ใช้งานทั้งหมดเพื่อนำมาจับคู่ชื่อคนโพสต์
+  const [users, setUsers] = useState([]);
 
   const [isAddOpen, setIsAddOpen] = useState(false);       
   const [isEditOpen, setIsEditOpen] = useState(false);     
@@ -12,13 +15,28 @@ export default function PublicRelations() {
     Name: '',
     date: '',
     Location: '',
-    User_id: 1,
+    User_id: 1, // ค่าเริ่มต้นรหัสแอดมินหรือผู้ใช้งานคนแรก
     Image: ''
   });
   const [selectedId, setSelectedId] = useState(null); 
 
 
   const API_URL = 'http://localhost:3001/api/publicrelations';
+  // 🌟 2. เส้น API สำหรับดึงรายชื่อคุณครู/แอดมินผู้ใช้งานระบบ (ปรับเปลี่ยน URL ให้ตรงกับหลังบ้านของพี่ได้เลยครับ)
+  const USERS_API_URL = 'http://localhost:3001/api/users';
+
+  // 🌟 3. ฟังก์ชันดึงรายชื่อผู้ใช้งานทั้งหมดเพื่อมาแมปกับ User_id
+  const fetchUsersData = async () => {
+    try {
+      const res = await fetch(USERS_API_URL);
+      if (res.ok) {
+        const data = await res.json();
+        setUsers(Array.isArray(data) ? data : []);
+      }
+    } catch (err) {
+      console.error("Error fetching users list:", err);
+    }
+  };
 
   const fetchPRData = async () => {
     setLoading(true);
@@ -36,8 +54,20 @@ export default function PublicRelations() {
   };
 
   useEffect(() => {
+    fetchUsersData(); // 🌟 โหลดรายชื่อผู้ใช้งานเตรียมไว้เมื่อเปิดหน้าจอ
     fetchPRData();
   }, []);
+
+  // 🌟 4. ฟังก์ชันสำหรับแปลงเลข User_id ให้กลายเป็นชื่อจริงคนประชาสัมพันธ์
+  const getUserName = useCallback((userId) => {
+    if (!users || users.length === 0) return `ผู้ใช้งานรหัส: ${userId}`;
+    const found = users.find(u => Number(u.User_id || u.id || u.user_id) === Number(userId));
+    if (found) {
+      // ค้นหาตามฟิลด์ชื่อในตารางฐานข้อมูล เช่น Name หรือ Username
+      return found.Name || found.name || found.Username || found.username || `รหัส: ${userId}`;
+    }
+    return `รหัสผู้ใช้: ${userId} (ไม่พบรายชื่อ)`;
+  }, [users]);
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
@@ -156,7 +186,8 @@ export default function PublicRelations() {
                 <strong>ชื่อเรื่อง:</strong> {item.Name_activity} <br />
                 <strong>วัน/เดือน/ปี:</strong> {item.Date ? item.Date.substring(0, 10) : '-'} <br />
                 <strong>สถานที่:</strong> {item.Location} <br />
-                <strong>ประชาสัมพันธ์โดย:</strong> {item.User_id}
+                {/* 🌟 5. นำเลขรหัสเข้าฟังก์ชันเพื่อแสดงผลเป็นชื่อผู้ใช้งานแทนตัวเลข */}
+                <strong>ประชาสัมพันธ์โดย:</strong> <span style={{color: '#2563eb', fontWeight: '500'}}>{getUserName(item.User_id)}</span>
               </div>
             </div>
             <div style={styles.cardAction}>
@@ -197,8 +228,23 @@ export default function PublicRelations() {
               <label style={styles.label}>สถานที่</label>
               <input type="text" style={styles.input} value={formData.Location} onChange={(e) => setFormData({ ...formData, Location: e.target.value })} required />
 
+              {/* 🌟 6. เปลี่ยนกล่องกรอกรหัสธรรมดาเป็นแบบเลือกรายชื่อครูแอดมิน เพื่อความแม่นยำ */}
               <label style={styles.label}>ประชาสัมพันธ์โดย</label>
-              <input type="number" style={styles.input} value={formData.User_id} onChange={(e) => setFormData({ ...formData, User_id: e.target.value })} />
+              <select 
+                style={styles.input} 
+                value={formData.User_id} 
+                onChange={(e) => setFormData({ ...formData, User_id: Number(e.target.value) })}
+              >
+                {users.map((u) => {
+                  const id = u.User_id || u.id || u.user_id;
+                  const name = u.Name || u.name || u.Username || u.username;
+                  return (
+                    <option key={id} value={id}>
+                      รหัส {id} - {name}
+                    </option>
+                  );
+                })}
+              </select>
 
               <button type="submit" style={styles.btnSubmit}>บันทึก</button>
             </form>
@@ -235,8 +281,23 @@ export default function PublicRelations() {
               <label style={styles.label}>สถานที่</label>
               <input type="text" style={styles.input} value={formData.Location} onChange={(e) => setFormData({ ...formData, Location: e.target.value })} required />
 
+              {/* 🌟 7. เปลี่ยนเป็นกล่องเลือกแบบฟอร์มรายชื่อในหน้าต่างแก้ไขเช่นกัน */}
               <label style={styles.label}>ประชาสัมพันธ์โดย</label>
-              <input type="number" style={styles.input} value={formData.User_id} onChange={(e) => setFormData({ ...formData, User_id: e.target.value })} />
+              <select 
+                style={styles.input} 
+                value={formData.User_id} 
+                onChange={(e) => setFormData({ ...formData, User_id: Number(e.target.value) })}
+              >
+                {users.map((u) => {
+                  const id = u.User_id || u.id || u.user_id;
+                  const name = u.Name || u.name || u.Username || u.username;
+                  return (
+                    <option key={id} value={id}>
+                      รหัส {id} - {name}
+                    </option>
+                  );
+                })}
+              </select>
 
               <button type="submit" style={styles.btnSubmit}>บันทึก</button>
             </form>
@@ -263,6 +324,7 @@ export default function PublicRelations() {
   );
 }
 
+// styles คงเดิม
 const styles = {
   container: { padding: '20px', fontFamily: 'sans-serif' },
   headerRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' },
