@@ -3,21 +3,20 @@ import axios from "axios";
 
 function Activity() {
   const [activities, setActivities] = useState([]);
-  const [searchTerm, setSearchTerm] = useState(""); 
-  
-  const [nameActivity, setNameActivity] = useState(""); 
-  const [photographer, setPhotographer] = useState(""); 
-  const [location, setLocation] = useState("");         
-  const [activityDate, setActivityDate] = useState("");   
-  
-  // 1. เปลี่ยนโครงสร้างจากรูปเดี่ยวเป็น Array สำหรับรองรับหลายรูป
-  const [images, setImages] = useState([]);         // เก็บ Base64 ของทุกรูป เช่น ["data:...", "data:..."]
-  const [previewImages, setPreviewImages] = useState([]); // เก็บ ObjectURL สำหรับพรีวิวรูป
-  
-  const [editId, setEditId] = useState(null);           
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const [nameActivity, setNameActivity] = useState("");
+  const [photographer, setPhotographer] = useState("");
+  const [location, setLocation] = useState("");
+  const [activityDate, setActivityDate] = useState("");
+
+  const [images, setImages] = useState([]);
+  const [previewImages, setPreviewImages] = useState([]);
+
+  const [editId, setEditId] = useState(null);
   const [showForm, setShowForm] = useState(false);
 
-  const API_URL = "http://127.0.0.1:3001/activities"; 
+  const API_URL = "http://127.0.0.1:3001/activities";
 
   useEffect(() => {
     fetchActivities();
@@ -34,15 +33,12 @@ function Activity() {
     }
   };
 
-  // 2. ปรับฟังก์ชันการเลือกรูปภาพให้วนลูปอ่านไฟล์ทั้งหมดที่เลือก
   const handleImageChange = (e) => {
-    const files = Array.from(e.target.files); // แปลง FileList ให้เป็น Array ปกติ
+    const files = Array.from(e.target.files);
     if (files.length > 0) {
-      // ทำการพรีวิวรูปภาพทั้งหมดที่เลือก
       const objectUrls = files.map(file => URL.createObjectURL(file));
       setPreviewImages(objectUrls);
 
-      // วนลูปแปลงทุกไฟล์เป็น Base64
       const base64Promises = files.map(file => {
         return new Promise((resolve) => {
           const reader = new FileReader();
@@ -52,7 +48,7 @@ function Activity() {
       });
 
       Promise.all(base64Promises).then(base64Strings => {
-        setImages(base64Strings); // บันทึก Array ของ Base64 เข้า State
+        setImages(base64Strings);
       });
     }
   };
@@ -64,21 +60,20 @@ function Activity() {
       return alert("กรุณากรอกชื่อกิจกรรม");
     }
 
-    // กำหนดค่ารูปภาพที่จะส่งไปหลังบ้าน
     let finalImages = null;
     if (images.length > 0) {
-      finalImages = images; // ส่ง Array ของรูปใหม่
+      finalImages = images;
     } else if (editId && previewImages.length > 0) {
-      finalImages = previewImages; // หากเป็นการแก้ไขและไม่มีการอัปโหลดใหม่ ให้ส่งรูปเดิมกลับไป
+      finalImages = previewImages;
     }
 
     const requestData = {
       Name_activity: nameActivity,
-      Photographer: photographer, // เพิ่มส่งค่า Photographer ไปที่ API หลังบ้านด้วย
+      Photographer: photographer,
       Location: location,
-      Activity_date: activityDate ? activityDate : null, 
+      Activity_date: activityDate ? activityDate : null,
       User_id: 1,
-      Images: finalImages // เปลี่ยนชื่อ Key เป็นสัญกรณ์พหูพจน์ (Images) เพื่อให้สอดคล้องกับ Array 
+      Images: finalImages
     };
 
     try {
@@ -111,27 +106,25 @@ function Activity() {
   const handleEdit = (item) => {
     setEditId(item.Activity_id);
     setNameActivity(item.Name_activity || "");
-    setPhotographer(item.Photographer || ""); 
+    setPhotographer(item.Photographer || "");
     setLocation(item.Location || "");
     setActivityDate(item.Activity_date ? item.Activity_date.split("T")[0] : "");
-    
-    setImages([]); // เคลียร์ไฟล์รูปภาพที่เพิ่งกดเลือกค้างไว้
-    
-    // ตรวจสอบข้อมูลรูปภาพจากหลังบ้าน (กรณีหลังบ้านส่งมาเป็น JSON String หรือ Array อยู่แล้ว)
+
+    setImages([]);
+
     let oldImages = [];
     if (item.Images) {
       oldImages = typeof item.Images === "string" ? JSON.parse(item.Images) : item.Images;
     } else if (item.Image) {
-      // ตัวช่วยเผื่อหลังบ้านยังเป็นคอลัมน์ Image ตัวเดิม (เก็บเป็นสายอักษรเดียว)
       oldImages = [item.Image];
     }
-    setPreviewImages(oldImages); 
+    setPreviewImages(oldImages);
     setShowForm(true);
   };
 
   const clearForm = () => {
     setNameActivity("");
-    setPhotographer(""); 
+    setPhotographer("");
     setLocation("");
     setActivityDate("");
     setImages([]);
@@ -157,13 +150,13 @@ function Activity() {
   return (
     <div style={page.container}>
       <div style={page.wrapper}>
-        
+
         <div style={page.header}>
           <div>
             <button style={page.titleBtn}>กิจกรรม</button>
             <h1 style={page.pageTitle}>จัดการข้อมูลกิจกรรม</h1>
           </div>
-          <button onClick={() => { if(showForm) clearForm(); else setShowForm(true); }} style={page.toggleBtn}>
+          <button onClick={() => { if (showForm) clearForm(); else setShowForm(true); }} style={page.toggleBtn}>
             {showForm ? "✕ ปิดแผงคุม" : "➕ เพิ่มกิจกรรมใหม่"}
           </button>
         </div>
@@ -185,11 +178,9 @@ function Activity() {
                 <h2 style={modal.mainTitle}>{editId ? "แก้ไขกิจกรรม" : "เพิ่มกิจกรรม"}</h2>
                 <button type="button" onClick={clearForm} style={modal.closeBtn}>✕</button>
               </div>
-              
-              {/* ส่วนอัปโหลดรูปภาพที่ปรับปรุงใหม่ */}
+
               <div style={modal.imageUploadWrapper}>
                 <label style={modal.imageSelectorLabel}>
-                  {/* ใส่ attribute multiple เพื่อให้เลือกได้มากกว่า 1 รูป */}
                   <input type="file" accept="image/*" multiple onChange={handleImageChange} style={{ display: "none" }} />
                   <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" }}>
                     <svg width="24" height="24" fill="none" stroke="#64748b" viewBox="0 0 24 24">
@@ -199,7 +190,6 @@ function Activity() {
                   </div>
                 </label>
 
-                {/* แสดงรายการรูปภาพทั้งหมดที่เลือกพรีวิว */}
                 <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", flex: 1, marginLeft: "10px" }}>
                   {previewImages.map((src, index) => (
                     <div key={index} style={{ width: "45px", height: "45px", borderRadius: "6px", overflow: "hidden", border: "1px solid #e2e8f0" }}>
@@ -208,7 +198,7 @@ function Activity() {
                   ))}
                 </div>
               </div>
-              
+
               <div style={modal.field}>
                 <label style={modal.label}>ชื่อกิจกรรม</label>
                 <input type="text" placeholder="กรอกชื่อกิจกรรม" value={nameActivity} onChange={(e) => setNameActivity(e.target.value)} style={modal.input} />
@@ -228,7 +218,7 @@ function Activity() {
                 <label style={modal.label}>สถานที่</label>
                 <input type="text" placeholder="กรอกสถานที่" value={location} onChange={(e) => setLocation(e.target.value)} style={modal.input} />
               </div>
-              
+
               <button type="submit" style={modal.saveButton}>บันทึก</button>
             </form>
           </div>
@@ -239,18 +229,16 @@ function Activity() {
             <p style={page.noData}>ไม่พบข้อมูลกิจกรรมในระบบ</p>
           ) : (
             filteredActivities.map((item) => {
-              // จัดการแปลงข้อมูลรูปภาพที่มาจากหลังบ้านให้เป็น Array
               let itemImages = [];
               if (item.Images) {
                 itemImages = typeof item.Images === "string" ? JSON.parse(item.Images) : item.Images;
               } else if (item.Image) {
-                itemImages = [item.Image]; // รองรับฟิลด์เก่า
+                itemImages = [item.Image];
               }
 
               return (
                 <div key={item.Activity_id} style={page.card}>
-                  
-                  {/* ส่วนแสดงรูปภาพบนหน้า Card: แสดงรูปแรกเป็นรูปหลัก และแสดงรูปเล็กๆ ด้านล่างภาพหลัก */}
+
                   <div style={page.cardImageContainer}>
                     {itemImages.length > 0 ? (
                       <div style={{ width: "100%", height: "100%", position: "relative" }}>
@@ -275,9 +263,9 @@ function Activity() {
                       {item.Name_activity || "ชื่อกิจกรรม"}
                     </h2>
                     <div style={page.infoList}>
-                      <p style={page.infoText}>ผู้บันทึกภาพ: {item.Photographer || "ไม่ระบุชื่อ"}</p>
-                      <p style={page.infoText}>วัน/เดือน/ปี: {formatDate(item.Activity_date)}</p>
-                      <p style={page.infoText}>สถานที่: {item.Location || "ไม่ระบุสถานที่"}</p>
+                      <p style={page.infoText}>📸 ผู้บันทึกภาพ: {item.Photographer || "ไม่ระบุชื่อ"}</p>
+                      <p style={page.infoText}>📅 วัน/เดือน/ปี: {formatDate(item.Activity_date)}</p>
+                      <p style={page.infoText}>📍 สถานที่: {item.Location || "ไม่ระบุสถานที่"}</p>
                     </div>
                   </div>
 
@@ -309,5 +297,43 @@ function Activity() {
   );
 }
 
+// 🌟 ประกาศโครงสร้าง Style ออบเจกต์เพื่อแก้ปัญหาตัวแปรอันเดฟายด์ (no-undef)
+const page = {
+  container: { padding: '20px', minHeight: '100vh', backgroundColor: '#f8fafc', width: '100%', boxSizing: 'border-box' },
+  wrapper: { maxWidth: '1200px', margin: '0 auto', width: '100%' },
+  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' },
+  titleBtn: { padding: '4px 12px', fontSize: '12px', fontWeight: 'bold', backgroundColor: '#e2e8f0', border: 'none', borderRadius: '20px', color: '#475569', marginBottom: '4px' },
+  pageTitle: { fontSize: '24px', fontWeight: 'bold', color: '#1e293b', margin: 0 },
+  toggleBtn: { backgroundColor: '#4f46e5', color: '#fff', border: 'none', borderRadius: '6px', padding: '10px 16px', fontSize: '14px', fontWeight: '500', cursor: 'pointer', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' },
+  searchContainer: { marginBottom: '24px', width: '100%' },
+  searchInput: { width: '100%', padding: '10px 14px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '14px', boxSizing: 'border-box' },
+  grid: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px', width: '100%' },
+  card: { backgroundColor: '#fff', borderRadius: '12px', border: '1px solid #e2e8f0', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' },
+  cardImageContainer: { width: '100%', height: '160px', backgroundColor: '#f1f5f9' },
+  cardImage: { width: '100%', height: '100%', objectFit: 'cover' },
+  cardImagePlaceholder: { width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' },
+  cardContent: { padding: '16px', flexGrow: 1 },
+  cardTitle: { fontSize: '16px', fontWeight: 'bold', color: '#1e293b', margin: '0 0 10px 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
+  infoList: { display: 'flex', flexDirection: 'column', gap: '6px' },
+  infoText: { fontSize: '13px', color: '#64748b', margin: 0 },
+  actionsRow: { display: 'flex', borderTop: '1px solid #e2e8f0', backgroundColor: '#f8fafc' },
+  editBtn: { flex: 1, padding: '10px', fontSize: '13px', color: '#4f46e5', background: 'none', border: 'none', borderRight: '1px solid #e2e8f0', cursor: 'pointer', fontWeight: '500' },
+  deleteBtn: { flex: 1, padding: '10px', fontSize: '13px', color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', fontWeight: '500' },
+  noData: { gridColumn: '1/-1', textAlign: 'center', color: '#64748b', fontSize: '14px', padding: '40px 0' }
+};
+
+const modal = {
+  overlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(15, 23, 42, 0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '16px' },
+  box: { backgroundColor: '#fff', borderRadius: '12px', width: '100%', maxWidth: '460px', padding: '24px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', boxSizing: 'border-box', position: 'relative' },
+  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' },
+  mainTitle: { fontSize: '18px', fontWeight: 'bold', color: '#1e293b', margin: 0 },
+  closeBtn: { background: 'none', border: 'none', fontSize: '18px', color: '#94a3b8', cursor: 'pointer' },
+  imageUploadWrapper: { display: 'flex', alignItems: 'center', border: '1px dashed #cbd5e1', borderRadius: '8px', padding: '12px', marginBottom: '16px', backgroundColor: '#f8fafc' },
+  imageSelectorLabel: { cursor: 'pointer', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '8px', backgroundColor: '#fff', display: 'inline-block' },
+  field: { marginBottom: '14px', width: '100%' },
+  label: { display: 'block', fontSize: '13px', fontWeight: '500', color: '#475569', marginBottom: '6px', textAlign: 'left' },
+  input: { width: '100%', padding: '9px 12px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '13px', boxSizing: 'border-box', backgroundColor: '#fff' },
+  saveButton: { width: '100%', padding: '11px', marginTop: '10px', backgroundColor: '#4f46e5', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px' }
+};
 
 export default Activity;
