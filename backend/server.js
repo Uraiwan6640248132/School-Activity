@@ -61,7 +61,8 @@ function parseDateForMySQL(dateStr) {
 // ==========================================
 // 👤 ระบบ API จัดการข้อมูลผู้ใช้งาน (USERS)
 // ==========================================
-app.get("/users", (req, res) => {
+// 🛠️ เพิ่มจุดเชื่อม /api/users เพื่อรองรับหน้าบ้านทุกรูปแบบไม่ให้เกิดปัญหา 404
+app.get(["/users", "/api/users"], (req, res) => {
   const sql = "SELECT User_id, Name, Phone, UserName, Password, Role FROM users ORDER BY User_id DESC";
   db.query(sql, (err, result) => {
     if (err) return res.status(500).json({ error: err.message });
@@ -120,8 +121,6 @@ app.post("/activities", (req, res) => {
   const body = req.body || {};
   const Name_activity = body.Name_activity || body.name_activity || body.Name || body.title || null;
   const Activity_date = parseDateForMySQL(body.Activity_date || body.activity_date);
-
-  // 🛠️ เปลี่ยนค่าเริ่มต้นสำรองจากเลข 1 เป็นเลข 2 ให้ตรงกับที่มีจริงใน DB ของคุณ
   const User_id = parseInt(body.User_id || body.user_id, 10) || 2;
 
   if (!Name_activity) return res.status(400).json({ error: "กรุณาระบุชื่อกิจกรรม" });
@@ -137,8 +136,6 @@ app.put("/activities/:id", (req, res) => {
   const body = req.body || {};
   const Name_activity = body.Name_activity || body.name_activity || body.title || body.Name || null;
   const Activity_date = parseDateForMySQL(body.Activity_date || body.activity_date);
-
-  // 🛠️ เปลี่ยนค่าเริ่มต้นสำรองเป็นเลข 2 
   const User_id = parseInt(body.User_id || body.user_id, 10) || 2;
 
   if (!Name_activity) return res.status(400).json({ error: "กรุณาระบุชื่อกิจกรรม" });
@@ -171,9 +168,7 @@ app.post("/api/students", (req, res) => {
   const body = req.body || {};
   const { Name, Class_level, Blood_group, Image } = body;
   const Birthday = parseDateForMySQL(body.Birthday || body.birthday);
-
   const Gender = body.Gender || body.gender || null;
-  // 🛠️ เปลี่ยนค่าเริ่มต้นสำรองเป็นเลข 2
   const User_id = parseInt(body.User_id || body.user_id, 10) || 2;
 
   const sql = `INSERT INTO student (Name, Birthday, Gender, Class_level, User_id, Blood_group, Image) VALUES (?, ?, ?, ?, ?, ?, ?)`;
@@ -187,7 +182,6 @@ app.put("/api/students/:id", (req, res) => {
   const body = req.body || {};
   const { Name, Class_level, Blood_group, Image } = body;
   const Birthday = parseDateForMySQL(body.Birthday || body.birthday);
-
   const Gender = body.Gender || body.gender || null;
 
   const sql = `UPDATE student SET Name=?, Birthday=?, Gender=?, Class_level=?, Blood_group=?, Image=? WHERE Student_id=?`;
@@ -220,8 +214,6 @@ app.post("/notifications", (req, res) => {
   const { Class_level, Subject, Details } = body;
   const cleanDeadline = parseDateForMySQL(body.Deadline || body.deadline);
   const cleanDate = parseDateForMySQL(body.Date || body.date);
-
-  // 🛠️ เปลี่ยนค่าเริ่มต้นสำรองเป็นเลข 2
   const User_id = parseInt(body.User_id || body.user_id, 10) || 2;
 
   const sql = "INSERT INTO notification (User_id, Class_level, Subject, Deadline, \`Date\`, Details) VALUES (?, ?, ?, ?, ?, ?)";
@@ -236,8 +228,6 @@ app.put("/notifications/:id", (req, res) => {
   const { Class_level, Subject, Details } = body;
   const cleanDeadline = parseDateForMySQL(body.Deadline || body.deadline);
   const cleanDate = parseDateForMySQL(body.Date || body.date);
-
-  // 🛠️ เปลี่ยนค่าเริ่มต้นสำรองเป็นเลข 2
   const User_id = parseInt(body.User_id || body.user_id, 10) || 2;
 
   const sql = "UPDATE notification SET User_id = ?, Class_level = ?, Subject = ?, Deadline = ?, \`Date\` = ?, Details = ? WHERE Notification_id = ?";
@@ -247,59 +237,92 @@ app.put("/notifications/:id", (req, res) => {
   });
 });
 
+// =================================================================
+// 📢 API ระบบข่าวสารประชาสัมพันธ์ (Public Relations) - แก้ไขตามโครงสร้างจริง
+// =================================================================
+
+// 1. GET: ดึงข้อมูลข่าวสารทั้งหมดพร้อมชื่อคนโพสต์
+app.get('/api/publicrelations', (req, res) => {
+  // 🌟 แก้ไขตรงนี้: เปลี่ยนชื่อตารางเป็น publicrelation (ไม่มี s) ให้ตรงกับ phpMyAdmin ของพี่
+  const sql = `
+    SELECT pr.*, u.Name AS CreatedBy_Name 
+    FROM publicrelation pr
+    LEFT JOIN users u ON pr.User_id = u.User_id
+    ORDER BY pr.PublicRelation_id DESC
+  `;
+
+  db.query(sql, (err, results) => {
+    if (err) {
+      console.error("Database error (GET PR):", err);
+      return res.status(500).json({ error: "เกิดข้อผิดพลาดในการดึงข้อมูลประชาสัมพันธ์" });
+    }
+    res.json(results);
+  });
+});
+
+// 2. POST: เพิ่มข่าวประชาสัมพันธ์ใหม่
+app.post('/api/publicrelations', (req, res) => {
+  const body = req.body || {};
+  const Name_activity = body.Name || body.Name_activity || null;
+  const cleanDate = body.date || body.Date || new Date().toISOString().split('T')[0];
+  const Location = body.Location || null;
+  const User_id = parseInt(body.User_id || body.user_id, 10) || 1;
+  const Image = body.Image || null;
+
+  // 🌟 เปลี่ยนจาก publicrelations เป็น publicrelation (ไม่มี s)
+  const sql = "INSERT INTO publicrelation (Name_activity, Date, Location, User_id, Image) VALUES (?, ?, ?, ?, ?)";
+  const values = [Name_activity, cleanDate, Location, User_id, Image];
+
+  db.query(sql, values, (err, result) => {
+    if (err) {
+      console.error("Database error (POST PR):", err);
+      return res.status(500).json({ error: "ไม่สามารถบันทึกข้อมูลประชาสัมพันธ์ได้", details: err.message });
+    }
+    res.status(201).json({ message: "เพิ่มประชาสัมพันธ์สำเร็จ", id: result.insertId });
+  });
+});
+
+// 3. PUT: แก้ไขข้อมูลข่าวประชาสัมพันธ์
+app.put('/api/publicrelations/:id', (req, res) => {
+  const prId = req.params.id;
+  const body = req.body || {};
+  const Name_activity = body.Name || body.Name_activity || null;
+  const cleanDate = body.date || body.Date || new Date().toISOString().split('T')[0];
+  const Location = body.Location || null;
+  const User_id = parseInt(body.User_id || body.user_id, 10) || 1;
+  const Image = body.Image || null;
+
+  // 🌟 เปลี่ยนจาก publicrelations เป็น publicrelation (ไม่มี s)
+  const sql = "UPDATE publicrelation SET Name_activity = ?, Date = ?, Location = ?, User_id = ?, Image = ? WHERE PublicRelation_id = ?";
+  const values = [Name_activity, cleanDate, Location, User_id, Image, prId];
+
+  db.query(sql, values, (err, result) => {
+    if (err) {
+      console.error("Database error (PUT PR):", err);
+      return res.status(500).json({ error: "ไม่สามารถอัปเดตข้อมูลประชาสัมพันธ์ได้", details: err.message });
+    }
+    res.json({ message: "แก้ไขข้อมูลประชาสัมพันธ์สำเร็จ" });
+  });
+});
+
+// 4. DELETE: ลบข่าวประชาสัมพันธ์ออกจากระบบ
+app.delete('/api/publicrelations/:id', (req, res) => {
+  const prId = req.params.id;
+  // 🌟 เปลี่ยนจาก publicrelations เป็น publicrelation (ไม่มี s)
+  const sql = "DELETE FROM publicrelation WHERE PublicRelation_id = ?";
+
+  db.query(sql, [prId], (err, result) => {
+    if (err) {
+      console.error("Database error (DELETE PR):", err);
+      return res.status(500).json({ error: "ไม่สามารถลบข้อมูลประชาสัมพันธ์ได้" });
+    }
+    res.json({ message: "ลบข้อมูลประชาสัมพันธ์เรียบร้อยแล้ว" });
+  });
+});
 // ==========================================
-// 📢 ระบบ API จัดการประชาสัมพันธ์ (PUBLIC RELATIONS)
-// ==========================================
-app.get("/api/publicrelations", (req, res) => {
-  db.query(`SELECT PublicRelation_id, Name_activity, Image, Date, Location, User_id FROM publicrelation ORDER BY Date DESC`, (err, result) => {
-    if (err) return res.status(500).json(err);
-    res.json(result);
-  });
-});
-
-app.post("/api/publicrelations", upload.single('Image'), (req, res) => {
-  const { Name, date, Location, User_id, Image } = req.body;
-  const imageName = req.file ? req.file.filename : (Image || null);
-  const cleanDate = parseDateForMySQL(date);
-
-  // 🛠️ เปลี่ยนค่าเริ่มต้นสำรองเป็นเลข 2
-  const finalUserId = parseInt(User_id, 10) || 2;
-
-  const sql = `INSERT INTO publicrelation (Name_activity, Date, Location, User_id, Image) VALUES (?, ?, ?, ?, ?)`;
-  db.query(sql, [Name, cleanDate, Location, finalUserId, imageName], (err, result) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.status(201).json({ message: "เพิ่มประชาสัมพันธ์สำเร็จ", PublicRelation_id: result.insertId });
-  });
-});
-
-app.put("/api/publicrelations/:id", upload.single('Image'), (req, res) => {
-  const { Name, date, Location, User_id } = req.body;
-  let imageName = req.body.Image || null;
-  if (req.file) imageName = req.file.filename;
-  const cleanDate = parseDateForMySQL(date);
-
-  // 🛠️ เปลี่ยนค่าเริ่มต้นสำรองเป็นเลข 2
-  const finalUserId = parseInt(User_id, 10) || 2;
-
-  const sql = `UPDATE publicrelation SET Name_activity=?, Date=?, Location=?, User_id=?, Image=? WHERE PublicRelation_id=?`;
-  db.query(sql, [Name, cleanDate, Location, finalUserId, imageName, req.params.id], (err, result) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json({ message: "แก้ไขประชาสัมพันธ์สำเร็จ" });
-  });
-});
-
-app.delete("/api/publicrelations/:id", (req, res) => {
-  db.query("DELETE FROM publicrelation WHERE PublicRelation_id=?", [req.params.id], (err, result) => {
-    if (err) return res.status(500).json(err);
-    res.json({ message: "ลบประชาสัมพันธ์สำเร็จ" });
-  });
-});
-
-// ==========================================
-// 📅 ระบบ API จัดการปฏิทินกิจกรรม (CALENDAR)
+// 📅 ระบบ API จัดการปฏิทินกิจกรรม (CALENDAR) - [แก้ไขบั๊ก Location บันทึกเป็น NULL]
 // ==========================================
 app.get("/api/calendar", (req, res) => {
-  // 🟢 เพิ่ม Location เข้าไปในคำสั่ง SELECT เพื่อส่งค่ากลับไปหน้าบ้าน
   db.query(`SELECT Calendar_id, Name, DATE_FORMAT(Date, '%Y-%m-%d') AS Date, Time, Location, User_id FROM calendar ORDER BY Date ASC`, (err, result) => {
     if (err) return res.status(500).json(err);
     res.json(result);
@@ -307,28 +330,42 @@ app.get("/api/calendar", (req, res) => {
 });
 
 app.post("/api/calendar", (req, res) => {
-  // 🟢 รับค่า Location เพิ่มมาจาก req.body ของหน้าบ้าน
-  const { Name, Date: actDate, Time, Location, User_id } = req.body;
-  const cleanDate = parseDateForMySQL(actDate);
-  const finalUserId = parseInt(User_id, 10) || 2;
+  const body = req.body || {};
+  const Name = body.Name || body.name || null;
+  const cleanDate = parseDateForMySQL(body.Date || body.date);
+  const Time = body.Time || body.time || null;
+  
+  // 🌟 ดักจับทั้ง Location (หน้าบ้านส่งอันนี้มา) และ location เพื่อไม่ให้หลุดเป็นค่า NULL อีกต่อไป
+  const Location = body.Location || body.location || null; 
+  const finalUserId = parseInt(body.User_id || body.user_id, 10) || 2;
 
-  // 🟢 เพิ่ม Location เข้าไปในแถวและค่าพารามิเตอร์ที่จะบันทึก (INSERT)
-  db.query("INSERT INTO calendar (Name, Date, Time, Location, User_id) VALUES (?, ?, ?, ?, ?)", [Name, cleanDate, Time, Location, finalUserId], (err, result) => {
-    if (err) return res.status(500).json(err);
-    res.json({ message: "เพิ่มกิจกรรมลงปฏิทินสำเร็จ", Calendar_id: result.insertId });
+  db.query("INSERT INTO calendar (Name, Date, Time, Location, User_id) VALUES (?, ?, ?, ?, ?)", 
+    [Name, cleanDate, Time, Location, finalUserId], (err, result) => {
+      if (err) {
+        console.error("❌ ล้มเหลวในการเพิ่มปฏิทิน:", err.message);
+        return res.status(500).json(err);
+      }
+      res.json({ message: "เพิ่มกิจกรรมลงปฏิทินสำเร็จ", Calendar_id: result.insertId });
   });
 });
 
 app.put("/api/calendar/:id", (req, res) => {
-  // 🟢 รับค่า Location เพิ่มมาจาก req.body สำหรับงานแก้ไข
-  const { Name, Date: actDate, Time, Location, User_id } = req.body;
-  const cleanDate = parseDateForMySQL(actDate);
-  const finalUserId = parseInt(User_id, 10) || 2;
+  const body = req.body || {};
+  const Name = body.Name || body.name || null;
+  const cleanDate = parseDateForMySQL(body.Date || body.date);
+  const Time = body.Time || body.time || null;
+  
+  // 🌟 ดักจับทั้ง Location และ location สำหรับงานแก้ไข
+  const Location = body.Location || body.location || null;
+  const finalUserId = parseInt(body.User_id || body.user_id, 10) || 2;
 
-  // 🟢 เพิ่ม Location=? เข้าไปในคำสั่งแก้ไข (UPDATE)
-  db.query("UPDATE calendar SET Name=?, Date=?, Time=?, Location=?, User_id=? WHERE Calendar_id=?", [Name, cleanDate, Time, Location, finalUserId, req.params.id], (err, result) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json({ message: "แก้ไขข้อมูลปฏิทินสำเร็จ" });
+  db.query("UPDATE calendar SET Name=?, Date=?, Time=?, Location=?, User_id=? WHERE Calendar_id=?", 
+    [Name, cleanDate, Time, Location, finalUserId, req.params.id], (err, result) => {
+      if (err) {
+        console.error("❌ ล้มเหลวในการแก้ไขปฏิทิน:", err.message);
+        return res.status(500).json({ error: err.message });
+      }
+      res.json({ message: "แก้ไขข้อมูลปฏิทินสำเร็จ" });
   });
 });
 
