@@ -62,7 +62,7 @@ export default function PublicRelationsP() {
           const activityName = item.Name_activity || item.name_activity || 'ไม่ได้ระบุชื่อกิจกรรม';
           const prLocation = item.Location || item.location || 'ไม่ได้ระบุสถานที่';
           
-          // 🌟 เพิ่มการดักรับค่ารายละเอียด (Detail) จากฐานข้อมูลทั้งตัวเล็กและตัวใหญ่
+          // 🌟 ดึงค่ารายละเอียดข่าว (Detail) รองรับทั้งตัวพิมพ์เล็กและพิมพ์ใหญ่
           const prDetail = item.Detail || item.detail || '';
 
           return (
@@ -81,12 +81,10 @@ export default function PublicRelationsP() {
                   <div><strong>วัน/เดือน/ปี:</strong> {item.Date ? item.Date.substring(0, 10) : '-'}</div>
                   <div><strong>สถานที่:</strong> {prLocation}</div>
                   
-                  {/* 🌟 ส่วนแสดงรายละเอียดเพิ่มเติม (จะแสดงต่อเมื่อมีข้อมูล Detail กรอกมาจากฝั่งครู) */}
-                  {prDetail && (
-                    <div style={styles.detailBox}>
-                      <strong>รายละเอียดข่าวสาร:</strong> <span style={{ color: '#555' }}>{prDetail}</span>
-                    </div>
-                  )}
+                  {/* 🌟 แสดงรายละเอียดข่าวสารในกล่องที่สวยงาม สะอาดตา */}
+                  <div style={styles.detailBox}>
+                    <strong>รายละเอียด:</strong> {prDetail || '-'}
+                  </div>
                   
                   <div style={{ marginTop: '6px' }}>
                     <strong>📢 ประชาสัมพันธ์โดย:</strong>{' '}
@@ -127,15 +125,16 @@ const styles = {
   authorText: { color: '#2563eb', fontWeight: 'bold' },
   emptyState: { color: '#888', textAlign: 'center', marginTop: '40px', padding: '30px', border: '1px dashed #ccc', borderRadius: '8px', backgroundColor: '#fafafa' },
   
-  // 🌟 สไตล์กล่องข้อความรายละเอียดเพิ่มเติม
-  detailBox: { 
-    marginTop: '8px', 
-    marginBottom: '4px',
-    padding: '10px', 
-    backgroundColor: '#f8fafc', 
-    borderRadius: '6px', 
+  // 🌟 เพิ่มสไตล์ตกแต่งบล็อกรายละเอียดของฝั่งผู้ปกครองให้ดูเป็นระเบียบ อ่านง่ายขึ้น
+  detailBox: {
+    marginTop: '6px',
+    marginBottom: '6px',
+    padding: '8px 12px',
+    backgroundColor: '#f8fafc',
+    borderRadius: '6px',
     borderLeft: '4px solid #2563eb',
-    fontSize: '13px',
+    fontSize: '13.5px',
+    color: '#334155',
     lineHeight: '1.5'
   }
 };
