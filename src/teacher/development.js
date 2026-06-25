@@ -8,37 +8,39 @@ export default function Development() {
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
-  
-  // 🌟 1. เพิ่ม State สำหรับเปิด-ปิดหน้าต่างรายละเอียด และเก็บชิ้นข้อมูลที่ถูกเลือกดู
+
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [selectedDetailItem, setSelectedDetailItem] = useState(null);
-  
+
   const [selectedId, setSelectedId] = useState(null);
 
-  const [formData, setFormData] = useState({
-    Student_id: 1,          
-    Year: 2569,             
-    Term: 'ภาคเรียนที่ 1',   
-    date: '',              
-    Physical: '',           
-    Weight: '',             
-    Height: '',             
-    Dental_health: '',      
-    Vaccination: '',        
-    Motor_skills: '',       
-    Emotional: '',          
-    Emotion: '4',           
-    Emotion_control: '3',   
-    Confidence: '4',        
-    Social: '',             
-    Stress: '2',            
-    Interaction: '5',       
-    Assistance: '5',        
-    Intellectual: '',       
-    Problem_solving: '2',   
-    Communication: '3',     
-    Remembering: '3'         
-  });
+  // ค่าเริ่มต้นที่สะอาดไม่มีข้อมูลของเด็กคนอื่นค้าง
+  const initialFormState = {
+    Student_id: '',
+    Year: 2569,
+    Term: 'ภาคเรียนที่ 1',
+    date: new Date().toISOString().split('T')[0],
+    Physical: '',
+    Weight: '',
+    Height: '',
+    Dental_health: '',
+    Vaccination: '',
+    Motor_skills: '',
+    Emotional: '',
+    Emotion: '4',
+    Emotion_control: '3',
+    Confidence: '4',
+    Social: '',
+    Stress: '2',
+    Interaction: '5',
+    Assistance: '5',
+    Intellectual: '',
+    Problem_solving: '2',
+    Communication: '3',
+    Remembering: '3'
+  };
+
+  const [formData, setFormData] = useState(initialFormState);
 
   const API_URL = 'http://localhost:3001/api/development';
   const STUDENTS_API_URL = 'http://localhost:3001/api/students';
@@ -48,7 +50,10 @@ export default function Development() {
       const res = await fetch(STUDENTS_API_URL);
       if (res.ok) {
         const data = await res.json();
-        setStudents(Array.isArray(data) ? data : []);
+        const cleanData = Array.isArray(data) ? data : [];
+        setStudents(cleanData);
+        // กำหนดค่าแรกเริ่มของนักเรียนให้กับฟอร์มว่างเพื่อไม่ให้เป็นค่าว่างเปล่าหลุดลอย
+
       }
     } catch (err) {
       console.error("Error fetching students list:", err);
@@ -71,7 +76,7 @@ export default function Development() {
   };
 
   useEffect(() => {
-    fetchStudentsData();    
+    fetchStudentsData();
     fetchDevelopmentData();
   }, []);
 
@@ -86,39 +91,26 @@ export default function Development() {
 
   const calculateSectionScore = (scores) => {
     if (!scores || scores.length === 0) return 0;
-    const sum = scores.reduce((a, b) => Number(a) + Number(b), 0);
-    const avg = sum / scores.length;
-    return Math.round(avg * 20); 
+    // แปลงค่าและกรองค่า NaN ออกป้องกันวงกลมขึ้น NaN ดื้อๆ
+    const validScores = scores.map(s => isNaN(Number(s)) ? 0 : Number(s));
+    const sum = validScores.reduce((a, b) => a + b, 0);
+    const avg = sum / validScores.length;
+    return Math.round(avg * 20);
   };
 
+  // 🌟 ปรับปรุงการรับค่าเพื่อให้ทำงานร่วมกับ Dropdown <select> ได้เสถียรและไม่ล็อกค่า
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   const handleRadioChange = (field, value) => {
-    setFormData({ ...formData, [field]: String(value) });
+    setFormData(prev => ({ ...prev, [field]: String(value) }));
   };
 
+  // 🌟 ปรับล้างฟอร์มใหม่ให้สะอาดหมดจด ดึงรหัสนักเรียนคนแรกแบบ Dynamic
   const resetForm = () => {
-    const today = new Date().toISOString().split('T')[0];
-    setFormData({
-      Student_id: 1,
-      Year: 2569,
-      Term: 'ภาคเรียนที่ 1', 
-      date: today,
-      Physical: '',         
-      Weight: '',
-      Height: '',
-      Dental_health: '',
-      Vaccination: '',
-      Motor_skills: '',
-      Emotional: '',        
-      Emotion: '4', Emotion_control: '3', Confidence: '4',
-      Social: '',           
-      Stress: '2', Interaction: '5', Assistance: '5',
-      Intellectual: '',     
-      Problem_solving: '2', Communication: '3', Remembering: '3'
-    });
+    setFormData(initialFormState);
     setSelectedId(null);
   };
 
@@ -143,15 +135,15 @@ export default function Development() {
     }
   };
 
-  // 🌟 2. เพิ่มฟังก์ชันเปิดหน้าต่างรายละเอียดแบบเจาะลึกเมื่อคลิกที่กลุ่มคะแนน/การ์ด
   const openDetailModal = (item) => {
     setSelectedDetailItem(item);
     setIsDetailOpen(true);
   };
 
+  // 🌟 แปลงประเภท Student_id ให้กลายเป็น String เสมอเพื่อให้ตรงกับ Value ของตระกูล <option> ตัวค้างถึงจะหายไป
   const openEditModal = (item) => {
     setSelectedId(item.Development_id || item.development_id);
-    
+
     let cleanDate = '';
     if (item.date_clean) {
       cleanDate = item.date_clean;
@@ -167,25 +159,25 @@ export default function Development() {
     }
 
     setFormData({
-      Student_id: item.Student_id || 1,
+      Student_id: String(item.Student_id || ''), // 🌟 แปลงเป็น String ป้องกัน Dropdown ค้างหรือล็อกเปลี่ยนไม่ได้
       Year: item.Year || 2569,
-      Term: dbTerm, 
+      Term: dbTerm,
       date: cleanDate,
-      Physical: item.Physical || '', 
+      Physical: item.Physical || '',
       Weight: item.Weight || '',
       Height: item.Height || '',
       Dental_health: item.Dental_health || '',
       Vaccination: item.Vaccination || '',
       Motor_skills: item.Motor_skills || '',
-      Emotional: item.Emotional || '', 
+      Emotional: item.Emotional || '',
       Emotion: String(item.Emotion || '3'),
       Emotion_control: String(item.Emotion_control || '3'),
       Confidence: String(item.Confidence || '3'),
-      Social: item.Social || '',       
+      Social: item.Social || '',
       Stress: String(item.Stress || '3'),
       Interaction: String(item.Interaction || '3'),
       Assistance: String(item.Assistance || '3'),
-      Intellectual: item.Intellectual || '', 
+      Intellectual: item.Intellectual || '',
       Problem_solving: String(item.Problem_solving || '3'),
       Communication: String(item.Communication || '3'),
       Remembering: String(item.Remembering || '3')
@@ -252,7 +244,7 @@ export default function Development() {
           <div>
             <h2 style={styles.mainTitle}>บันทึกพัฒนาการเด็ก</h2>
             <p style={styles.studentNameDisplay}>
-              <strong>กำลังแสดงผล:</strong> {getStudentName(formData.Student_id)}
+              <strong>กำลังแสดงผลฟอร์มของ:</strong> {getStudentName(formData.Student_id)}
             </p>
           </div>
           <button style={styles.btnAddDev} onClick={() => { resetForm(); setIsAddOpen(true); }}>+ พัฒนาการ</button>
@@ -265,14 +257,14 @@ export default function Development() {
             <div style={{ textAlign: 'center', color: '#888', padding: '30px' }}>ยังไม่มีข้อมูลการประเมินพัฒนาการ</div>
           ) : (
             devList.map((item, idx) => {
-              const scoreBody = item.Weight && item.Height ? 100 : 75; 
+              const scoreBody = item.Weight && item.Height ? 100 : 75;
               const scoreEmotion = calculateSectionScore([item.Emotion, item.Emotion_control, item.Confidence]);
               const scoreSocial = calculateSectionScore([item.Stress, item.Interaction, item.Assistance]);
               const scoreIntellect = calculateSectionScore([item.Problem_solving, item.Communication, item.Remembering]);
-              
-              const displayDate = item.date_clean || 
-                                  (item.Date ? String(item.Date).split('T')[0] : '') || 
-                                  (item.date ? String(item.date).split('T')[0] : 'ไม่ได้ระบุ');
+
+              const displayDate = item.date_clean ||
+                (item.Date ? String(item.Date).split('T')[0] : '') ||
+                (item.date ? String(item.date).split('T')[0] : 'ไม่ได้ระบุ');
 
               let displayTerm = item.Term || item.term || "ภาคเรียนที่ 1";
               if (displayTerm.trim() === 'ภาคเรียนที่') {
@@ -283,7 +275,7 @@ export default function Development() {
                 <div key={idx} style={styles.devCardItem}>
                   <div style={styles.cardItemHeader}>
                     <span style={styles.yearText}>
-                      <strong style={{color: '#1e3a8a'}}>{getStudentName(item.Student_id)}</strong><br />
+                      <strong style={{ color: '#1e3a8a' }}>{getStudentName(item.Student_id)}</strong><br />
                       ปีการศึกษา {item.Year || item.year || '2569'} - {displayTerm}<br />
                       <span style={{ fontSize: '12px', color: '#666', fontWeight: 'normal' }}>วันที่ประเมิน: {displayDate}</span>
                     </span>
@@ -293,22 +285,21 @@ export default function Development() {
                     </div>
                   </div>
 
-                  {/* 🌟 3. ปรับปรุงที่แถววงกลม: เพิ่ม cursor pointer และฟังก์ชัน onClick ให้กดแล้วแสดงรายละเอียดรายข้อ */}
                   <div style={{ ...styles.circlesRow, cursor: 'pointer' }} onClick={() => openDetailModal(item)} title="คลิกเพื่อดูรายละเอียดเพิ่มเติม">
                     <div style={styles.circleUnit}>
-                      <div style={styles.circleScore}>{scoreBody}</div>
+                      <div style={styles.circleScore}>{isNaN(scoreBody) ? 0 : scoreBody}</div>
                       <span style={styles.circleLabel}>ด้านร่างกาย</span>
                     </div>
                     <div style={styles.circleUnit}>
-                      <div style={styles.circleScore}>{scoreIntellect}</div>
+                      <div style={styles.circleScore}>{isNaN(scoreIntellect) ? 0 : scoreIntellect}</div>
                       <span style={styles.circleLabel}>ด้านสติปัญญา</span>
                     </div>
                     <div style={styles.circleUnit}>
-                      <div style={styles.circleScore}>{scoreEmotion}</div>
+                      <div style={styles.circleScore}>{isNaN(scoreEmotion) ? 0 : scoreEmotion}</div>
                       <span style={styles.circleLabel}>ด้านอารมณ์</span>
                     </div>
                     <div style={styles.circleUnit}>
-                      <div style={styles.circleScore}>{scoreSocial}</div>
+                      <div style={styles.circleScore}>{isNaN(scoreSocial) ? 0 : scoreSocial}</div>
                       <span style={styles.circleLabel}>ด้านสังคม</span>
                     </div>
                   </div>
@@ -319,7 +310,6 @@ export default function Development() {
         </div>
       </div>
 
-      {/* 📥 4. หน้าต่างใหม่ POPUP: แสดงรายละเอียดรายข้อการประเมิน (เมื่อกดที่กลุ่มวงกลมคะแนน) */}
       {isDetailOpen && selectedDetailItem && (
         <div style={styles.overlay} onClick={() => setIsDetailOpen(false)}>
           <div style={styles.modalDev} onClick={(e) => e.stopPropagation()}>
@@ -403,9 +393,9 @@ export default function Development() {
                 </tbody>
               </table>
 
-              <button 
-                type="button" 
-                style={{ ...styles.btnSaveEvaluation, backgroundColor: '#3b82f6', color: '#fff', border: 'none', marginTop: '15px' }} 
+              <button
+                type="button"
+                style={{ ...styles.btnSaveEvaluation, backgroundColor: '#3b82f6', color: '#fff', border: 'none', marginTop: '15px' }}
                 onClick={() => setIsDetailOpen(false)}
               >
                 ปิดหน้าต่างรายละเอียด
@@ -427,15 +417,16 @@ export default function Development() {
             <form onSubmit={isAddOpen ? handleAddSubmit : handleEditSubmit} style={styles.formScrollable}>
               <div style={{ marginBottom: '15px' }}>
                 <label style={styles.labelMini}>เลือกนักเรียนที่ต้องการประเมิน</label>
-                <select 
-                  name="Student_id" 
-                  value={formData.Student_id} 
-                  onChange={handleChange} 
-                  style={{...styles.inputMini, padding: '6px'}}
+                <select
+                  name="Student_id"
+                  value={String(formData.Student_id)}
+                  onChange={handleChange}
+                  style={{ ...styles.inputMini, padding: '6px' }}
                   required
                 >
+                  <option value="" disabled>-- กรุณาเลือกนักเรียน --</option>
                   {students.map((std) => {
-                    const id = std.Student_id || std.id || std.student_id;
+                    const id = String(std.Student_id || std.id || std.student_id);
                     const name = std.Name || std.name || `${std.First_name || ''} ${std.Last_name || ''}`;
                     return (
                       <option key={id} value={id}>
@@ -446,25 +437,25 @@ export default function Development() {
                 </select>
               </div>
 
-              <div style={{...styles.bodyMetricsRow, marginBottom: '15px'}}>
-                <div style={{...styles.inputMiniGroup, width: '31%'}}>
+              <div style={{ ...styles.bodyMetricsRow, marginBottom: '15px' }}>
+                <div style={{ ...styles.inputMiniGroup, width: '31%' }}>
                   <label style={styles.labelMini}>ปีการศึกษา (พ.ศ.)</label>
                   <input type="number" name="Year" value={formData.Year} onChange={handleChange} style={styles.inputMini} required />
                 </div>
-                <div style={{...styles.inputMiniGroup, width: '35%'}}>
+                <div style={{ ...styles.inputMiniGroup, width: '35%' }}>
                   <label style={styles.labelMini}>ภาคเรียน</label>
-                  <select name="Term" value={formData.Term} onChange={handleChange} style={{...styles.inputMini, padding: '5px'}}>
+                  <select name="Term" value={formData.Term} onChange={handleChange} style={{ ...styles.inputMini, padding: '5px' }}>
                     <option value="ภาคเรียนที่ 1">ภาคเรียนที่ 1</option>
                     <option value="ภาคเรียนที่ 2">ภาคเรียนที่ 2</option>
                   </select>
                 </div>
-                <div style={{...styles.inputMiniGroup, width: '31%'}}>
+                <div style={{ ...styles.inputMiniGroup, width: '31%' }}>
                   <label style={styles.labelMini}>วันที่ประเมิน</label>
                   <input type="date" name="date" value={formData.date} onChange={handleChange} style={styles.inputMini} required />
                 </div>
               </div>
 
-              <h4 style={{...styles.tableSectionTitle, marginTop: '0px'}}>พัฒนาการด้านร่างกาย</h4>
+              <h4 style={{ ...styles.tableSectionTitle, marginTop: '0px' }}>พัฒนาการด้านร่างกาย</h4>
               <div style={styles.bodyMetricsRow}>
                 <div style={styles.inputMiniGroup}>
                   <label style={styles.labelMini}>น้ำหนัก (กก.)</label>
@@ -557,7 +548,7 @@ export default function Development() {
                 </tbody>
               </table>
 
-              <button type="submit" style={styles.btnSaveEvaluation}>บันทึกการประเมิน</button>
+              <button type="submit" style={styles.btnSaveEvaluation}>{isAddOpen ? "บันทึกการประเมิน" : "บันทึกการแก้ไข"}</button>
             </form>
           </div>
         </div>
@@ -597,18 +588,18 @@ const styles = {
   circleUnit: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' },
   circleScore: { width: '50px', height: '50px', borderRadius: '50%', border: '1px solid #888', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: 'bold', backgroundColor: '#fff' },
   circleLabel: { fontSize: '11px', color: '#555' },
-  
+
   overlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 },
   modalDev: { backgroundColor: '#fff', width: '90%', maxWidth: '520px', height: '85vh', borderRadius: '12px', border: '1px solid #999', padding: '20px', display: 'flex', flexDirection: 'column', boxSizing: 'border-box', boxShadow: '0 8px 24px rgba(0,0,0,0.15)' },
   modalHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '10px', borderBottom: '1px solid #eee' },
   closeX: { cursor: 'pointer', fontWeight: 'bold', color: '#999' },
   formScrollable: { overflowY: 'auto', flex: 1, paddingRight: '5px', marginTop: '15px' },
-  
+
   bodyMetricsRow: { display: 'flex', gap: '10px', justifyContent: 'space-between' },
   inputMiniGroup: { display: 'flex', flexDirection: 'column', gap: '4px', width: '32%' },
   labelMini: { fontSize: '12px', color: '#333' },
   inputMini: { padding: '6px', border: '1px solid #ccc', borderRadius: '4px', fontSize: '13px', width: '100%', boxSizing: 'border-box' },
-  
+
   tableSectionTitle: { fontSize: '13px', margin: '16px 0 6px 0', color: '#000', borderBottom: '1px solid #ccc', paddingBottom: '2px', fontWeight: 'bold' },
   evalTable: { width: '100%', borderCollapse: 'collapse', marginBottom: '10px' },
   thLeft: { textAlign: 'left', fontSize: '11px', color: '#333', padding: '6px', fontWeight: 'bold', backgroundColor: '#f5f5f5' },
