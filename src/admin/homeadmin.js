@@ -1,36 +1,22 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { Link } from "react-router-dom"; 
 
 const HomeAdmin = () => {
-  // 📊 สร้าง State สำหรับเก็บข้อมูลนับจำนวน
-  const [counts, setCounts] = useState({ students: 0, users: 0, activities: 0, parents: 0 });
-  const [latestNotifications, setLatestNotifications] = useState([]);
+  const [users, setUsers] = useState([]);
   const [latestActivities, setLatestActivities] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // 🌐 ฟังก์ชันดึงข้อมูลจาก API หลังบ้านทั้งหมดมารวมกันในครั้งเดียว
+  // 🌐 ฟังก์ชันดึงข้อมูลจาก API ผู้ใช้งาน และ กิจกรรม
   useEffect(() => {
     const fetchAdminDashboardData = async () => {
       try {
-        const studentRes = await axios.get("http://localhost:3001/api/students");
         const userRes = await axios.get("http://localhost:3001/users");
         const activityRes = await axios.get("http://localhost:3001/activities");
-        const notificationRes = await axios.get("http://localhost:3001/notifications");
 
-        // สมมติคัดกรองข้อมูลผู้ปกครองจาก API users (ถ้ามีแบ่ง role ชัดเจน) 
-        // หรือถ้าไม่มีข้อมูลให้ปล่อยนับจำนวนรวมของ userRes ไปพรางก่อนได้ครับ
-        const parentUsers = userRes.data.filter(u => String(u.role || u.Role || u.status).toLowerCase() === 'parent');
+        // เก็บรายชื่อผู้ใช้งานทั้งหมด
+        setUsers(userRes.data);
 
-        setCounts({
-          students: studentRes.data.length || 0,
-          users: userRes.data.length || 0,
-          activities: activityRes.data.length || 0,
-          parents: parentUsers.length || 0, // หรือใส่ดึงความยาวตรงๆ ตามโครงสร้างหลังบ้าน
-        });
-
-        // ดึงรายการแจ้งเตือนการบ้านและกิจกรรม ล่าสุด 4 อันดับแรกมาแสดงผลด้านล่าง
-        setLatestNotifications(notificationRes.data.slice(0, 4));
+        // ดึงรายการกิจกรรม ล่าสุด 4 อันดับแรกมาแสดงผลด้านขวา
         setLatestActivities(activityRes.data.slice(0, 4));
         setLoading(false);
       } catch (error) {
@@ -44,66 +30,43 @@ const HomeAdmin = () => {
 
   return (
     <div style={styles.container}>
-      
-      {/* 📊 ส่วนที่ 1: การ์ดสรุปจำนวนด้านบน พร้อมผูก Link ลิงก์ย้ายหน้าตามสิทธิ์แอดมิน */}
-      <div style={styles.topCardsGrid}>
-        <Link to="/students" style={styles.statCard}>
-          <span style={styles.statLabel}>นักเรียน</span>
-          <h2 style={styles.statValue}>
-            {loading ? "..." : counts.students} <span style={styles.unitText}>คน</span>
-          </h2>
-        </Link>
-        
-        <Link to="/user_information" style={styles.statCard}>
-          <span style={styles.statLabel}>ครูผู้สอน</span>
-          <h2 style={styles.statValue}>
-            {loading ? "..." : counts.users} <span style={styles.unitText}>คน</span>
-          </h2>
-        </Link>
-        
-        <Link to="/activity" style={styles.statCard}>
-          <span style={styles.statLabel}>กิจกรรม</span>
-          <h2 style={styles.statValue}>
-            {loading ? "..." : counts.activities} <span style={styles.unitText}>งาน</span>
-          </h2>
-        </Link>
-        
-        <Link to="/user_information" style={styles.statCard}>
-          <span style={styles.statLabel}>ผู้ปกครอง</span>
-          <h2 style={styles.statValue}>
-            {loading ? "..." : counts.parents} <span style={styles.unitText}>คน</span>
-          </h2>
-        </Link>
-      </div>
 
-      {/* 📋 ส่วนที่ 2: บล็อกแผงข้อมูลแสดงความเคลื่อนไหวอัปเดตล่าสุด */}
+      {/* 📋 บล็อกแผงข้อมูลแสดงความเคลื่อนไหว (ส่วนการ์ดสรุปจำนวน 4 อันด้านบนถูกลบออกแล้ว) */}
       <div style={styles.bottomMainGrid}>
-        
-        {/* บล็อกซ้าย: การบ้านล่าสุด */}
+
+        {/* 🎯 ปรับปรุงบล็อกซ้าย: เปลี่ยนจาก การบ้านล่าสุด เป็น "ผู้ใช้งาน" */}
         <div style={styles.infoBlock}>
-          <h3 style={styles.blockTitle}>การบ้านล่าสุด</h3>
+          <h3 style={styles.blockTitle}>ผู้ใช้งาน</h3>
           <div style={styles.listBox}>
             {loading ? (
-              <p style={styles.emptyText}>กำลังโหลดข้อมูล...</p>
-            ) : latestNotifications.length > 0 ? (
-              latestNotifications.map((item, index) => (
-                <div key={index} style={styles.listItem}>
-                  <strong>{item.Subject}</strong> - {item.Details || "ไม่มีรายละเอียด"} 
-                  <span style={styles.itemDate}> (ชั้น: {item.Class_level})</span>
-                </div>
-              ))
+              <p style={styles.emptyText}>กำลังโหลดข้อมูลผู้ใช้งาน...</p>
+            ) : users.length > 0 ? (
+              users.map((user, index) => {
+                const isSuspended = user.Role === 'ถูกระงับสิทธิ์';
+                return (
+                  <div key={index} style={styles.listItem}>
+                    <strong style={{ color: isSuspended ? '#94a3b8' : '#333333' }}>{user.Name}</strong>
+                    <span style={styles.itemDate}>
+                      {/* แสดงสถานะหรือบทบาทของผู้ใช้แอดมิน/ครู/ผู้ปกครอง */}
+                      <span style={styles.roleBadge(user.Role)}>
+                        {user.Role || "ทั่วไป"}
+                      </span>
+                    </span>
+                  </div>
+                );
+              })
             ) : (
-              <p style={styles.emptyText}>ไม่มีข้อมูลการบ้านในระบบขณะนี้</p>
+              <p style={styles.emptyText}>ไม่มีข้อมูลผู้ใช้งานในระบบขณะนี้</p>
             )}
           </div>
         </div>
-        
-        {/* บล็อกขวา: กิจกรรมล่าสุด */}
+
+        {/* บล็อกขวา: กิจกรรมล่าสุด (ยังคงไว้ตามเดิม) */}
         <div style={styles.infoBlock}>
           <h3 style={styles.blockTitle}>กิจกรรมล่าสุด</h3>
           <div style={styles.listBox}>
             {loading ? (
-              <p style={styles.emptyText}>กำลังโหลดข้อมูล...</p>
+              <p style={styles.emptyText}>กำลังโหลดข้อมูลกิจกรรม...</p>
             ) : latestActivities.length > 0 ? (
               latestActivities.map((item, index) => (
                 <div key={index} style={styles.listItem}>
@@ -123,7 +86,7 @@ const HomeAdmin = () => {
   );
 };
 
-// 🎨 ปรับปรุงรายละเอียด CSS Styles ให้ดูทันสมัยและรองรับการเป็น Link กดคลิกได้
+// 🎨 ปรับปรุงรายละเอียด Styles
 const styles = {
   container: {
     display: 'flex',
@@ -131,50 +94,14 @@ const styles = {
     gap: '24px',
     width: '100%',
     boxSizing: 'border-box',
-    fontFamily: "sans-serif"
-  },
-  topCardsGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-    gap: '20px'
-  },
-  statCard: {
-    background: '#ffffff',
-    padding: '20px',
-    borderRadius: '10px',
-    border: '1px solid #e2e8f0',
-    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.03), 0 2px 4px -1px rgba(0, 0, 0, 0.02)',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '8px',
-    textDecoration: 'none', // ตัดเส้นใต้ข้อความ Link
-    color: 'inherit',
-    cursor: 'pointer'
-  },
-  statLabel: {
-    fontSize: '15px',
-    color: '#475569',
-    fontWeight: '600'
-  },
-  statValue: {
-    margin: 0,
-    fontSize: '26px',
-    color: '#1e293b',
-    fontWeight: '700',
-    display: 'flex',
-    alignItems: 'baseline',
-    gap: '4px'
-  },
-  unitText: {
-    fontSize: '14px',
-    fontWeight: 'normal',
-    color: '#94a3b8'
+    fontFamily: "'Kanit', sans-serif, Arial"
   },
   bottomMainGrid: {
     display: 'grid',
     gridTemplateColumns: '1fr 1fr',
     gap: '24px',
-    minHeight: '380px'
+    minHeight: '380px',
+    marginTop: '20px' // เพิ่มระยะด้านบนให้ดูสมดุลหลังจากลบการ์ดออก
   },
   infoBlock: {
     background: '#ffffff',
@@ -203,18 +130,41 @@ const styles = {
     padding: "10px 0",
     borderBottom: "1px solid #eee",
     fontSize: "15px",
-    color: "#333333"
+    color: "#333333",
+    display: "flex",
+    justifyContent: "between",
+    alignItems: "center"
   },
   itemDate: {
     fontSize: "13px",
     color: "#888888",
-    float: "right"
+    marginLeft: "auto" // ดันสถานะไปชิดขวาสุดให้สวยงามเหมือนเดิม
   },
   emptyText: {
     color: '#94a3b8',
     fontSize: '14px',
     textAlign: 'center',
     padding: '40px 0'
+  },
+  // 🎨 ฟังก์ชันช่วยเปลี่ยนสีตัวอักษรและพื้นหลังของสิทธิ์ในหน้า Dashboard ให้อ่านง่ายขึ้น
+  roleBadge: (role) => {
+    let baseStyle = {
+      padding: "3px 8px",
+      borderRadius: "12px",
+      fontSize: "12px",
+      fontWeight: "500",
+      display: "inline-block"
+    };
+    if (role === "แอดมิน") {
+      return { ...baseStyle, backgroundColor: "#fee2e2", color: "#ef4444" };
+    } else if (role === "ครูผู้สอน") {
+      return { ...baseStyle, backgroundColor: "#dbeafe", color: "#2563eb" };
+    } else if (role === "ผู้ปกครอง") {
+      return { ...baseStyle, backgroundColor: "#dcfce7", color: "#16a34a" };
+    } else if (role === "ถูกระงับสิทธิ์") {
+      return { ...baseStyle, backgroundColor: "#e2e8f0", color: "#64748b" };
+    }
+    return { ...baseStyle, backgroundColor: "#f1f5f9", color: "#475569" };
   }
 };
 
