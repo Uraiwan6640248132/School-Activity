@@ -9,24 +9,41 @@ function CalendarActivity() {
   const [currentMonth, setCurrentMonth] = useState(8); // เดือน 8 = สิงหาคม
 
   // ควบคุมหน้าต่าง Popups
-  const [isAddOpen, setIsAddOpen] = useState(false);      
-  const [isDetailOpen, setIsDetailOpen] = useState(false); 
-  const [isEditOpen, setIsEditOpen] = useState(false);     
-  const [isDeleteOpen, setIsDeleteOpen] = useState(false); 
+  const [isAddOpen, setIsAddOpen] = useState(false);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
   // กิจกรรมที่ถูกเลือก
   const [selectedEvent, setSelectedEvent] = useState(null);
 
-  // โครงสร้าง state ฟอร์มส่งข้อมูลไปยังฐานข้อมูล (🟢 เพิ่ม Location)
+  // ✍️ State สำหรับพิมพ์เวลาเอง 4 ช่อง (เก็บเป็น String เพื่อให้พิมพ์และลบง่าย)
+  const [startHour, setStartHour] = useState('09');
+  const [startMinute, setStartMinute] = useState('00');
+  const [endHour, setEndHour] = useState('12');
+  const [endMinute, setEndMinute] = useState('00');
+
+  // โครงสร้าง state ฟอร์มส่งข้อมูลไปยังฐานข้อมูล
   const [formData, setFormData] = useState({
     Name: '',
     Date: '',
     Time: '',
-    Location: '', // 🟢 เพิ่มฟิลด์สถานที่ตรงนี้
+    Location: '',
     User_id: 1
   });
 
   const API_URL = 'http://localhost:3001/api/calendar';
+
+  // 🔄 ผูกค่าเวลาจาก 4 ช่องพิมพ์มารวมกันใน formData.Time เสมอเมื่อมีการเปลี่ยนแปลง
+  useEffect(() => {
+    // ฟังก์ชันช่วยเติมเลข 0 ข้างหน้ากรณีผู้ใช้พิมพ์ตัวเลขตัวเดียว เช่น "9" -> "09"
+    const formatPad = (val) => String(val || '00').padStart(2, '0');
+
+    setFormData(prev => ({
+      ...prev,
+      Time: `${formatPad(startHour)}:${formatPad(startMinute)} - ${formatPad(endHour)}:${formatPad(endMinute)}`
+    }));
+  }, [startHour, startMinute, endHour, endMinute]);
 
   // ดึงข้อมูลกิจกรรมทั้งหมด
   const fetchCalendarData = async () => {
@@ -35,7 +52,7 @@ function CalendarActivity() {
       const res = await fetch(API_URL);
       if (res.ok) {
         const data = await res.json();
-        console.log("ข้อมูลดิบจากฐานข้อมูล (Array ล่าสุด):", data); 
+        console.log("ข้อมูลดิบจากฐานข้อมูล (Array ล่าสุด):", data);
         setCalendarList(data);
       }
     } catch (err) {
@@ -60,9 +77,9 @@ function CalendarActivity() {
       });
       if (res.ok) {
         alert("บันทึกข้อมูลกิจกรรมเรียบร้อยแล้ว!");
-        setIsAddOpen(false); 
+        setIsAddOpen(false);
         clearForm();
-        fetchCalendarData(); 
+        fetchCalendarData();
       } else {
         alert("ไม่สามารถเพิ่มข้อมูลได้ กรุณาตรวจสอบอีกครั้ง");
       }
@@ -85,7 +102,7 @@ function CalendarActivity() {
       });
       if (res.ok) {
         alert("แก้ไขข้อมูลปฏิทินสำเร็จ!");
-        setIsEditOpen(false); 
+        setIsEditOpen(false);
         clearForm();
         fetchCalendarData();
       } else {
@@ -105,7 +122,7 @@ function CalendarActivity() {
       const res = await fetch(`${API_URL}/${currentId}`, { method: 'DELETE' });
       if (res.ok) {
         alert("ลบข้อมูลปฏิทินสำเร็จ!");
-        setIsDeleteOpen(false); 
+        setIsDeleteOpen(false);
         clearForm();
         fetchCalendarData();
       } else {
@@ -117,11 +134,15 @@ function CalendarActivity() {
   };
 
   const clearForm = () => {
-    setFormData({ Name: '', Date: '', Time: '', Location: '', User_id: 1 }); // 🟢 ล้างค่า Location ด้วย
+    setFormData({ Name: '', Date: '', Time: '09:00 - 12:00', Location: '', User_id: 1 });
+    setStartHour('09');
+    setStartMinute('00');
+    setEndHour('12');
+    setEndMinute('00');
     setSelectedEvent(null);
   };
 
-  // ปรับฟังก์ชันจับคู่กิจกรรมให้คำนวณตามปีและเดือนที่กำลังเปิดดูอยู่จริง ๆ
+  // จับคู่กิจกรรมให้คำนวณตามปีและเดือนที่กำลังเปิดดูอยู่จริง ๆ
   const getEventForDate = (dayNumber) => {
     if (!calendarList || calendarList.length === 0) return null;
 
@@ -135,11 +156,11 @@ function CalendarActivity() {
 
       const cleanDateOnly = String(rawDate).split('T')[0];
       const parts = cleanDateOnly.split('-');
-      
+
       if (parts.length >= 3) {
         const dbYear = parts[0];
         const dbMonth = String(parseInt(parts[1], 10)).padStart(2, '0');
-        const dbDay = parts[2];   
+        const dbDay = parts[2];
 
         return dbYear === currentYearStr && dbMonth === currentMonthStr && dbDay === currentDayStr;
       }
@@ -151,11 +172,11 @@ function CalendarActivity() {
   // เมื่อคลิกเลือกดูงานบนช่องปฏิทิน
   const handleSelectEvent = (eventItem) => {
     setSelectedEvent(eventItem);
-    
+
     const rawDate = eventItem.Date || eventItem.date;
     const rawName = eventItem.Name || eventItem.name;
     const rawTime = eventItem.Time || eventItem.time;
-    const rawLocation = eventItem.Location || eventItem.location; // 🟢 ดึงค่าสถานที่
+    const rawLocation = eventItem.Location || eventItem.location;
     const rawUserId = eventItem.User_id || eventItem.user_id;
 
     let cleanDate = '';
@@ -163,14 +184,32 @@ function CalendarActivity() {
       cleanDate = String(rawDate).split('T')[0];
     }
 
+    // แยกช่วงเวลาที่บันทึกไว้กลับมาใส่ใน Input พิมพ์ตัวเลข (รองรับ "HH:MM - HH:MM")
+    if (rawTime && rawTime.includes('-')) {
+      const parts = rawTime.split('-');
+      const startTime = parts[0].trim().split(':');
+      const endTime = parts[1].trim().split(':');
+
+      if (startTime.length === 2) {
+        setStartHour(startTime[0].padStart(2, '0'));
+        setStartMinute(startTime[1].padStart(2, '0'));
+      }
+      if (endTime.length === 2) {
+        setEndHour(endTime[0].padStart(2, '0'));
+        setEndMinute(endTime[1].padStart(2, '0'));
+      }
+    } else {
+      setStartHour('09'); setStartMinute('00'); setEndHour('12'); setEndMinute('00');
+    }
+
     setFormData({
       Name: rawName || '',
       Date: cleanDate,
-      Time: rawTime || '',
-      Location: rawLocation || '', // 🟢 จัดเก็บสถานที่เข้า State ฟอร์ม
+      Time: rawTime || '09:00 - 12:00',
+      Location: rawLocation || '',
       User_id: rawUserId || 1
     });
-    setIsDetailOpen(true); 
+    setIsDetailOpen(true);
   };
 
   // คลิกพื้นที่ช่องว่างปฏิทินเพื่อเริ่มกรอกเพิ่มงานใหม่
@@ -183,7 +222,7 @@ function CalendarActivity() {
 
   const formatTimeDisplay = (timeStr) => {
     if (!timeStr) return '';
-    return String(timeStr); 
+    return String(timeStr);
   };
 
   // ฟังก์ชันสำหรับเลื่อนเดือนย้อนกลับ (<) และเลื่อนไปข้างหน้า (>)
@@ -215,10 +254,22 @@ function CalendarActivity() {
   const firstDayIndex = new Date(currentYear, currentMonth - 1, 1).getDay();
   const emptySpacesArray = Array.from({ length: firstDayIndex }, (_, i) => i);
 
+  // ฟังก์ชันช่วยจัดฟอร์แมตตัวเลขเมื่อหลุดโฟกัสออกไป (Blur) ให้เป็นเลข 2 หลักเสมอ
+  const handleTimeBlur = (val, setter, maxVal) => {
+    if (!val || isNaN(val)) {
+      setter('00');
+      return;
+    }
+    let num = parseInt(val, 10);
+    if (num < 0) num = 0;
+    if (num > maxVal) num = maxVal;
+    setter(String(num).padStart(2, '0'));
+  };
+
   return (
     <div style={styles.contentBody}>
       {loading && <p style={{ fontSize: '13px', color: '#666' }}>กำลังอัปเดตปฏิทิน...</p>}
-      
+
       <div style={styles.calendarCard}>
         <div style={styles.calendarHeader}>
           <span style={styles.calendarMonthTitle}>
@@ -241,18 +292,18 @@ function CalendarActivity() {
 
           {daysInMonthArray.map((day) => {
             const eventItem = getEventForDate(day);
-            const isSelected = selectedEvent && eventItem && 
-              ((selectedEvent.Calendar_id && selectedEvent.Calendar_id === eventItem.Calendar_id) || 
-               (selectedEvent.calendar_id && selectedEvent.calendar_id === eventItem.calendar_id));
+            const isSelected = selectedEvent && eventItem &&
+              ((selectedEvent.Calendar_id && selectedEvent.Calendar_id === eventItem.Calendar_id) ||
+                (selectedEvent.calendar_id && selectedEvent.calendar_id === eventItem.calendar_id));
 
             return (
-              <div 
-                key={day} 
+              <div
+                key={day}
                 style={{
                   ...styles.dayCell,
-                  backgroundColor: eventItem ? '#e5e5e5' : '#fff', 
+                  backgroundColor: eventItem ? '#e5e5e5' : '#fff',
                   border: isSelected ? '2px solid #000' : '1px solid #dcdcdc'
-                }} 
+                }}
                 onClick={() => {
                   if (eventItem) {
                     handleSelectEvent(eventItem);
@@ -266,7 +317,6 @@ function CalendarActivity() {
                   <div style={styles.eventBadgeContent}>
                     <div style={styles.eventTitleText}>• {eventItem.Name || eventItem.name}</div>
                     <div style={styles.eventTimeText}>🕒 {formatTimeDisplay(eventItem.Time || eventItem.time)}</div>
-                    {/* 🟢 แสดงสถานที่ย่อๆ บนตารางช่องวัน */}
                     <div style={styles.eventLocationText}>📍 {eventItem.Location || eventItem.location || 'ไม่ระบุ'}</div>
                   </div>
                 )}
@@ -287,17 +337,44 @@ function CalendarActivity() {
             <form onSubmit={handleAddSubmit}>
               <label style={styles.label}>ชื่อกิจกรรม</label>
               <input type="text" style={styles.input} value={formData.Name} onChange={(e) => setFormData({ ...formData, Name: e.target.value })} required />
-              
+
               <label style={styles.label}>วัน/เดือน/ปี</label>
               <input type="date" style={styles.input} value={formData.Date} onChange={(e) => setFormData({ ...formData, Date: e.target.value })} required />
-              
+
+              {/* ✍️ เปลี่ยนเป็นช่อง พิมพ์ตัวเลขเอง 4 ช่อง */}
               <label style={styles.label}>เวลาที่จัด</label>
-              <input type="text" style={styles.input} placeholder="เช่น 09:00 - 12:00 น." value={formData.Time} onChange={(e) => setFormData({ ...formData, Time: e.target.value })} required />
-              
-              {/* 🟢 เพิ่มช่องรับข้อมูลสถานที่ */}
+              <div style={styles.timeRow}>
+                <input
+                  type="number" placeholder="00" min="0" max="23" style={styles.timeInput}
+                  value={startHour} onChange={(e) => setStartHour(e.target.value)}
+                  onBlur={(e) => handleTimeBlur(e.target.value, setStartHour, 23)} required
+                />
+                <span>:</span>
+                <input
+                  type="number" placeholder="00" min="0" max="59" style={styles.timeInput}
+                  value={startMinute} onChange={(e) => setStartMinute(e.target.value)}
+                  onBlur={(e) => handleTimeBlur(e.target.value, setStartMinute, 59)} required
+                />
+
+                <span style={{ margin: '0 6px', color: '#666' }}>ถึง</span>
+
+                <input
+                  type="number" placeholder="00" min="0" max="23" style={styles.timeInput}
+                  value={endHour} onChange={(e) => setEndHour(e.target.value)}
+                  onBlur={(e) => handleTimeBlur(e.target.value, setEndHour, 23)} required
+                />
+                <span>:</span>
+                <input
+                  type="number" placeholder="00" min="0" max="59" style={styles.timeInput}
+                  value={endMinute} onChange={(e) => setEndMinute(e.target.value)}
+                  onBlur={(e) => handleTimeBlur(e.target.value, setEndMinute, 59)} required
+                />
+                <span style={{ fontSize: '12px', color: '#333', marginLeft: '2px' }}>น.</span>
+              </div>
+
               <label style={styles.label}>สถานที่</label>
               <input type="text" style={styles.input} placeholder="กรอกสถานที่จัดกิจกรรม" value={formData.Location} onChange={(e) => setFormData({ ...formData, Location: e.target.value })} required />
-              
+
               <button type="submit" style={styles.btnSubmit}>บันทึก</button>
             </form>
           </div>
@@ -319,11 +396,10 @@ function CalendarActivity() {
               <input type="text" style={styles.inputReadOnly} value={formData.Date} readOnly />
               <label style={styles.label}>เวลาที่จัด</label>
               <input type="text" style={styles.inputReadOnly} value={formatTimeDisplay(formData.Time)} readOnly />
-              
-              {/* 🟢 เพิ่มช่องแสดงสถานที่ในหน้าดูรายละเอียด */}
+
               <label style={styles.label}>สถานที่</label>
               <input type="text" style={styles.inputReadOnly} value={formData.Location || 'ไม่ระบุสถานที่'} readOnly />
-              
+
               <div style={styles.modalActionRow}>
                 <button type="button" style={styles.iconActionBtn} onClick={() => { setIsDetailOpen(false); setIsDeleteOpen(true); }}>🗑️</button>
                 <button type="button" style={styles.iconActionBtn} onClick={() => { setIsDetailOpen(false); setIsEditOpen(true); }}>📝</button>
@@ -346,13 +422,41 @@ function CalendarActivity() {
               <input type="text" style={styles.input} value={formData.Name} onChange={(e) => setFormData({ ...formData, Name: e.target.value })} required />
               <label style={styles.label}>วัน/เดือน/ปี</label>
               <input type="date" style={styles.input} value={formData.Date} onChange={(e) => setFormData({ ...formData, Date: e.target.value })} required />
+
+              {/* ✍️ ช่องพิมพ์ตัวเลขเอง 4 ช่องในหน้าแก้ไข */}
               <label style={styles.label}>เวลาที่จัด</label>
-              <input type="text" style={styles.input} value={formData.Time} onChange={(e) => setFormData({ ...formData, Time: e.target.value })} required />
-              
-              {/* 🟢 เพิ่มช่องแก้ไขสถานที่ */}
+              <div style={styles.timeRow}>
+                <input
+                  type="number" min="0" max="23" style={styles.timeInput}
+                  value={startHour} onChange={(e) => setStartHour(e.target.value)}
+                  onBlur={(e) => handleTimeBlur(e.target.value, setStartHour, 23)} required
+                />
+                <span>:</span>
+                <input
+                  type="number" min="0" max="59" style={styles.timeInput}
+                  value={startMinute} onChange={(e) => setStartMinute(e.target.value)}
+                  onBlur={(e) => handleTimeBlur(e.target.value, setStartMinute, 59)} required
+                />
+
+                <span style={{ margin: '0 6px', color: '#666' }}>ถึง</span>
+
+                <input
+                  type="number" min="0" max="23" style={styles.timeInput}
+                  value={endHour} onChange={(e) => setEndHour(e.target.value)}
+                  onBlur={(e) => handleTimeBlur(e.target.value, setEndHour, 23)} required
+                />
+                <span>:</span>
+                <input
+                  type="number" min="0" max="59" style={styles.timeInput}
+                  value={endMinute} onChange={(e) => setEndMinute(e.target.value)}
+                  onBlur={(e) => handleTimeBlur(e.target.value, setEndMinute, 59)} required
+                />
+                <span style={{ fontSize: '12px', color: '#333', marginLeft: '2px' }}>น.</span>
+              </div>
+
               <label style={styles.label}>สถานที่</label>
               <input type="text" style={styles.input} value={formData.Location} onChange={(e) => setFormData({ ...formData, Location: e.target.value })} required />
-              
+
               <button type="submit" style={styles.btnSubmit}>บันทึก</button>
             </form>
           </div>
@@ -385,13 +489,12 @@ const styles = {
   arrowBtn: { padding: '3px 8px', backgroundColor: '#f5f5f5', border: '1px solid #dcdcdc', borderRadius: '4px', cursor: 'pointer', fontSize: '11px' },
   calendarGrid: { display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '6px', width: '100%' },
   dayOfWeekLabel: { textAlign: 'center', fontSize: '13px', paddingBottom: '8px', color: '#222', fontWeight: 'bold' },
-  dayCell: { border: '1px solid #cccccc', borderRadius: '6px', minHeight: '90px', padding: '6px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', boxSizing: 'border-box', cursor: 'pointer' }, // เพิ่มความสูงช่องตารางเล็กน้อย
+  dayCell: { border: '1px solid #cccccc', borderRadius: '6px', minHeight: '90px', padding: '6px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', boxSizing: 'border-box', cursor: 'pointer' },
   dayCellEmpty: { minHeight: '90px', boxSizing: 'border-box' },
   dayNumberText: { alignSelf: 'flex-start', fontSize: '11px', color: '#444' },
   eventBadgeContent: { display: 'flex', flexDirection: 'column', width: '100%', textAlign: 'left', gap: '2px', marginTop: '4px' },
   eventTitleText: { fontSize: '10px', fontWeight: 'bold', color: '#000', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' },
   eventTimeText: { fontSize: '9px', color: '#555', paddingLeft: '4px' },
-  // 🟢 สไตล์ตัวหนังสือสถานที่ในตารางช่องวัน
   eventLocationText: { fontSize: '9px', color: '#0284c7', paddingLeft: '4px', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', fontWeight: '500' },
   overlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 },
   modal: { backgroundColor: '#fff', width: '350px', padding: '25px', borderRadius: '12px', border: '1px solid #999', position: 'relative', boxSizing: 'border-box' },
@@ -406,8 +509,11 @@ const styles = {
   btnSubmit: { width: '100%', padding: '9px', marginTop: '20px', backgroundColor: '#fff', border: '1px solid #333', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px' },
   deleteIconContainer: { fontSize: '40px', marginBottom: '10px' },
   btnCancel: { padding: '8px 24px', backgroundColor: '#fff', border: '1px solid #ccc', borderRadius: '5px', cursor: 'pointer', fontSize: '13px', color: '#333' },
-  btnConfirmDelete: { padding: '8px 24px', backgroundColor: '#d9534f', border: '1px solid #d43f3a', borderRadius: '5px', cursor: 'pointer', fontSize: '13px', color: '#fff', fontWeight: 'bold' }
-};
+  btnConfirmDelete: { padding: '8px 24px', backgroundColor: '#d9534f', border: '1px solid #d43f3a', borderRadius: '5px', cursor: 'pointer', fontSize: '13px', color: '#fff', fontWeight: 'bold' },
 
+  // ✍️ สไตล์เพิ่มเติมสำหรับแถวกรอกตัวเลขเวลาเอง 4 ช่อง
+  timeRow: { display: 'flex', alignItems: 'center', gap: '4px', width: '100%' },
+  timeInput: { padding: '6px 4px', border: '1px solid #aaa', borderRadius: '5px', fontSize: '13px', backgroundColor: '#fff', width: '52px', textAlign: 'center' }
+};
 
 export default CalendarActivity;
