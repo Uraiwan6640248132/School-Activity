@@ -1,9 +1,37 @@
+import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 // Import ตราสัญลักษณ์โรงเรียนเข้ามาจากโฟลเดอร์ src หลัก
-import logoSchool from "../logo_school.png"; 
+import logoSchool from "../logo_school.png";
 
 function Navbar({ children }) {
   const location = useLocation();
+  // 🌟 เพิ่ม State สำหรับเก็บชื่อผู้ใช้งานที่ดึงมาจากระบบ
+  const [userName, setUserName] = useState("ผู้ใช้งานระบบ");
+
+  useEffect(() => {
+    // 🌟 ดึงข้อมูล user จาก localStorage ตอนเริ่มต้นโหลดคอมโพเนนต์
+    const savedUser = localStorage.getItem("user");
+    if (savedUser) {
+      try {
+        const userObj = JSON.parse(savedUser);
+
+        // 1. ดึงค่าชื่อ (เช็คเผื่อไว้ทั้งตัวพิมพ์ใหญ่/พิมพ์เล็ก)
+        const firstname = userObj.Firstname || userObj.firstname || userObj.Name || userObj.name || "";
+
+        // 2. ดึงค่านามสกุล (เช็คเผื่อไว้ทั้งตัวพิมพ์ใหญ่/พิมพ์เล็ก)
+        const lastname = userObj.Lastname || userObj.lastname || userObj.Surname || userObj.surname || "";
+
+        // 3. นำชื่อและนามสกุลมาต่อกัน ถ้ามีข้อมูลครบถ้วน
+        if (firstname || lastname) {
+          setUserName(`${firstname} ${lastname}`.trim());
+        } else {
+          setUserName("ผู้ใช้งานระบบ");
+        }
+      } catch (e) {
+        console.error("เกิดข้อผิดพลาดในการอ่านข้อมูลผู้ใช้งาน:", e);
+      }
+    }
+  }, []);
 
   const menu = (path) => ({
     ...styles.menu,
@@ -22,13 +50,13 @@ function Navbar({ children }) {
     <div style={styles.layout}>
       {/* Sidebar */}
       <div style={styles.sidebar}>
-        
+
         {/* 🌟 ปรับปรุงพื้นที่ส่วนโลโก้: ขยับความห่างให้ชิดกับเมนูหน้าหลักลงมาเรียบร้อยแล้ว */}
         <div style={styles.logoSection}>
-          <img 
-            src={logoSchool} 
-            alt="ตราสัญลักษณ์โรงเรียน" 
-            style={styles.logoImage} 
+          <img
+            src={logoSchool}
+            alt="ตราสัญลักษณ์โรงเรียน"
+            style={styles.logoImage}
           />
         </div>
 
@@ -41,7 +69,7 @@ function Navbar({ children }) {
         <Link to="/event" style={menu("/event")}>ปฏิทินกิจกรรม</Link>
         <Link to="/participating" style={menu("/participating")}>เข้าร่วมกิจกรรม</Link>
         <Link to="/development" style={menu("/development")}>พัฒนาการนักเรียน</Link>
-        
+
         {/* 🌟 ปุ่มออกจากระบบ ถูกจัดวางไว้ล่างสุดของเมนูทั้งหมด */}
         <button onClick={handleLogout} style={styles.logoutBtn}>
           🚪 ออกจากระบบ
@@ -51,7 +79,8 @@ function Navbar({ children }) {
       {/* Content */}
       <div style={styles.content}>
         <div style={styles.topbar}>
-          🔔 นางสาวธัณรัตน์ สิงห์มณี
+          {/* 🌟 แสดงชื่อจริงที่ดึงมาจากสถานะเข้าสู่ระบบ */}
+          🔔 {userName}
         </div>
         <div style={styles.main}>{children}</div>
       </div>
@@ -61,26 +90,25 @@ function Navbar({ children }) {
 
 const styles = {
   layout: { display: "flex", minHeight: "100vh", fontFamily: "Segoe UI, sans-serif" },
-  sidebar: { 
-    width: 220, 
-    background: "#5b95e5", 
+  sidebar: {
+    width: 220,
+    background: "#5b95e5",
     color: "#fff",
     display: "flex",
-    flexDirection: "column" // เพื่อตั้งค่าให้จัดเมนูแบบแนวตั้งและดันปุ่มลงล่างได้ง่ายขึ้น
+    flexDirection: "column"
   },
-  
-  // 🎨 จุดสำคัญ: ปรับแก้ระยะตรงนี้ให้กระชับขึ้นเพื่อขยับให้ชิดเมนู "หน้าหลัก"
+
   logoSection: {
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
-    padding: "16px 16px 12px 16px", // 🌟 ลดความกว้างพื้นที่บน-ล่างลง (จากเดิม 24px/20px)
-    borderBottom: "1px solid rgba(255, 255, 255, 0.15)", // เส้นแบ่งบาง ๆ ใต้โลโก้
-    marginBottom: "4px",            // 🌟 ลดระยะขอบล่างก่อนถึงเมนูหน้าหลัก (จากเดิม 10px) ให้ชิดขึ้นพอดี ๆ ครับ
+    padding: "16px 16px 12px 16px",
+    borderBottom: "1px solid rgba(255, 255, 255, 0.15)",
+    marginBottom: "4px",
   },
   logoImage: {
-    width: "110px",        // ขนาดสัดส่วนความกว้างของโลโก้เท่าเดิมตามความสวยงาม
-    height: "auto",        
+    width: "110px",
+    height: "auto",
     objectFit: "contain",
   },
 
@@ -91,19 +119,18 @@ const styles = {
     textDecoration: "none",
     cursor: "pointer",
   },
-  // 🎨 เพิ่มการตกแต่งปุ่มออกจากระบบให้สวยงามและเข้ากับสไตล์เดิม
   logoutBtn: {
     display: "block",
     width: "100%",
     padding: "12px 20px",
-    color: "#ffebee", // ใช้สีตัวอักษรโทนขาวอมแดงให้สังเกตง่าย
+    color: "#ffebee",
     background: "none",
     border: "none",
     textAlign: "left",
     cursor: "pointer",
     fontSize: "16px",
-    marginTop: "auto", // 🌟 คุณสมบัตินี้จะช่วยดันปุ่มลงไปอยู่ด้านล่างสุดของแถบ Sidebar ตลอดเวลา
-    borderTop: "1px solid rgba(255, 255, 255, 0.2)", // เส้นคั่นบาง ๆ ให้ดูเป็นระเบียบ
+    marginTop: "auto",
+    borderTop: "1px solid rgba(255, 255, 255, 0.2)",
     fontFamily: "Segoe UI, sans-serif"
   },
   content: { flex: 1, background: "#f3f4f6" },
