@@ -52,8 +52,13 @@ export default function Development() {
         const data = await res.json();
         const cleanData = Array.isArray(data) ? data : [];
         setStudents(cleanData);
-        // กำหนดค่าแรกเริ่มของนักเรียนให้กับฟอร์มว่างเพื่อไม่ให้เป็นค่าว่างเปล่าหลุดลอย
-
+        
+        // 🌟 สิ่งที่เพิ่มเข้ามา: ถ้ามีข้อมูลนักเรียน ให้ตั้งค่ารหัสคนแรกลงฟอร์มทันที
+        if (cleanData.length > 0) {
+          const firstStudent = cleanData[0];
+          const firstId = String(firstStudent.Student_id || firstStudent.id || firstStudent.student_id);
+          setFormData(prev => ({ ...prev, Student_id: firstId }));
+        }
       }
     } catch (err) {
       console.error("Error fetching students list:", err);
@@ -110,7 +115,11 @@ export default function Development() {
 
   // 🌟 ปรับล้างฟอร์มใหม่ให้สะอาดหมดจด ดึงรหัสนักเรียนคนแรกแบบ Dynamic
   const resetForm = () => {
-    setFormData(initialFormState);
+    setFormData({
+      ...initialFormState,
+      // ถ้ามีรายชื่อนักเรียนในระบบ ให้เลือกคนแรกมารอไว้เลย
+      Student_id: students.length > 0 ? String(students[0].Student_id || students[0].id || students[0].student_id) : ''
+    });
     setSelectedId(null);
   };
 

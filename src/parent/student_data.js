@@ -13,45 +13,24 @@ const StudentData = () => {
  useEffect(() => {
   const fetchStudentData = async () => {
     try {
-      // 1. ดึงข้อมูลดิบจาก localStorage
       const storedUser = localStorage.getItem("user");
-      console.log("== [FRONTEND CHECK 1] ข้อมูลดิบใน LocalStorage == :", storedUser);
+      if (!storedUser) return;
 
-      if (!storedUser) {
-        console.error("ไม่พบข้อมูลการเข้าสู่ระบบในระบบ LocalStorage");
-        setLoading(false);
-        return;
-      }
-
-      // 2. แปลงข้อมูล JSON object 
       const userData = JSON.parse(storedUser);
-      console.log("== [FRONTEND CHECK 2] วัตถุหลังจากแตกตัวแปร == :", userData);
+      // ตรวจเช็คให้ละเอียดว่าอ็อบเจกต์ในระบบของคุณใช้คีย์ id ตัวเล็ก หรือ User_id ตัวใหญ่
+      const userId = userData.id || userData.User_id || userData.user_id;
 
-      // 3. ดักจับคีย์ไอดีผู้ปกครองทุกรูปแบบที่เป็นไปได้ (ป้องกันการพิมพ์ผิด)
-      const userId = userData.User_id || userData.user_id || userData.id;
-      console.log("== [FRONTEND CHECK 3] ค่ารหัสผู้ปกครองที่จะส่งไป == :", userId);
+      if (!userId) return; // ถ้าไม่มีไอดี ให้เด้งออก ไม่ส่ง Request
 
-      if (!userId) {
-        console.error("ระบบไม่สามารถดึงข้อมูล ID จากตัวตนผู้ใช้ที่ล็อกอินอยู่ได้");
-        setLoading(false);
-        return;
-      }
-
-      // 4. ส่ง Request ไปยัง API หลังบ้าน
       const res = await axios.get(`http://localhost:3001/api/students?userId=${userId}`);
-      console.log("== [FRONTEND CHECK 4] ข้อมูลส่งกลับมาจาก API หลังบ้าน == :", res.data);
-
       setStudents(res.data);
-      setLoading(false);
     } catch (error) {
-      console.error("เกิดข้อผิดพลาดในการเรียกดูข้อมูลนักเรียน:", error);
-      setLoading(false);
+      console.error("Error:", error);
     }
   };
-  
-  fetchStudentData();
-}, []);
 
+  fetchStudentData();
+}, []); // ⚠️ ตรวจสอบจุดนี้!! ต้องมีเครื่องหมายคอมม่าและวงเล็บเหลี่ยมปิดท้ายตรงนี้เสมือนเป็นเครื่องห้ามล้อไม่ให้ฟังก์ชันรันซ้ำ
   const formatThaiDate = (dateString) => {
     if (!dateString) return 'ไม่ได้ระบุ';
     try {

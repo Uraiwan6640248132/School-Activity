@@ -16,7 +16,6 @@ app.use(cors({
 // ปรับเพิ่มความจุการรับข้อความจากเดิมไม่กี่ KB ให้กลายเป็น 50MB เพื่อรองรับ Base64 ของรูปภาพเยอะ ๆ
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
-
 // บันทึกไฟล์อัปโหลด
 const uploadDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadDir)) {
@@ -106,7 +105,7 @@ app.delete('/users/:id', (req, res) => {
 });
 
 // ==========================================
-// 🏃‍♂️ ระบบ API จัดการกิจกรรม (ACTIVITY) - ✨ แก้ไขเพื่อแปลงฐานข้อมูลอาเรย์รูปภาพให้สมบูรณ์
+// 🏃‍♂️ ระบบ API จัดการกิจกรรม (ACTIVITY) - แก้ไขบั๊กเพื่อรองรับหลายรูปภาพ (JSON String)
 // ==========================================
 app.get("/activities", (req, res) => {
   const sql = `SELECT a.*, u.Name AS Photographer FROM activity a LEFT JOIN users u ON a.User_id = u.User_id ORDER BY a.Activity_date DESC, a.Activity_id DESC`;
@@ -116,58 +115,40 @@ app.get("/activities", (req, res) => {
   });
 });
 
-// ✨ แก้ไขระบบ POST บันทึกกิจกรรมเพื่อทำการ Stringify ข้อมูลให้ MySQL ยอมรับอย่างปลอดภัย
+// แก้ไข POST สำหรับเก็บข้อมูลหลายรูปภาพที่ถูกห่อหุ้มมาเป็น String
 app.post("/activities", (req, res) => {
   const body = req.body || {};
   const Name_activity = body.Name_activity || body.name_activity || body.Name || body.title || null;
   const Activity_date = parseDateForMySQL(body.Activity_date || body.activity_date);
-  const User_id = parseInt(body.User_id || body.user_id, 10) || 1; 
+  const User_id = parseInt(body.User_id || body.user_id, 10) || 2;
   
-  // ดึงค่าภาพที่ส่งมา
-  let rawImage = body.Image || body.image || body.Images || body.images || null;
-  let DB_IMAGE_VALUE = null;
-
-  if (rawImage) {
-    // ถ้าหน้าบ้านส่งมาเป็น Object หรือ Array ตรงๆ ให้ทำการเปลี่ยนรูปเล่มให้เป็น String ก่อนบันทึก
-    if (typeof rawImage === "object") {
-      DB_IMAGE_VALUE = JSON.stringify(rawImage);
-    } else {
-      DB_IMAGE_VALUE = rawImage;
-    }
-  }
+  // ตรวจจับตัวแปร Image หรือ Images ที่หน้าบ้านส่งมา
+  const finalImage = body.Image || body.image || body.Images || body.images || null;
 
   if (!Name_activity) return res.status(400).json({ error: "กรุณาระบุชื่อกิจกรรม" });
 
   const sql = "INSERT INTO activity (Name_activity, Image, Activity_date, Location, User_id) VALUES (?, ?, ?, ?, ?)";
-  db.query(sql, [Name_activity, DB_IMAGE_VALUE, Activity_date, body.Location || body.location || null, User_id], (err, result) => {
+  db.query(sql, [Name_activity, finalImage, Activity_date, body.Location || body.location || null, User_id], (err, result) => {
     if (err) { console.error(err); return res.status(500).json({ error: "ตรวจสอบคีย์เชื่อมโยงผู้ใช้งาน", details: err.message }); }
     res.status(201).json({ message: "เพิ่มกิจกรรมสำเร็จ", Activity_id: result.insertId });
   });
 });
 
-// ✨ แก้ไขระบบ PUT อัปเดตกิจกรรมเพื่อทำการแปลงชุดอาเรย์รูปภาพเช่นเดียวกัน ป้องกัน Error 500
+// แก้ไข PUT สำหรับอัปเดตกิจกรรมเมื่อมีการบันทึกรูปภาพใหม่หลายรูปภาพ
 app.put("/activities/:id", (req, res) => {
   const body = req.body || {};
   const Name_activity = body.Name_activity || body.name_activity || body.title || body.Name || null;
   const Activity_date = parseDateForMySQL(body.Activity_date || body.activity_date);
-  const User_id = parseInt(body.User_id || body.user_id, 10) || 1;
+  const User_id = parseInt(body.User_id || body.user_id, 10) || 2;
   
-  let rawImage = body.Image || body.image || body.Images || body.images || null;
-  let DB_IMAGE_VALUE = null;
-
-  if (rawImage) {
-    if (typeof rawImage === "object") {
-      DB_IMAGE_VALUE = JSON.stringify(rawImage);
-    } else {
-      DB_IMAGE_VALUE = rawImage;
-    }
-  }
+  // ตรวจจับตัวแปร Image หรือ Images สำหรับขั้นตอนการแก้ไข
+  const finalImage = body.Image || body.image || body.Images || body.images || null;
 
   if (!Name_activity) return res.status(400).json({ error: "กรุณาระบุชื่อกิจกรรม" });
 
   const sql = "UPDATE activity SET Name_activity=?, Image=?, Activity_date=?, Location=?, User_id=? WHERE Activity_id=?";
-  db.query(sql, [Name_activity, DB_IMAGE_VALUE, Activity_date, body.Location || body.location || null, User_id, req.params.id], (err, result) => {
-    if (err) { console.error(err); return res.status(500).json({ error: "ไม่สามารถอัปเดตกิจกรรมได้", details: err.message }); }
+  db.query(sql, [Name_activity, finalImage, Activity_date, body.Location || body.location || null, User_id, req.params.id], (err, result) => {
+    if (err) { console.error(err); return res.status(500).json({ error: "ไม่สามารถอัปเดตกิจกรรมได้เนื่องจากคีย์ล็อกอินขัดแย้ง", details: err.message }); }
     res.json({ success: true, message: "แก้ไขกิจกรรมสำเร็จ" });
   });
 });
@@ -182,25 +163,44 @@ app.delete("/activities/:id", (req, res) => {
 // ==========================================
 // 🚀 ระบบ API จัดการข้อมูลนักเรียน (STUDENTS CRUD)
 // ==========================================
-app.get('/api/students', (req, res) => {
-  const userId = req.query.userId;
-  console.log("== [BACKEND API] ได้รับคำขอรหัสผู้ใช้ ID == :", userId);
+app.get("/api/students", (req, res) => {
+  db.query("SELECT * FROM student ORDER BY Student_id DESC", (err, result) => {
+    if (err) return res.status(500).json(err);
+    res.json(result);
+  });
+});
 
-  if (!userId) {
-    return res.status(400).json({ error: "ระบุข้อมูลผู้ใช้ไม่ถูกต้อง (Missing userId)" });
-  }
+app.post("/api/students", (req, res) => {
+  const body = req.body || {};
+  const { Name, Class_level, Blood_group, Image } = body;
+  const Birthday = parseDateForMySQL(body.Birthday || body.birthday);
+  const Gender = body.Gender || body.gender || null;
+  const User_id = parseInt(body.User_id || body.user_id, 10) || 2;
 
-  // คำสั่ง Query ข้อมูลกรองจากตาราง
-  const sql = "SELECT * FROM student WHERE User_id = ?"; 
+  const sql = `INSERT INTO student (Name, Birthday, Gender, Class_level, User_id, Blood_group, Image) VALUES (?, ?, ?, ?, ?, ?, ?)`;
+  db.query(sql, [Name, Birthday, Gender, Class_level, User_id, Blood_group, Image || null], (err, result) => {
+    if (err) { console.error(err); return res.status(500).json({ error: "เกิดข้อผิดพลาดในการเพิ่มข้อมูลนักเรียน", details: err.message }); }
+    res.json({ message: "เพิ่มข้อมูลนักเรียนสำเร็จ", Student_id: result.insertId });
+  });
+});
 
-  db.query(sql, [userId], (err, results) => {
-    if (err) {
-      console.error("เกิดข้อผิดพลาดในระบบฐานข้อมูล:", err);
-      return res.status(500).json({ error: "Database internal error" });
-    }
-    
-    console.log("== [BACKEND API] จำนวนแถวผลลัพธ์ SQL ที่เจอ == :", results.length);
-    res.json(results);
+app.put("/api/students/:id", (req, res) => {
+  const body = req.body || {};
+  const { Name, Class_level, Blood_group, Image } = body;
+  const Birthday = parseDateForMySQL(body.Birthday || body.birthday);
+  const Gender = body.Gender || body.gender || null;
+
+  const sql = `UPDATE student SET Name=?, Birthday=?, Gender=?, Class_level=?, Blood_group=?, Image=? WHERE Student_id=?`;
+  db.query(sql, [Name, Birthday, Gender, Class_level, Blood_group, Image || null, req.params.id], (err, result) => {
+    if (err) { console.error(err); return res.status(500).json({ error: "เกิดข้อผิดพลาดในการแก้ไขข้อมูลนักเรียน", details: err.message }); }
+    res.json({ message: "แก้ไขข้อมูลนักเรียนสำเร็จ" });
+  });
+});
+
+app.delete("/api/students/:id", (req, res) => {
+  db.query("DELETE FROM student WHERE Student_id=?", [req.params.id], (err, result) => {
+    if (err) return res.status(500).json(err);
+    res.json({ message: "ลบข้อมูลนักเรียนสำเร็จ" });
   });
 });
 
@@ -469,19 +469,7 @@ app.post("/login", (req, res) => {
     if (err) return res.status(500).json({ success: false, error: "ฐานข้อมูลมีปัญหา" });
     if (result.length > 0) {
       const user = result[0];
-      
-      // ✨ แก้ไขจุดนี้: เพิ่มคีย์ User_id ส่งกลับไป เพื่อให้ฝั่ง React หน้าบ้านดึงไปค้นหาลูกได้ถูกต้องตามตาราง SQL
-      return res.json({ 
-        success: true, 
-        message: "สำเร็จ", 
-        user: { 
-          id: user.User_id, 
-          User_id: user.User_id, // 👈 เพิ่มบรรทัดนี้เข้าไปครับ
-          username: user.UserName, 
-          name: user.Name, 
-          role: user.Role 
-        } 
-      });
+      return res.json({ success: true, message: "สำเร็จ", user: { id: user.User_id, username: user.UserName, name: user.Name, role: user.Role } });
     }
     res.status(401).json({ success: false, error: "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง" });
   });
