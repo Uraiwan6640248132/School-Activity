@@ -304,4 +304,7 @@ const styles = {
     alertSuccess: { color: '#10b981', backgroundColor: '#ecfdf5', padding: '10px', borderRadius: '6px', border: '1px solid #d1fae5', fontSize: '13px', textAlign: 'center', marginBottom: '15px' }
 };
 
+
+
+
 export default Register;
