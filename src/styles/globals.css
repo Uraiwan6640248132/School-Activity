@@ -1,20 +1,3 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-body{
-    margin:0;
-    font-family:'Segoe UI',sans-serif;
-    background:#f5f7fb;
-}
-
-.page{
-    padding:30px;
-}
-
-.card{
-    background:rgb(94, 113, 209);
-    border-radius:15px;
-    padding:25px;
-    box-shadow:0 5px 15px rgba(0,0,0,.1);
-}

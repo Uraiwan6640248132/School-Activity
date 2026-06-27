@@ -1,135 +1,141 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import { Link } from "react-router-dom";
 
-function Dashboard() {
+const Home = () => {
+  const [counts, setCounts] = useState({ students: 0, users: 0, activities: 0 });
+  const [latestNotifications, setLatestNotifications] = useState([]);
+  const [latestActivities, setLatestActivities] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchHomeData = async () => {
+      try {
+        const studentRes = await axios.get("http://localhost:3001/api/students");
+        const userRes = await axios.get("http://localhost:3001/users");
+        const activityRes = await axios.get("http://localhost:3001/activities");
+        const notificationRes = await axios.get("http://localhost:3001/notifications");
+
+        setCounts({
+          students: studentRes.data.length,
+          users: userRes.data.length,
+          activities: activityRes.data.length,
+        });
+
+        setLatestNotifications(notificationRes.data.slice(0, 4));
+        setLatestActivities(activityRes.data.slice(0, 4));
+        setLoading(false);
+      } catch (error) {
+        console.error("เกิดข้อผิดพลาดในการดึงข้อมูลหน้า Home:", error);
+        setLoading(false);
+      }
+    };
+    fetchHomeData();
+  }, []);
+
   return (
-    // 1. พื้นหลังหลักปรับเป็นไล่เฉดสีอ่อนๆ สบายตา
-    <div className="min-h-screen bg-slate-50/50 flex font-sans antialiased text-slate-800">
+    // 🌟 เอาส่วนหัวแถบสีทึบเดิมออกเรียบร้อยแล้ว ปล่อยพื้นที่ให้การ์ดเรียงตัวสวยงามทันที
+    <div className="max-w-7xl w-full mx-auto space-y-8 flex-grow">
 
-      {/* SIDEBAR: ปรับให้ดูพรีเมียมด้วยสีเข้ม slate-900 และเมนูแบบมีสไตล์ */}
-      <aside className="w-64 bg-slate-900 text-slate-300 flex flex-col shadow-xl shrink-0">
-        <div className="p-6 flex flex-col items-center border-b border-slate-800">
-          {/* ส่วนโลโก้สถาบัน */}
-          <div className="w-20 h-20 bg-white rounded-full p-2 shadow-inner mb-3 flex items-center justify-center">
-            <img src="path-to-your-logo.png" alt="University Logo" className="object-contain" />
+      {/* 🟢 ส่วนบน: เมนูการ์ดตัวนับจำนวนสไตล์ลอยตัวนุ่มนวล (Soft Shadow) */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+        {/* การ์ดนักเรียน */}
+        <Link to="/students" className="bg-white p-6 rounded-2xl border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)] flex items-center justify-between group hover:border-sky-200 hover:shadow-md transition-all text-auto no-underline">
+          <div>
+            <p className="text-sm font-medium text-slate-400 mb-1">นักเรียนทั้งหมด</p>
+            <h3 className="text-3xl font-black text-slate-800">
+              {loading ? <span className="text-xl font-medium text-slate-300">...</span> : counts.students}
+              {!loading && <span className="text-sm font-normal text-slate-400 ml-1">คน</span>}
+            </h3>
           </div>
-          <span className="text-xs font-semibold tracking-wider text-slate-400 uppercase">ระบบจัดการโรงเรียน</span>
+          <div className="w-12 h-12 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center text-xl font-bold shadow-inner group-hover:scale-105 transition-transform">🧑‍🎓</div>
+        </Link>
+
+        {/* การ์ดครูผู้สอน */}
+        <Link to="/users" className="bg-white p-6 rounded-2xl border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)] flex items-center justify-between group hover:border-purple-200 hover:shadow-md transition-all text-auto no-underline">
+          <div>
+            <p className="text-sm font-medium text-slate-400 mb-1">ครูผู้สอน</p>
+            <h3 className="text-3xl font-black text-slate-800">
+              {loading ? <span className="text-xl font-medium text-slate-300">...</span> : counts.users}
+              {!loading && <span className="text-sm font-normal text-slate-400 ml-1">คน</span>}
+            </h3>
+          </div>
+          <div className="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center text-xl font-bold shadow-inner group-hover:scale-105 transition-transform">👩‍🏫</div>
+        </Link>
+
+        {/* การ์ดกิจกรรม */}
+        <Link to="/activity" className="bg-white p-6 rounded-2xl border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)] flex items-center justify-between group hover:border-amber-200 hover:shadow-md transition-all text-auto no-underline">
+          <div>
+            <p className="text-sm font-medium text-slate-400 mb-1">กิจกรรมระบบ</p>
+            <h3 className="text-3xl font-black text-slate-800">
+              {loading ? <span className="text-xl font-medium text-slate-300">...</span> : counts.activities}
+              {!loading && <span className="text-sm font-normal text-slate-400 ml-1">กิจกรรม</span>}
+            </h3>
+          </div>
+          <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl font-bold shadow-inner group-hover:scale-105 transition-transform">🎯</div>
+        </Link>
+      </div>
+
+      {/* 🔵 ส่วนล่าง: กล่องข้อมูลอัปเดตล่าสุด 2 ฝั่งแบ่งคอลัมน์ */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+
+        {/* กล่องการบ้านล่าสุด (กว้าง 3 ส่วน) */}
+        <div className="lg:col-span-3 bg-white p-6 rounded-2xl border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)] flex flex-col">
+          <div className="flex justify-between items-center mb-6 pb-3 border-b border-slate-100">
+            <h4 className="text-base font-bold text-slate-800 flex items-center gap-2">📝 การบ้านล่าสุด</h4>
+            <Link to="/notification" className="text-xs text-sky-600 font-semibold hover:underline no-underline">ดูทั้งหมด</Link>
+          </div>
+
+          <div className="space-y-3 flex-1">
+            {loading ? (
+              <p className="text-sm text-slate-400 text-center py-8 animate-pulse">กำลังโหลดข้อมูล...</p>
+            ) : latestNotifications.length > 0 ? (
+              latestNotifications.map((item, index) => (
+                <div key={index} className="p-4 rounded-xl bg-slate-50/80 border border-slate-100 flex justify-between items-center hover:bg-slate-50 transition-colors">
+                  <div className="truncate pr-4">
+                    <strong className="text-sm font-bold text-slate-700 block md:inline">{item.Subject}</strong>
+                    <span className="text-xs text-slate-400 md:ml-2">— {item.Details || "ไม่มีรายละเอียด"}</span>
+                  </div>
+                  <span className="text-[11px] px-2.5 py-1 bg-white border border-slate-200/60 text-slate-500 rounded-lg font-medium shadow-sm shrink-0">
+                    ชั้น: {item.Class_level}
+                  </span>
+                </div>
+              ))
+            ) : (
+              <p className="text-sm text-slate-400 text-center py-8">ไม่มีข้อมูลการบ้านล่าสุด</p>
+            )}
+          </div>
         </div>
 
-        {/* รายการเมนู: ใช้ hover effect อ่อนๆ และมีแถบสีเน้นหน้าปัจจุบัน */}
-        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-          <a href="#" className="flex items-center gap-3 px-4 py-3 bg-sky-600 text-white rounded-xl font-medium transition-all shadow-md shadow-sky-600/10">
-            <span>📊</span> หน้าหลัก
-          </a>
-          <a href="#" className="flex items-center gap-3 px-4 py-3 hover:bg-slate-800 hover:text-white rounded-xl font-medium transition-all">
-            <span>👤</span> ข้อมูลส่วนตัว
-          </a>
-          <a href="#" className="flex items-center gap-3 px-4 py-3 hover:bg-slate-800 hover:text-white rounded-xl font-medium transition-all">
-            <span>🧑‍🎓</span> ข้อมูลนักเรียน
-          </a>
-          <a href="#" className="flex items-center gap-3 px-4 py-3 hover:bg-slate-800 hover:text-white rounded-xl font-medium transition-all">
-            <span>📅</span> กิจกรรม
-          </a>
-          {/* ... เพิ่มเมนูอื่นๆ ตามโครงสร้างเดิม ... */}
-        </nav>
-      </aside>
-
-      {/* MAIN CONTENT AREA */}
-      <div className="flex-1 flex flex-col min-w-0">
-
-        {/* TOP NAVBAR: ปรับให้ใสและโมเดิร์นขึ้น */}
-        <header className="bg-white/80 backdrop-blur-md border-b border-slate-100 px-8 py-4 flex justify-between items-center sticky top-0 z-10">
-          <h2 className="text-xl font-bold text-slate-800">แดชบอร์ดภาพรวม</h2>
-          <div className="flex items-center gap-3 bg-slate-100 px-4 py-2 rounded-full border border-slate-200/50">
-            <span className="text-sm font-semibold text-slate-600">🔔 นางสาวธัญรัตน์ สิงห์มณี</span>
-          </div>
-        </header>
-
-        {/* DASHBOARD BODY */}
-        <main className="p-8 max-w-7xl w-full mx-auto space-y-8 flex-grow">
-
-          {/* TOP 3 CARDS: ปรับการ์ดสถิติให้ดูน่าสนใจขึ้น */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-
-            {/* การ์ดนักเรียน */}
-            <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)] flex items-center justify-between group hover:border-sky-200 transition-all">
-              <div>
-                <p className="text-sm font-medium text-slate-400 mb-1">นักเรียนทั้งหมด</p>
-                <h3 className="text-3xl font-black text-slate-800">3 <span className="text-sm font-normal text-slate-400">คน</span></h3>
-              </div>
-              <div className="w-12 h-12 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center text-xl font-bold">🧑‍🎓</div>
-            </div>
-
-            {/* การ์ดครูผู้สอน */}
-            <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)] flex items-center justify-between group hover:border-purple-200 transition-all">
-              <div>
-                <p className="text-sm font-medium text-slate-400 mb-1">ครูผู้สอน</p>
-                <h3 className="text-3xl font-black text-slate-800">6 <span className="text-sm font-normal text-slate-400">คน</span></h3>
-              </div>
-              <div className="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center text-xl font-bold">👩‍🏫</div>
-            </div>
-
-            {/* การ์ดกิจกรรม */}
-            <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)] flex items-center justify-between group hover:border-amber-200 transition-all">
-              <div>
-                <p className="text-sm font-medium text-slate-400 mb-1">กิจกรรมระบบ</p>
-                <h3 className="text-3xl font-black text-slate-800">4 <span className="text-sm font-normal text-slate-400">กิจกรรม</span></h3>
-              </div>
-              <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl font-bold">🎯</div>
-            </div>
-
+        {/* กล่องกิจกรรมล่าสุด (กว้าง 2 ส่วน) */}
+        <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)] flex flex-col">
+          <div className="flex justify-between items-center mb-6 pb-3 border-b border-slate-100">
+            <h4 className="text-base font-bold text-slate-800 flex items-center gap-2">🚩 กิจกรรมล่าสุด</h4>
           </div>
 
-          {/* LOWER TWO COLUMNS SECTION */}
-          <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
-
-            {/* การบ้านล่าสุด (ฝั่งซ้าย - กว้างหน่อยเป็น 3 ส่วนจาก 5) */}
-            <div className="lg:col-span-3 bg-white p-6 rounded-2xl border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)]">
-              <div className="flex justify-between items-center mb-6 pb-3 border-b border-slate-100">
-                <h4 className="text-base font-bold text-slate-800 flex items-center gap-2">📝 การบ้านล่าสุด</h4>
-                <span className="text-xs text-sky-600 font-medium cursor-pointer hover:underline">ดูทั้งหมด</span>
-              </div>
-
-              <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 flex justify-between items-center">
-                <div>
-                  <h5 className="text-sm font-bold text-slate-700">คณิตศาสตร์</h5>
-                  <p className="text-xs text-slate-400 mt-1">ไม่มีรายละเอียดเพิ่มเติม</p>
-                </div>
-                <span className="text-xs px-2.5 py-1 bg-slate-200/60 text-slate-600 rounded-md font-medium">
-                  ชั้น: อนุบาล 1 ห้อง 3 ภาษา
-                </span>
-              </div>
-            </div>
-
-            {/* กิจกรรมล่าสุด (ฝั่งขวา - กว้าง 2 ส่วนจาก 5) */}
-            <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)]">
-              <div className="flex justify-between items-center mb-6 pb-3 border-b border-slate-100">
-                <h4 className="text-base font-bold text-slate-800 flex items-center gap-2">🚩 กิจกรรมล่าสุด</h4>
-              </div>
-
-              {/* รายการกิจกรรม: จัดระเบียบให้มีเส้นคั่นและไอคอนระบุสถานที่ชัดขึ้น */}
-              <div className="divide-y divide-slate-100">
-                {[
-                  { name: "อบรมจริยธรรม", loc: "หอประชุมใหญ่" },
-                  { name: "ไหว้ครู 2569", loc: "หอประชุม 2" },
-                  { name: "ลอยกระทงประจำปี", loc: "ลานกิจกรรม" },
-                  { name: "กีฬาสีสัมพันธ์", loc: "สนามฟุตบอล" }
-                ].map((act, i) => (
-                  <div key={i} className="py-3 flex justify-between items-center first:pt-0 last:pb-0 hover:bg-slate-50/50 px-2 rounded-lg transition-colors">
-                    <span className="text-sm font-semibold text-slate-700">{act.name}</span>
-                    <span className="text-xs text-slate-400 flex items-center gap-1">
-                      📍 {act.loc}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
+          <div className="divide-y divide-slate-100 flex-1">
+            {loading ? (
+              <p className="text-sm text-slate-400 text-center py-8 animate-pulse">กำลังโหลดข้อมูล...</p>
+            ) : latestActivities.length > 0 ? (
+              latestActivities.map((item, index) => (
+                <Link to="/activity" key={index} className="py-3.5 flex justify-between items-center first:pt-0 last:pb-0 hover:bg-slate-50/60 px-2 rounded-xl transition-colors no-underline group">
+                  <span className="text-sm font-semibold text-slate-700 group-hover:text-sky-600 transition-colors">{item.Name_activity}</span>
+                  <span className="text-xs text-slate-400 flex items-center gap-1 font-medium bg-slate-50 group-hover:bg-white px-2 py-1 rounded-md border border-transparent group-hover:border-slate-100 transition-all shadow-sm">
+                    📍 {item.Location || "ไม่ระบุสถานที่"}
+                  </span>
+                </Link>
+              ))
+            ) : (
+              <p className="text-sm text-slate-400 text-center py-8">ไม่มีข้อมูลกิจกรรมล่าสุด</p>
+            )}
           </div>
+        </div>
 
-        </main>
       </div>
+
     </div>
   );
-}
+};
 
-export default Dashboard;
+export default Home;
