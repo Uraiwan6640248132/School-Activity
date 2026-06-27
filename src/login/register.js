@@ -1,56 +1,7 @@
 import React, { useState } from 'react';
-
-const styles = {
-    bodyContainer: {
-        fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
-        backgroundColor: '#f9f9f9',
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        height: '100vh',
-        margin: 0,
-    },
-    registerContainer: {
-        backgroundColor: '#ffffff',
-        border: '1px solid #ccc',
-        borderRadius: '15px',
-        padding: '30px',
-        width: '320px',
-        boxShadow: '0 4px 10px rgba(0,0,0,0.05)',
-    },
-    formGroup: {
-        marginBottom: '15px',
-    },
-    label: {
-        display: 'block',
-        marginBottom: '5px',
-        fontSize: '14px',
-        color: '#333',
-    },
-    input: {
-        width: '100%',
-        padding: '8px 10px',
-        border: '1px solid #ccc',
-        borderRadius: '6px',
-        boxSizing: 'border-box',
-        fontSize: '14px',
-        backgroundColor: '#fff',
-        boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.05)',
-    },
-    btnSubmit: {
-        width: '100%',
-        padding: '12px',
-        backgroundColor: '#ffffff',
-        border: '1px solid #ccc',
-        borderRadius: '6px',
-        fontSize: '18px',
-        cursor: 'pointer',
-        boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
-        marginTop: '10px',
-    },
-    alertDanger: { color: 'red', fontSize: '13px', textAlign: 'center', marginBottom: '15px' },
-    alertSuccess: { color: 'green', fontSize: '13px', textAlign: 'center', marginBottom: '15px' }
-};
+import { useNavigate } from 'react-router-dom';
+// 🛠️ ดึงไฟล์รูปภาพจากโฟลเดอร์ตามโครงสร้างเดิมของพี่ครับ
+import schoolImg from '../school-building.jpg.JPG'; 
 
 function Register() {
     const [formData, setFormData] = useState({
@@ -63,6 +14,8 @@ function Register() {
     });
 
     const [message, setMessage] = useState({ text: '', type: '' });
+    
+    const navigate = useNavigate(); // ประกาศตัวแปรเพื่อใช้งานระบบนำทาง
 
     const handleChange = (e) => {
         setFormData({
@@ -91,8 +44,14 @@ function Register() {
             const data = await response.json();
 
             if (response.ok) {
-                setMessage({ text: data.message, type: 'success' });
+                setMessage({ text: data.message || 'ลงทะเบียนสำเร็จ!', type: 'success' });
+                // ล้างฟอร์มเมื่อลงทะเบียนสำเร็จ
                 setFormData({ Name: '', Phone: '', UserName: '', Role: '', Password: '', ConfirmPassword: '' });
+                
+                // ลงทะเบียนสำเร็จ 2 วินาที เด้งกลับหน้าล็อกอินให้อัตโนมัติ
+                setTimeout(() => {
+                    navigate('/login');
+                }, 2000);
             } else {
                 setMessage({ text: data.message || 'เกิดข้อผิดพลาดในการลงทะเบียน', type: 'danger' });
             }
@@ -101,56 +60,248 @@ function Register() {
         }
     };
 
+    // สั่งย้ายหน้ากลับไปที่ Path "/login"
+    const handleBackToLogin = () => {
+        navigate('/login');
+    };
+
     return (
-        <div style={styles.bodyContainer}>
-            <div style={styles.registerContainer}>
-
-                {message.text && (
-                    <div style={message.type === 'danger' ? styles.alertDanger : styles.alertSuccess}>
-                        {message.text}
+        <div style={styles.container}>
+            <div style={styles.card}>
+                
+                {/* 🎨 ฝั่งซ้าย: พื้นหลังรูปตึกโรงเรียน + ข้อความระบบ */}
+                <div style={{...styles.leftPanel, backgroundImage: `url(${schoolImg})`}}>
+                    <div style={styles.logoArea}>
+                        <h2 style={styles.logoText}>ระบบบันทึกกิจกรรมนักเรียนระดับปฐมวัย</h2>
                     </div>
-                )}
+                </div>
 
-                <form onSubmit={handleSubmit}>
-                    <div style={styles.formGroup}>
-                        <label style={styles.label}>ชื่อ-นามสกุล</label>
-                        <input type="text" name="Name" value={formData.Name} onChange={handleChange} style={styles.input} required />
+                {/* 📝 ฝั่งขวา: ฟอร์มลงทะเบียน */}
+                <div style={styles.rightPanel}>
+                    <div style={styles.formScrollContainer}>
+                        <form onSubmit={handleSubmit} style={styles.formContent} autoComplete="off">
+                            <h2 style={styles.title}>ลงทะเบียนเข้าใช้งาน</h2>
+
+                            {/* แสดงข้อความแจ้งเตือนสถานะ */}
+                            {message.text && (
+                                <div style={message.type === 'danger' ? styles.alertDanger : styles.alertSuccess}>
+                                    {message.text}
+                                </div>
+                            )}
+
+                            {/* ชื่อ-นามสกุล */}
+                            <div style={styles.field}>
+                                <div style={styles.inputContainer}>
+                                    {/* 🛠️ เอาตระกูลสแปนไอคอนฝั่งซ้ายออกหมดแล้ว เพื่อให้เป็นช่องธรรมดา */}
+                                    <input type="text" name="Name" placeholder="ชื่อ-นามสกุล" value={formData.Name} onChange={handleChange} style={styles.input} required />
+                                </div>
+                            </div>
+
+                            {/* เบอร์โทร */}
+                            <div style={styles.field}>
+                                <div style={styles.inputContainer}>
+                                    <input type="text" name="Phone" placeholder="เบอร์โทรศัพท์" value={formData.Phone} onChange={handleChange} style={styles.input} required />
+                                </div>
+                            </div>
+
+                            {/* ชื่อผู้ใช้ */}
+                            <div style={styles.field}>
+                                <div style={styles.inputContainer}>
+                                    <input type="text" name="UserName" placeholder="ชื่อผู้ใช้ (Username)" value={formData.UserName} onChange={handleChange} style={styles.input} required />
+                                </div>
+                            </div>
+
+                            {/* สถานะ/ตำแหน่ง */}
+                            <div style={styles.field}>
+                                <div style={styles.inputContainer}>
+                                    <select name="Role" value={formData.Role} onChange={handleChange} style={styles.selectInput} required>
+                                        <option value="">เลือกสถานะ</option>
+                                        <option value="ครูผู้สอน">ครูผู้สอน</option>
+                                        <option value="ผู้ปกครอง">ผู้ปกครอง</option>
+                                        <option value="แอดมิน">แอดมิน</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            {/* รหัสผ่าน */}
+                            <div style={styles.field}>
+                                <div style={styles.inputContainer}>
+                                    <input type="password" name="Password" placeholder="รหัสผ่าน" value={formData.Password} onChange={handleChange} style={styles.input} required autoComplete="new-password" />
+                                </div>
+                            </div>
+
+                            {/* ยืนยันรหัสผ่าน */}
+                            <div style={styles.field}>
+                                <div style={styles.inputContainer}>
+                                    <input type="password" name="ConfirmPassword" placeholder="ยืนยันรหัสผ่าน" value={formData.ConfirmPassword} onChange={handleChange} style={styles.input} required />
+                                </div>
+                            </div>
+
+                            {/* ปุ่มลงทะเบียนใช้สีน้ำเงินพรีเมียม (ตรงกับปุ่มหน้า Login ของพี่) */}
+                            <button type="submit" style={styles.button}>
+                                ยืนยันการลงทะเบียน
+                            </button>
+
+                            {/* ปุ่มลิงก์กลับไปหน้า Login */}
+                            <div style={styles.loginLinkContainer}>
+                                <span style={styles.loginLinkText}>มีบัญชีผู้ใช้งานแล้ว?</span>
+                                <button type="button" onClick={handleBackToLogin} style={styles.loginLinkButton}>
+                                    เข้าสู่ระบบที่นี่
+                                </button>
+                            </div>
+                        </form>
                     </div>
+                </div>
 
-                    <div style={styles.formGroup}>
-                        <label style={styles.label}>เบอร์โทร</label>
-                        <input type="text" name="Phone" value={formData.Phone} onChange={handleChange} style={styles.input} required />
-                    </div>
-
-                    <div style={styles.formGroup}>
-                        <label style={styles.label}>ชื่อผู้ใช้</label>
-                        <input type="text" name="UserName" value={formData.UserName} onChange={handleChange} style={styles.input} required />
-                    </div>
-
-                    <div style={styles.formGroup}>
-                        <label style={styles.label}>สถานะ</label>
-                        <select name="Role" value={formData.Role} onChange={handleChange} style={styles.input} required>
-                            <option value="">-- เลือกสถานะ --</option>
-                            <option value="ครูผู้สอน">ครูผู้สอน</option>
-                            <option value="ผู้ปกครอง">ผู้ปกครอง</option>
-                        </select>
-                    </div>
-
-                    <div style={styles.formGroup}>
-                        <label style={styles.label}>รหัสผ่าน</label>
-                        <input type="password" name="Password" value={formData.Password} onChange={handleChange} style={styles.input} required />
-                    </div>
-
-                    <div style={styles.formGroup}>
-                        <label style={styles.label}>ยืนยันรหัสผ่าน</label>
-                        <input type="password" name="ConfirmPassword" value={formData.ConfirmPassword} onChange={handleChange} style={styles.input} required />
-                    </div>
-
-                    <button type="submit" style={styles.btnSubmit}>ลงทะเบียน</button>
-                </form>
             </div>
         </div>
     );
 }
+
+const styles = {
+    container: {
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        minHeight: "100vh",
+        width: "100vw",
+        backgroundColor: "#e0f2fe", 
+        fontFamily: "'Inter', 'Kanit', sans-serif",
+        position: "absolute",
+        top: 0,
+        left: 0,
+        zIndex: 9999
+    },
+    card: {
+        display: "grid",
+        gridTemplateColumns: "1fr 1fr", 
+        backgroundColor: "#ffffff",
+        borderRadius: "20px", 
+        width: "900px", 
+        height: "630px", 
+        boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.1)", 
+        overflow: "hidden", 
+    },
+    leftPanel: {
+        backgroundSize: "cover", 
+        backgroundPosition: "center", 
+        backgroundRepeat: "no-repeat",
+        padding: "40px",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "flex-end", 
+        alignItems: "center",    
+        position: "relative",
+        textAlign: "center"
+    },
+    logoArea: {
+        display: "flex",
+        flexDirection: "column",
+        gap: "8px",
+        zIndex: 2, 
+        marginBottom: "60px" 
+    },
+    logoText: {
+        margin: 0,
+        fontWeight: "700",
+        fontSize: "20px",
+        lineHeight: "1.4",
+        color: "#3c3e8d", 
+        textShadow: "0 1px 4px rgba(255, 255, 255, 0.6)" 
+    },
+    rightPanel: {
+        padding: "30px 50px",
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden"
+    },
+    formScrollContainer: {
+        width: "100%",
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center"
+    },
+    formContent: {
+        display: "flex",
+        flexDirection: "column",
+    },
+    title: {
+        fontSize: "26px", 
+        fontWeight: "700",
+        margin: "0 0 25px 0",
+        color: "#1e293b",
+        textAlign: "left"
+    },
+    field: {
+        display: "flex",
+        flexDirection: "column",
+        marginBottom: "14px"
+    },
+    inputContainer: {
+        display: "flex",
+        border: "1px solid #e2e8f0",
+        borderRadius: "8px",
+        overflow: "hidden",
+        backgroundColor: "#f8fafc" // สีพื้นหลังช่องกรอกแบบอ่อนๆ เหมือนหน้า Login
+    },
+    input: {
+        width: "100%",
+        padding: "12px 16px", // ขยับช่องว่างซ้ายขวาให้สมดุลพอไม่มีไอคอน
+        border: "none",
+        boxSizing: "border-box",
+        outline: "none",
+        fontSize: "14px",
+        color: "#334155",
+        backgroundColor: "transparent", 
+    },
+    selectInput: {
+        width: "100%",
+        padding: "12px 16px",
+        border: "none",
+        boxSizing: "border-box",
+        outline: "none",
+        fontSize: "14px",
+        color: "#334155",
+        backgroundColor: "transparent",
+        cursor: "pointer"
+    },
+    button: {
+        width: "100%",
+        padding: "12px",
+        borderRadius: "8px",
+        border: "none",
+        background: "#4f46e5", // ปรับเป็นสีน้ำเงินครามเฉดเดียวกับหน้าล็อกอินในรูปภาพจริงของพี่
+        color: "#ffffff",
+        fontWeight: "600",
+        fontSize: "16px",
+        cursor: "pointer",
+        marginTop: "10px",
+        boxShadow: "0 4px 6px -1px rgba(79, 70, 229, 0.3)",
+    },
+    loginLinkContainer: {
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        marginTop: "16px",
+        gap: "6px",
+        fontSize: "14px"
+    },
+    loginLinkText: {
+        color: "#64748b"
+    },
+    loginLinkButton: {
+        background: "none",
+        border: "none",
+        color: "#4f46e5", // สีโทนเดียวกับปุ่ม
+        fontWeight: "600",
+        cursor: "pointer",
+        padding: "0",
+        fontSize: "14px",
+        textDecoration: "underline",
+    },
+    alertDanger: { color: '#ef4444', backgroundColor: '#fef2f2', padding: '10px', borderRadius: '6px', border: '1px solid #fee2e2', fontSize: '13px', textAlign: 'center', marginBottom: '15px' },
+    alertSuccess: { color: '#10b981', backgroundColor: '#ecfdf5', padding: '10px', borderRadius: '6px', border: '1px solid #d1fae5', fontSize: '13px', textAlign: 'center', marginBottom: '15px' }
+};
 
 export default Register;

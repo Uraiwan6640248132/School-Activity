@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom'; // 🆕 นำเข้า useNavigate เพื่อใช้สั่งเปลี่ยนหน้าของ React Router
 // 🛠️ ปรับ Path ให้วิ่งย้อนกลับไปดึงไฟล์รูปภาพจากโฟลเดอร์ src ให้ถูกต้องตามโครงสร้างของพี่ครับ
 import schoolImg from '../school-building.jpg.JPG'; 
 
 function Login({ onLoginSuccess }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  
+  const navigate = useNavigate(); // 🆕 ประกาศตัวแปรเพื่อเรียกใช้งานการนำทาง (Navigation)
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -36,6 +39,11 @@ function Login({ onLoginSuccess }) {
     }
   };
 
+  // 🛠️ ปรับปรุงจุดนี้: เมื่อกดปุ่มจะวิ่งไปตาม Path "/register" ที่พี่ตั้งไว้ใน Routes ทันที
+  const handleGoToRegister = () => {
+    navigate('/register'); 
+  };
+
   return (
     <div style={styles.container}>
       <div style={styles.card}>
@@ -50,7 +58,6 @@ function Login({ onLoginSuccess }) {
         </div>
 
         {/* 📝 ฝั่งขวา: ฟอร์มเข้าสู่ระบบ */}
-        {/* 🌟 เพิ่ม autoComplete="off" ที่ฟอร์มเพื่อบล็อกการเดาข้อมูลทั้งหมด */}
         <div style={styles.rightPanel}>
           <form onSubmit={handleSubmit} style={styles.formContent} autoComplete="off">
             <h2 style={styles.title}>เข้าสู่ระบบ</h2>
@@ -64,7 +71,6 @@ function Login({ onLoginSuccess }) {
                 onChange={(e) => setUsername(e.target.value)}
                 style={styles.input}
                 required
-                /* 🌟 ป้องกัน Chrome แอบเอาชื่อเก่ามาใส่ */
                 autoComplete="one-time-code" 
               />
             </div>
@@ -78,7 +84,6 @@ function Login({ onLoginSuccess }) {
                 onChange={(e) => setPassword(e.target.value)}
                 style={styles.input}
                 required
-                /* 🌟 ป้องกันเบราว์เซอร์แอบจำรหัสผ่าน และช่วยเคลียร์ให้ช่องว่างเปล่า */
                 autoComplete="new-password" 
               />
             </div>
@@ -86,6 +91,19 @@ function Login({ onLoginSuccess }) {
             <button type="submit" style={styles.button}>
               เข้าสู่ระบบ
             </button>
+
+            {/* ปุ่มเชื่อมต่อไปหน้าลงทะเบียน */}
+            <div style={styles.registerContainer}>
+              <span style={styles.registerText}>ยังไม่มีบัญชีผู้ใช้?</span>
+              <button 
+                type="button" 
+                onClick={handleGoToRegister} 
+                style={styles.registerButton}
+              >
+                ลงทะเบียนเข้าใช้งาน
+              </button>
+            </div>
+
           </form>
         </div>
 
@@ -199,17 +217,35 @@ const styles = {
     padding: "14px",
     borderRadius: "8px",
     border: "none",
-    background: "#60a5fa", 
+    background: "#4f46e5", 
     color: "#ffffff",
     fontWeight: "600",
     fontSize: "16px",
     cursor: "pointer",
     marginTop: "10px",
-    boxShadow: "0 4px 6px -1px rgba(96, 165, 250, 0.3)",
+    boxShadow: "0 4px 6px -1px rgba(79, 70, 229, 0.3)",
+  },
+  registerContainer: {
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: "24px",
+    gap: "8px",
+    fontSize: "14px"
+  },
+  registerText: {
+    color: "#64748b"
+  },
+  registerButton: {
+    background: "none",
+    border: "none",
+    color: "#2563eb",
+    fontWeight: "600",
+    cursor: "pointer",
+    padding: "0",
+    fontSize: "14px",
+    textDecoration: "underline",
   }
 };
-
-
-
 
 export default Login;
