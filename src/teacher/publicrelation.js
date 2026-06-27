@@ -4,8 +4,14 @@ export default function PublicRelations() {
   const [prList, setPrList] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // 🌟 เก็บข้อมูลผู้ใช้งานทั้งหมดเพื่อใช้สำหรับปุ่มตัวเลือก (Dropdown Select) ตอนเพิ่ม/แก้ไขข้อมูล
+  // สำหรับเก็บรายชื่อผู้ใช้ทั้งหมดในระบบ เอาไว้ดึงชื่อจริงมาแสดงผล
   const [users, setUsers] = useState([]);
+
+  // State สำหรับเก็บข้อมูลผู้ล็อกอินปัจจุบัน
+  const [currentUser, setCurrentUser] = useState({
+    id: 1,
+    name: 'เจ้าหน้าที่ระบบ'
+  });
 
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -15,18 +21,26 @@ export default function PublicRelations() {
     Name: '',
     date: '',
     Location: '',
-    Detail: '', // 🌟 เพิ่มฟิลด์ Detail รองรับข้อมูลในฐานข้อมูล
+    Detail: '', 
     User_id: 1,
     Image: ''
   });
   const [selectedId, setSelectedId] = useState(null);
 
   const API_URL = 'http://localhost:3001/api/publicrelations';
+  const USERS_API_URL = 'http://localhost:3001/users'; 
 
-  // 🛠️ แก้ไขตัด /api ออกให้ตรงกับเส้นทางหลังบ้านจริง (แก้ไขปัญหา 404 เพื่อให้ดึงรายชื่อลง Select ได้ถูกต้อง)
-  const USERS_API_URL = 'http://localhost:3001/users';
+  // ฟังก์ชันจับคู่หาชื่อผู้ใช้งานด้วย User_id (ส่งกลับเฉพาะชื่อเพียวๆ)
+  const getUserNameById = useCallback((userId) => {
+    if (!userId) return "ไม่ระบุชื่อ";
+    const found = users.find(u => Number(u.User_id || u.id || u.user_id) === Number(userId));
+    if (found) {
+      return found.Name || found.name || found.Username || found.username;
+    }
+    return `ผู้ใช้งานรหัส ${userId}`;
+  }, [users]);
 
-  // ฟังก์ชันดึงรายชื่อผู้ใช้งานทั้งหมดสำหรับใช้งานในฟอร์มเลือก (Select)
+  // ดึงรายชื่อผู้ใช้งานทั้งหมดมาเก็บในระบบหน้าบ้าน
   const fetchUsersData = async () => {
     try {
       const res = await fetch(USERS_API_URL);
@@ -37,6 +51,24 @@ export default function PublicRelations() {
     } catch (err) {
       console.error("Error fetching users list:", err);
     }
+  };
+
+  const checkAuthUser = () => {
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      try {
+        const userData = JSON.parse(storedUser);
+        const activeId = Number(userData.User_id || userData.id || userData.user_id || 1);
+        const activeName = userData.Name || userData.name || userData.Username || 'ผู้ใช้งานระบบ';
+        
+        const userObj = { id: activeId, name: activeName };
+        setCurrentUser(userObj);
+        return userObj;
+      } catch (error) {
+        console.error("Error parsing user storage:", error);
+      }
+    }
+    return { id: 1, name: 'เจ้าหน้าที่ระบบ' };
   };
 
   const fetchPRData = async () => {
@@ -50,13 +82,14 @@ export default function PublicRelations() {
     } catch (err) {
       console.error("Fetch error:", err);
     } finally {
-      loading && setLoading(false);
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchUsersData();
-    fetchPRData();
+    fetchUsersData(); 
+    checkAuthUser();  
+    fetchPRData();     
   }, []);
 
   const handleImageChange = (e) => {
@@ -72,11 +105,14 @@ export default function PublicRelations() {
 
   const handleAddSubmit = async (e) => {
     e.preventDefault();
+    const activeUser = checkAuthUser();
+    const dataToSend = { ...formData, User_id: activeUser.id };
+
     try {
       const res = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(dataToSend)
       });
       if (res.ok) {
         alert("เพิ่มข่าวประชาสัมพันธ์สำเร็จ!");
@@ -122,12 +158,13 @@ export default function PublicRelations() {
   };
 
   const clearForm = () => {
+    const activeUser = checkAuthUser();
     setFormData({
       Name: '',
       date: '',
       Location: '',
-      Detail: '', // 🌟 ล้างค่าฝั่ง Detail
-      User_id: users.length > 0 ? (users[0].User_id || 1) : 1,
+      Detail: '', 
+      User_id: activeUser.id, 
       Image: ''
     });
     setSelectedId(null);
@@ -139,8 +176,8 @@ export default function PublicRelations() {
       Name: item.Name_activity || '',
       date: item.Date ? item.Date.substring(0, 10) : '',
       Location: item.Location || '',
-      Detail: item.Detail || '', // 🌟 ดึงค่า Detail เดิมมาใส่ในฟอร์มแก้ไข
-      User_id: item.User_id || 1,
+      Detail: item.Detail || '', 
+      User_id: item.User_id || currentUser.id,
       Image: item.Image || ''
     });
     setIsEditOpen(true);
@@ -176,12 +213,11 @@ export default function PublicRelations() {
                 <strong>ชื่อเรื่อง:</strong> {item.Name_activity} <br />
                 <strong>วัน/เดือน/ปี:</strong> {item.Date ? item.Date.substring(0, 10) : '-'} <br />
                 <strong>สถานที่:</strong> {item.Location} <br />
-                {/* 🌟 แสดงรายละเอียดเพิ่มเติมใน Card หน้ารายการ */}
                 <strong>รายละเอียด:</strong> {item.Detail || '-'} <br />
 
                 <strong>ประชาสัมพันธ์โดย:</strong>{' '}
                 <span style={{ color: '#2563eb', fontWeight: '500' }}>
-                  {item.CreatedBy_Name || (users.find(u => Number(u.User_id) === Number(item.User_id))?.Name) || `ผู้ใช้งานรหัส: ${item.User_id}`}
+                  {item.CreatedBy_Name || getUserNameById(item.User_id)}
                 </span>
               </div>
             </div>
@@ -223,26 +259,14 @@ export default function PublicRelations() {
               <label style={styles.label}>สถานที่</label>
               <input type="text" style={styles.input} value={formData.Location} onChange={(e) => setFormData({ ...formData, Location: e.target.value })} required />
 
-              {/* 🌟 เพิ่มช่องกรอก รายละเอียด (เพิ่มข่าว) */}
               <label style={styles.label}>รายละเอียด</label>
               <textarea style={styles.textarea} value={formData.Detail} onChange={(e) => setFormData({ ...formData, Detail: e.target.value })} rows={3} />
 
               <label style={styles.label}>ประชาสัมพันธ์โดย</label>
-              <select
-                style={styles.input}
-                value={formData.User_id}
-                onChange={(e) => setFormData({ ...formData, User_id: Number(e.target.value) })}
-              >
-                {users.map((u) => {
-                  const id = u.User_id || u.id || u.user_id;
-                  const name = u.Name || u.name || u.Username || u.username;
-                  return (
-                    <option key={id} value={id}>
-                      รหัส {id} - {name}
-                    </option>
-                  );
-                })}
-              </select>
+              {/* 🌟 แสดงเฉพาะชื่อผู้ใช้ปัจจุบันที่ Login เท่านั้น */}
+              <div style={styles.loginUserBox}>
+                {currentUser.name}
+              </div>
 
               <button type="submit" style={styles.btnSubmit}>บันทึก</button>
             </form>
@@ -279,26 +303,14 @@ export default function PublicRelations() {
               <label style={styles.label}>สถานที่</label>
               <input type="text" style={styles.input} value={formData.Location} onChange={(e) => setFormData({ ...formData, Location: e.target.value })} required />
 
-              {/* 🌟 เพิ่มช่องกรอก รายละเอียด (แก้ไขข่าว) */}
               <label style={styles.label}>รายละเอียด</label>
               <textarea style={styles.textarea} value={formData.Detail} onChange={(e) => setFormData({ ...formData, Detail: e.target.value })} rows={3} />
 
               <label style={styles.label}>ประชาสัมพันธ์โดย</label>
-              <select
-                style={styles.input}
-                value={formData.User_id}
-                onChange={(e) => setFormData({ ...formData, User_id: Number(e.target.value) })}
-              >
-                {users.map((u) => {
-                  const id = u.User_id || u.id || u.user_id;
-                  const name = u.Name || u.name || u.Username || u.username;
-                  return (
-                    <option key={id} value={id}>
-                      รหัส {id} - {name}
-                    </option>
-                  );
-                })}
-              </select>
+              {/* 🌟 ปรับปรุงจุดนี้: แสดงเฉพาะชื่อจริงของผู้สร้างข่าวเท่านั้น ไม่มีข้อความและรหัสอื่นๆ นำหน้า */}
+              <div style={styles.loginUserBox}>
+                {getUserNameById(formData.User_id)}
+              </div>
 
               <button type="submit" style={styles.btnSubmit}>บันทึก</button>
             </form>
@@ -344,9 +356,19 @@ const styles = {
   uploadBox: { width: '70px', height: '70px', border: '1px dashed #ccc', margin: '0 auto 15px auto', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' },
   label: { display: 'block', fontSize: '13px', color: '#555', marginBottom: '4px', marginTop: '10px' },
   input: { width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '4px', boxSizing: 'border-box' },
-  // 🌟 เพิ่มสไตล์สำหรับกล่องรายละเอียด (Textarea)
   textarea: { width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '4px', boxSizing: 'border-box', fontFamily: 'sans-serif', resize: 'vertical' },
   btnSubmit: { width: '100%', padding: '10px', marginTop: '20px', backgroundColor: '#fff', border: '1px solid #ccc', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' },
   btnCancel: { padding: '8px 25px', backgroundColor: '#fff', border: '1px solid #ccc', borderRadius: '4px', cursor: 'pointer' },
-  btnConfirmDelete: { padding: '8px 25px', backgroundColor: '#d9534f', color: '#fff', border: '1px solid #d43f3a', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }
+  btnConfirmDelete: { padding: '8px 25px', backgroundColor: '#d9534f', color: '#fff', border: '1px solid #d43f3a', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' },
+  loginUserBox: { 
+    width: '100%', 
+    padding: '10px', 
+    backgroundColor: '#f3f4f6', 
+    border: '1px solid #e5e7eb', 
+    borderRadius: '4px', 
+    boxSizing: 'border-box',
+    fontSize: '14px',
+    color: '#1f2937',
+    fontWeight: '500'
+  }
 };

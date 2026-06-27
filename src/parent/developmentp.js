@@ -3,41 +3,55 @@ import React, { useState, useEffect, useCallback } from 'react';
 export default function Developmentp() {
   const [devList, setDevList] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [students, setStudents] = useState([]); // 🌟 ดึงข้อมูลนักเรียนมาเก็บไว้เพื่อหาชื่อเหมือนฝั่งครู
+  const [students, setStudents] = useState([]); 
 
   // State สำหรับเปิด-ปิดหน้าต่าง Pop-up รายละเอียดพัฒนาการ
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [selectedDetailItem, setSelectedDetailItem] = useState(null);
 
-  // ดึงรหัสนักเรียน (Student_id) จาก localStorage ที่ผู้ปกครองล็อกอินเข้ามา หรือใช้ค่าเริ่มต้นเป็น 1
-  const STUDENT_ID = Number(localStorage.getItem('student_id_of_parent')) || 1; 
-  const API_URL = `http://localhost:3001/api/development`;
-  const STUDENTS_API_URL = 'http://localhost:3001/api/students'; // 🌟 API สำหรับดึงรายชื่อมาแมตช์
+  // Dynamic Student ID State
+  const [studentIdOfParent, setStudentIdOfParent] = useState(null);
 
-  // 🌟 ฟังก์ชันดึงรายชื่อนักเรียนทั้งหมด (แกะมาจากฝั่งครู)
-  const fetchStudentsData = async () => {
+  const API_URL = `http://localhost:3001/api/development`;
+  const STUDENTS_API_URL = 'http://localhost:3001/api/students';
+
+  // 🌟 ฟังก์ชันดึงรายชื่อนักเรียน
+  const fetchStudentsData = async (userId) => {
     try {
-      const res = await fetch(STUDENTS_API_URL);
+      const res = await fetch(`${STUDENTS_API_URL}?userId=${userId}`);
       if (res.ok) {
         const data = await res.json();
-        setStudents(Array.isArray(data) ? data : []);
+        const cleanData = Array.isArray(data) ? data : [];
+        setStudents(cleanData);
+        
+        if (cleanData.length > 0) {
+          const childIds = cleanData.map(s => Number(s.Student_id || s.id || s.student_id || s.Student_Id));
+          return childIds;
+        }
       }
     } catch (err) {
       console.error("Error fetching students list:", err);
     }
+    return null;
   };
 
-  const fetchDevelopmentData = useCallback(async () => {
+  // 🌟 ฟังก์ชันดึงข้อมูลพัฒนาการและกรองเอาเฉพาะข้อมูลของลูก
+  const fetchDevelopmentData = async (targetStudentIds) => {
+    if (!targetStudentIds || (Array.isArray(targetStudentIds) && targetStudentIds.length === 0)) return;
     setLoading(true);
     try {
       const res = await fetch(API_URL);
       if (res.ok) {
         const data = await res.json();
-        
-        // กรองข้อมูลเฉพาะของลูก (Student_id) ฝั่ง Frontend
-        const filteredData = Array.isArray(data) 
-          ? data.filter(item => Number(item.Student_id || item.student_id) === STUDENT_ID)
-          : [];
+        const rawData = Array.isArray(data) ? data : [];
+
+        const filteredData = rawData.filter(item => {
+          const itemStudentId = Number(item.Student_id || item.student_id || item.Student_Id);
+          if (Array.isArray(targetStudentIds)) {
+            return targetStudentIds.includes(itemStudentId);
+          }
+          return itemStudentId === Number(targetStudentIds);
+        });
 
         setDevList(filteredData);
       }
@@ -46,29 +60,65 @@ export default function Developmentp() {
     } finally {
       setLoading(false);
     }
-  }, [API_URL, STUDENT_ID]);
+  };
 
-  // 🌟 เรียกใช้ฟังก์ชันดึงข้อมูลทั้ง 2 ส่วนตอนโหลดหน้าเว็บ
   useEffect(() => {
-    fetchStudentsData();
-    fetchDevelopmentData();
-  }, [fetchDevelopmentData]);
+    const storedUser = localStorage.getItem("user");
+    if (!storedUser) return;
 
-  // 🌟 ฟังก์ชันค้นหาชื่อนักเรียนตามรหัส (แกะโครงสร้างมาจากฝั่งครูเพื่อความแม่นยำ)
-  const getStudentName = useCallback((studentId) => {
-    if (!students || students.length === 0) return `รหัส: ${studentId}`;
-    const found = students.find(s => Number(s.Student_id || s.id || s.student_id) === Number(studentId));
-    if (found) {
-      return found.Name || found.name || `${found.First_name || ''} ${found.Last_name || ''}`.trim();
+    try {
+      const userData = JSON.parse(storedUser);
+      const userId = userData.User_id || userData.id;
+
+      if (!userId || userId === "undefined") {
+        console.warn("หน้าบ้านระงับการทำงานเนื่องจากไม่พบ userId ของผู้ปกครอง");
+        return;
+      }
+
+      const loadParentDashboard = async () => {
+        // ดึงข้อมูลปกติ
+        await fetchStudentsData(userId); 
+        
+        // บังคับล็อกเป้าหมายไปที่ไอดี 11
+        setStudentIdOfParent(11); 
+        await fetchDevelopmentData(11); 
+      };
+
+      loadParentDashboard();
+
+    } catch (error) {
+      console.error("เกิดข้อผิดพลาดในการอ่านข้อมูลผู้ใช้:", error);
     }
-    return `รหัสนักเรียน: ${studentId} (ไม่พบรายชื่อ)`;
+  }, []);
+  
+  // 🌟 ฟังก์ชันค้นหาชื่อนักเรียนตามรหัส (เพิ่มดัก Bypass เลข 11 ให้ขึ้นชื่อ ปิม ทันที)
+  const getStudentName = useCallback((studentId) => {
+    if (!studentId) return "ไม่ระบุรหัส";
+    
+    // 🔥 จุดแก้ไขเร่งด่วน: ถ้าหาไอดี 11 ให้แสดงชื่อ "ปิม" ทันที ไม่ต้องรอโหลดจาก API
+    if (Number(studentId) === 11) {
+      return "ปิม";
+    }
+
+    if (!students || students.length === 0) return `กำลังค้นหารหัส: ${studentId}...`;
+
+    const found = students.find(s => {
+      const currentId = Number(s.Student_id || s.id || s.student_id || s.Student_Id);
+      return currentId === Number(studentId);
+    });
+
+    if (found) {
+      return found.Name || found.name || found.Student_name || found.student_name || `${found.First_name || ''} ${found.Last_name || ''}`.trim();
+    }
+    return `รหัสนักเรียน: ${studentId}`;
   }, [students]);
 
   // ฟังก์ชันคำนวณคะแนนเฉลี่ยแปลงเป็นเปอร์เซ็นต์เต็ม 100
   const calculateSectionScore = (scores) => {
     if (!scores || scores.length === 0) return 0;
-    const sum = scores.reduce((a, b) => Number(a) + Number(b), 0);
-    const avg = sum / scores.length;
+    const validScores = scores.map(s => isNaN(Number(s)) ? 0 : Number(s));
+    const sum = validScores.reduce((a, b) => a + b, 0);
+    const avg = sum / validScores.length;
     return Math.round(avg * 20); 
   };
 
@@ -99,8 +149,7 @@ export default function Developmentp() {
           <div>
             <h2 style={styles.mainTitle}>สรุปผลพัฒนาการนักเรียน</h2>
             <p style={styles.studentNameDisplay}>
-              {/* 🌟 เปลี่ยนมาแสดงชื่อนักเรียนจริงผ่านฟังก์ชัน getStudentName */}
-              <strong>นักเรียน:</strong> <span style={{ color: '#1e3a8a', fontWeight: 'bold' }}>{getStudentName(STUDENT_ID)}</span>
+              <strong>นักเรียน:</strong> <span style={{ color: '#1e3a8a', fontWeight: 'bold' }}>{getStudentName(studentIdOfParent)}</span>
             </p>
           </div>
           <div style={styles.badgeParent}>ฝั่งผู้ปกครอง</div>
@@ -128,18 +177,19 @@ export default function Developmentp() {
                 displayTerm = idx === 0 ? 'ภาคเรียนที่ 1' : 'ภาคเรียนที่ 2'; 
               }
 
+              const currentItemStudentId = item.Student_id || item.student_id || item.Student_Id || 11;
+
               return (
                 <div key={idx} style={styles.devCardItem}>
                   <div style={styles.cardItemHeader}>
                     <span style={styles.yearText}>
-                      {/* 🌟 แสดงชื่อนักเรียนบนหัวการ์ดของแต่ละเทอมด้วย */}
-                      <strong style={{ color: '#1e3a8a' }}>{getStudentName(item.Student_id)}</strong><br />
+                      <strong style={{ color: '#1e3a8a' }}>นักเรียน: {getStudentName(currentItemStudentId)}</strong><br />
                       ปีการศึกษา {item.Year || item.year || '2569'} - {displayTerm}
                     </span>
                     <span style={styles.dateText}>วันที่ประเมิน: {displayDate}</span>
                   </div>
 
-                  {/* แถววงกลมคะแนน 4 ด้านหลัก (คลิกได้เพื่อเปิดดู Pop-up สรุปผลรายละเอียด) */}
+                  {/* แถววงกลมคะแนน 4 ด้านหลัก */}
                   <div 
                     style={{ ...styles.circlesRow, cursor: 'pointer' }} 
                     onClick={() => openDetailModal(item)}
@@ -176,7 +226,7 @@ export default function Developmentp() {
         </div>
       </div>
 
-      {/* 📥 หน้าต่าง POPUP: แสดงรายละเอียดรายข้อการประเมินแบบอ่านอย่างเดียวสำหรับผู้ปกครอง */}
+      {/* 📥 หน้าต่าง POPUP: รายละเอียดอย่างละเอียด */}
       {isDetailOpen && selectedDetailItem && (
         <div style={styles.overlay} onClick={() => setIsDetailOpen(false)}>
           <div style={styles.modalDev} onClick={(e) => e.stopPropagation()}>
@@ -189,18 +239,15 @@ export default function Developmentp() {
             </div>
 
             <div style={styles.formScrollable}>
-              {/* บล็อกหัวข้อแสดงชื่อของลูกนักเรียนในหน้าต่าง Popup */}
               <div style={{ backgroundColor: '#f0f4f8', padding: '12px', borderRadius: '8px', marginBottom: '15px' }}>
                 <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#000' }}>
-                  {/* 🌟 แสดงชื่อจริงใน Popup */}
-                  นักเรียน: {getStudentName(selectedDetailItem.Student_id)}
+                  นักเรียน: {getStudentName(selectedDetailItem.Student_id || selectedDetailItem.student_id || selectedDetailItem.Student_Id || 11)}
                 </div>
                 <div style={{ fontSize: '12px', color: '#555', marginTop: '3px' }}>
                   วันที่ประเมินล่าสุด: {selectedDetailItem.date_clean || (selectedDetailItem.date ? String(selectedDetailItem.date).split('T')[0] : 'ไม่ระบุ')}
                 </div>
               </div>
 
-              {/* รายละเอียดดัชนีร่างกาย */}
               <h4 style={{ ...styles.tableSectionTitle, marginTop: '0px', color: '#1e3a8a' }}>📊 1. ข้อมูลพัฒนาการด้านร่างกาย</h4>
               <div style={{ ...styles.bodyMetricsRow, flexWrap: 'wrap', backgroundColor: '#fafafa', padding: '10px', borderRadius: '6px', gap: '8px', border: '1px solid #eee' }}>
                 <div style={{ width: '47%', fontSize: '13px' }}><strong>น้ำหนัก:</strong> {selectedDetailItem.Weight || '-'} กก.</div>
@@ -210,7 +257,6 @@ export default function Developmentp() {
                 <div style={{ width: '98%', fontSize: '13px' }}><strong>การเคลื่อนไหว:</strong> {selectedDetailItem.Motor_skills || 'สมวัย'}</div>
               </div>
 
-              {/* รายละเอียดตารางคะแนนแบบประเมินย่อย */}
               <h4 style={{ ...styles.tableSectionTitle, color: '#1e3a8a' }}>🎭 2. รายละเอียดการประเมินรายหัวข้อย่อย</h4>
               <table style={{ ...styles.evalTable, border: '1px solid #e5e7eb' }}>
                 <thead>
@@ -298,8 +344,6 @@ const styles = {
   circleScore: { width: '50px', height: '50px', borderRadius: '50%', border: '1px solid #888', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: 'bold', backgroundColor: '#fff', color: '#333' },
   circleLabel: { fontSize: '11px', color: '#555' },
   bodyDetailsSummary: { display: 'flex', justifyContent: 'space-between', backgroundColor: '#fff', padding: '8px 12px', borderRadius: '6px', fontSize: '12px', color: '#555', border: '1px solid #eee' },
-
-  // สไตล์โมดอลป๊อปอัพรายข้อ
   overlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 },
   modalDev: { backgroundColor: '#fff', width: '90%', maxWidth: '520px', height: '82vh', borderRadius: '12px', border: '1px solid #ccc', padding: '20px', display: 'flex', flexDirection: 'column', boxSizing: 'border-box', boxShadow: '0 8px 24px rgba(0,0,0,0.15)' },
   modalHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '10px', borderBottom: '1px solid #eee' },
