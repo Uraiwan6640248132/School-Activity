@@ -284,9 +284,9 @@ export default function Development() {
                 <div key={idx} style={styles.devCardItem}>
                   <div style={styles.cardItemHeader}>
                     <span style={styles.yearText}>
-                  {/* สลับมาใช้ item.Student_name ที่ดึงมาจาก SQL เป็นหลัก ถ้าไม่มีค่อย Fallback ไปใช้ฟังก์ชันเดิม */}
-                  <strong style={{ color: '#1e3a8a' }}>{item.Student_name || getStudentName(item.Student_id)}</strong><br />
-                    ปีการศึกษา {item.Year || item.year || '2569'} - {displayTerm}<br />
+                      {/* สลับมาใช้ item.Student_name ที่ดึงมาจาก SQL เป็นหลัก ถ้าไม่มีค่อย Fallback ไปใช้ฟังก์ชันเดิม */}
+                      <strong style={{ color: '#1e3a8a' }}>{item.Student_name || getStudentName(item.Student_id)}</strong><br />
+                      ปีการศึกษา {item.Year || item.year || '2569'} - {displayTerm}<br />
                       <span style={{ fontSize: '12px', color: '#666', fontWeight: 'normal' }}>วันที่ประเมิน: {displayDate}</span>
                     </span>
                     <div style={styles.actionGroup}>
@@ -312,6 +312,13 @@ export default function Development() {
                       <div style={styles.circleScore}>{isNaN(scoreSocial) ? 0 : scoreSocial}</div>
                       <span style={styles.circleLabel}>ด้านสังคม</span>
                     </div>
+                  </div>
+
+                  {/* 🆕 จุดที่แก้ไข: เพิ่มกล่องข้อความสรุปข้อมูลส่วนสูง น้ำหนัก ฟันของเด็ก ให้ฝั่งคุณครูเห็นด้วย */}
+                  <div style={styles.bodyDetailsSummary}>
+                    <span>⚖️ น้ำหนัก: <strong>{item.Weight || '-'}</strong> กก.</span>
+                    <span>📏 ส่วนสูง: <strong>{item.Height || '-'}</strong> ซม.</span>
+                    <span>🦷 สุขภาพฟัน: <strong style={{color: '#2e7d32'}}>{item.Dental_health || 'ปกติ'}</strong></span>
                   </div>
                 </div>
               );
@@ -599,6 +606,9 @@ const styles = {
   circleUnit: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' },
   circleScore: { width: '50px', height: '50px', borderRadius: '50%', border: '1px solid #888', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: 'bold', backgroundColor: '#fff' },
   circleLabel: { fontSize: '11px', color: '#555' },
+  
+  // 🌟 เพิ่มสไตล์ bodyDetailsSummary ของฝั่งครูเพื่อจัดรูปแบบข้อมูลร่างกายที่เพิ่มเข้ามาใหม่
+  bodyDetailsSummary: { display: 'flex', justifyContent: 'space-between', backgroundColor: '#fff', padding: '8px 12px', borderRadius: '6px', fontSize: '12px', color: '#555', border: '1px solid #eee', marginTop: '14px' },
 
   overlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 },
   modalDev: { backgroundColor: '#fff', width: '90%', maxWidth: '520px', height: '85vh', borderRadius: '12px', border: '1px solid #999', padding: '20px', display: 'flex', flexDirection: 'column', boxSizing: 'border-box', boxShadow: '0 8px 24px rgba(0,0,0,0.15)' },
