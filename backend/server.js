@@ -526,18 +526,17 @@ app.post('/api/register', (req, res) => {
       return res.status(400).json({ message: 'ชื่อผู้ใช้นี้มีอยู่ในระบบแล้ว' });
     }
 
-    // ✅ แก้ไขโครงสร้างเรียงตามตารางจริง: Name, Phone, Password, UserName, Role
+    // ✅ ปรับ SQL ให้ตรงกับโครงสร้างคอลัมน์ใน phpMyAdmin ของพี่เป๊ะๆ
+    // ลำดับคือ: Name (คนที่ 1), Phone (คนที่ 2), Password (คนที่ 3), UserName (คนที่ 4), Role (คนที่ 5)
     const insertQuery = 'INSERT INTO users (Name, Phone, Password, UserName, Role) VALUES (?, ?, ?, ?, ?)';
 
-    // ✅ เรียงตัวแปรจับคู่กับเครื่องหมาย ? ให้ถูกต้องตรงกันเป๊ะๆ
+    // ✅ เรียงตัวแปรในวงเล็บ [ ] เพื่อเข้าไปแทนเครื่องหมาย ? ตามลำดับคอลัมน์ด้านบนให้ถูกต้อง
     db.query(insertQuery, [Name, Phone, Password, UserName, Role], (err, result) => {
       if (err) return res.status(500).json({ error: err.message });
       return res.status(200).json({ message: 'ลงทะเบียนเรียบร้อยแล้ว!' });
     });
   });
 });
-
-
 
 
 app.listen(3001, () => { console.log("🚀 Server running on port 3001"); });
