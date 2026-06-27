@@ -514,12 +514,10 @@ app.post("/login", (req, res) => {
 app.post('/api/register', (req, res) => {
   const { Name, Phone, UserName, Role, Password, ConfirmPassword } = req.body;
 
-  // ตรวจสอบรหัสผ่านเบื้องต้น
   if (Password !== ConfirmPassword) {
     return res.status(400).json({ message: 'รหัสผ่านและยืนยันรหัสผ่านไม่ตรงกัน!' });
   }
 
-  // ตรวจสอบ Username ซ้ำในฐานข้อมูล
   const checkUserQuery = 'SELECT UserName FROM users WHERE UserName = ?';
   db.query(checkUserQuery, [UserName], (err, results) => {
     if (err) return res.status(500).json({ error: err.message });
@@ -528,11 +526,12 @@ app.post('/api/register', (req, res) => {
       return res.status(400).json({ message: 'ชื่อผู้ใช้นี้มีอยู่ในระบบแล้ว' });
     }
 
-    // คำสั่ง SQL เพิ่มข้อมูลลงตาราง (อิงตามชื่อคอลัมน์จากรูปที่ 1)
+    // ✅ แก้ไขโครงสร้างเรียงตามตารางจริง: Name, Phone, Password, UserName, Role
     const insertQuery = 'INSERT INTO users (Name, Phone, Password, UserName, Role) VALUES (?, ?, ?, ?, ?)';
-    db.query(insertQuery, [Name, Phone, Password, Role, UserName], (err, result) => {
-      if (err) return res.status(500).json({ error: err.message });
 
+    // ✅ เรียงตัวแปรจับคู่กับเครื่องหมาย ? ให้ถูกต้องตรงกันเป๊ะๆ
+    db.query(insertQuery, [Name, Phone, Password, UserName, Role], (err, result) => {
+      if (err) return res.status(500).json({ error: err.message });
       return res.status(200).json({ message: 'ลงทะเบียนเรียบร้อยแล้ว!' });
     });
   });

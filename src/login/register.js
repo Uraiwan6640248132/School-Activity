@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 
-// สไตล์ CSS ปรับแต่งตามรูปแบบในรูปภาพที่ 2
 const styles = {
     bodyContainer: {
         fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
@@ -54,7 +53,6 @@ const styles = {
 };
 
 function Register() {
-    // สร้าง state สำหรับเก็บข้อมูลฟอร์ม
     const [formData, setFormData] = useState({
         Name: '',
         Phone: '',
@@ -66,7 +64,6 @@ function Register() {
 
     const [message, setMessage] = useState({ text: '', type: '' });
 
-    // ฟังก์ชันดักจับเมื่อมีการพิมพ์ข้อมูลในฟอร์ม
     const handleChange = (e) => {
         setFormData({
             ...formData,
@@ -74,7 +71,6 @@ function Register() {
         });
     };
 
-    // ฟังก์ชันส่งข้อมูลไปยัง API เมื่อกดปุ่มลงทะเบียน
     const handleSubmit = async (e) => {
         e.preventDefault();
         setMessage({ text: '', type: '' });
@@ -85,7 +81,6 @@ function Register() {
         }
 
         try {
-            // เปลี่ยนจากเดิมที่เป็น http://localhost:5000/...
             const response = await fetch('http://localhost:3001/api/register', {
                 method: 'POST',
                 headers: {
@@ -97,7 +92,6 @@ function Register() {
 
             if (response.ok) {
                 setMessage({ text: data.message, type: 'success' });
-                // ล้างฟอร์มเมื่อลงทะเบียนสำเร็จ
                 setFormData({ Name: '', Phone: '', UserName: '', Role: '', Password: '', ConfirmPassword: '' });
             } else {
                 setMessage({ text: data.message || 'เกิดข้อผิดพลาดในการลงทะเบียน', type: 'danger' });
@@ -111,7 +105,6 @@ function Register() {
         <div style={styles.bodyContainer}>
             <div style={styles.registerContainer}>
 
-                {/* แสดงข้อความแจ้งเตือนสถานะ */}
                 {message.text && (
                     <div style={message.type === 'danger' ? styles.alertDanger : styles.alertSuccess}>
                         {message.text}
@@ -140,7 +133,6 @@ function Register() {
                             <option value="">-- เลือกสถานะ --</option>
                             <option value="ครูผู้สอน">ครูผู้สอน</option>
                             <option value="ผู้ปกครอง">ผู้ปกครอง</option>
-                            <option value="แอดมิน">แอดมิน</option>
                         </select>
                     </div>
 
