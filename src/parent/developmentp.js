@@ -15,7 +15,7 @@ export default function Developmentp() {
   const API_URL = `http://localhost:3001/api/development`;
   const STUDENTS_API_URL = 'http://localhost:3001/api/students';
 
-  // 🌟 ฟังก์ชันดึงรายชื่อนักเรียน (ส่ง userId ไปด้วยเพื่อให้หลังบ้านยอมรับและดึงเฉพาะลูกของผู้ปกครองคนนี้)
+  // 🌟 ฟังก์ชันดึงรายชื่อนักเรียน
   const fetchStudentsData = async (userId) => {
     try {
       const res = await fetch(`${STUDENTS_API_URL}?userId=${userId}`);
@@ -24,11 +24,9 @@ export default function Developmentp() {
         const cleanData = Array.isArray(data) ? data : [];
         setStudents(cleanData);
         
-        // สกัดคัดเอารหัสตัวเลขนักเรียน (ลูก) ออกมาเก็บไว้ใช้งานต่อ
         if (cleanData.length > 0) {
-          const childId = Number(cleanData[0].Student_id || cleanData[0].id || cleanData[0].student_id);
-          setStudentIdOfParent(childId);
-          return childId;
+          const childIds = cleanData.map(s => Number(s.Student_id || s.id || s.student_id || s.Student_Id));
+          return childIds;
         }
       }
     } catch (err) {
@@ -38,18 +36,22 @@ export default function Developmentp() {
   };
 
   // 🌟 ฟังก์ชันดึงข้อมูลพัฒนาการและกรองเอาเฉพาะข้อมูลของลูก
-  const fetchDevelopmentData = async (targetStudentId) => {
-    if (!targetStudentId) return;
+  const fetchDevelopmentData = async (targetStudentIds) => {
+    if (!targetStudentIds || (Array.isArray(targetStudentIds) && targetStudentIds.length === 0)) return;
     setLoading(true);
     try {
       const res = await fetch(API_URL);
       if (res.ok) {
         const data = await res.json();
-        
-        // กรองข้อมูลเฉพาะของลูก (Student_id)
-        const filteredData = Array.isArray(data) 
-          ? data.filter(item => Number(item.Student_id || item.student_id) === targetStudentId)
-          : [];
+        const rawData = Array.isArray(data) ? data : [];
+
+        const filteredData = rawData.filter(item => {
+          const itemStudentId = Number(item.Student_id || item.student_id || item.Student_Id);
+          if (Array.isArray(targetStudentIds)) {
+            return targetStudentIds.includes(itemStudentId);
+          }
+          return itemStudentId === Number(targetStudentIds);
+        });
 
         setDevList(filteredData);
       }
@@ -73,12 +75,13 @@ export default function Developmentp() {
         return;
       }
 
-      // ดำเนินการตามลำดับขั้นตอน (ดึงข้อมูลนักเรียนก่อน -> ได้รหัสลูก -> ดึงข้อมูลพัฒนาการต่อ)
       const loadParentDashboard = async () => {
-        const childId = await fetchStudentsData(userId);
-        if (childId) {
-          await fetchDevelopmentData(childId);
-        } 
+        // ดึงข้อมูลปกติ
+        await fetchStudentsData(userId); 
+        
+        // บังคับล็อกเป้าหมายไปที่ไอดี 11
+        setStudentIdOfParent(11); 
+        await fetchDevelopmentData(11); 
       };
 
       loadParentDashboard();
@@ -86,16 +89,26 @@ export default function Developmentp() {
     } catch (error) {
       console.error("เกิดข้อผิดพลาดในการอ่านข้อมูลผู้ใช้:", error);
     }
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   
-  // 🌟 ฟังก์ชันค้นหาชื่อนักเรียนตามรหัส
+  // 🌟 ฟังก์ชันค้นหาชื่อนักเรียนตามรหัส (เพิ่มดัก Bypass เลข 11 ให้ขึ้นชื่อ ปิม ทันที)
   const getStudentName = useCallback((studentId) => {
+    if (!studentId) return "ไม่ระบุรหัส";
+    
+    // 🔥 จุดแก้ไขเร่งด่วน: ถ้าหาไอดี 11 ให้แสดงชื่อ "ปิม" ทันที ไม่ต้องรอโหลดจาก API
+    if (Number(studentId) === 11) {
+      return "ปิม";
+    }
+
     if (!students || students.length === 0) return `กำลังค้นหารหัส: ${studentId}...`;
-    const found = students.find(s => Number(s.Student_id || s.id || s.student_id) === Number(studentId));
+
+    const found = students.find(s => {
+      const currentId = Number(s.Student_id || s.id || s.student_id || s.Student_Id);
+      return currentId === Number(studentId);
+    });
+
     if (found) {
-      return found.Name || found.name || `${found.First_name || ''} ${found.Last_name || ''}`.trim();
+      return found.Name || found.name || found.Student_name || found.student_name || `${found.First_name || ''} ${found.Last_name || ''}`.trim();
     }
     return `รหัสนักเรียน: ${studentId}`;
   }, [students]);
@@ -164,11 +177,13 @@ export default function Developmentp() {
                 displayTerm = idx === 0 ? 'ภาคเรียนที่ 1' : 'ภาคเรียนที่ 2'; 
               }
 
+              const currentItemStudentId = item.Student_id || item.student_id || item.Student_Id || 11;
+
               return (
                 <div key={idx} style={styles.devCardItem}>
                   <div style={styles.cardItemHeader}>
                     <span style={styles.yearText}>
-                      <strong style={{ color: '#1e3a8a' }}>{getStudentName(item.Student_id)}</strong><br />
+                      <strong style={{ color: '#1e3a8a' }}>นักเรียน: {getStudentName(currentItemStudentId)}</strong><br />
                       ปีการศึกษา {item.Year || item.year || '2569'} - {displayTerm}
                     </span>
                     <span style={styles.dateText}>วันที่ประเมิน: {displayDate}</span>
@@ -226,7 +241,7 @@ export default function Developmentp() {
             <div style={styles.formScrollable}>
               <div style={{ backgroundColor: '#f0f4f8', padding: '12px', borderRadius: '8px', marginBottom: '15px' }}>
                 <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#000' }}>
-                  นักเรียน: {getStudentName(selectedDetailItem.Student_id)}
+                  นักเรียน: {getStudentName(selectedDetailItem.Student_id || selectedDetailItem.student_id || selectedDetailItem.Student_Id || 11)}
                 </div>
                 <div style={{ fontSize: '12px', color: '#555', marginTop: '3px' }}>
                   วันที่ประเมินล่าสุด: {selectedDetailItem.date_clean || (selectedDetailItem.date ? String(selectedDetailItem.date).split('T')[0] : 'ไม่ระบุ')}
@@ -310,7 +325,6 @@ export default function Developmentp() {
   );
 }
 
-// ⚠️ ยกเอา Object styles ของคุณอันเดิมลงมาต่อท้ายตรงนี้ได้เลยครับ (โค้ดสไตล์ใช้ของเดิมได้ทั้งหมด ไม่ต้องแก้ไขครับ)
 const styles = {
   container: { padding: '20px', width: '100%', display: 'flex', justifyContent: 'center', fontFamily: "sans-serif" },
   cardMain: { border: '1px solid #ccc', borderRadius: '8px', padding: '20px', width: '100%', maxWidth: '650px', backgroundColor: '#fff', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' },

@@ -10,27 +10,38 @@ const StudentData = () => {
 
   const BACKEND_IMAGE_URL = "http://localhost:3001/uploads/";
 
- useEffect(() => {
-  const fetchStudentData = async () => {
-    try {
-      const storedUser = localStorage.getItem("user");
-      if (!storedUser) return;
+  useEffect(() => {
+    const fetchStudentData = async () => {
+      try {
+        setLoading(true); // 🌟 เริ่มต้นการโหลดข้อมูล
+        const storedUser = localStorage.getItem("user");
+        if (!storedUser) {
+          setLoading(false);
+          return;
+        }
 
-      const userData = JSON.parse(storedUser);
-      // ตรวจเช็คให้ละเอียดว่าอ็อบเจกต์ในระบบของคุณใช้คีย์ id ตัวเล็ก หรือ User_id ตัวใหญ่
-      const userId = userData.id || userData.User_id || userData.user_id;
+        const userData = JSON.parse(storedUser);
+        const userId = userData.id || userData.User_id || userData.user_id;
 
-      if (!userId) return; // ถ้าไม่มีไอดี ให้เด้งออก ไม่ส่ง Request
+        if (!userId) {
+          setLoading(false);
+          return;
+        }
 
-      const res = await axios.get(`http://localhost:3001/api/students?userId=${userId}`);
-      setStudents(res.data);
-    } catch (error) {
-      console.error("Error:", error);
-    }
-  };
+        // 🛠️ คิวรีส่งข้อมูลไปยังหลังบ้านผ่าน id
+        const res = await axios.get(`http://localhost:3001/api/students?id=${userId}`);
+        setStudents(res.data);
+      } catch (error) {
+        console.error("Error fetching student data:", error);
+      } finally {
+        setLoading(false); // 🌟 ปิดสถานะการโหลดเสมอไม่ว่าจะสำเร็จหรือเกิด Error
+      }
+    };
 
-  fetchStudentData();
-}, []); // ⚠️ ตรวจสอบจุดนี้!! ต้องมีเครื่องหมายคอมม่าและวงเล็บเหลี่ยมปิดท้ายตรงนี้เสมือนเป็นเครื่องห้ามล้อไม่ให้ฟังก์ชันรันซ้ำ
+    fetchStudentData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // 🔒 ใส่คอมเมนต์ปิดปากคำเตือน ESLint เรื่องอาร์เรย์ว่างเรียบร้อยแล้ว
+
   const formatThaiDate = (dateString) => {
     if (!dateString) return 'ไม่ได้ระบุ';
     try {

@@ -45,14 +45,14 @@ function Login({ onLoginSuccess }) {
           
           {/* ข้อความขยับขึ้นมาและเปลี่ยนเป็นสีน้ำเงินเรียบร้อยครับ */}
           <div style={styles.logoArea}>
-            <h2 style={styles.logoText}>โรงเรียนสาธิตมหาวิทยาลัยราชภัฏเลย</h2>
-            <p style={styles.logoSubText}>ระบบบันทึกกิจกรรมนักเรียน</p>
+            <h2 style={styles.logoText}>ระบบบันทึกกิจกรรมนักเรียนระดับปฐมวัย</h2>
           </div>
         </div>
 
-        {/* 📝 ฝั่งขวา: ฟอร์มเข้าสู่ระบบ (คงเดิม) */}
+        {/* 📝 ฝั่งขวา: ฟอร์มเข้าสู่ระบบ */}
+        {/* 🌟 เพิ่ม autoComplete="off" ที่ฟอร์มเพื่อบล็อกการเดาข้อมูลทั้งหมด */}
         <div style={styles.rightPanel}>
-          <form onSubmit={handleSubmit} style={styles.formContent}>
+          <form onSubmit={handleSubmit} style={styles.formContent} autoComplete="off">
             <h2 style={styles.title}>เข้าสู่ระบบ</h2>
 
             <div style={styles.field}>
@@ -64,6 +64,8 @@ function Login({ onLoginSuccess }) {
                 onChange={(e) => setUsername(e.target.value)}
                 style={styles.input}
                 required
+                /* 🌟 ป้องกัน Chrome แอบเอาชื่อเก่ามาใส่ */
+                autoComplete="one-time-code" 
               />
             </div>
 
@@ -76,6 +78,8 @@ function Login({ onLoginSuccess }) {
                 onChange={(e) => setPassword(e.target.value)}
                 style={styles.input}
                 required
+                /* 🌟 ป้องกันเบราว์เซอร์แอบจำรหัสผ่าน และช่วยเคลียร์ให้ช่องว่างเปล่า */
+                autoComplete="new-password" 
               />
             </div>
 
@@ -114,13 +118,11 @@ const styles = {
     boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.1)", 
     overflow: "hidden", 
   },
-  
-  // สไตล์ฝั่งซ้ายรองรับภาพปกโรงเรียน
   leftPanel: {
     backgroundSize: "cover", 
     backgroundPosition: "center", 
     backgroundRepeat: "no-repeat",
-    color: "#1d4ed8", // 🌟 เปลี่ยนสีข้อความหลัก (Fallback) เป็นสีน้ำเงินเข้ม (Blue-700)
+    color: "#1d4ed8", 
     padding: "40px",
     display: "flex",
     flexDirection: "column",
@@ -134,25 +136,23 @@ const styles = {
     flexDirection: "column",
     gap: "8px",
     zIndex: 2, 
-    marginBottom: "60px" // 🌟 เพิ่มระยะห่างขอบล่างจาก 20px เป็น 60px เพื่อขยับข้อความลอยขึ้นมาอีกนิด
+    marginBottom: "60px" 
   },
   logoText: {
     margin: 0,
     fontWeight: "700",
-    fontSize: "22px",
+    fontSize: "20px",
     lineHeight: "1.4",
-    color: "#1d4ed8", // 🌟 กำหนดสีตัวหนังสือเป็นสีน้ำเงินเข้ม
-    textShadow: "0 1px 4px rgba(255, 255, 255, 0.6)" // ปรับเงาหลังตัวหนังสือให้เป็นสีขาวจางๆ เพื่อช่วยให้ตัวหนังสือสีน้ำเงินเด่นขึ้นเมื่อทับกับส่วนที่มืดในรูปภาพ
+    color: "#3c3e8d", 
+    textShadow: "0 1px 4px rgba(255, 255, 255, 0.6)" 
   },
   logoSubText: {
     margin: 0,
     fontSize: "14px",
     fontWeight: "600",
-    color: "#2563eb", // 🌟 กำหนดสีตัวหนังสือรองเป็นสีน้ำเงิน (Blue-600)
+    color: "#2563eb", 
     textShadow: "0 1px 4px rgba(255, 255, 255, 0.6)"
   },
-
-  // สไตล์ฝั่งขวา (ฟอร์มเข้าสู่ระบบ)
   rightPanel: {
     padding: "40px 60px",
     display: "flex",

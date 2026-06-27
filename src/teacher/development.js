@@ -43,7 +43,7 @@ export default function Development() {
   const [formData, setFormData] = useState(initialFormState);
 
   const API_URL = 'http://localhost:3001/api/development';
-  const STUDENTS_API_URL = 'http://localhost:3001/api/students';
+  const STUDENTS_API_URL = 'http://localhost:3001/api/students?id=all';
 
   const fetchStudentsData = async () => {
     try {
@@ -284,8 +284,9 @@ export default function Development() {
                 <div key={idx} style={styles.devCardItem}>
                   <div style={styles.cardItemHeader}>
                     <span style={styles.yearText}>
-                      <strong style={{ color: '#1e3a8a' }}>{getStudentName(item.Student_id)}</strong><br />
-                      ปีการศึกษา {item.Year || item.year || '2569'} - {displayTerm}<br />
+                  {/* สลับมาใช้ item.Student_name ที่ดึงมาจาก SQL เป็นหลัก ถ้าไม่มีค่อย Fallback ไปใช้ฟังก์ชันเดิม */}
+                  <strong style={{ color: '#1e3a8a' }}>{item.Student_name || getStudentName(item.Student_id)}</strong><br />
+                    ปีการศึกษา {item.Year || item.year || '2569'} - {displayTerm}<br />
                       <span style={{ fontSize: '12px', color: '#666', fontWeight: 'normal' }}>วันที่ประเมิน: {displayDate}</span>
                     </span>
                     <div style={styles.actionGroup}>
@@ -333,8 +334,9 @@ export default function Development() {
             <div style={styles.formScrollable}>
               <div style={{ backgroundColor: '#f0f4f8', padding: '12px', borderRadius: '8px', marginBottom: '15px' }}>
                 <div style={{ fontSize: '15px', fontWeight: 'bold', marginBottom: '4px', color: '#000' }}>
-                  นักเรียน: {getStudentName(selectedDetailItem.Student_id)}
-                </div>
+                {/* สลับมาใช้ Student_name เช่นกัน เพื่อให้เวลาเปิดดูรายละเอียด ชื่อเด็กขึ้นโชว์ถูกต้องแน่นอน */}
+                  นักเรียน: {selectedDetailItem.Student_name || getStudentName(selectedDetailItem.Student_id)}
+                  </div>
                 <div style={{ fontSize: '12px', color: '#555' }}>
                   วันที่ทำรายการประเมิน: {selectedDetailItem.date_clean || (selectedDetailItem.date ? String(selectedDetailItem.date).split('T')[0] : 'ไม่ระบุ')}
                 </div>

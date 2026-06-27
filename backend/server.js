@@ -164,10 +164,29 @@ app.delete("/activities/:id", (req, res) => {
 // 🚀 ระบบ API จัดการข้อมูลนักเรียน (STUDENTS CRUD)
 // ==========================================
 app.get("/api/students", (req, res) => {
-  db.query("SELECT * FROM student ORDER BY Student_id DESC", (err, result) => {
-    if (err) return res.status(500).json(err);
-    res.json(result);
-  });
+  const userId = req.query.id || req.query.userId; 
+
+  console.log("== [BACKEND API] ได้รับค่าขอรหัสผู้ใช้ ID == :", userId);
+
+  // 👑 ถ้าครูขอมา (id=all) ปล่อยข้อมูลเด็กทุกคนให้ทันที
+  if (userId === "all") {
+    db.query("SELECT * FROM student ORDER BY Student_id DESC", (err, result) => {
+      if (err) return res.status(500).json(err);
+      res.json(result);
+    });
+  } 
+  // 👨‍👩‍👦 ถ้าผู้ปกครองขอมา (มี ID ปกติ) กรองให้เห็นเฉพาะลูกตัวเอง
+  else if (userId && userId !== "undefined" && userId !== "null") {
+    const sql = "SELECT * FROM student WHERE User_id = ? ORDER BY Student_id DESC";
+    db.query(sql, [userId], (err, result) => {
+      if (err) return res.status(500).json(err);
+      res.json(result);
+    });
+  } 
+  // 🛑 ถ้าหลุดมาแบบไม่มี ID (undefined) ส่งอาร์เรย์ว่างกลับไปเหมือนเดิม
+  else {
+    res.json([]);
+  }
 });
 
 app.post("/api/students", (req, res) => {
@@ -179,7 +198,10 @@ app.post("/api/students", (req, res) => {
 
   const sql = `INSERT INTO student (Name, Birthday, Gender, Class_level, User_id, Blood_group, Image) VALUES (?, ?, ?, ?, ?, ?, ?)`;
   db.query(sql, [Name, Birthday, Gender, Class_level, User_id, Blood_group, Image || null], (err, result) => {
-    if (err) { console.error(err); return res.status(500).json({ error: "เกิดข้อผิดพลาดในการเพิ่มข้อมูลนักเรียน", details: err.message }); }
+    if (err) { 
+      console.error(err); 
+      return res.status(500).json({ error: "เกิดข้อผิดพลาดในการเพิ่มข้อมูลนักเรียน", details: err.message }); 
+    }
     res.json({ message: "เพิ่มข้อมูลนักเรียนสำเร็จ", Student_id: result.insertId });
   });
 });
@@ -192,7 +214,10 @@ app.put("/api/students/:id", (req, res) => {
 
   const sql = `UPDATE student SET Name=?, Birthday=?, Gender=?, Class_level=?, Blood_group=?, Image=? WHERE Student_id=?`;
   db.query(sql, [Name, Birthday, Gender, Class_level, Blood_group, Image || null, req.params.id], (err, result) => {
-    if (err) { console.error(err); return res.status(500).json({ error: "เกิดข้อผิดพลาดในการแก้ไขข้อมูลนักเรียน", details: err.message }); }
+    if (err) { 
+      console.error(err); 
+      return res.status(500).json({ error: "เกิดข้อผิดพลาดในการแก้ไขข้อมูลนักเรียน", details: err.message }); 
+    }
     res.json({ message: "แก้ไขข้อมูลนักเรียนสำเร็จ" });
   });
 });
@@ -397,7 +422,18 @@ app.post("/attendance/save", (req, res) => {
 // 🚀 API สำหรับระบบประเมินพัฒนาการเด็ก (Development)
 // ==========================================
 app.get('/api/development', (req, res) => {
-  db.query('SELECT *, DATE_FORMAT(\`Date\`, "%Y-%m-%d") AS date_clean FROM development ORDER BY Year DESC, Term DESC, Development_id DESC', (err, results) => {
+  // 🌟 ปรับ SQL ให้ผูกตาราง student ดึงชื่อจริง (s.Name) มาในคีย์ชื่อ Student_name
+  const sql = `
+    SELECT 
+      d.*, 
+      s.Name AS Student_name, 
+      DATE_FORMAT(d.\`Date\`, "%Y-%m-%d") AS date_clean 
+    FROM development d
+    INNER JOIN student s ON d.Student_id = s.Student_id 
+    ORDER BY d.Year DESC, d.Term DESC, d.Development_id DESC
+  `;
+
+  db.query(sql, (err, results) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json(results);
   });
