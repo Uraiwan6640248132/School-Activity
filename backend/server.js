@@ -510,9 +510,10 @@ app.post("/login", (req, res) => {
 });
 
 
-// 2. API สำหรับรับข้อมูลลงทะเบียน
+// 2. API สำหรับรับข้อมูลลงทะเบียน (อัปเดตเพิ่ม Class_level)
 app.post('/api/register', (req, res) => {
-  const { Name, Phone, UserName, Role, Password, ConfirmPassword } = req.body;
+  // ✨ จุดที่ 1: ดึง Class_level ออกมาจาก req.body ที่ส่งมาจากหน้าบ้าน (React)
+  const { Name, Phone, UserName, Role, Class_level, Password, ConfirmPassword } = req.body;
 
   if (Password !== ConfirmPassword) {
     return res.status(400).json({ message: 'รหัสผ่านและยืนยันรหัสผ่านไม่ตรงกัน!' });
@@ -526,12 +527,12 @@ app.post('/api/register', (req, res) => {
       return res.status(400).json({ message: 'ชื่อผู้ใช้นี้มีอยู่ในระบบแล้ว' });
     }
 
-    // ✅ ปรับ SQL ให้ตรงกับโครงสร้างคอลัมน์ใน phpMyAdmin ของพี่เป๊ะๆ
-    // ลำดับคือ: Name (คนที่ 1), Phone (คนที่ 2), Password (คนที่ 3), UserName (คนที่ 4), Role (คนที่ 5)
-    const insertQuery = 'INSERT INTO users (Name, Phone, Password, UserName, Role) VALUES (?, ?, ?, ?, ?)';
+    // ✨ จุดที่ 2: ปรับ SQL ให้รองรับคอลัมน์ Class_level (เพิ่มเข้าไปต่อท้ายสุด หรือตามโครงสร้างตารางของพี่)
+    // เพิ่ม Class_level และเพิ่มเครื่องหมาย ? ตัวที่ 6 เข้าไปครับ
+    const insertQuery = 'INSERT INTO users (Name, Phone, Password, UserName, Role, Class_level) VALUES (?, ?, ?, ?, ?, ?)';
 
-    // ✅ เรียงตัวแปรในวงเล็บ [ ] เพื่อเข้าไปแทนเครื่องหมาย ? ตามลำดับคอลัมน์ด้านบนให้ถูกต้อง
-    db.query(insertQuery, [Name, Phone, Password, UserName, Role], (err, result) => {
+    // ✨ จุดที่ 3: เอาตัวแปร Class_level มาใส่ในวงเล็บ [ ] ตัวสุดท้าย ให้ลำดับตรงกับเครื่องหมาย ? ด้านบนครับ
+    db.query(insertQuery, [Name, Phone, Password, UserName, Role, Class_level], (err, result) => {
       if (err) return res.status(500).json({ error: err.message });
       return res.status(200).json({ message: 'ลงทะเบียนเรียบร้อยแล้ว!' });
     });
