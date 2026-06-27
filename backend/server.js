@@ -168,24 +168,23 @@ app.get("/api/students", (req, res) => {
 
   console.log("== [BACKEND API] ได้รับค่าขอรหัสผู้ใช้ ID == :", userId);
 
-  // 👑 ถ้าครูขอมา (id=all) ปล่อยข้อมูลเด็กทุกคนให้ทันที
-  if (userId === "all") {
+  // 👑 ปรับปรุง: ถ้าค่าเป็น "all" หรือหน้าหลักลืมส่งค่ามา (undefined / null) 
+  // ให้ดึงข้อมูลนักเรียนทุกคนทันที หน้าจอหลักจะได้ไม่ขึ้น 0 คน
+  if (userId === "all" || !userId || userId === "undefined" || userId === "null") {
+    console.log("-> ระบบทำการดึงข้อมูลนักเรียนทั้งหมด (สิทธิ์คุณครู/ค่าเริ่มต้น)");
     db.query("SELECT * FROM student ORDER BY Student_id DESC", (err, result) => {
       if (err) return res.status(500).json(err);
       res.json(result);
     });
   } 
-  // 👨‍👩‍👦 ถ้าผู้ปกครองขอมา (มี ID ปกติ) กรองให้เห็นเฉพาะลูกตัวเอง
-  else if (userId && userId !== "undefined" && userId !== "null") {
+  // 👨‍👩‍👦 ถ้ามี ID ส่งเข้ามาปกติ และไม่ใช่ค่าว่าง (สิทธิ์ผู้ปกครอง) ให้กรองเฉพาะลูกตัวเอง
+  else {
+    console.log(`-> ระบบทำการกรองข้อมูลนักเรียนเฉพาะ User_id: ${userId}`);
     const sql = "SELECT * FROM student WHERE User_id = ? ORDER BY Student_id DESC";
     db.query(sql, [userId], (err, result) => {
       if (err) return res.status(500).json(err);
       res.json(result);
     });
-  } 
-  // 🛑 ถ้าหลุดมาแบบไม่มี ID (undefined) ส่งอาร์เรย์ว่างกลับไปเหมือนเดิม
-  else {
-    res.json([]);
   }
 });
 
@@ -228,7 +227,6 @@ app.delete("/api/students/:id", (req, res) => {
     res.json({ message: "ลบข้อมูลนักเรียนสำเร็จ" });
   });
 });
-
 // ==========================================
 // 📢 ระบบ API จัดการข้อมูลการแจ้งเตือน (NOTIFICATIONS)
 // ==========================================
