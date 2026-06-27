@@ -6,7 +6,7 @@ const PersonalData = () => {
     name: "",
     phone: "",
     username: "",
-    role: "ครูผู้สอน", 
+    role: "ครูผู้สอน",
     password: "",
     confirmPassword: "",
   });
@@ -100,7 +100,15 @@ const PersonalData = () => {
 
         <div style={styles.formGroup}>
           <label style={styles.label}>ชื่อผู้ใช้</label>
-          <input type="text" name="username" value={formData.username} onChange={handleInputChange} required style={styles.input} />
+          {/* สั่งปิดการแก้ไขด้วย disabled และใส่สไตล์สีเทาเหมือนช่องสถานะ */}
+          <input
+            type="text"
+            name="username"
+            value={formData.username}
+            onChange={handleInputChange}
+            disabled
+            style={{ ...styles.input, backgroundColor: "#f8fafc", color: "#94a3b8", cursor: "not-allowed" }}
+          />
         </div>
 
         <div style={styles.formGroup}>
@@ -137,7 +145,7 @@ const styles = {
   },
   headerArea: {
     width: "100%",
-    maxWidth: "520px", 
+    maxWidth: "520px",
     marginBottom: "1.2rem",
     textAlign: "left",
   },
@@ -156,16 +164,16 @@ const styles = {
   },
   profileCard: {
     width: "100%",
-    maxWidth: "520px", 
+    maxWidth: "520px",
     backgroundColor: "#ffffff",
     border: "1px solid #e2e8f0",
     borderRadius: "14px",
-    padding: "35px 40px", 
+    padding: "35px 40px",
     boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.05)",
     boxSizing: "border-box",
     display: "flex",
     flexDirection: "column",
-    gap: "18px" 
+    gap: "18px"
   },
   avatarSection: {
     display: "flex",
@@ -174,8 +182,8 @@ const styles = {
     marginBottom: "10px",
   },
   avatarCircle: {
-    width: "100px",  
-    height: "100px", 
+    width: "100px",
+    height: "100px",
     borderRadius: "50%",
     border: "1px solid #cbd5e1",
     backgroundColor: "#ffffff",
@@ -183,7 +191,7 @@ const styles = {
   },
   teacherName: {
     margin: "0 0 2px 0",
-    fontSize: "22px", 
+    fontSize: "22px",
     fontWeight: "700",
     color: "#000000",
   },
@@ -195,17 +203,17 @@ const styles = {
   formGroup: {
     display: "flex",
     flexDirection: "column",
-    gap: "8px", 
+    gap: "8px",
     textAlign: "left"
   },
   label: {
     fontSize: "15px",
     color: "#000000",
-    fontWeight: "600", 
+    fontWeight: "600",
   },
   input: {
-    padding: "11px 14px", 
-    fontSize: "15px", 
+    padding: "11px 14px",
+    fontSize: "15px",
     border: "1px solid #cbd5e1",
     borderRadius: "8px",
     outline: "none",
@@ -215,7 +223,7 @@ const styles = {
   },
   btnSave: {
     width: "100%",
-    padding: "12px", 
+    padding: "12px",
     fontSize: "15px",
     fontWeight: "600",
     backgroundColor: "#ffffff",

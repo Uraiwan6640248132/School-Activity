@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom';
 import schoolImg from '../school-building.jpg.JPG'; 
 
 function Register() {
-    // สร้าง state สำหรับเก็บข้อมูลฟอร์ม
     const [formData, setFormData] = useState({
         Name: '',
         Phone: '',
@@ -18,7 +17,6 @@ function Register() {
     
     const navigate = useNavigate(); // ประกาศตัวแปรเพื่อใช้งานระบบนำทาง
 
-    // ฟังก์ชันดักจับเมื่อมีการพิมพ์ข้อมูลในฟอร์ม
     const handleChange = (e) => {
         setFormData({
             ...formData,
@@ -26,7 +24,6 @@ function Register() {
         });
     };
 
-    // ฟังก์ชันส่งข้อมูลไปยัง API เมื่อกดปุ่มลงทะเบียน
     const handleSubmit = async (e) => {
         e.preventDefault();
         setMessage({ text: '', type: '' });

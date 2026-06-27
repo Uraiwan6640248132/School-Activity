@@ -27,7 +27,7 @@ function PersonalDataParent() {
             .then(res => {
               // ค้นหาข้อมูลของผู้ปกครองคนนี้ในระบบ
               const currentUser = res.data.find(u => String(u.User_id) === String(userId));
-              
+
               if (currentUser) {
                 setFormData(prev => ({
                   ...prev,
@@ -83,7 +83,7 @@ function PersonalDataParent() {
       });
 
       alert("🎉 บันทึกการแก้ไขข้อมูลส่วนตัวสำเร็จแล้วค่ะ!");
-      
+
       const updatedUser = {
         User_id: formData.User_id,
         Name: formData.Name,
@@ -110,11 +110,11 @@ function PersonalDataParent() {
       {/* บล็อกดีไซน์กะทัดรัดกึ่งกลางหน้าจอพอดีตามสัดส่วน UX ของพี่ */}
       <div style={styles.formCard}>
         <form onSubmit={handleSubmit} style={styles.form}>
-          
+
           <div style={styles.inputGroup}>
             <label style={styles.label}>ชื่อ-นามสกุล</label>
-            <input 
-              type="text" 
+            <input
+              type="text"
               name="Name"
               value={formData.Name}
               onChange={handleChange}
@@ -125,8 +125,8 @@ function PersonalDataParent() {
 
           <div style={styles.inputGroup}>
             <label style={styles.label}>เบอร์โทร</label>
-            <input 
-              type="text" 
+            <input
+              type="text"
               name="Phone"
               value={formData.Phone}
               onChange={handleChange}
@@ -137,20 +137,23 @@ function PersonalDataParent() {
 
           <div style={styles.inputGroup}>
             <label style={styles.label}>ชื่อผู้ใช้</label>
-            <input 
-              type="text" 
+            <input
+              type="text"
               name="UserName"
               value={formData.UserName}
               onChange={handleChange}
-              style={styles.input}
+              /* 1. สั่งเปิด disabled เพื่อล็อกไม่ให้ผู้ปกครองแอบแก้ไขชื่อผู้ใช้ */
+              disabled
+              /* 2. ปรับสไตล์เป็นสีเทาและเปลี่ยนเมาส์เป็นรูปห้ามกด เพื่อระบุให้ชัดเจนว่าแก้ไขไม่ได้ */
+              style={{ ...styles.input, backgroundColor: "#f8fafc", color: "#94a3b8", cursor: "not-allowed" }}
               required
             />
           </div>
 
           <div style={styles.inputGroup}>
             <label style={styles.label}>สถานะ</label>
-            <input 
-              type="text" 
+            <input
+              type="text"
               name="Role"
               value={formData.Role}
               style={{ ...styles.input, backgroundColor: "#f1f5f9", cursor: "not-allowed" }}
@@ -160,8 +163,8 @@ function PersonalDataParent() {
 
           <div style={styles.inputGroup}>
             <label style={styles.label}>รหัสผ่านใหม่ (ปล่อยว่างไว้ได้หากไม่ต้องการเปลี่ยน)</label>
-            <input 
-              type="password" 
+            <input
+              type="password"
               name="newPassword"
               value={formData.newPassword}
               onChange={handleChange}
@@ -172,8 +175,8 @@ function PersonalDataParent() {
 
           <div style={styles.inputGroup}>
             <label style={styles.label}>ยืนยันรหัสผ่านใหม่</label>
-            <input 
-              type="password" 
+            <input
+              type="password"
               name="confirmPassword"
               value={formData.confirmPassword}
               onChange={handleChange}
