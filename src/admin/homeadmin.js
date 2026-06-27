@@ -7,31 +7,37 @@ const HomeAdmin = () => {
   const [studentCount, setStudentCount] = useState(0); // 🆕 เพิ่ม State เก็บจำนวนนักเรียน
   const [loading, setLoading] = useState(true);
 
-  // 🌐 ฟังก์ชันดึงข้อมูลจาก API ผู้ใช้งาน, กิจกรรม และ นักเรียน
-  useEffect(() => {
-    const fetchAdminDashboardData = async () => {
-      try {
-        const userRes = await axios.get("http://localhost:3001/users");
-        const activityRes = await axios.get("http://localhost:3001/activities");
-        
-        // 🆕 ดึงข้อมูลจาก API นักเรียนเพิ่มเติม เพื่อเอายอดรวมทั้งหมด
-        const studentRes = await axios.get("http://localhost:3001/students").catch(() => ({ data: [] }));
+ // 🌐 ฟังก์ชันดึงข้อมูลจาก API ผู้ใช้งาน, กิจกรรม และ นักเรียน
+useEffect(() => {
+  const fetchAdminDashboardData = async () => {
+    try {
+      const userRes = await axios.get("http://localhost:3001/users");
+      const activityRes = await axios.get("http://localhost:3001/activities");
+      
+      // 🎯 แก้ไขจุดนี้: เปลี่ยน URL ให้มี /api/students ตรงตามที่หลังบ้านตั้งไว้เป๊ะๆ
+      const studentRes = await axios.get("http://localhost:3001/api/students");
 
-        // เก็บข้อมูลลงใน State
-        setUsers(userRes.data);
-        setStudentCount(studentRes.data.length || 0);
-
-        // ดึงรายการกิจกรรม ล่าสุด 4 อันดับแรกมาแสดงผลด้านขวา
-        setLatestActivities(activityRes.data.slice(0, 4));
-        setLoading(false);
-      } catch (error) {
-        console.error("เกิดข้อผิดพลาดในการดึงข้อมูลหน้าเดชบอร์ดแอดมิน:", error);
-        setLoading(false);
+      // เก็บข้อมูลผู้ใช้งาน
+      setUsers(userRes.data);
+      
+      // ถ้านำข้อมูลออกมาเป็น Array ได้สำเร็จ ให้นับจำนวน (.length) ทันที
+      if (Array.isArray(studentRes.data)) {
+        setStudentCount(studentRes.data.length);
+      } else {
+        setStudentCount(0);
       }
-    };
 
-    fetchAdminDashboardData();
-  }, []);
+      // ดึงรายการกิจกรรม ล่าสุด 4 อันดับแรก
+      setLatestActivities(activityRes.data.slice(0, 4));
+      setLoading(false);
+    } catch (error) {
+      console.error("เกิดข้อผิดพลาดในการดึงข้อมูลหน้าเดชบอร์ดแอดมิน:", error);
+      setLoading(false);
+    }
+  };
+
+  fetchAdminDashboardData();
+}, []);
 
   // 🧮 ฟังก์ชันคำนวณหาจำนวนสมาชิกแต่ละบทบาทจากข้อมูลที่ดึงมา
   const teacherCount = users.filter(user => user.Role === "ครูผู้สอน").length;
