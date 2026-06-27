@@ -9,6 +9,7 @@ import NavbarParent from './navbar/nbp'; // นำเข้าเนฟบาร
 
 // Login
 import Login from './login/login';
+import Register from './login/register';
 
 // Teacher
 import Home from './teacher/home';
@@ -23,8 +24,9 @@ import ParticipatingActivities from './teacher/participating_activities';
 
 // Admin
 import HomeAdmin from './admin/homeadmin';
-import UserInformation from './admin/user_information'; 
+import UserInformation from './admin/user_information';
 import PersonalDataAd from './admin/personal_dataad';
+
 
 // Parent
 import HomeParent from './parent/homeparent';
@@ -34,7 +36,7 @@ import Developmentp from './parent/developmentp'; //
 import Calendarp from './parent/calendarp';
 import Notificationp from './parent/notificationp';
 import PublicRelationsp from './parent/publicrelationp'; // นำเข้าหน้าประชาสัมพันธ์ผู้ปกครอง
-import ActivityP from "./parent/activityp"; 
+import ActivityP from "./parent/activityp";
 
 
 function App() {
@@ -92,6 +94,10 @@ function App() {
           path="/login"
           element={<Login onLoginSuccess={updateRoleAccess} />}
         />
+        <Route
+          path="/register"
+          element={<Register onRegisterSuccess={updateRoleAccess} />}
+        />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     );
@@ -110,7 +116,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Navigate to="/homeadmin" replace />} />
           <Route path="/homeadmin" element={<HomeAdmin />} />
-          <Route path="/user_information" element={<UserInformation />} /> 
+          <Route path="/user_information" element={<UserInformation />} />
           <Route path="/personal_dataad" element={<PersonalDataAd />} />
 
           <Route path="*" element={<Navigate to="/homeadmin" replace />} />
@@ -160,7 +166,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Navigate to="/homeparent" replace />} />
           <Route path="/homeparent" element={<HomeParent />} />
-          
+
           {/* 🎯 เปิดเส้นทางให้สิทธิ์ผู้ปกครองสามารถเข้าหน้าแก้ไขข้อมูลส่วนตัวตัวเองได้ที่นี่ */}
           <Route path="/personal_dataparent" element={<PersonalDataParent />} />
           <Route path="/student_data" element={<StudentData />} />

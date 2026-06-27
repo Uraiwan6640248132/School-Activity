@@ -121,7 +121,7 @@ app.post("/activities", (req, res) => {
   const Name_activity = body.Name_activity || body.name_activity || body.Name || body.title || null;
   const Activity_date = parseDateForMySQL(body.Activity_date || body.activity_date);
   const User_id = parseInt(body.User_id || body.user_id, 10) || 2;
-  
+
   // ตรวจจับตัวแปร Image หรือ Images ที่หน้าบ้านส่งมา
   const finalImage = body.Image || body.image || body.Images || body.images || null;
 
@@ -140,7 +140,7 @@ app.put("/activities/:id", (req, res) => {
   const Name_activity = body.Name_activity || body.name_activity || body.title || body.Name || null;
   const Activity_date = parseDateForMySQL(body.Activity_date || body.activity_date);
   const User_id = parseInt(body.User_id || body.user_id, 10) || 2;
-  
+
   // ตรวจจับตัวแปร Image หรือ Images สำหรับขั้นตอนการแก้ไข
   const finalImage = body.Image || body.image || body.Images || body.images || null;
 
@@ -164,7 +164,7 @@ app.delete("/activities/:id", (req, res) => {
 // 🚀 ระบบ API จัดการข้อมูลนักเรียน (STUDENTS CRUD)
 // ==========================================
 app.get("/api/students", (req, res) => {
-  const userId = req.query.id || req.query.userId; 
+  const userId = req.query.id || req.query.userId;
 
   console.log("== [BACKEND API] ได้รับค่าขอรหัสผู้ใช้ ID == :", userId);
 
@@ -176,7 +176,7 @@ app.get("/api/students", (req, res) => {
       if (err) return res.status(500).json(err);
       res.json(result);
     });
-  } 
+  }
   // 👨‍👩‍👦 ถ้ามี ID ส่งเข้ามาปกติ และไม่ใช่ค่าว่าง (สิทธิ์ผู้ปกครอง) ให้กรองเฉพาะลูกตัวเอง
   else {
     console.log(`-> ระบบทำการกรองข้อมูลนักเรียนเฉพาะ User_id: ${userId}`);
@@ -197,9 +197,9 @@ app.post("/api/students", (req, res) => {
 
   const sql = `INSERT INTO student (Name, Birthday, Gender, Class_level, User_id, Blood_group, Image) VALUES (?, ?, ?, ?, ?, ?, ?)`;
   db.query(sql, [Name, Birthday, Gender, Class_level, User_id, Blood_group, Image || null], (err, result) => {
-    if (err) { 
-      console.error(err); 
-      return res.status(500).json({ error: "เกิดข้อผิดพลาดในการเพิ่มข้อมูลนักเรียน", details: err.message }); 
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ error: "เกิดข้อผิดพลาดในการเพิ่มข้อมูลนักเรียน", details: err.message });
     }
     res.json({ message: "เพิ่มข้อมูลนักเรียนสำเร็จ", Student_id: result.insertId });
   });
@@ -213,9 +213,9 @@ app.put("/api/students/:id", (req, res) => {
 
   const sql = `UPDATE student SET Name=?, Birthday=?, Gender=?, Class_level=?, Blood_group=?, Image=? WHERE Student_id=?`;
   db.query(sql, [Name, Birthday, Gender, Class_level, Blood_group, Image || null, req.params.id], (err, result) => {
-    if (err) { 
-      console.error(err); 
-      return res.status(500).json({ error: "เกิดข้อผิดพลาดในการแก้ไขข้อมูลนักเรียน", details: err.message }); 
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ error: "เกิดข้อผิดพลาดในการแก้ไขข้อมูลนักเรียน", details: err.message });
     }
     res.json({ message: "แก้ไขข้อมูลนักเรียนสำเร็จ" });
   });
@@ -506,6 +506,35 @@ app.post("/login", (req, res) => {
       return res.json({ success: true, message: "สำเร็จ", user: { id: user.User_id, username: user.UserName, name: user.Name, role: user.Role } });
     }
     res.status(401).json({ success: false, error: "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง" });
+  });
+});
+
+
+// 2. API สำหรับรับข้อมูลลงทะเบียน
+app.post('/api/register', (req, res) => {
+  const { Name, Phone, UserName, Role, Password, ConfirmPassword } = req.body;
+
+  // ตรวจสอบรหัสผ่านเบื้องต้น
+  if (Password !== ConfirmPassword) {
+    return res.status(400).json({ message: 'รหัสผ่านและยืนยันรหัสผ่านไม่ตรงกัน!' });
+  }
+
+  // ตรวจสอบ Username ซ้ำในฐานข้อมูล
+  const checkUserQuery = 'SELECT UserName FROM users WHERE UserName = ?';
+  db.query(checkUserQuery, [UserName], (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+
+    if (results.length > 0) {
+      return res.status(400).json({ message: 'ชื่อผู้ใช้นี้มีอยู่ในระบบแล้ว' });
+    }
+
+    // คำสั่ง SQL เพิ่มข้อมูลลงตาราง (อิงตามชื่อคอลัมน์จากรูปที่ 1)
+    const insertQuery = 'INSERT INTO users (Name, Phone, Password, UserName, Role) VALUES (?, ?, ?, ?, ?)';
+    db.query(insertQuery, [Name, Phone, Password, Role, UserName], (err, result) => {
+      if (err) return res.status(500).json({ error: err.message });
+
+      return res.status(200).json({ message: 'ลงทะเบียนเรียบร้อยแล้ว!' });
+    });
   });
 });
 
