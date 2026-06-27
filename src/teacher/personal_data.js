@@ -7,6 +7,7 @@ const PersonalData = () => {
     phone: "",
     username: "",
     role: "ครูผู้สอน",
+    class_level: "", // ✨ 1. เพิ่ม class_level ใน State เริ่มต้น
     password: "",
     confirmPassword: "",
   });
@@ -24,6 +25,7 @@ const PersonalData = () => {
             phone: response.data.Phone || "",
             username: response.data.UserName || response.data.Username || "",
             role: response.data.Role || "ครูผู้สอน",
+            class_level: response.data.Class_level || "ไม่มี", // ✨ 2. ดึงข้อมูล Class_level มาจากฐานข้อมูลหลังบ้าน
             password: "",
             confirmPassword: "",
           });
@@ -55,6 +57,7 @@ const PersonalData = () => {
         Name: formData.name,
         Phone: formData.phone,
         Username: formData.username,
+        Class_level: formData.class_level, // ✨ 3. ส่งข้อมูล Class_level แนบกลับไปตอนเซฟด้วย ข้อมูลจะได้ไม่ว่างเปล่า
       };
 
       if (formData.password) {
@@ -100,7 +103,6 @@ const PersonalData = () => {
 
         <div style={styles.formGroup}>
           <label style={styles.label}>ชื่อผู้ใช้</label>
-          {/* สั่งปิดการแก้ไขด้วย disabled และใส่สไตล์สีเทาเหมือนช่องสถานะ */}
           <input
             type="text"
             name="username"
@@ -114,6 +116,18 @@ const PersonalData = () => {
         <div style={styles.formGroup}>
           <label style={styles.label}>สถานะ</label>
           <input type="text" name="role" value={formData.role} disabled style={{ ...styles.input, backgroundColor: "#f8fafc", color: "#94a3b8", cursor: "not-allowed" }} />
+        </div>
+
+        {/* ✨ 4. เพิ่มช่องแสดง "ระดับชั้น / ห้องเรียนประจำชั้น" ล็อก disabled ไว้ห้ามแก้ไขเอง */}
+        <div style={styles.formGroup}>
+          <label style={styles.label}>ครูผู้สอนระดับชั้น</label>
+          <input
+            type="text"
+            name="class_level"
+            value={formData.class_level}
+            disabled
+            style={{ ...styles.input, backgroundColor: "#f8fafc", color: "#94a3b8", cursor: "not-allowed" }}
+          />
         </div>
 
         <div style={styles.formGroup}>

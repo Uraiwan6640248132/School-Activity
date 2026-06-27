@@ -8,6 +8,7 @@ function PersonalDataParent() {
     Phone: '',
     UserName: '',
     Role: '',
+    Class_level: '', // ✨ 1. เพิ่ม Class_level ใน State เริ่มต้น
     newPassword: '',
     confirmPassword: ''
   });
@@ -35,7 +36,8 @@ function PersonalDataParent() {
                   Name: currentUser.Name || '',
                   Phone: currentUser.Phone || '',
                   UserName: currentUser.UserName || '',
-                  Role: currentUser.Role || 'ผู้ปกครอง'
+                  Role: currentUser.Role || 'ผู้ปกครอง',
+                  Class_level: currentUser.Class_level || 'ไม่มี' // ✨ 2. ดึงค่า Class_level มาจากฐานข้อมูล
                 }));
               }
               setLoading(false);
@@ -79,6 +81,7 @@ function PersonalDataParent() {
         Phone: formData.Phone,
         Username: formData.UserName,
         Role: formData.Role,
+        Class_level: formData.Class_level, // ✨ 3. ส่งค่า Class_level แนบไปด้วยตอนอัปเดต
         Password: formData.newPassword ? formData.newPassword : undefined
       });
 
@@ -89,7 +92,8 @@ function PersonalDataParent() {
         Name: formData.Name,
         Phone: formData.Phone,
         UserName: formData.UserName,
-        Role: formData.Role
+        Role: formData.Role,
+        Class_level: formData.Class_level // ✨ 4. สั่งเก็บค่า Class_level ลงในเซสชันใหม่
       };
       localStorage.setItem("user", JSON.stringify(updatedUser));
       window.location.reload();
@@ -141,10 +145,7 @@ function PersonalDataParent() {
               type="text"
               name="UserName"
               value={formData.UserName}
-              onChange={handleChange}
-              /* 1. สั่งเปิด disabled เพื่อล็อกไม่ให้ผู้ปกครองแอบแก้ไขชื่อผู้ใช้ */
               disabled
-              /* 2. ปรับสไตล์เป็นสีเทาและเปลี่ยนเมาส์เป็นรูปห้ามกด เพื่อระบุให้ชัดเจนว่าแก้ไขไม่ได้ */
               style={{ ...styles.input, backgroundColor: "#f8fafc", color: "#94a3b8", cursor: "not-allowed" }}
               required
             />
@@ -157,6 +158,18 @@ function PersonalDataParent() {
               name="Role"
               value={formData.Role}
               style={{ ...styles.input, backgroundColor: "#f1f5f9", cursor: "not-allowed" }}
+              disabled
+            />
+          </div>
+
+          {/* ✨ 5. เพิ่มช่องแสดง "ระดับชั้น / ห้องเรียน" (ล็อกไว้ไม่ให้แก้ไขเอง) */}
+          <div style={styles.inputGroup}>
+            <label style={styles.label}>ผู้ปกครองระดับชั้น</label>
+            <input
+              type="text"
+              name="Class_level"
+              value={formData.Class_level}
+              style={{ ...styles.input, backgroundColor: "#f1f5f9", cursor: "not-allowed", color: "#475569" }}
               disabled
             />
           </div>
@@ -195,6 +208,7 @@ function PersonalDataParent() {
   );
 }
 
+// 🎨 Styles คงเดิมตามโครงสร้างของพี่ทั้งหมดครับ
 const styles = {
   container: {
     padding: "40px 20px",
