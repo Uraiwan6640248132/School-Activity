@@ -34,8 +34,9 @@ function UserInformation() {
           Username: currentUsername,
           UserName: currentUsername,
           Password: user.Password,
-          Role: 'ถูกระงับสิทธิ์' // ส่งค่า 'ถูกระงับสิทธิ์' ไปบันทึก
-        });
+          Role: user.Role,
+          Status: "ถูกระงับสิทธิ์"
+      });
 
         alert("ระงับสิทธิ์ผู้ใช้งานสำเร็จเรียบร้อยแล้ว");
         fetchUsers(); // โหลดข้อมูลใหม่เพื่ออัปเดตสีหน้าจอทันที
@@ -48,31 +49,28 @@ function UserInformation() {
 
   // 3. 🟢 ฟังก์ชันเพิ่มใหม่: "ยกเลิกการระงับสิทธิ์" (ปลดระงับ)
   const handleUnsuspendUser = async (user) => {
-    // กำหนดสิทธิ์คืนค่าเริ่มต้นให้ผู้ใช้ตามความเหมาะสม (เช่น ถ้าเคยเป็นอะไรให้กลับเป็นอันนั้น หรือตั้งเป็น ผู้ปกครอง/ครูผู้สอน ไว้ก่อน)
-    // ในที่นี้เราจะให้ระบบถาม หรือคืนค่าเป็น "ผู้ปกครอง" หรือ "ครูผู้สอน" ตามโครงสร้างเดิมของคุณครับ
-    const defaultRole = window.confirm(`ต้องการคืนสิทธิ์เป็น "ครูผู้สอน" ใช่หรือไม่? (กด Cancel จะคืนสิทธิ์เป็น "ผู้ปกครอง")`) ? 'ครูผู้สอน' : 'ผู้ปกครอง';
+  if (window.confirm(`คุณแน่ใจใช่ไหมที่จะปลดระงับสิทธิ์ของ: ${user.Name}?`)) {
+    try {
+      const currentUsername = user.UserName || user.Username || '';
 
-    if (window.confirm(`คุณแน่ใจใช่ไหมที่จะปลดระงับสิทธิ์ของ: ${user.Name}?`)) {
-      try {
-        const currentUsername = user.UserName || user.Username || '';
+      await axios.put(`http://127.0.0.1:3001/users/${user.User_id}`, {
+        Name: user.Name,
+        Phone: user.Phone,
+        Username: currentUsername,
+        UserName: currentUsername,
+        Password: user.Password,
+        Role: user.Role,
+        Status: "ใช้งาน"
+      });
 
-        await axios.put(`http://127.0.0.1:3001/users/${user.User_id}`, {
-          Name: user.Name,
-          Phone: user.Phone,
-          Username: currentUsername,
-          UserName: currentUsername,
-          Password: user.Password,
-          Role: defaultRole // ส่งสิทธิ์เดิมที่ต้องการปลดล็อกกลับไป
-        });
-
-        alert("ปลดระงับสิทธิ์ผู้ใช้งานสำเร็จเรียบร้อยแล้ว");
-        fetchUsers(); // โหลดข้อมูลใหม่
-      } catch (err) {
-        console.error(err);
-        alert("ไม่สามารถปลดระงับสิทธิ์ได้");
-      }
+      alert("ปลดระงับสิทธิ์ผู้ใช้งานสำเร็จเรียบร้อยแล้ว");
+      fetchUsers();
+    } catch (err) {
+      console.error(err);
+      alert("ไม่สามารถปลดระงับสิทธิ์ได้");
     }
-  };
+  }
+};
 
   if (loading) return <div style={{ textAlign: 'center', padding: '50px', fontFamily: "'Kanit', sans-serif" }}>กำลังโหลดข้อมูลผู้ใช้งาน...</div>;
 
@@ -95,7 +93,7 @@ function UserInformation() {
           </thead>
           <tbody>
             {users.map((user) => {
-              const isSuspended = user.Role === 'ถูกระงับสิทธิ์';
+              const isSuspended = user.Status === 'ถูกระงับสิทธิ์';
 
               return (
                 <tr
@@ -112,10 +110,10 @@ function UserInformation() {
 
                   {/* แสดง Badge สถานะ */}
                   <td style={styles.td}>
-                    <span style={styles.roleBadge(user.Role)}>
-                      {user.Role || 'ทั่วไป'}
-                    </span>
-                  </td>
+                <span style={styles.roleBadge(user.Status)}>
+                  {user.Status || 'ใช้งาน'}
+                  </span>
+                </td>
 
                   <td style={styles.td}>
                     {/* 🎯 สลับปุ่มตามสถานะล็อกการใช้งาน */}
@@ -168,20 +166,30 @@ const styles = {
     fontFamily: "'Kanit', sans-serif"
   },
 
-  roleBadge: (role) => {
-    let baseStyle = {
-      padding: "4px 10px", borderRadius: "20px", fontSize: "13px", fontWeight: "500", display: "inline-block"
-    };
+ roleBadge: (status) => {
+  let baseStyle = {
+    padding: "4px 10px",
+    borderRadius: "20px",
+    fontSize: "13px",
+    fontWeight: "500",
+    display: "inline-block"
+  };
 
-    if (role === "แอดมิน") {
-      return { ...baseStyle, backgroundColor: "#fee2e2", color: "#ef4444" };
-    } else if (role === "ครูผู้สอน") {
-      return { ...baseStyle, backgroundColor: "#dbeafe", color: "#2563eb" };
-    } else if (role === "ผู้ปกครอง") {
-      return { ...baseStyle, backgroundColor: "#dcfce7", color: "#16a34a" };
-    } else if (role === "ถูกระงับสิทธิ์") {
-      return { ...baseStyle, backgroundColor: "#e2e8f0", color: "#64748b" };
-    }
+   if (status === "ใช้งาน") {
+    return {
+      ...baseStyle,
+      backgroundColor: "#dcfce7",
+      color: "#16a34a"
+    };
+  }
+
+  if (status === "ถูกระงับสิทธิ์") {
+    return {
+      ...baseStyle,
+      backgroundColor: "#fee2e2",
+      color: "#dc2626"
+    };
+  }
     return { ...baseStyle, backgroundColor: "#f1f5f9", color: "#475569" };
   }
 };

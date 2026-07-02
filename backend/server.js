@@ -61,7 +61,11 @@ function parseDateForMySQL(dateStr) {
 // 👤 ระบบ API จัดการข้อมูลผู้ใช้งาน (USERS)
 // ==========================================
 app.get(["/users", "/api/users"], (req, res) => {
-  const sql = "SELECT User_id, Name, Phone, UserName, Password, Role FROM users ORDER BY User_id DESC";
+  const sql = `
+SELECT User_id, Name, Phone, UserName, Password, Role, Status
+FROM users
+ORDER BY User_id DESC
+`;
   db.query(sql, (err, result) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json(result);
@@ -85,15 +89,60 @@ app.get("/users/:id", (req, res) => {
 });
 
 app.put("/users/:id", (req, res) => {
-  const { Name, Phone, UserName, Role, Password } = req.body;
-  let sql = (Password && Password.trim() !== "")
-    ? `UPDATE users SET Name=?, Phone=?, UserName=?, Role=?, Password=? WHERE User_id=?`
-    : `UPDATE users SET Name=?, Phone=?, UserName=?, Role=? WHERE User_id=?`;
-  let params = (Password && Password.trim() !== "") ? [Name, Phone, UserName, Role, Password, req.params.id] : [Name, Phone, UserName, Role, req.params.id];
+  const { Name, Phone, UserName, Role, Status, Password } = req.body;
 
-  db.query(sql, params, (err, result) => {
+  let sql;
+  let params;
+
+  if (Password && Password.trim() !== "") {
+    sql = `
+      UPDATE users
+      SET Name=?,
+          Phone=?,
+          UserName=?,
+          Role=?,
+          Status=?,
+          Password=?
+      WHERE User_id=?
+    `;
+
+    params = [
+      Name,
+      Phone,
+      UserName,
+      Role,
+      Status,
+      Password,
+      req.params.id
+    ];
+  } else {
+    sql = `
+      UPDATE users
+      SET Name=?,
+          Phone=?,
+          UserName=?,
+          Role=?,
+          Status=?
+      WHERE User_id=?
+    `;
+
+    params = [
+      Name,
+      Phone,
+      UserName,
+      Role,
+      Status,
+      req.params.id
+    ];
+  }
+
+  db.query(sql, params, (err) => {
     if (err) return res.status(500).json(err);
-    res.json({ success: true, message: "อัปเดตผู้ใช้งานสำเร็จ" });
+
+    res.json({
+      success: true,
+      message: "อัปเดตผู้ใช้งานสำเร็จ"
+    });
   });
 });
 
