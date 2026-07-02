@@ -15,7 +15,7 @@ function StudentManagement() {
         const userObj = JSON.parse(savedUser);
         return {
           classLevel: userObj.Class_level || userObj.class_level || null,
-          userId: userObj.User_id || userObj.user_id || 1
+          userId: userObj.User_id || userObj.user_id || userObj.id || 1
         };
       } catch (e) {
         console.error("Error parsing user data:", e);
@@ -25,10 +25,22 @@ function StudentManagement() {
     return { classLevel: null, userId: 1 };
   });
 
-  // 🎯 บังคับเลือกห้องเรียนของตัวเองทันทีตั้งแต่แรก (ไม่มีค่าเริ่มต้นเป็น null เพื่อไม่ให้เห็นหน้าเลือกห้อง)
-  const [selectedClass, setSelectedClass] = useState(teacherData.classLevel || 'อนุบาล1 ห้องปกติ');
+  // 🎯 บังคับเลือกห้องเรียนของตัวเองทันทีตั้งแต่แรก (แก้ปัญหาค่าตั้งต้นหลุดไปห้องปกติ)
+  const [selectedClass, setSelectedClass] = useState(() => {
+    const savedUser = localStorage.getItem('user');
+    if (savedUser) {
+      try {
+        const userObj = JSON.parse(savedUser);
+        return userObj.Class_level || userObj.class_level || 'อนุบาล1 ห้องปกติ';
+      } catch (e) {
+        return 'อนุบาล1 ห้องปกติ';
+      }
+    }
+    return 'อนุบาล1 ห้องปกติ';
+  });
+
   const currentUser = JSON.parse(localStorage.getItem("user"));
-  const isTeacher = currentUser?.Role === "ครูผู้สอน";
+  const isTeacher = currentUser?.Role === "ครูผู้สอน" || currentUser?.role === "ครูผู้สอน";
 
   useEffect(() => {
     if (teacherData.classLevel) {
@@ -48,7 +60,7 @@ function StudentManagement() {
     Name: '',
     Birthday: '',
     Gender: 'ชาย',
-    Class_level: teacherData.classLevel || selectedClass,
+    Class_level: selectedClass,
     Blood_group: '',
     User_id: teacherData.userId,
     Image: ''
@@ -57,7 +69,7 @@ function StudentManagement() {
   useEffect(() => {
     setFormData(prev => ({
       ...prev,
-      Class_level: teacherData.classLevel || selectedClass,
+      Class_level: selectedClass,
       User_id: teacherData.userId
     }));
   }, [teacherData, selectedClass]);
@@ -71,7 +83,7 @@ function StudentManagement() {
       Name: '',
       Birthday: '',
       Gender: 'ชาย',
-      Class_level: teacherData.classLevel || selectedClass,
+      Class_level: selectedClass,
       Blood_group: '',
       User_id: teacherData.userId,
       Image: ''
@@ -121,7 +133,7 @@ function StudentManagement() {
     const payload = {
       Name: formData.Name,
       Birthday: formData.Birthday,
-      Class_level: teacherData.classLevel || selectedClass,
+      Class_level: selectedClass,
       Blood_group: formData.Blood_group || '',
       User_id: teacherData.userId,
       Image: formData.Image || '',
@@ -157,7 +169,7 @@ function StudentManagement() {
       ...student,
       Birthday: formattedBirthday,
       Gender: displayGender,
-      Class_level: teacherData.classLevel || selectedClass || student.Class_level,
+      Class_level: selectedClass || student.Class_level,
       Image: student.Image || '',
       Blood_group: student.Blood_group || '',
       User_id: student.User_id || teacherData.userId
@@ -171,7 +183,7 @@ function StudentManagement() {
 
     const payload = {
       ...formData,
-      Class_level: teacherData.classLevel || selectedClass,
+      Class_level: selectedClass,
       Gender: genderValue
     };
 
@@ -222,9 +234,9 @@ function StudentManagement() {
     }
   };
 
-  // 🔐 กรองข้อมูลนักเรียนให้แสดงเฉพาะห้องเรียนของครูท่านนี้ตาม Class_level
+  // 🔐 กรองข้อมูลนักเรียนให้แสดงตรงตามห้องของครู
   const filteredStudents = students.filter(
-    s => s.Class_level === (teacherData.classLevel || selectedClass)
+    s => s.Class_level === selectedClass
   );
 
   return (
@@ -232,7 +244,7 @@ function StudentManagement() {
       <div style={styles.studentHeader}>
         <div style={styles.titleSection}>
           <h3 style={styles.headerTitle}>
-            รายชื่อนักเรียนชั้น: {teacherData.classLevel || selectedClass}
+            รายชื่อนักเรียนชั้น: {selectedClass}
           </h3>
         </div>
 
@@ -241,7 +253,6 @@ function StudentManagement() {
         </div>
       </div>
 
-      {/* ================= 🔐 แสดงรายชื่อเด็กประจำห้องทันที (ไม่มีหน้าเลือกห้องแล้ว) ================= */}
       <div style={styles.studentGrid}>
         {filteredStudents.map((student) => (
           <div style={styles.studentCard} key={student.Student_id} onClick={() => handleOpenViewModal(student)}>
