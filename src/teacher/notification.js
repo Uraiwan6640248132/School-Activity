@@ -14,7 +14,7 @@ function Notification() {
   const [subject, setSubject] = useState("");
   const [details, setDetails] = useState("");
   const [deadline, setDeadline] = useState("");
-  const [date, setDate] = useState("");
+  
 
   // 🟢 รายการระดับชั้นเรียนแบบตัวเลือก (อนุบาล 1 - อนุบาล 3)
   const classOptions = [
@@ -45,7 +45,6 @@ function Notification() {
     setSubject("");
     setDetails("");
     setDeadline("");
-    setDate("");
     setShowModal(false);
   };
 
@@ -56,8 +55,7 @@ function Notification() {
       User_id: 1, 
       Class_level: class_level, 
       Subject: subject, 
-      Deadline: deadline || null, 
-      Date: date || null, 
+      Deadline: deadline || null,  
       Details: details || null 
     };
 
@@ -80,7 +78,6 @@ function Notification() {
     setSubject(item.Subject || item.subject || "");
     setDetails(item.Details || item.details || "");
     setDeadline((item.Deadline || item.deadline)?.split("T")[0] || "");
-    setDate((item.Date || item.date)?.split("T")[0] || ""); 
     setShowModal(true);
   };
 
@@ -169,16 +166,6 @@ function Notification() {
                   type="date" 
                   value={deadline} 
                   onChange={(e) => setDeadline(e.target.value)} 
-                  style={modal.input}
-                />
-              </div>
-
-              <div style={modal.field}>
-                <label style={modal.label}>วันที่แจ้ง</label>
-                <input 
-                  type="date" 
-                  value={date} 
-                  onChange={(e) => setDate(e.target.value)} 
                   style={modal.input}
                 />
               </div>

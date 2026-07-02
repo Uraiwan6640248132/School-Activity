@@ -280,7 +280,21 @@ app.delete("/api/students/:id", (req, res) => {
 // 📢 ระบบ API จัดการข้อมูลการแจ้งเตือน (NOTIFICATIONS)
 // ==========================================
 app.get("/notifications", (req, res) => {
-  const sql = "SELECT Notification_id, User_id, Class_level, Subject, DATE_FORMAT(Deadline, '%Y-%m-%d') AS Deadline, DATE_FORMAT(\`Date\`, '%Y-%m-%d') AS Date, Details FROM notification ORDER BY Notification_id DESC";
+  const sql = `
+    SELECT
+      Notification_id,
+      User_id,
+      Class_level,
+      Subject,
+      DATE_FORMAT(Deadline, '%Y-%m-%d') AS Deadline,
+      DATE_FORMAT(\`Date\`, '%Y-%m-%d') AS Date,
+      Details
+    FROM notification
+    WHERE Deadline IS NULL
+       OR Deadline >= CURDATE()
+    ORDER BY Deadline ASC
+  `;
+
   db.query(sql, (err, results) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json(results);
@@ -291,7 +305,8 @@ app.post("/notifications", (req, res) => {
   const body = req.body || {};
   const { Class_level, Subject, Details } = body;
   const cleanDeadline = parseDateForMySQL(body.Deadline || body.deadline);
-  const cleanDate = parseDateForMySQL(body.Date || body.date);
+  const today = new Date().toISOString().split("T")[0];
+  const cleanDate = today;
   const User_id = parseInt(body.User_id || body.user_id, 10) || 2;
 
   const sql = "INSERT INTO notification (User_id, Class_level, Subject, Deadline, \`Date\`, Details) VALUES (?, ?, ?, ?, ?, ?)";
@@ -312,6 +327,29 @@ app.put("/notifications/:id", (req, res) => {
   db.query(sql, [User_id, Class_level, Subject, cleanDeadline, cleanDate, Details || null, req.params.id], (err, result) => {
     if (err) { console.error(err); return res.status(500).json({ error: err.message }); }
     res.json({ message: "แก้ไขข้อมูลแจ้งเตือนสำเร็จ" });
+  });
+});
+app.delete("/notifications/:id", (req, res) => {
+  const sql = "DELETE FROM notification WHERE Notification_id = ?";
+
+  db.query(sql, [req.params.id], (err, result) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({
+        error: err.message
+      });
+    }
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({
+        message: "ไม่พบข้อมูล"
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "ลบการแจ้งเตือนสำเร็จ"
+    });
   });
 });
 
