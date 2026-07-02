@@ -16,14 +16,11 @@ function Activity() {
   const [editId, setEditId] = useState(null);
   const [showForm, setShowForm] = useState(false);
 
-  // 🌟 State สำหรับเปิดดูป๊อปอัปคลังรูปภาพแบบ Grid View
-  const [galleryTitle, setGalleryTitle] = useState(""); // เก็บชื่อกิจกรรมมาแสดงเป็นหัวข้อป๊อปอัป
-  const [activeGalleryImages, setActiveGalleryImages] = useState(null); // เก็บ Array รูปภาพทั้งหมดที่จะเอามาเรียง
+  const [galleryTitle, setGalleryTitle] = useState("");
+  const [activeGalleryImages, setActiveGalleryImages] = useState(null);
 
-  // 🌟 ----------------- เพิ่ม State สำหรับระบบสไลด์ภาพขนาดใหญ่ซ้อนอีกชั้น (LightBox) -----------------
-  const [lightBoxImage, setLightBoxImage] = useState(null); // เก็บรูปภาพที่กำลังขยายใหญ่
-  const [currentLightBoxIndex, setCurrentLightBoxIndex] = useState(0); // เก็บตำแหน่งดัชนีภาพที่กำลังเปิดดู
-  // -----------------------------------------------------------------------------------------
+  const [lightBoxImage, setLightBoxImage] = useState(null);
+  const [currentLightBoxIndex, setCurrentLightBoxIndex] = useState(0);
 
   const API_URL = "http://127.0.0.1:3001/activities";
 
@@ -45,11 +42,9 @@ function Activity() {
   const handleImageChange = (e) => {
     const files = Array.from(e.target.files);
     if (files.length > 0) {
-      // 1. แสดงรูปภาพพรีวิวตัวอย่างทันที
       const objectUrls = files.map(file => URL.createObjectURL(file));
       setPreviewImages(objectUrls);
 
-      // 2. ฟังก์ชันย่อขนาดภาพอัตโนมัติด้วย HTML5 Canvas ก่อนแปลงเป็น Base64
       const resizeAndCompress = (file) => {
         return new Promise((resolve) => {
           const reader = new FileReader();
@@ -60,7 +55,6 @@ function Activity() {
               let width = img.width;
               let height = img.height;
 
-              // กำหนดความกว้างสูงสุดไม่เกิน 1024px (ชัดเพียงพอสำหรับเปิดดูในป๊อปอัป)
               const MAX_WIDTH = 1024;
               if (width > MAX_WIDTH) {
                 height = Math.round((height * MAX_WIDTH) / width);
@@ -72,7 +66,6 @@ function Activity() {
               const ctx = canvas.getContext("2d");
               ctx.drawImage(img, 0, 0, width, height);
 
-              // บีบอัดคุณภาพรูปภาพเหลือ 70% (ช่วยลดขนาดไฟล์จากหลาย MB เหลือไม่กี่ KB แต่ภาพยังชัดสวย)
               const compressedBase64 = canvas.toDataURL("image/jpeg", 0.7);
               resolve(compressedBase64);
             };
@@ -82,27 +75,18 @@ function Activity() {
         });
       };
 
-      // วนลูปบีบอัดรูปภาพผู้ปกครองทุกภาพที่เลือกมาพร้อมกันเยอะ ๆ
       const compressPromises = files.map(file => resizeAndCompress(file));
       Promise.all(compressPromises).then(base64Strings => {
-        setImages(base64Strings); // บันทึกก้อนข้อมูลที่ย่อขนาดแล้วเตรียมส่งไปหลังบ้าน
+        setImages(base64Strings);
       });
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!nameActivity) return alert("กรุณากรอกชื่อกิจกรรม");
 
-    if (!nameActivity) {
-      return alert("กรุณากรอกชื่อกิจกรรม");
-    }
-
-    let finalImages = null;
-    if (images.length > 0) {
-      finalImages = images;
-    } else if (editId && previewImages.length > 0) {
-      finalImages = previewImages;
-    }
+    let finalImages = images.length > 0 ? images : (editId && previewImages.length > 0 ? previewImages : null);
 
     const requestData = {
       Name_activity: nameActivity,
@@ -110,7 +94,7 @@ function Activity() {
       Location: location,
       Activity_date: activityDate ? activityDate : null,
       User_id: 1,
-      Image: finalImages ? JSON.stringify(finalImages) : null 
+      Image: finalImages ? JSON.stringify(finalImages) : null
     };
 
     try {
@@ -146,7 +130,6 @@ function Activity() {
     setPhotographer(item.Photographer || "");
     setLocation(item.Location || "");
     setActivityDate(item.Activity_date ? item.Activity_date.split("T")[0] : "");
-
     setImages([]);
 
     let oldImages = [];
@@ -155,19 +138,10 @@ function Activity() {
     if (rawImage) {
       if (typeof rawImage === "string") {
         if (rawImage.startsWith("[")) {
-          try {
-            oldImages = JSON.parse(rawImage);
-          } catch (e) {
-            oldImages = [rawImage];
-          }
-        } else {
-          oldImages = [rawImage];
-        }
-      } else if (Array.isArray(rawImage)) {
-        oldImages = rawImage;
-      }
+          try { oldImages = JSON.parse(rawImage); } catch (e) { oldImages = [rawImage]; }
+        } else { oldImages = [rawImage]; }
+      } else if (Array.isArray(rawImage)) { oldImages = rawImage; }
     }
-    
     setPreviewImages(oldImages);
     setShowForm(true);
   };
@@ -198,85 +172,113 @@ function Activity() {
   });
 
   return (
-    <div style={page.container}>
-      <div style={page.wrapper}>
+    <div className="p-6 md:p-10 min-h-screen bg-gradient-to-br from-brand-lightBg to-[#e0f2fe] w-full box-border font-sans antialiased">
+      <div className="max-w-[1240px] mx-auto w-full">
 
-        <div style={page.header}>
+        {/* Header Section */}
+        <div className="flex justify-between items-center mb-8 flex-wrap gap-4 bg-white/60 backdrop-blur-md p-5 rounded-2xl border border-sky-100/50 shadow-sm">
           <div>
-            <button style={page.titleBtn}>กิจกรรม</button>
-            <h1 style={page.pageTitle}>จัดการข้อมูลกิจกรรม</h1>
+            <span className="px-3 py-1 text-xs font-semibold bg-sky-100 text-brand-primary rounded-full inline-block mb-1.5">
+              Workspace
+            </span>
+            <h1 className="text-2xl md:text-3xl font-extrabold text-brand-darkText tracking-tight m-0">
+              จัดการข้อมูล<span className="text-brand-primary">กิจกรรม</span>
+            </h1>
           </div>
-          <button onClick={() => { if (showForm) clearForm(); else setShowForm(true); }} style={page.toggleBtn}>
-            {showForm ? "✕ ปิดแผงคุม" : "➕ เพิ่มกิจกรรมใหม่"}
+          <button
+            onClick={() => { if (showForm) clearForm(); else setShowForm(true); }}
+            className="bg-brand-primary hover:bg-brand-primaryHover text-white border-none rounded-xl px-5 py-3 text-sm font-bold cursor-pointer shadow-md transition-all duration-200 active:scale-95"
+          >
+            {showForm ? "✕ ปิดฟอร์มบันทึก" : "➕ เพิ่มกิจกรรมใหม่"}
           </button>
         </div>
 
-        <div style={page.searchContainer}>
-          <input
-            type="text"
-            placeholder="ค้นหากิจกรรม"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            style={page.searchInput}
-          />
+        {/* Search Bar */}
+        <div className="mb-8 w-full group">
+          <div className="relative flex items-center">
+            <span className="absolute left-4 text-sky-400 text-lg">🔍</span>
+            <input
+              type="text"
+              placeholder="ค้นหาชื่อกิจกรรม, สถานที่ หรือผู้บันทึกภาพ..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-11 pr-4 py-3.5 bg-white border border-sky-100 rounded-xl text-sm box-border focus:outline-none focus:border-brand-primary focus:ring-4 focus:ring-sky-100 transition-all placeholder:text-slate-400 text-slate-700"
+            />
+          </div>
         </div>
 
+        {/* Form Modal */}
         {showForm && (
-          <div style={modal.overlay}>
-            <form onSubmit={handleSubmit} style={modal.box}>
-              <div style={modal.header}>
-                <h2 style={modal.mainTitle}>{editId ? "แก้ไขกิจกรรม" : "เพิ่มกิจกรรม"}</h2>
-                <button type="button" onClick={clearForm} style={modal.closeBtn}>✕</button>
+          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-[9999] p-4">
+            <form onSubmit={handleSubmit} className="bg-white rounded-2xl w-full max-w-[480px] p-6 shadow-2xl border border-sky-50 box-border relative">
+              <div className="flex justify-between items-center mb-5 border-b border-slate-100 pb-3">
+                <h2 className="text-lg font-bold text-brand-darkText m-0 flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 bg-brand-primary rounded-full inline-block"></span>
+                  {editId ? "แก้ไขข้อมูลกิจกรรม" : "เพิ่มกิจกรรมใหม่"}
+                </h2>
+                <button type="button" onClick={clearForm} className="bg-none border-none text-xl text-slate-400 cursor-pointer hover:text-slate-600 transition">✕</button>
               </div>
 
-              <div style={modal.imageUploadWrapper}>
-                <label style={modal.imageSelectorLabel}>
-                  <input type="file" accept="image/*" multiple onChange={handleImageChange} style={{ display: "none" }} />
-                  <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" }}>
-                    <svg width="24" height="24" fill="none" stroke="#64748b" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.2" d="M12 4v16m8-8H4" />
+              {/* Upload Zone */}
+              <div className="flex items-center border border-dashed border-sky-200 rounded-xl p-4 mb-5 bg-sky-50/50">
+                <label className="cursor-pointer border border-sky-100 rounded-xl p-3 bg-white inline-block hover:border-brand-primary transition-all text-center min-w-[70px]">
+                  <input type="file" accept="image/*" multiple onChange={handleImageChange} className="hidden" />
+                  <div className="flex flex-col justify-center items-center">
+                    <svg width="22" height="22" fill="none" stroke="#0284c7" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M12 4v16m8-8H4" />
                     </svg>
-                    <span style={{ marginTop: "4px", fontSize: "11px", color: "#64748b" }}>อัปโหลดรูป</span>
+                    <span className="mt-1 text-[11px] font-bold text-brand-primary">รูปภาพ</span>
                   </div>
                 </label>
 
-                <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", flex: 1, marginLeft: "10px" }}>
+                <div className="flex gap-2 flex-wrap flex-1 ml-4 overflow-y-auto max-h-[75px] pr-1">
                   {previewImages.map((src, index) => (
-                    <div key={index} style={{ width: "45px", height: "45px", borderRadius: "6px", overflow: "hidden", border: "1px solid #e2e8f0" }}>
-                      <img src={src} alt={`preview-${index}`} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    <div key={index} className="w-[50px] h-[50px] rounded-lg overflow-hidden border border-sky-100 shadow-sm flex-shrink-0">
+                      <img src={src} alt={`preview-${index}`} className="w-full h-full object-cover" />
                     </div>
                   ))}
+                  {previewImages.length === 0 && <span className="text-xs text-slate-400 italic">ยังไม่มีการเลือกรูปภาพ</span>}
                 </div>
               </div>
 
-              <div style={modal.field}>
-                <label style={modal.label}>ชื่อกิจกรรม</label>
-                <input type="text" placeholder="กรอกชื่อกิจกรรม" value={nameActivity} onChange={(e) => setNameActivity(e.target.value)} style={modal.input} />
+              {/* Form Inputs */}
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wider">ชื่อกิจกรรม</label>
+                  <input type="text" placeholder="กรอกชื่อกิจกรรม" value={nameActivity} onChange={(e) => setNameActivity(e.target.value)} className="w-full px-3.5 py-2.5 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-sky-100 box-border text-slate-700" />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wider">ผู้บันทึกภาพ</label>
+                  <input type="text" placeholder="กรอกชื่อผู้บันทึกภาพ" value={photographer} onChange={(e) => setPhotographer(e.target.value)} className="w-full px-3.5 py-2.5 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-sky-100 box-border text-slate-700" />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wider">วันที่จัดกิจกรรม</label>
+                    <input type="date" value={activityDate} onChange={(e) => setActivityDate(e.target.value)} className="w-full px-3.5 py-2.5 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-sky-100 box-border text-slate-700" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wider">สถานที่</label>
+                    <input type="text" placeholder="กรอกสถานที่" value={location} onChange={(e) => setLocation(e.target.value)} className="w-full px-3.5 py-2.5 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-sky-100 box-border text-slate-700" />
+                  </div>
+                </div>
               </div>
 
-              <div style={modal.field}>
-                <label style={modal.label}>ผู้บันทึกภาพ</label>
-                <input type="text" placeholder="กรอกชื่อผู้บันทึกภาพ" value={photographer} onChange={(e) => setPhotographer(e.target.value)} style={modal.input} />
-              </div>
-
-              <div style={modal.field}>
-                <label style={modal.label}>วันที่</label>
-                <input type="date" value={activityDate} onChange={(e) => setActivityDate(e.target.value)} style={modal.input} />
-              </div>
-
-              <div style={modal.field}>
-                <label style={modal.label}>สถานที่</label>
-                <input type="text" placeholder="กรอกสถานที่" value={location} onChange={(e) => setLocation(e.target.value)} style={modal.input} />
-              </div>
-
-              <button type="submit" style={modal.saveButton}>บันทึก</button>
+              <button type="submit" className="w-full py-3 mt-6 bg-brand-primary hover:bg-brand-primaryHover text-white border-none rounded-xl cursor-pointer font-bold text-sm shadow-md transition-all duration-200">
+                💾 บันทึกข้อมูลกิจกรรม
+              </button>
             </form>
           </div>
         )}
 
-        <div style={page.grid} className="activity-responsive-grid">
+        {/* Activity Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 w-full">
           {filteredActivities.length === 0 ? (
-            <p style={page.noData}>ไม่พบข้อมูลกิจกรรมในระบบ</p>
+            <div className="col-span-full text-center bg-white rounded-2xl py-12 px-4 border border-sky-100 shadow-sm">
+              <span className="text-4xl block mb-2">📁</span>
+              <p className="text-slate-400 text-sm m-0">ไม่พบข้อมูลกิจกรรมในระบบการค้นหา</p>
+            </div>
           ) : (
             filteredActivities.map((item) => {
               let itemImages = [];
@@ -285,25 +287,17 @@ function Activity() {
               if (targetField) {
                 if (typeof targetField === "string") {
                   if (targetField.startsWith("[")) {
-                    try {
-                      itemImages = JSON.parse(targetField);
-                    } catch (e) {
-                      itemImages = [targetField];
-                    }
-                  } else {
-                    itemImages = [targetField];
-                  }
-                } else if (Array.isArray(targetField)) {
-                  itemImages = targetField;
-                }
+                    try { itemImages = JSON.parse(targetField); } catch (e) { itemImages = [targetField]; }
+                  } else { itemImages = [targetField]; }
+                } else if (Array.isArray(targetField)) { itemImages = targetField; }
               }
 
               return (
-                <div key={item.Activity_id} style={page.card}>
+                <div key={item.Activity_id} className="bg-white rounded-2xl border border-sky-100/70 overflow-hidden flex flex-col shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1 group">
 
-                  {/* 🛠️ เมื่อกดคลิกที่พื้นที่รูปภาพปก จะทำการเปิดกล่อง Grid คลังรูปภาพทั้งหมด */}
-                  <div 
-                    style={{ ...page.cardImageContainer, cursor: itemImages.length > 0 ? "pointer" : "default" }}
+                  {/* Image Cover */}
+                  <div
+                    className={`w-full h-44 bg-slate-50 relative overflow-hidden ${itemImages.length > 0 ? "cursor-zoom-in" : "cursor-default"}`}
                     onClick={() => {
                       if (itemImages.length > 0) {
                         setGalleryTitle(item.Name_activity || "คลังรูปภาพกิจกรรม");
@@ -312,37 +306,52 @@ function Activity() {
                     }}
                   >
                     {itemImages.length > 0 && itemImages[0] ? (
-                      <div style={{ width: "100%", height: "100%", position: "relative" }}>
-                        <img src={itemImages[0]} alt={item.Name_activity} style={page.cardImage} />
+                      <div className="w-full h-full relative">
+                        <img src={itemImages[0]} alt={item.Name_activity} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                         {itemImages.length > 1 && (
-                          <div style={{ position: "absolute", bottom: "4px", right: "4px", background: "rgba(0,0,0,0.6)", color: "#fff", fontSize: "10px", padding: "2px 6px", borderRadius: "4px" }}>
-                            +{itemImages.length - 1} รูป
+                          <div className="absolute bottom-2 right-2 bg-slate-900/70 backdrop-blur-sm text-white text-[11px] font-bold px-2 py-0.5 rounded-md">
+                            +{itemImages.length - 1} รูปภาพ
                           </div>
                         )}
                       </div>
                     ) : (
-                      <div style={page.cardImagePlaceholder}>
-                        <svg style={{ width: 36, height: 36, color: "#cbd5e1" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      <div className="w-full h-full flex flex-col items-center justify-center gap-1.5 bg-sky-50/50">
+                        <svg className="w-8 h-8 text-sky-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
+                        <span className="text-[11px] text-sky-300">ไม่มีรูปภาพ</span>
                       </div>
                     )}
                   </div>
 
-                  <div style={page.cardContent}>
-                    <h2 style={page.cardTitle} title={item.Name_activity}>
-                      {item.Name_activity || "ชื่อกิจกรรม"}
-                    </h2>
-                    <div style={page.infoList}>
-                      <p style={page.infoText}>📸 ผู้บันทึกภาพ: {item.Photographer || "ไม่ระบุชื่อ"}</p>
-                      <p style={page.infoText}>📅 วัน/เดือน/ปี: {formatDate(item.Activity_date)}</p>
-                      <p style={page.infoText}>📍 สถานที่: {item.Location || "ไม่ระบุสถานที่"}</p>
+                  {/* Information Details */}
+                  <div className="p-5 flex-grow flex flex-col justify-between">
+                    <div>
+                      <h2 className="text-base font-bold text-brand-darkText m-0 mb-3 overflow-hidden text-ellipsis whitespace-nowrap" title={item.Name_activity}>
+                        {item.Name_activity || "ไม่มีชื่อกิจกรรม"}
+                      </h2>
+                      <div className="space-y-2 border-l-2 border-sky-100 pl-3">
+                        <p className="text-xs text-slate-500 m-0 flex items-center gap-1.5">
+                          <span className="text-brand-primary">📸</span> <span className="font-medium text-slate-400">ผู้บันทึก:</span> {item.Photographer || "ไม่ระบุ"}
+                        </p>
+                        <p className="text-xs text-slate-500 m-0 flex items-center gap-1.5">
+                          <span className="text-brand-primary">📅</span> <span className="font-medium text-slate-400">วันที่:</span> {formatDate(item.Activity_date)}
+                        </p>
+                        <p className="text-xs text-slate-500 m-0 flex items-center gap-1.5">
+                          <span className="text-brand-primary">📍</span> <span className="font-medium text-slate-400">สถานที่:</span> {item.Location || "ไม่ระบุ"}
+                        </p>
+                      </div>
                     </div>
                   </div>
 
-                  <div style={page.actionsRow}>
-                    <button onClick={() => handleEdit(item)} style={page.editBtn}>แก้ไข</button>
-                    <button onClick={() => handleDelete(item.Activity_id)} style={page.deleteBtn}>ลบ</button>
+                  {/* Action Buttons */}
+                  <div className="flex border-t border-slate-100 bg-slate-50/70 p-1.5 gap-1">
+                    <button onClick={() => handleEdit(item)} className="flex-1 py-2 text-xs font-bold text-brand-primary bg-transparent hover:bg-sky-100/70 border-none rounded-lg cursor-pointer transition">
+                      ✏️ แก้ไข
+                    </button>
+                    <button onClick={() => handleDelete(item.Activity_id)} className="flex-1 py-2 text-xs font-bold text-red-500 bg-transparent hover:bg-red-50 border-none rounded-lg cursor-pointer transition">
+                      🗑️ ลบออก
+                    </button>
                   </div>
 
                 </div>
@@ -351,187 +360,84 @@ function Activity() {
           )}
         </div>
 
-        {/* 🌟 ป๊อปอัปดีไซน์คลังภาพแบบ Grid View (ไม่มีปุ่มดาวน์โหลด ป้องกันภาพหน้าผู้ปกครอง) */}
+        {/* Gallery Modal */}
         {activeGalleryImages && activeGalleryImages.length > 0 && (
-          <div style={gridGalleryModal.overlay} onClick={() => setActiveGalleryImages(null)}>
-            <div style={gridGalleryModal.box} onClick={(e) => e.stopPropagation()}>
-              
-              {/* ส่วนหัวแสดงชื่อกิจกรรม และปุ่มปิดสีเทาตัวใหญ่ตัว 'X' ด้านขวา */}
-              <div style={gridGalleryModal.header}>
-                <div style={{ display: "flex", flexDirection: "column" }}>
-                  <h2 style={gridGalleryModal.mainTitle}>{galleryTitle}</h2>
-                  <span style={gridGalleryModal.subTitle}>ภาพทั้งหมด ({activeGalleryImages.length} ภาพ)</span>
+          <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-[10000] p-4" onClick={() => setActiveGalleryImages(null)}>
+            <div className="bg-white border border-sky-100 rounded-2xl w-full max-w-[560px] p-6 shadow-2xl flex flex-col relative max-h-[80vh]" onClick={(e) => e.stopPropagation()}>
+              <div className="flex justify-between items-start w-full mb-4 border-b border-slate-100 pb-3">
+                <div>
+                  <h2 className="text-lg font-bold text-brand-darkText m-0 text-left">{galleryTitle}</h2>
+                  <span className="text-xs font-medium text-brand-primary mt-0.5 text-left">📂 คลังภาพถ่ายรวมทั้งหมด ({activeGalleryImages.length} รูป)</span>
                 </div>
-                <button onClick={() => setActiveGalleryImages(null)} style={gridGalleryModal.closeBtn}>X</button>
+                <button onClick={() => setActiveGalleryImages(null)} className="bg-slate-50 border-none w-7 h-7 flex items-center justify-center rounded-full text-slate-400 text-sm cursor-pointer hover:bg-slate-100 transition">✕</button>
               </div>
 
-              {/* พื้นที่แสดงรูปภาพเรียงกันเยอะ ๆ เป็น Grid */}
-              <div style={gridGalleryModal.gridScrollArea} className="modal-gallery-scrollbar">
+              <div className="grid grid-cols-4 gap-3 overflow-y-auto pr-1 w-full box-border">
                 {activeGalleryImages.map((imgSrc, idx) => (
-                  <div 
-                    key={idx} 
-                    style={{ ...gridGalleryModal.imageCard, cursor: "zoom-in" }} // ✨ เปลี่ยน Cursor ให้เป็นรูปแว่นขยาย
+                  <div
+                    key={idx}
+                    className="w-full aspect-square rounded-xl border border-slate-200 overflow-hidden bg-slate-50 relative cursor-zoom-in hover:border-brand-primary transition-all"
                     onClick={() => {
-                      // ✨ เมื่อกดที่รูปเล็ก ให้เซ็ตค่าเปิดหน้าต่างขยายรูปใหญ่ซ้อนอีกชั้น
                       setLightBoxImage(imgSrc);
                       setCurrentLightBoxIndex(idx);
                     }}
                   >
-                    <img src={imgSrc} alt={`gallery-item-${idx}`} style={gridGalleryModal.imageItem} />
+                    <img src={imgSrc} alt={`gallery-item-${idx}`} className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" />
                   </div>
                 ))}
               </div>
-
             </div>
           </div>
         )}
 
-        {/* 🌟 ----------------- เพิ่มระบบป๊อปอัปสไลด์ภาพขนาดใหญ่ (LightBox Carousel) ซ้อนอีกชั้น ----------------- */}
+        {/* LightBox Modal */}
         {lightBoxImage && (
-          <div style={lightBoxModal.overlay} onClick={() => setLightBoxImage(null)}>
-            {/* สกัดคลิกโดนกล่องรูปภาพใหญ่ ไม่ให้ม่านดำปิด */}
-            <div style={lightBoxModal.box} onClick={(e) => e.stopPropagation()}>
-              
-              {/* ปุ่มปิดสีขาวมุมขวาบน */}
-              <button onClick={() => setLightBoxImage(null)} style={lightBoxModal.closeBtn}>✕</button>
+          <div className="fixed inset-0 bg-slate-950/95 flex items-center justify-center z-[11000] p-4" onClick={() => setLightBoxImage(null)}>
+            <div className="bg-transparent w-full max-w-[850px] flex flex-col items-center relative" onClick={(e) => e.stopPropagation()}>
+              <button onClick={() => setLightBoxImage(null)} className="absolute -top-12 right-0 bg-white/10 hover:bg-white/20 border-none text-white w-9 h-9 flex items-center justify-center rounded-full text-lg cursor-pointer transition">✕</button>
 
-              {/* ส่วนแสดงรูปภาพใหญ่และปุ่มลูกศรเลื่อน */}
-              <div style={lightBoxModal.viewerRow}>
-                {/* ปุ่มลูกศรซ้าย (◀) แสดงผลเมื่อมีภาพก่อนหน้า */}
+              <div className="flex w-full items-center justify-between gap-4">
                 {currentLightBoxIndex > 0 ? (
-                  <button 
+                  <button
                     onClick={() => {
                       const nextIndex = currentLightBoxIndex - 1;
                       setCurrentLightBoxIndex(nextIndex);
                       setLightBoxImage(activeGalleryImages[nextIndex]);
-                    }} 
-                    style={lightBoxModal.navBtn}
+                    }}
+                    className="w-12 h-12 rounded-full border border-white/20 bg-white/5 text-white flex items-center justify-center hover:bg-white/10 transition-all"
                   >
                     ◀
                   </button>
-                ) : <div style={{ width: 45 }} />}
+                ) : <div className="w-12" />}
 
-                {/* ตัวรูปภาพขยายใหญ่ */}
-                <div style={lightBoxModal.imageWrapper}>
-                  <img src={lightBoxImage} alt="ขยายใหญ่" style={lightBoxModal.mainImage} />
+                <div className="flex-1 h-[68vh] flex items-center justify-center overflow-hidden">
+                  <img src={lightBoxImage} alt="ขยายใหญ่" className="max-w-full max-h-full object-contain rounded-xl shadow-2xl" />
                 </div>
 
-                {/* ปุ่มลูกศรขวา (▶) แสดงผลเมื่อยังมีภาพถัดไป */}
                 {currentLightBoxIndex < activeGalleryImages.length - 1 ? (
-                  <button 
+                  <button
                     onClick={() => {
                       const nextIndex = currentLightBoxIndex + 1;
                       setCurrentLightBoxIndex(nextIndex);
                       setLightBoxImage(activeGalleryImages[nextIndex]);
-                    }} 
-                    style={lightBoxModal.navBtn}
+                    }}
+                    className="w-12 h-12 rounded-full border border-white/20 bg-white/5 text-white flex items-center justify-center hover:bg-white/10 transition-all"
                   >
                     ▶
                   </button>
-                ) : <div style={{ width: 45 }} />}
+                ) : <div className="w-12" />}
               </div>
 
-              {/* ข้อความบอกตำแหน่งรูปภาพ เช่น รูปภาพที่ 2 / 8 */}
-              <p style={lightBoxModal.counterText}>
+              <div className="mt-5 px-3 py-1 bg-white/10 backdrop-blur-md rounded-full text-xs text-white/80 font-medium">
                 รูปภาพที่ {currentLightBoxIndex + 1} จาก {activeGalleryImages.length}
-              </p>
-
+              </div>
             </div>
           </div>
         )}
-        {/* ------------------------------------------------------------------------------------------------------ */}
-
-        <style>{`
-          @media (max-width: 1100px) {
-            .activity-responsive-grid { grid-template-columns: repeat(3, 1fr) !important; }
-          }
-          @media (max-width: 768px) {
-            .activity-responsive-grid { grid-template-columns: repeat(2, 1fr) !important; }
-          }
-          @media (max-width: 480px) {
-            .activity-responsive-grid { grid-template-columns: 1fr !important; }
-          }
-          /* ซ่อน/ปรับแต่ง Scrollbar ในกล่องคลังรูปภาพให้สวยงามสไตล์มินิมอล */
-          .modal-gallery-scrollbar::-webkit-scrollbar { width: 6px; }
-          .modal-gallery-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 10px; }
-          .modal-gallery-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-          .modal-gallery-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-        `}</style>
 
       </div>
     </div>
   );
 }
-
-const page = {
-  container: { padding: '20px', minHeight: '100vh', backgroundColor: '#f8fafc', width: '100%', boxSizing: 'border-box' },
-  wrapper: { maxWidth: '1200px', margin: '0 auto', width: '100%' },
-  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' },
-  titleBtn: { padding: '4px 12px', fontSize: '12px', fontWeight: 'bold', backgroundColor: '#e2e8f0', border: 'none', borderRadius: '20px', color: '#475569', marginBottom: '4px' },
-  pageTitle: { fontSize: '24px', fontWeight: 'bold', color: '#1e293b', margin: 0 },
-  toggleBtn: { backgroundColor: '#4f46e5', color: '#fff', border: 'none', borderRadius: '6px', padding: '10px 16px', fontSize: '14px', fontWeight: '500', cursor: 'pointer', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' },
-  searchContainer: { marginBottom: '24px', width: '100%' },
-  searchInput: { width: '100%', padding: '10px 14px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '14px', boxSizing: 'border-box' },
-  grid: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px', width: '100%' },
-  card: { backgroundColor: '#fff', borderRadius: '12px', border: '1px solid #e2e8f0', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' },
-  cardImageContainer: { width: '100%', height: '160px', backgroundColor: '#f1f5f9' },
-  cardImage: { width: '100%', height: '100%', objectFit: 'cover' },
-  cardImagePlaceholder: { width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' },
-  cardContent: { padding: '16px', flexGrow: 1 },
-  cardTitle: { fontSize: '16px', fontWeight: 'bold', color: '#1e293b', margin: '0 0 10px 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
-  infoList: { display: 'flex', flexDirection: 'column', gap: '6px' },
-  infoText: { fontSize: '13px', color: '#64748b', margin: 0 },
-  actionsRow: { display: 'flex', borderTop: '1px solid #e2e8f0', backgroundColor: '#f8fafc' },
-  editBtn: { flex: 1, padding: '10px', fontSize: '13px', color: '#4f46e5', background: 'none', border: 'none', borderRight: '1px solid #e2e8f0', cursor: 'pointer', fontWeight: '500' },
-  deleteBtn: { flex: 1, padding: '10px', fontSize: '13px', color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', fontWeight: '500' },
-  noData: { gridColumn: '1/-1', textAlign: 'center', color: '#64748b', fontSize: '14px', padding: '40px 0' }
-};
-
-const modal = {
-  overlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(15, 23, 42, 0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '16px' },
-  box: { backgroundColor: '#fff', borderRadius: '12px', width: '100%', maxWidth: '460px', padding: '24px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', boxSizing: 'border-box', position: 'relative' },
-  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' },
-  mainTitle: { fontSize: '18px', fontWeight: 'bold', color: '#1e293b', margin: 0 },
-  closeBtn: { background: 'none', border: 'none', fontSize: '18px', color: '#94a3b8', cursor: 'pointer' },
-  imageUploadWrapper: { display: 'flex', alignItems: 'center', border: '1px dashed #cbd5e1', borderRadius: '8px', padding: '12px', marginBottom: '16px', backgroundColor: '#f8fafc' },
-  imageSelectorLabel: { cursor: 'pointer', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '8px', backgroundColor: '#fff', display: 'inline-block' },
-  field: { marginBottom: '14px', width: '100%' },
-  label: { display: 'block', fontSize: '13px', fontWeight: '500', color: '#475569', marginBottom: '6px', textAlign: 'left' },
-  input: { width: '100%', padding: '9px 12px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '13px', boxSizing: 'border-box', backgroundColor: '#fff' },
-  saveButton: { width: '100%', padding: '11px', marginTop: '10px', backgroundColor: '#4f46e5', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px' }
-};
-
-const gridGalleryModal = {
-  overlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(15, 23, 42, 0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, padding: '16px' },
-  box: { backgroundColor: '#fff', border: '2.5px solid #38bdf8', borderRadius: '24px', width: '100%', maxWidth: '580px', padding: '24px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.15)', display: 'flex', flexDirection: 'column', position: 'relative', boxSizing: 'border-box', maxHeight: '85vh' },
-  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', width: '100%', marginBottom: '16px' },
-  mainTitle: { fontSize: '20px', fontWeight: 'bold', color: '#0f172a', margin: 0, textAlign: 'left' },
-  subTitle: { fontSize: '12px', color: '#94a3b8', marginTop: '2px', textAlign: 'left' },
-  closeBtn: { background: 'none', border: 'none', color: '#94a3b8', fontSize: '24px', cursor: 'pointer', lineHeight: '20px', padding: '0 4px', fontWeight: '300', transition: 'color 0.2s' },
-  gridScrollArea: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px', overflowY: 'auto', paddingRight: '4px', width: '100%', boxSizing: 'border-box' },
-  imageCard: { width: '100%', aspectRatio: '1/1', borderRadius: '16px', border: '1.5px solid #cbd5e1', overflow: 'hidden', backgroundColor: '#f8fafc', position: 'relative', boxSizing: 'border-box' },
-  imageItem: { width: '100%', height: '100%', objectFit: 'cover' }
-};
-
-// 🌟 ----------------- เพิ่มสไตล์ Object สำหรับระบบสไลด์ภาพขนาดใหญ่ (LightBox) -----------------
-const lightBoxModal = {
-  // ม่านดำซ้อนทับชั้นบนสุด
-  overlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0, 0, 0, 0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 11000, padding: '16px' },
-  // กล่องบรรจุรูปภาพใหญ่
-  box: { backgroundColor: 'transparent', width: '100%', maxWidth: '800px', display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', boxSizing: 'border-box' },
-  // ปุ่มปิดสีขาวมุมขวาบน
-  closeBtn: { position: 'absolute', top: '-40px', right: '0px', background: 'none', border: 'none', color: '#fff', fontSize: '24px', cursor: 'pointer', fontWeight: '300' },
-  // ส่วนแสดงรูปภาพและปุ่มเลื่อน
-  viewerRow: { display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'space-between', gap: '12px' },
-  // ปุ่มลูกศร ซ้าย-ขวา
-  navBtn: { width: '45px', height: '45px', borderRadius: '50%', border: '1px solid rgba(255,255,255,0.4)', backgroundColor: 'rgba(255,255,255,0.1)', fontSize: '18px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', transition: 'background-color 0.2s' },
-  // พื้นที่ครอบรูปภาพ
-  imageWrapper: { flex: 1, height: '70vh', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
-  // ตัวรูปภาพขนาดใหญ่
-  mainImage: { maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', borderRadius: '8px' },
-  // ข้อความบอกตำแหน่ง
-  counterText: { margin: '16px 0 0 0', fontSize: '14px', color: 'rgba(255,255,255,0.7)', fontWeight: '400' }
-};
-// ------------------------------------------------------------------------------------------------------
 
 export default Activity;

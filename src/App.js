@@ -31,7 +31,6 @@ import HomeAdmin from './admin/homeadmin';
 import UserInformation from './admin/user_information';
 import PersonalDataAd from './admin/personal_dataad';
 
-
 // Parent
 import HomeParent from './parent/homeparent';
 import PersonalDataParent from './parent/personal_dataparent';
@@ -47,8 +46,8 @@ import ActivityP from "./parent/activityp";
 function App() {
 
 
-  const [userRole,setUserRole] = useState(null);
-  const [isLoading,setIsLoading] = useState(true);
+  const [userRole, setUserRole] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
 
 
@@ -58,10 +57,10 @@ function App() {
     const user = localStorage.getItem("user");
 
 
-    if(user){
+    if (user) {
 
 
-      try{
+      try {
 
 
         const userData = JSON.parse(user);
@@ -79,12 +78,12 @@ function App() {
 
         const role = String(rawRole)
           .toLowerCase()
-          .replace(/\s+/g,"")
+          .replace(/\s+/g, "")
           .trim();
 
 
 
-        console.log("Role =",role);
+        console.log("Role =", role);
 
 
 
@@ -92,7 +91,7 @@ function App() {
 
 
 
-      }catch(error){
+      } catch (error) {
 
 
         console.log(error);
@@ -103,7 +102,7 @@ function App() {
 
 
 
-    }else{
+    } else {
 
 
       setUserRole(null);
@@ -120,26 +119,26 @@ function App() {
 
 
 
-  useEffect(()=>{
+  useEffect(() => {
 
 
     updateRoleAccess();
 
 
-  },[]);
+  }, []);
 
 
 
 
 
-  if(isLoading){
+  if (isLoading) {
 
 
     return (
 
       <div style={{
-        padding:40,
-        textAlign:"center"
+        padding: 40,
+        textAlign: "center"
       }}>
 
         <h2>กำลังโหลด...</h2>
@@ -159,7 +158,7 @@ function App() {
   // ยังไม่ Login
   // ==========================
 
-  if(!userRole){
+  if (!userRole) {
 
 
     return (
@@ -170,7 +169,7 @@ function App() {
         <Route
           path="/login"
           element={
-            <Login 
+            <Login
               onLoginSuccess={updateRoleAccess}
             />
           }
@@ -192,7 +191,7 @@ function App() {
         <Route
           path="*"
           element={
-            <Navigate to="/login"/>
+            <Navigate to="/login" />
           }
         />
 
@@ -212,13 +211,13 @@ function App() {
   // ADMIN
   // ==========================
 
-  if(
+  if (
 
-    userRole==="admin" ||
-    userRole==="1" ||
-    userRole==="แอดมิน"
+    userRole === "admin" ||
+    userRole === "1" ||
+    userRole === "แอดมิน"
 
-  ){
+  ) {
 
 
     return (
@@ -231,33 +230,33 @@ function App() {
           <Route
             path="/"
             element={
-              <Navigate to="/homeadmin"/>
+              <Navigate to="/homeadmin" />
             }
           />
 
 
           <Route
             path="/homeadmin"
-            element={<HomeAdmin/>}
+            element={<HomeAdmin />}
           />
 
 
           <Route
             path="/user_information"
-            element={<UserInformation/>}
+            element={<UserInformation />}
           />
 
 
           <Route
             path="/personal_dataad"
-            element={<PersonalDataAd/>}
+            element={<PersonalDataAd />}
           />
 
 
           <Route
             path="*"
             element={
-              <Navigate to="/homeadmin"/>
+              <Navigate to="/homeadmin" />
             }
           />
 
@@ -281,13 +280,13 @@ function App() {
   // TEACHER
   // ==========================
 
-  if(
+  if (
 
-    userRole==="teacher" ||
-    userRole==="2" ||
+    userRole === "teacher" ||
+    userRole === "2" ||
     userRole.includes("ครู")
 
-  ){
+  ) {
 
 
     return (
@@ -302,7 +301,7 @@ function App() {
           <Route
             path="/"
             element={
-              <Navigate to="/home"/>
+              <Navigate to="/home" />
             }
           />
 
@@ -310,62 +309,62 @@ function App() {
 
           <Route
             path="/home"
-            element={<Home/>}
+            element={<Home />}
           />
 
 
 
           <Route
             path="/students"
-            element={<StudentManagement/>}
+            element={<StudentManagement />}
           />
 
 
           <Route
             path="/activity"
-            element={<Activity/>}
+            element={<Activity />}
           />
 
 
 
           <Route
             path="/participating"
-            element={<ParticipatingActivities/>}
+            element={<ParticipatingActivities />}
           />
 
 
 
           <Route
             path="/notification"
-            element={<Notification/>}
+            element={<Notification />}
           />
 
 
 
           <Route
             path="/event"
-            element={<CalendarActivity/>}
+            element={<CalendarActivity />}
           />
 
 
 
           <Route
             path="/publicrelations"
-            element={<PublicRelations/>}
+            element={<PublicRelations />}
           />
 
 
 
           <Route
             path="/personal"
-            element={<PersonalData/>}
+            element={<PersonalData />}
           />
 
 
 
           <Route
             path="/development"
-            element={<Development/>}
+            element={<Development />}
           />
 
 
@@ -373,7 +372,7 @@ function App() {
           <Route
             path="*"
             element={
-              <Navigate to="/home"/>
+              <Navigate to="/home" />
             }
           />
 
@@ -400,13 +399,13 @@ function App() {
   // ==========================
 
 
-  if(
+  if (
 
-    userRole==="parent" ||
-    userRole==="3" ||
-    userRole==="ผู้ปกครอง"
+    userRole === "parent" ||
+    userRole === "3" ||
+    userRole === "ผู้ปกครอง"
 
-  ){
+  ) {
 
 
 
@@ -422,7 +421,7 @@ function App() {
           <Route
             path="/"
             element={
-              <Navigate to="/homeparent"/>
+              <Navigate to="/homeparent" />
             }
           />
 
@@ -430,49 +429,49 @@ function App() {
 
           <Route
             path="/homeparent"
-            element={<HomeParent/>}
+            element={<HomeParent />}
           />
 
 
           <Route
             path="/personal_dataparent"
-            element={<PersonalDataParent/>}
+            element={<PersonalDataParent />}
           />
 
 
           <Route
             path="/student_data"
-            element={<StudentData/>}
+            element={<StudentData />}
           />
 
 
           <Route
             path="/developmentp"
-            element={<Developmentp/>}
+            element={<Developmentp />}
           />
 
 
           <Route
             path="/calendarp"
-            element={<Calendarp/>}
+            element={<Calendarp />}
           />
 
 
           <Route
             path="/notificationp"
-            element={<Notificationp/>}
+            element={<Notificationp />}
           />
 
 
           <Route
             path="/publicrelationp"
-            element={<PublicRelationsp/>}
+            element={<PublicRelationsp />}
           />
 
 
           <Route
             path="/activityp"
-            element={<ActivityP/>}
+            element={<ActivityP />}
           />
 
 
@@ -480,7 +479,7 @@ function App() {
           <Route
             path="*"
             element={
-              <Navigate to="/homeparent"/>
+              <Navigate to="/homeparent" />
             }
           />
 
@@ -517,7 +516,7 @@ function App() {
   return (
 
     <div style={{
-      padding:40
+      padding: 40
     }}>
 
 
