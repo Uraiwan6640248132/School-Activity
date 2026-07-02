@@ -41,97 +41,193 @@ function Navbar({ children }) {
     }
   };
 
-  // 🌟 ฟังก์ชันเช็คสีเมนูแบบ Active ปรับเป็นสีฟ้านุ่มละมุนตามไอเดียต้นแบบรูปตัวอย่าง
-  const getMenuClass = (path) => {
-    const baseClass = "flex items-center gap-3 px-5 py-3 mx-3 rounded-xl font-medium text-sm transition-all duration-200 no-underline";
-    return location.pathname === path
-      ? `${baseClass} bg-indigo-50 text-indigo-600 shadow-sm shadow-indigo-100` // หน้าปัจจุบัน
-      : `${baseClass} text-slate-500 hover:bg-slate-50 hover:text-slate-800`;  // หน้าปกติเวลา Hover
-  };
+  const menu = (path) => ({
+    ...styles.menu,
+    // 🌟 เปลี่ยนสีเมนูไฮไลต์แบบนุ่มละมุนเมื่อคลิกเลือกหน้านั้นๆ เหมือนหน้าผู้ปกครอง
+    backgroundColor: location.pathname === path ? "#f0f2ff" : "transparent",
+    color: location.pathname === path ? "#4f46e5" : "#64748b",
+    fontWeight: location.pathname === path ? "600" : "500",
+    boxShadow: location.pathname === path ? "0 1px 3px 0 rgba(79, 70, 229, 0.1)" : "none",
+  });
 
   return (
-    // 1. พื้นหลังรอบนอกปรับเป็นสีเทาอมฟ้าสว่าง (Slate-100/70) เพื่อขับให้ชิ้นงานลอยขึ้นมาเด่นชัดแบบ Dashboard สากล
-    <div className="flex min-h-screen bg-sky-100 font-sans antialiased text-slate-800">
+    <div style={styles.layout}>
 
-      {/* 🧭 SIDEBAR: เปลี่ยนเป็นสีขาว คลีนตา มีขอบมนและเงา Soft Shadow แบบในรูปตัวอย่าง */}
-      <aside className="w-64 bg-white flex flex-col border-r border-slate-200/60 shadow-[4px_0_24px_rgba(0,0,0,0.015)] shrink-0">
+      {/* 🧭 SIDEBAR: ล็อคให้อยู่กับที่ ไม่ขยับตามการ Scroll เป็นธีมขาวคลีนเรียบร้อย */}
+      <div style={styles.sidebar}>
 
-        {/* โลโก้โรงเรียน จัดวางกึ่งกลาง มีระยะเว้นกระชับพอดี */}
-        <div className="p-6 flex justify-center items-center border-b border-slate-100 mb-4">
+        {/* โลโก้โรงเรียน จัดวางสวยงาม */}
+        <div style={styles.logoSection}>
           <img
             src={logoSchool}
             alt="ตราสัญลักษณ์โรงเรียน"
-            className="w-[110px] h-auto object-contain"
+            style={styles.logoImage}
           />
         </div>
 
         {/* รายการเมนูลิงก์ภายในแอป */}
-        <nav className="flex-1 space-y-1 overflow-y-auto">
-          <Link to="/home" className={getMenuClass("/home")}>
-            <span className="text-base">📊</span> หน้าหลัก
-          </Link>
-          <Link to="/personal" className={getMenuClass("/personal")}>
-            <span className="text-base">👤</span> ข้อมูลส่วนตัว
-          </Link>
-          <Link to="/students" className={getMenuClass("/students")}>
-            <span className="text-base">🧑‍🎓</span> ข้อมูลนักเรียน
-          </Link>
-          <Link to="/activity" className={getMenuClass("/activity")}>
-            <span className="text-base">📅</span> กิจกรรม
-          </Link>
-          <Link to="/publicrelations" className={getMenuClass("/publicrelations")}>
-            <span className="text-base">📢</span> ประชาสัมพันธ์
-          </Link>
-          <Link to="/notification" className={getMenuClass("/notification")}>
-            <span className="text-base">📝</span> แจ้งเตือนการบ้าน
-          </Link>
-          <Link to="/event" className={getMenuClass("/event")}>
-            <span className="text-base">🗓️</span> ปฏิทินกิจกรรม
-          </Link>
-          <Link to="/participating" className={getMenuClass("/participating")}>
-            <span className="text-base">🤝</span> เข้าร่วมกิจกรรม
-          </Link>
-          <Link to="/development" className={getMenuClass("/development")}>
-            <span className="text-base">📈</span> พัฒนาการนักเรียน
-          </Link>
-        </nav>
-
-        {/* 🚪 ปุ่มออกจากระบบ: จัดไว้ที่ด้านล่างสุด แยกสัดส่วนด้วยเส้นบางๆ */}
-        <div className="p-3 border-t border-slate-100">
-          <button
-            onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-5 py-3 text-sm font-medium text-rose-600 hover:bg-rose-50 rounded-xl transition-colors text-left bg-transparent border-none cursor-pointer"
-          >
-            <span>🚪</span> ออกจากระบบ
-          </button>
+        <div style={styles.menuList}>
+          <Link to="/home" style={menu("/home")}>📊 หน้าหลัก</Link>
+          <Link to="/personal" style={menu("/personal")}>👤 ข้อมูลส่วนตัว</Link>
+          <Link to="/students" style={menu("/students")}>🧑‍🎓 ข้อมูลนักเรียน</Link>
+          <Link to="/activity" style={menu("/activity")}>📅 กิจกรรม</Link>
+          <Link to="/publicrelations" style={menu("/publicrelations")}>📢 ประชาสัมพันธ์</Link>
+          <Link to="/notification" style={menu("/notification")}>📝 แจ้งเตือนการบ้าน</Link>
+          <Link to="/event" style={menu("/event")}>🗓️ ปฏิทินกิจกรรม</Link>
+          <Link to="/participating" style={menu("/participating")}>🤝 เข้าร่วมกิจกรรม</Link>
+          <Link to="/development" style={menu("/development")}>📈 พัฒนาการนักเรียน</Link>
         </div>
-      </aside>
 
-      {/* 🖥️ CONTENT AREA: ฝั่งขวาซึ่งเป็นหน้าจอหลัก */}
-      <div className="flex-1 flex flex-col min-w-0">
+        {/* 🚪 ปุ่มออกจากระบบ: จัดไว้ที่ด้านล่างสุด */}
+        <button onClick={handleLogout} style={styles.logoutBtn}>
+          🚪 ออกจากระบบ
+        </button>
+      </div>
 
-        {/* 🔝 TOP NAVBAR: เปลี่ยนจากสีฟ้าทึบเดิม เป็นสีขาวโปร่งแสง Backdrop blur ซ่อนเนียนตาไปกับ Dashboard */}
-        <header className="h-16 bg-white/60 backdrop-blur-md border-b border-slate-200/40 px-8 flex justify-between items-center sticky top-0 z-10">
+      {/* 🖥️ CONTENT AREA: ฝั่งขวาซึ่งเป็นหน้าจอหลัก เลื่อน Scroll ได้ตามใจชอบ */}
+      <div style={styles.content}>
 
-          {/* ส่วนแสดงความต้อนรับด้านซ้าย (ดัดแปลงเพิ่มตามสไตล์รูปตัวอย่าง) */}
-          <div className="hidden sm:block">
-            <p className="text-xs text-slate-400 font-medium">ยินดีต้อนรับกลับสู่ระบบ</p>
+        {/* 🔝 TOP NAVBAR: เปลี่ยนจากสีฟ้าทึบเดิม เป็นสีขาวโปร่งแสง Backdrop blur ซ่อนเนียนตา */}
+        <div style={styles.topbar}>
+          {/* ส่วนแสดงความต้อนรับด้านซ้าย */}
+          <div style={styles.welcomeText}>
+            ยินดีต้อนรับกลับสู่ระบบ
           </div>
 
-          {/* ปุ่มโปรไฟล์ผู้ใช้งานด้านขวา */}
-          <div className="flex items-center gap-3 bg-white px-4 py-1.5 rounded-full border border-slate-200/80 shadow-sm cursor-pointer hover:bg-slate-50 transition-colors">
-            <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
-            <span className="text-xs font-semibold text-slate-600">🔔 {userName}</span>
+          {/* ปุ่มโปรไฟล์ผู้ใช้งานด้านขวา สไตล์แคปซูลโค้งมน */}
+          <div style={styles.profileBadge}>
+            <span style={styles.statusDot}></span>
+            <span style={styles.username}>🔔 {userName}</span>
           </div>
-        </header>
+        </div>
 
-        {/* ส่วนแสดงคอมโพเนนต์ย่อยด้านใน (หน้า Dashboard หรือหน้าอื่นๆ) */}
-        <main className="flex-1 p-6 overflow-y-auto">
+        {/* ส่วนแสดงคอมโพเนนต์ย่อยด้านใน */}
+        <div style={styles.main}>
           {children}
-        </main>
+        </div>
       </div>
     </div>
   );
 }
+
+// 🎨 โครงสร้างเดิมทั้งหมด แก้ไขแค่ลบแถบเลื่อน (Scrollbar) ออกถาวร
+const styles = {
+  layout: {
+    display: "flex",
+    minHeight: "100vh",
+    backgroundColor: "#e0f2fe",
+    fontFamily: "'Kanit', 'Segoe UI', sans-serif",
+    WebkitFontSmoothing: "antialiased"
+  },
+  sidebar: {
+    width: 256,
+    background: "#ffffff",
+    display: "flex",
+    flexDirection: "column",
+    borderRight: "1px solid rgba(226, 232, 240, 0.6)",
+    boxShadow: "4px 0 24px rgba(0,0,0,0.015)",
+    position: "sticky",
+    top: 0,
+    height: "100vh",
+    flexShrink: 0
+  },
+  logoSection: {
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: "24px", // ขนาดเดิม
+    borderBottom: "1px solid #f1f5f9",
+    marginBottom: "16px", // ขนาดเดิม
+  },
+  logoImage: {
+    width: "110px", // ขนาดเดิม
+    height: "auto",
+    objectFit: "contain",
+  },
+  menuList: {
+    flex: 1,
+    display: "flex",
+    flexDirection: "column",
+    gap: "4px", // ระยะห่างเดิม
+    overflowY: "hidden" // 🌟 [แก้ไขจุดนี้] เปลี่ยนจาก "auto" เป็น "hidden" เพื่อซ่อนแถบเลื่อนสีเทาออกไปครับ
+  },
+  menu: {
+    display: "block",
+    padding: "12px 20px", // ขนาดเดิม
+    margin: "0 12px",
+    borderRadius: "12px",
+    textDecoration: "none",
+    cursor: "pointer",
+    fontSize: "14px", // ขนาดตัวหนังสือเดิมที่ชอบ
+    transition: "all 0.2s ease",
+  },
+  logoutBtn: {
+    display: "block",
+    width: "calc(100% - 24px)",
+    padding: "12px 20px", // ขนาดเดิม
+    margin: "12px",
+    color: "#e11d48",
+    background: "none",
+    border: "none",
+    borderRadius: "12px",
+    textAlign: "left",
+    cursor: "pointer",
+    fontSize: "14px", // ขนาดเดิม
+    fontWeight: "500",
+    borderTop: "1px solid #f1f5f9",
+    fontFamily: "'Kanit', 'Segoe UI', sans-serif",
+    transition: "background-color 0.2s",
+  },
+  content: {
+    flex: 1,
+    display: "flex",
+    flexDirection: "column",
+    minWidth: 0
+  },
+  topbar: {
+    height: 64, // ขนาดเดิม
+    background: "rgba(255, 255, 255, 0.6)",
+    backdropFilter: "blur(12px)",
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: "0 32px",
+    borderBottom: "1px solid rgba(226, 232, 240, 0.4)",
+    position: "sticky",
+    top: 0,
+    zIndex: 10
+  },
+  welcomeText: {
+    fontSize: "12px",
+    color: "#94a3b8",
+    fontWeight: "500"
+  },
+  profileBadge: {
+    display: "flex",
+    alignItems: "center",
+    gap: "12px",
+    background: "#ffffff",
+    padding: "6px 16px",
+    borderRadius: "9999px",
+    border: "1px solid rgba(226, 232, 240, 0.8)",
+    boxShadow: "0 1px 2px 0 rgba(0, 0, 0, 0.05)"
+  },
+  statusDot: {
+    width: "8px",
+    height: "8px",
+    background: "#10b981",
+    borderRadius: "50%",
+  },
+  username: {
+    fontSize: "13px",
+    fontWeight: "600",
+    color: "#475569"
+  },
+  main: {
+    padding: "24px",
+    flex: 1,
+    overflowY: "auto"
+  },
+};
 
 export default Navbar;
