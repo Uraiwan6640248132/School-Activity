@@ -192,7 +192,7 @@ const styles = {
         backgroundColor: "#ffffff",
         borderRadius: "20px",
         width: "900px",
-        height: "630px",
+        height: "650px", // 🌟 ขยับความสูงเพิ่มนิดหน่อยให้สมดุลกับช่องกรอกข้อมูล
         boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.1)",
         overflow: "hidden",
     },
@@ -224,7 +224,7 @@ const styles = {
         textShadow: "0 1px 4px rgba(255, 255, 255, 0.6)"
     },
     rightPanel: {
-        padding: "30px 50px",
+        padding: "25px 45px", // 🌟 ปรับ Padding ให้กระชับขึ้น
         display: "flex",
         flexDirection: "column",
         overflow: "hidden"
@@ -234,23 +234,25 @@ const styles = {
         height: "100%",
         display: "flex",
         flexDirection: "column",
-        justifyContent: "center"
+        overflowY: "auto", // 🌟 เปิดใช้งาน Scrollbar แนวตั้ง ป้องกันข้อมูลล้นหน้าจอ
+        paddingRight: "5px" // เว้นพื้นที่ให้แถบ Scrollbar
     },
     formContent: {
         display: "flex",
         flexDirection: "column",
+        padding: "10px 0"
     },
     title: {
         fontSize: "26px",
         fontWeight: "700",
-        margin: "0 0 25px 0",
+        margin: "0 0 20px 0",
         color: "#1e293b",
         textAlign: "left"
     },
     field: {
         display: "flex",
         flexDirection: "column",
-        marginBottom: "14px"
+        marginBottom: "12px"
     },
     inputContainer: {
         display: "flex",
@@ -261,7 +263,7 @@ const styles = {
     },
     input: {
         width: "100%",
-        padding: "12px 16px",
+        padding: "11px 16px",
         border: "none",
         boxSizing: "border-box",
         outline: "none",
@@ -271,7 +273,7 @@ const styles = {
     },
     selectInput: {
         width: "100%",
-        padding: "12px 16px",
+        padding: "11px 16px",
         border: "none",
         boxSizing: "border-box",
         outline: "none",

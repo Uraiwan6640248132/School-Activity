@@ -497,22 +497,87 @@ app.delete('/api/development/:id', (req, res) => {
 app.post("/login", (req, res) => {
   const username = req.body.UserName || req.body.username;
   const password = req.body.Password || req.body.password;
-  if (!username || !password) return res.status(400).json({ success: false, error: "กรุณากรอกข้อมูลให้ครบ" });
 
-  db.query("SELECT * FROM users WHERE UserName = ? AND Password = ?", [username, password], (err, result) => {
-    if (err) return res.status(500).json({ success: false, error: "ฐานข้อมูลมีปัญหา" });
-    if (result.length > 0) {
-      const user = result[0];
-      return res.json({ success: true, message: "สำเร็จ", user: { id: user.User_id, username: user.UserName, name: user.Name, role: user.Role } });
+  if (!username || !password) {
+    return res.status(400).json({
+      success: false,
+      error: "กรุณากรอกข้อมูลให้ครบ"
+    });
+  }
+
+  db.query(
+    "SELECT * FROM users WHERE UserName = ? AND Password = ?",
+    [username, password],
+    (err, result) => {
+      if (err) {
+        return res.status(500).json({
+          success: false,
+          error: "ฐานข้อมูลมีปัญหา"
+        });
+      }
+
+      if (result.length === 0) {
+        return res.status(401).json({
+          success: false,
+          error: "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง"
+        });
+      }
+
+      let user = result[0];
+      const currentStatus = String(user.Status || "").trim();
+      const currentRole = String(user.Role || "").trim();
+
+      // 🛠️ [SYSTEM AUTO-FIX] ดักจับเคสข้อมูลเก่าที่เคยบันทึกสลับช่องค้างไว้ใน DB
+      if (currentRole === "ถูกระงับสิทธิ์" && currentStatus === "ใช้งาน") {
+        // แอบซ่อมแซมข้อมูลในตารางให้กลับมาตรงช่องถาวรอัตโนมัติ (สลับ Role เป็นค่าว่างหรือให้ Admin ไปเปลี่ยน และดึง 'ถูกระงับสิทธิ์' ลง Status)
+        db.query(
+          "UPDATE users SET Role = 'ผู้ใช้งานเก่า (รอระบุสิทธิ์)', Status = 'ถูกระงับสิทธิ์' WHERE User_id = ?",
+          [user.User_id]
+        );
+        // ปรับค่าในตัวแปรจำลองทันทีเพื่อให้โค้ดด้านล่างทำงานถูกต้อง ไม่หลุดสิทธิ์พัง
+        user.Role = "ผู้ใช้งานเก่า (รอระบุสิทธิ์)";
+        user.Status = "ถูกระงับสิทธิ์";
+      }
+
+      // ==========================================
+      // เช็กสถานะระงับการใช้งาน
+      // ==========================================
+      if (
+        user.Status === "ระงับ" ||
+        user.Status === "ถูกระงับ" ||
+        user.Status === "ถูกระงับสิทธิ์" ||
+        user.Status == 0 ||
+        String(user.Role).trim() === "ถูกระงับสิทธิ์"
+      ) {
+        return res.json({
+          success: false, // 🛑 สั่งเป็น false เพื่อบล็อกไม่ให้หน้าบ้านพาข้ามหน้า
+          blocked: true,
+          error: "บัญชีของคุณถูกระงับสิทธิ์การใช้งาน กรุณาติดต่อผู้ดูแลระบบ"
+        });
+      }
+
+      // =========================================
+      // ผ่านล็อกอินปกติ ส่งข้อมูลตรงช่องกลับไปหน้าบ้าน
+      // =========================================
+      return res.json({
+        success: true,
+        message: "สำเร็จ",
+        user: {
+          id: user.User_id,
+          username: user.UserName,
+          name: user.Name,
+          role: user.Role,      // 👈 ตอนนี้ส่งสิทธิ์จริง ๆ กลับไปแล้ว หน้าบ้านจะไม่ขึ้นคำว่าถูกระงับสิทธิ์ซ้ำซ้อน
+          status: user.Status   // 👈 สถานะ "ใช้งาน" หรือ "ถูกระงับสิทธิ์"
+        }
+      });
     }
-    res.status(401).json({ success: false, error: "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง" });
-  });
+  );
 });
 
-
-// 2. API สำหรับรับข้อมูลลงทะเบียน (อัปเดตเพิ่ม Class_level)
+// ========================================================
+// 2. API สำหรับรับข้อมูลลงทะเบียน (เวอร์ชันหักดิบ บังคับค่าแก้ปัญหาหน้าบ้านส่งผิด)
+// ========================================================
 app.post('/api/register', (req, res) => {
-  // ✨ จุดที่ 1: ดึง Class_level ออกมาจาก req.body ที่ส่งมาจากหน้าบ้าน (React)
   const { Name, Phone, UserName, Role, Class_level, Password, ConfirmPassword } = req.body;
 
   if (Password !== ConfirmPassword) {
@@ -527,17 +592,34 @@ app.post('/api/register', (req, res) => {
       return res.status(400).json({ message: 'ชื่อผู้ใช้นี้มีอยู่ในระบบแล้ว' });
     }
 
-    // ✨ จุดที่ 2: ปรับ SQL ให้รองรับคอลัมน์ Class_level (เพิ่มเข้าไปต่อท้ายสุด หรือตามโครงสร้างตารางของพี่)
-    // เพิ่ม Class_level และเพิ่มเครื่องหมาย ? ตัวที่ 6 เข้าไปครับ
-    const insertQuery = 'INSERT INTO users (Name, Phone, Password, UserName, Role, Class_level) VALUES (?, ?, ?, ?, ?, ?)';
+    // 🚨 1. บังคับกำหนดสิทธิ์ใหม่ (ไม่ใช้ค่า Role ที่หน้าบ้านส่งมาเด็ดขาด!)
+    let fixedRole = "ผู้ปกครอง"; // ตั้งค่า Default ปลอดภัยไว้ก่อน
+    
+    const lowerClass = String(Class_level || "").toLowerCase();
+    
+    // ถ้าหน้าบ้านส่ง Class_level มาเป็นค่าว่าง หรือ NULL แสดงว่าเป็น "ครูผู้สอน"
+    if (!Class_level || lowerClass === "null" || lowerClass === "") {
+      fixedRole = "ครูผู้สอน";
+    } else {
+      // แต่ถ้ามีข้อมูลชั้นเรียน (เช่น อ.1, อ.2, อ.3) ให้จัดเป็น "ผู้ปกครอง"
+      fixedRole = "ผู้ปกครอง";
+    }
 
-    // ✨ จุดที่ 3: เอาตัวแปร Class_level มาใส่ในวงเล็บ [ ] ตัวสุดท้าย ให้ลำดับตรงกับเครื่องหมาย ? ด้านบนครับ
-    db.query(insertQuery, [Name, Phone, Password, UserName, Role, Class_level], (err, result) => {
-      if (err) return res.status(500).json({ error: err.message });
-      return res.status(200).json({ message: 'ลงทะเบียนเรียบร้อยแล้ว!' });
-    });
+    // 🚨 2. คำสั่ง SQL สั่งลงตำแหน่งคอลัมน์ให้ชัดเจน
+    const insertQuery = 'INSERT INTO users (Name, Phone, Password, UserName, Role, Class_level, Status) VALUES (?, ?, ?, ?, ?, ?, ?)';
+
+    // 🚨 3. ส่งค่าเข้าตามลำดับเครื่องหมาย ?
+    // - ? ตัวที่ 5 (ช่อง Role)   -> เราบังคับใส่ตัวแปร fixedRole (ที่สลัดคำว่าถูกระงับสิทธิ์ทิ้งไปแล้ว)
+    // - ? ตัวที่ 7 (ช่อง Status) -> บังคับใส่ข้อความ "ถูกระงับสิทธิ์"
+    db.query(
+      insertQuery, 
+      [Name, Phone, Password, UserName, fixedRole, Class_level, "ถูกระงับสิทธิ์"], 
+      (err, result) => {
+        if (err) return res.status(500).json({ error: err.message });
+        return res.status(200).json({ message: 'ลงทะเบียนเรียบร้อยแล้ว!' });
+      }
+    );
   });
 });
-
 
 app.listen(3001, () => { console.log("🚀 Server running on port 3001"); });
