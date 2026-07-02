@@ -41,7 +41,11 @@ function Navbar({ children }) {
 
   const menu = (path) => ({
     ...styles.menu,
-    backgroundColor: location.pathname === path ? "#9fbef1" : "transparent",
+    // 🌟 ปรับไฮไลต์สีเมื่ออยู่หน้านั้นๆ เป็นสีฟ้านุ่มละมุน (Indigo-50) และเปลี่ยนตัวอักษรเป็นสีฟ้าคราม
+    backgroundColor: location.pathname === path ? "#f0f2ff" : "transparent",
+    color: location.pathname === path ? "#4f46e5" : "#64748b",
+    fontWeight: location.pathname === path ? "600" : "500",
+    boxShadow: location.pathname === path ? "0 1px 3px 0 rgba(79, 70, 229, 0.1)" : "none",
   });
 
   // ฟังก์ชันเมื่อกดปุ่มออกจากระบบ
@@ -54,10 +58,10 @@ function Navbar({ children }) {
 
   return (
     <div style={styles.layout}>
-      {/* Sidebar */}
+      {/* 🧭 Sidebar: ล็อคให้อยู่กับที่ด้วย position: "sticky" และเปลี่ยนเป็นธีมสีขาวคลีน */}
       <div style={styles.sidebar}>
 
-        {/* 🌟 ปรับปรุงใหม่: เอาคำว่า LOGO ออก และใส่ตราสัญลักษณ์โรงเรียนแบบกระชับระยะชิดหน้าหลัก */}
+        {/* 🌟 ตราสัญลักษณ์โรงเรียน จัดวางสวยงาม มีเส้นคั่นบางๆ */}
         <div style={styles.logoSection}>
           <img
             src={logoSchool}
@@ -66,28 +70,38 @@ function Navbar({ children }) {
           />
         </div>
 
-        {/* รายการเมนูตามรูปภาพ */}
-        <Link to="/homeparent" style={menu("/homeparent")}>หน้าหลัก</Link>
-        <Link to="/personal_dataparent" style={menu("/personal_dataparent")}>ข้อมูลส่วนตัว</Link>
-        <Link to="/student_data" style={menu("/student_data")}>ข้อมูลนักเรียน</Link>
-        <Link to="/activityp" style={menu("/activityp")}>กิจกรรม</Link>
-        <Link to="/publicrelationp" style={menu("/publicrelationp")}>ประชาสัมพันธ์</Link>
-        <Link to="/notificationp" style={menu("/notificationp")}>แจ้งเตือนการบ้าน</Link>
-        <Link to="/calendarp" style={menu("/calendarp")}>ปฏิทินกิจกรรม</Link>
-        <Link to="/developmentp" style={menu("/developmentp")}>พัฒนาการนักเรียน</Link>
+        {/* รายการเมนูตามรูปภาพ (เพิ่มอีโมจิให้หน้าตาสวยงามเหมือนหน้าผู้ใช้งานทั่วไป) */}
+        <div style={styles.menuList}>
+          <Link to="/homeparent" style={menu("/homeparent")}>📊 หน้าหลัก</Link>
+          <Link to="/personal_dataparent" style={menu("/personal_dataparent")}>👤 ข้อมูลส่วนตัว</Link>
+          <Link to="/student_data" style={menu("/student_data")}>🧑‍🎓 ข้อมูลนักเรียน</Link>
+          <Link to="/activityp" style={menu("/activityp")}>📅 กิจกรรม</Link>
+          <Link to="/publicrelationp" style={menu("/publicrelationp")}>📢 ประชาสัมพันธ์</Link>
+          <Link to="/notificationp" style={menu("/notificationp")}>📝 แจ้งเตือนการบ้าน</Link>
+          <Link to="/calendarp" style={menu("/calendarp")}>🗓️ ปฏิทินกิจกรรม</Link>
+          <Link to="/developmentp" style={menu("/developmentp")}>📈 พัฒนาการนักเรียน</Link>
+        </div>
 
         {/* ปุ่มออกจากระบบอยู่ล่างสุด */}
         <button onClick={handleLogout} style={styles.logoutBtn}>
-          ออกจากระบบ
+          🚪 ออกจากระบบ
         </button>
       </div>
 
-      {/* Content */}
+      {/* 🖥️ Content Area: ฝั่งขวาเลื่อนขึ้นลงได้อิสระ */}
       <div style={styles.content}>
-        {/* ส่วนแสดง ชื่อ-นามสกุล ด้านบนขวา */}
+        {/* 🔝 TOP NAVBAR: สีขาวโปร่งแสง Backdrop blur */}
         <div style={styles.topbar}>
-          {/* 🌟 แสดงชื่อที่ดึงมาจากระบบเรียบร้อยแล้ว */}
-          <span style={styles.username}>{parentName}</span>
+          {/* ส่วนแสดงความต้อนรับด้านซ้าย */}
+          <div style={styles.welcomeText}>
+            ยินดีต้อนรับกลับสู่ระบบผู้ปกครอง
+          </div>
+
+          {/* ส่วนแสดง ชื่อ-นามสกุล ด้านบนขวา ครอบดีไซน์แบบแคปซูลมนๆ */}
+          <div style={styles.profileBadge}>
+            <span style={styles.statusDot}></span>
+            <span style={styles.username}>🔔 {parentName}</span>
+          </div>
         </div>
         <div style={styles.main}>{children}</div>
       </div>
@@ -95,75 +109,124 @@ function Navbar({ children }) {
   );
 }
 
-
-
+// 🎨 ปรับปรุงสไตล์ใหม่ทั้งหมด คุมโทนให้ตรงกันทุกหน้าจอ
 const styles = {
-  layout: { display: "flex", minHeight: "100vh", fontFamily: "'Kanit', 'Segoe UI', sans-serif" },
-  sidebar: {
-    width: 240,
-    background: "#5b95e5",
-    color: "#fff",
+  layout: {
     display: "flex",
-    flexDirection: "column"
+    minHeight: "100vh",
+    backgroundColor: "#e0f2fe", // สีฟ้าอมเทาสว่างขับตัว Dashboard (bg-sky-100)
+    fontFamily: "'Kanit', 'Segoe UI', sans-serif",
+    WebkitFontSmoothing: "antialiased"
   },
-
+  sidebar: {
+    width: 256,
+    background: "#ffffff", // เปลี่ยนเป็นสีขาว คลีนตา มีระดับ
+    display: "flex",
+    flexDirection: "column",
+    borderRight: "1px solid rgba(226, 232, 240, 0.6)",
+    boxShadow: "4px 0 24px rgba(0,0,0,0.015)",
+    position: "sticky", // 🌟 ตรึงให้อยู่กับที่
+    top: 0,
+    height: "100vh",
+    flexShrink: 0
+  },
   logoSection: {
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
-    padding: "16px 16px 12px 16px",
-    borderBottom: "1px solid rgba(255, 255, 255, 0.15)",
-    marginBottom: "4px",
+    padding: "24px",
+    borderBottom: "1px solid #f1f5f9",
+    marginBottom: "16px",
   },
   logoImage: {
     width: "110px",
     height: "auto",
     objectFit: "contain",
   },
-
+  menuList: {
+    flex: 1,
+    display: "flex",
+    flexDirection: "column",
+    gap: "4px",
+    overflowY: "auto" // เมนูย่อยเลื่อนตัวเองได้หากในอนาคตมีเมนูเพิ่มขึ้นมา
+  },
   menu: {
     display: "block",
     padding: "12px 20px",
-    color: "#fff",
+    margin: "0 12px",
+    borderRadius: "12px",
     textDecoration: "none",
     cursor: "pointer",
-    fontSize: "16px",
+    fontSize: "14px",
+    transition: "all 0.2s ease",
   },
   logoutBtn: {
     display: "block",
-    width: "100%",
-    padding: "16px 20px",
-    color: "#fff",
+    width: "calc(100% - 24px)",
+    padding: "12px 20px",
+    margin: "12px",
+    color: "#e11d48", // สีชมพูอมแดง Rose-600
     background: "none",
     border: "none",
+    borderRadius: "12px",
     textAlign: "left",
     cursor: "pointer",
-    fontSize: "16px",
-    marginTop: "auto",
-    borderTop: "1px solid rgba(255, 255, 255, 0.2)",
-    fontFamily: "'Kanit', 'Segoe UI', sans-serif"
+    fontSize: "14px",
+    fontWeight: "500",
+    borderTop: "1px solid #f1f5f9",
+    fontFamily: "'Kanit', 'Segoe UI', sans-serif",
+    transition: "background-color 0.2s",
   },
-  content: { flex: 1, background: "#f3f4f6" },
-  topbar: {
-    height: 60,
-    background: "#fff",
-    color: "#333",
+  content: {
+    flex: 1,
     display: "flex",
-    justifyContent: "flex-end",
+    flexDirection: "column",
+    minWidth: 0
+  },
+  topbar: {
+    height: 64,
+    background: "rgba(255, 255, 255, 0.6)", // ขาวโปร่งแสง
+    backdropFilter: "blur(12px)",
+    display: "flex",
+    justifyContent: "space-between",
     alignItems: "center",
-    padding: "0 20px",
-    borderBottom: "1px solid #e5e7eb"
+    padding: "0 32px",
+    borderBottom: "1px solid rgba(226, 232, 240, 0.4)",
+    position: "sticky",
+    top: 0,
+    zIndex: 10
+  },
+  welcomeText: {
+    fontSize: "12px",
+    color: "#94a3b8", // Slate-400
+    fontWeight: "500"
+  },
+  profileBadge: {
+    display: "flex",
+    alignItems: "center",
+    gap: "12px",
+    background: "#ffffff",
+    padding: "6px 16px",
+    borderRadius: "9999px",
+    border: "1px solid rgba(226, 232, 240, 0.8)",
+    boxShadow: "0 1px 2px 0 rgba(0, 0, 0, 0.05)"
+  },
+  statusDot: {
+    width: "8px",
+    height: "8px",
+    background: "#10b981",
+    borderRadius: "50%",
   },
   username: {
-    marginRight: 10,
-    fontSize: 15,
+    fontSize: "13px",
     fontWeight: "600",
-    color: "#475569"
+    color: "#475569" // Slate-600
   },
-  main: { padding: 20 },
+  main: {
+    padding: "24px",
+    flex: 1,
+    overflowY: "auto"
+  },
 };
-
-
-
 
 export default Navbar;

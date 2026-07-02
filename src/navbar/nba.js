@@ -40,9 +40,11 @@ function Navbar({ children }) {
 
   const menu = (path) => ({
     ...styles.menu,
-    // ทำไฮไลต์สีเมื่ออยู่หน้านั้นๆ
-    backgroundColor: location.pathname === path ? "#34495e" : "transparent",
-    borderLeft: location.pathname === path ? "4px solid #3498db" : "4px solid transparent",
+    // 🌟 ปรับไฮไลต์สีเมื่ออยู่หน้านั้นๆ เป็นสีฟ้านุ่มละมุนตามไอเดียต้นแบบรูปตัวอย่าง
+    backgroundColor: location.pathname === path ? "#f0f2ff" : "transparent",
+    color: location.pathname === path ? "#4f46e5" : "#64748b",
+    fontWeight: location.pathname === path ? "600" : "500",
+    boxShadow: location.pathname === path ? "0 1px 3px 0 rgba(79, 70, 229, 0.1)" : "none",
   });
 
   // 🚪 ฟังก์ชันเมื่อกดปุ่มออกจากระบบ
@@ -55,10 +57,10 @@ function Navbar({ children }) {
 
   return (
     <div style={styles.layout}>
-      {/* Sidebar */}
+      {/* 🧭 Sidebar: ถูกล็อคให้อยู่กับที่ด้วย position: "sticky" และเปลี่ยนเป็นธีมสีขาวคลีน */}
       <div style={styles.sidebar}>
 
-        {/* 🌟 ปรับปรุงใหม่: เอาคำว่า ADMIN PANEL ออก และใส่ตราสัญลักษณ์โรงเรียนแบบกระชับระยะไม่ให้ห่างหน้าหลัก */}
+        {/* 🌟 ตราสัญลักษณ์โรงเรียน จัดวางสวยงาม มีเส้นคั่นบางๆ */}
         <div style={styles.logoSection}>
           <img
             src={logoSchool}
@@ -68,22 +70,32 @@ function Navbar({ children }) {
         </div>
 
         {/* รายการเมนูสำหรับแอดมิน */}
-        <Link to="/homeadmin" style={menu("/homeadmin")}>🏠 หน้าหลัก</Link>
-        <Link to="/personal_dataad" style={menu("/personal_dataad")}>👤 ข้อมูลส่วนตัว</Link>
-        {/* ⚙️ ปุ่มไปหน้ากำหนดสิทธิ์ จัดการผู้ใช้งาน */}
-        <Link to="/user_information" style={menu("/user_information")}>👥 ข้อมูลผู้ใช้</Link>
+        <div style={styles.menuList}>
+          <Link to="/homeadmin" style={menu("/homeadmin")}>🏠 หน้าหลัก</Link>
+          <Link to="/personal_dataad" style={menu("/personal_dataad")}>👤 ข้อมูลส่วนตัว</Link>
+          <Link to="/user_information" style={menu("/user_information")}>👥 ข้อมูลผู้ใช้</Link>
+        </div>
 
-        {/* ปุ่มออกจากระบบอยู่ล่างสุด */}
+        {/* ปุ่มออกจากระบบอยู่ล่างสุด แยกสัดส่วนชัดเจน */}
         <button onClick={handleLogout} style={styles.logoutBtn}>
           🚪 ออกจากระบบ
         </button>
       </div>
 
-      {/* Content */}
+      {/* 🖥️ Content Area: ฝั่งขวาที่จะเลื่อน Scroll ได้อย่างอิสระ */}
       <div style={styles.content}>
-        {/* ส่วนแสดง ชื่อแอดมินที่ดึงมาจากระบบ ด้านบนขวา */}
+        {/* 🔝 TOP NAVBAR: สีขาวโปร่งแสง เนียนไปกับ Dashboard */}
         <div style={styles.topbar}>
-          <span style={styles.username}>{adminName}</span>
+          {/* ส่วนแสดงความต้อนรับด้านซ้าย */}
+          <div style={styles.welcomeText}>
+            ยินดีต้อนรับกลับสู่ระบบแอดมิน
+          </div>
+
+          {/* ส่วนแสดงชื่อแอดมินด้านขวา ครอบดีไซน์แบบแคปซูลมนๆ */}
+          <div style={styles.profileBadge}>
+            <span style={styles.statusDot}></span>
+            <span style={styles.username}>🔔 {adminName}</span>
+          </div>
         </div>
         <div style={styles.main}>{children}</div>
       </div>
@@ -91,76 +103,126 @@ function Navbar({ children }) {
   );
 }
 
-
-
-
+// 🎨 ปรับโฉมสไตล์ใหม่ทั้งหมดให้เหมือนกับโค้ดชุดแรก (ธีมสว่าง คลีน โมเดิร์น)
 const styles = {
-  layout: { display: "flex", minHeight: "100vh", fontFamily: "'Kanit', 'Segoe UI', sans-serif" },
-  sidebar: {
-    width: 240,
-    background: "#2c3e50",
-    color: "#fff",
+  layout: {
     display: "flex",
-    flexDirection: "column"
+    minHeight: "100vh",
+    backgroundColor: "#e0f2fe", // สีฟ้าอมเทาสว่างขับตัว Dashboard (bg-sky-100)
+    fontFamily: "'Kanit', 'Segoe UI', sans-serif",
+    WebkitFontSmoothing: "antialiased"
   },
-
+  sidebar: {
+    width: 256,
+    background: "#ffffff", // เปลี่ยนเป็นสีขาว คลีนตา
+    display: "flex",
+    flexDirection: "column",
+    borderRight: "1px solid rgba(226, 232, 240, 0.6)",
+    boxShadow: "4px 0 24px rgba(0,0,0,0.015)",
+    position: "sticky", // 🌟 ตรึงให้อยู่กับที่
+    top: 0,
+    height: "100vh",
+    flexShrink: 0
+  },
   logoSection: {
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
-    padding: "16px 16px 12px 16px",
-    borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
-    marginBottom: "4px",
+    padding: "24px",
+    borderBottom: "1px solid #f1f5f9",
+    marginBottom: "16px",
   },
   logoImage: {
     width: "110px",
     height: "auto",
     objectFit: "contain",
   },
-
+  menuList: {
+    flex: 1,
+    display: "flex",
+    flexDirection: "column",
+    gap: "4px"
+  },
   menu: {
     display: "block",
-    padding: "14px 20px",
-    color: "#fff",
+    padding: "12px 20px",
+    margin: "0 12px",
+    borderRadius: "12px",
     textDecoration: "none",
     cursor: "pointer",
-    fontSize: "16px",
-    transition: "all 0.2s"
+    fontSize: "14px",
+    transition: "all 0.2s ease",
   },
   logoutBtn: {
     display: "block",
-    width: "100%",
-    padding: "16px 20px",
-    color: "#ff7675",
+    width: "calc(100% - 24px)",
+    padding: "12px 20px",
+    margin: "12px",
+    color: "#e11d48", // สีชมพูอมแดง Rose-600
     background: "none",
     border: "none",
+    borderRadius: "12px",
     textAlign: "left",
     cursor: "pointer",
-    fontSize: "16px",
-    marginTop: "auto",
-    borderTop: "1px solid rgba(255, 255, 255, 0.1)",
-    fontFamily: "'Kanit', 'Segoe UI', sans-serif"
+    fontSize: "14px",
+    fontWeight: "500",
+    borderTop: "1px solid #f1f5f9",
+    fontFamily: "'Kanit', 'Segoe UI', sans-serif",
+    transition: "background-color 0.2s",
+    ":hover": {
+      backgroundColor: "#fff1f2" // เอฟเฟกต์ตอนชี้ปุ่มออก
+    }
   },
-  content: { flex: 1, background: "#f8f9fa", display: "flex", flexDirection: "column" },
-  topbar: {
-    height: 60,
-    background: "#fff",
-    color: "#333",
+  content: {
+    flex: 1,
     display: "flex",
-    justifyContent: "flex-end",
+    flexDirection: "column",
+    minWidth: 0
+  },
+  topbar: {
+    height: 64,
+    background: "rgba(255, 255, 255, 0.6)", // ขาวโปร่งแสง
+    backdropFilter: "blur(12px)",
+    display: "flex",
+    justifyContent: "space-between",
     alignItems: "center",
-    padding: "0 20px",
-    borderBottom: "1px solid #e5e7eb"
+    padding: "0 32px",
+    borderBottom: "1px solid rgba(226, 232, 240, 0.4)",
+    position: "sticky",
+    top: 0,
+    zIndex: 10
+  },
+  welcomeText: {
+    fontSize: "12px",
+    color: "#94a3b8", // Slate-400
+    fontWeight: "500"
+  },
+  profileBadge: {
+    display: "flex",
+    alignItems: "center",
+    gap: "12px",
+    background: "#ffffff",
+    padding: "6px 16px",
+    borderRadius: "9999px",
+    border: "1px solid rgba(226, 232, 240, 0.8)",
+    boxShadow: "0 1px 2px 0 rgba(0, 0, 0, 0.05)"
+  },
+  statusDot: {
+    width: "8px",
+    height: "8px",
+    background: "#10b981", // จุดสีเขียวมรกตแบบกระพริบ
+    borderRadius: "50%",
   },
   username: {
-    marginRight: 12,
-    fontSize: 15,
+    fontSize: "13px",
     fontWeight: "600",
-    color: "#475569"
+    color: "#475569" // Slate-600
   },
-  main: { padding: 25, flex: 1 },
+  main: {
+    padding: "24px",
+    flex: 1,
+    overflowY: "auto" // ปล่อยให้แสดงผลหน้าต่างเนื้อหาหลักเลื่อนขึ้นลงได้
+  },
 };
-
-
 
 export default Navbar;
