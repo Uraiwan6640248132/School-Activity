@@ -10,34 +10,81 @@ function Login({ onLoginSuccess }) {
   
   const navigate = useNavigate(); // 🆕 ประกาศตัวแปรเพื่อเรียกใช้งานการนำทาง (Navigation)
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+const handleSubmit = async (e) => {
+  e.preventDefault();
 
-    if (!username || !password) {
-      return alert("กรุณากรอกชื่อผู้ใช้และรหัสผ่าน");
-    }
+  if (!username || !password) {
+    return alert("กรุณากรอกชื่อผู้ใช้และรหัสผ่าน");
+  }
 
-    const loginData = {
-      UserName: username,
-      Password: password
-    };
-
-    try {
-      const res = await axios.post('http://127.0.0.1:3001/login', loginData);
-
-      if (res.data.success) {
-        localStorage.setItem("user", JSON.stringify(res.data.user));
-        onLoginSuccess();
-      }
-    } catch (err) {
-      console.error(err);
-      if (err.response && err.response.data) {
-        alert(err.response.data.error || "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง");
-      } else {
-        alert("ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้");
-      }
-    }
+  const loginData = {
+    UserName: username,
+    Password: password
   };
+  try {
+    const res = await axios.post('http://127.0.0.1:3001/login', loginData );
+    // =================================
+    // 1. กรณี Login ไม่สำเร็จจากหลังบ้าน
+    // =================================
+    if (!res.data.success) {
+      alert(res.data.error || "ไม่สามารถเข้าสู่ระบบได้");
+      localStorage.removeItem("user");
+      navigate("/login");
+      return;
+    }
+
+    // =================================
+    // 2. ดักตรวจสอบสิทธิ์การใช้งาน (แก้ไขจุดนี้)
+    // =================================
+   // =================================
+    // 2. ดักตรวจสอบสิทธิ์การใช้งาน (ปรับตรงนี้ให้รัดกุมขึ้น)
+    // =================================
+    const userData = res.data.user;
+    
+    // ดึงค่า Role มาล้างช่องว่าง
+    const checkRole = String(userData?.role || userData?.Role || "")
+      .replace(/\s+/g, "")
+      .trim();
+
+    // ดึงค่า Status มาล้างช่องว่างด้วย
+    const checkStatus = String(userData?.status || userData?.Status || "")
+      .replace(/\s+/g, "")
+      .trim();
+
+    // 🚨 ตรวจสอบ: ถ้าเจอคำว่าระงับสิทธิ์ไม่ว่าจะจากช่อง Role หรือ Status ให้บล็อกทันที
+    if (
+      checkRole === "ถูกระงับสิทธิ์" || 
+      checkStatus === "ถูกระงับสิทธิ์" || 
+      checkStatus === "ถูกระงับ" || 
+      checkStatus === "ระงับ"
+    ) {
+      // แสดงป๊อบอัพเตือนด้านบนทันที
+      alert("บัญชีของคุณถูกระงับสิทธิ์การใช้งาน กรุณาติดต่อผู้ดูแลระบบ");
+      
+      // ล้างข้อมูลเซสชันทิ้ง และบังคับให้อยู่ที่หน้าล็อกอินเดิม
+      localStorage.removeItem("user");
+      navigate("/login");
+      return; // 🛑 ตัดจบ ไม่ให้ไหลลงไปทำงานด้านล่าง
+    }
+
+    // =================================
+    // 3. กรณีสิทธิ์ผ่านปกติ (แอดมิน, ครู, ผู้ปกครอง)
+    // =================================
+    localStorage.setItem(
+      "user",
+      JSON.stringify(userData)
+    );
+    onLoginSuccess();
+
+  } catch(err) {
+    console.log(err);
+    if (err.response && err.response.data) {
+      alert(err.response.data.error || "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง");
+    } else {
+      alert("เชื่อมต่อ Server ไม่ได้");
+    }
+  }
+};
 
   // 🛠️ ปรับปรุงจุดนี้: เมื่อกดปุ่มจะวิ่งไปตาม Path "/register" ที่พี่ตั้งไว้ใน Routes ทันที
   const handleGoToRegister = () => {
@@ -248,4 +295,4 @@ const styles = {
   }
 };
 
-export default Login;
+export default Login; 
