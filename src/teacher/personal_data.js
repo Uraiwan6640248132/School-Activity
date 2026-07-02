@@ -13,7 +13,9 @@ const PersonalData = () => {
   });
 
   const [loading, setLoading] = useState(true);
-  const userId = 1;
+  const storedUser = localStorage.getItem("user");
+  const userObj = storedUser ? JSON.parse(storedUser) : null;
+  const userId = userObj?.id || userObj?.ID || userObj?.id_user || 1;
 
   useEffect(() => {
     const fetchUserData = async () => {

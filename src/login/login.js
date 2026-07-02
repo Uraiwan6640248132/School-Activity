@@ -2,102 +2,104 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom'; // 🆕 นำเข้า useNavigate เพื่อใช้สั่งเปลี่ยนหน้าของ React Router
 // 🛠️ ปรับ Path ให้วิ่งย้อนกลับไปดึงไฟล์รูปภาพจากโฟลเดอร์ src ให้ถูกต้องตามโครงสร้างของพี่ครับ
-import schoolImg from '../school-building.jpg.JPG'; 
+import schoolImg from '../school-building.jpg.JPG';
 
 function Login({ onLoginSuccess }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  
+
   const navigate = useNavigate(); // 🆕 ประกาศตัวแปรเพื่อเรียกใช้งานการนำทาง (Navigation)
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-  if (!username || !password) {
-    return alert("กรุณากรอกชื่อผู้ใช้และรหัสผ่าน");
-  }
+    if (!username || !password) {
+      return alert("กรุณากรอกชื่อผู้ใช้และรหัสผ่าน");
+    }
 
-  const loginData = {
-    UserName: username,
-    Password: password
+    const loginData = {
+      UserName: username,
+      Password: password
+    };
+    try {
+      const res = await axios.post('http://127.0.0.1:3001/login', loginData);
+      // =================================
+      // 1. กรณี Login ไม่สำเร็จจากหลังบ้าน
+      // =================================
+      if (!res.data.success) {
+        alert(res.data.error || "ไม่สามารถเข้าสู่ระบบได้");
+        localStorage.removeItem("user");
+        navigate("/login");
+        return;
+      }
+
+      // =================================
+      // 2. ดักตรวจสอบสิทธิ์การใช้งาน (แก้ไขจุดนี้)
+      // =================================
+      // =================================
+      // 2. ดักตรวจสอบสิทธิ์การใช้งาน (ปรับตรงนี้ให้รัดกุมขึ้น)
+      // =================================
+      const userData = res.data.user;
+
+      // ดึงค่า Role มาล้างช่องว่าง
+      const checkRole = String(userData?.role || userData?.Role || "")
+        .replace(/\s+/g, "")
+        .trim();
+
+      // ดึงค่า Status มาล้างช่องว่างด้วย
+      const checkStatus = String(userData?.status || userData?.Status || "")
+        .replace(/\s+/g, "")
+        .trim();
+
+      // 🚨 ตรวจสอบ: ถ้าเจอคำว่าระงับสิทธิ์ไม่ว่าจะจากช่อง Role หรือ Status ให้บล็อกทันที
+      if (
+        checkRole === "ถูกระงับสิทธิ์" ||
+        checkStatus === "ถูกระงับสิทธิ์" ||
+        checkStatus === "ถูกระงับ" ||
+        checkStatus === "ระงับ"
+      ) {
+        // แสดงป๊อบอัพเตือนด้านบนทันที
+        alert("บัญชีของคุณถูกระงับสิทธิ์การใช้งาน กรุณาติดต่อผู้ดูแลระบบ");
+
+        // ล้างข้อมูลเซสชันทิ้ง และบังคับให้อยู่ที่หน้าล็อกอินเดิม
+        localStorage.removeItem("user");
+        navigate("/login");
+        return; // 🛑 ตัดจบ ไม่ให้ไหลลงไปทำงานด้านล่าง
+      }
+
+      console.log(res.data.user);
+      console.log("LOGIN USER =", userData);
+      // =================================
+      // 3. กรณีสิทธิ์ผ่านปกติ (แอดมิน, ครู, ผู้ปกครอง)
+      // =================================
+      localStorage.setItem(
+        "user",
+        JSON.stringify(userData)
+      );
+      onLoginSuccess();
+
+    } catch (err) {
+      console.log(err);
+      if (err.response && err.response.data) {
+        alert(err.response.data.error || "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง");
+      } else {
+        alert("เชื่อมต่อ Server ไม่ได้");
+      }
+    }
   };
-  try {
-    const res = await axios.post('http://127.0.0.1:3001/login', loginData );
-    // =================================
-    // 1. กรณี Login ไม่สำเร็จจากหลังบ้าน
-    // =================================
-    if (!res.data.success) {
-      alert(res.data.error || "ไม่สามารถเข้าสู่ระบบได้");
-      localStorage.removeItem("user");
-      navigate("/login");
-      return;
-    }
-
-    // =================================
-    // 2. ดักตรวจสอบสิทธิ์การใช้งาน (แก้ไขจุดนี้)
-    // =================================
-   // =================================
-    // 2. ดักตรวจสอบสิทธิ์การใช้งาน (ปรับตรงนี้ให้รัดกุมขึ้น)
-    // =================================
-    const userData = res.data.user;
-    
-    // ดึงค่า Role มาล้างช่องว่าง
-    const checkRole = String(userData?.role || userData?.Role || "")
-      .replace(/\s+/g, "")
-      .trim();
-
-    // ดึงค่า Status มาล้างช่องว่างด้วย
-    const checkStatus = String(userData?.status || userData?.Status || "")
-      .replace(/\s+/g, "")
-      .trim();
-
-    // 🚨 ตรวจสอบ: ถ้าเจอคำว่าระงับสิทธิ์ไม่ว่าจะจากช่อง Role หรือ Status ให้บล็อกทันที
-    if (
-      checkRole === "ถูกระงับสิทธิ์" || 
-      checkStatus === "ถูกระงับสิทธิ์" || 
-      checkStatus === "ถูกระงับ" || 
-      checkStatus === "ระงับ"
-    ) {
-      // แสดงป๊อบอัพเตือนด้านบนทันที
-      alert("บัญชีของคุณถูกระงับสิทธิ์การใช้งาน กรุณาติดต่อผู้ดูแลระบบ");
-      
-      // ล้างข้อมูลเซสชันทิ้ง และบังคับให้อยู่ที่หน้าล็อกอินเดิม
-      localStorage.removeItem("user");
-      navigate("/login");
-      return; // 🛑 ตัดจบ ไม่ให้ไหลลงไปทำงานด้านล่าง
-    }
-
-    // =================================
-    // 3. กรณีสิทธิ์ผ่านปกติ (แอดมิน, ครู, ผู้ปกครอง)
-    // =================================
-    localStorage.setItem(
-      "user",
-      JSON.stringify(userData)
-    );
-    onLoginSuccess();
-
-  } catch(err) {
-    console.log(err);
-    if (err.response && err.response.data) {
-      alert(err.response.data.error || "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง");
-    } else {
-      alert("เชื่อมต่อ Server ไม่ได้");
-    }
-  }
-};
 
   // 🛠️ ปรับปรุงจุดนี้: เมื่อกดปุ่มจะวิ่งไปตาม Path "/register" ที่พี่ตั้งไว้ใน Routes ทันที
   const handleGoToRegister = () => {
-    navigate('/register'); 
+    navigate('/register');
   };
 
   return (
     <div style={styles.container}>
       <div style={styles.card}>
-        
+
         {/* 🎨 ฝั่งซ้าย: พื้นหลังรูปตึกโรงเรียน */}
-        <div style={{...styles.leftPanel, backgroundImage: `url(${schoolImg})`}}>
-          
+        <div style={{ ...styles.leftPanel, backgroundImage: `url(${schoolImg})` }}>
+
           {/* ข้อความขยับขึ้นมาและเปลี่ยนเป็นสีน้ำเงินเรียบร้อยครับ */}
           <div style={styles.logoArea}>
             <h2 style={styles.logoText}>ระบบบันทึกกิจกรรมนักเรียนระดับปฐมวัย</h2>
@@ -118,7 +120,7 @@ const handleSubmit = async (e) => {
                 onChange={(e) => setUsername(e.target.value)}
                 style={styles.input}
                 required
-                autoComplete="one-time-code" 
+                autoComplete="one-time-code"
               />
             </div>
 
@@ -131,7 +133,7 @@ const handleSubmit = async (e) => {
                 onChange={(e) => setPassword(e.target.value)}
                 style={styles.input}
                 required
-                autoComplete="new-password" 
+                autoComplete="new-password"
               />
             </div>
 
@@ -142,9 +144,9 @@ const handleSubmit = async (e) => {
             {/* ปุ่มเชื่อมต่อไปหน้าลงทะเบียน */}
             <div style={styles.registerContainer}>
               <span style={styles.registerText}>ยังไม่มีบัญชีผู้ใช้?</span>
-              <button 
-                type="button" 
-                onClick={handleGoToRegister} 
+              <button
+                type="button"
+                onClick={handleGoToRegister}
                 style={styles.registerButton}
               >
                 ลงทะเบียนเข้าใช้งาน
@@ -159,6 +161,7 @@ const handleSubmit = async (e) => {
   );
 }
 
+
 const styles = {
   container: {
     display: "flex",
@@ -166,7 +169,7 @@ const styles = {
     alignItems: "center",
     minHeight: "100vh",
     width: "100vw",
-    backgroundColor: "#e0f2fe", 
+    backgroundColor: "#e0f2fe",
     fontFamily: "'Inter', 'Kanit', sans-serif",
     position: "absolute",
     top: 0,
@@ -175,24 +178,24 @@ const styles = {
   },
   card: {
     display: "grid",
-    gridTemplateColumns: "1fr 1fr", 
+    gridTemplateColumns: "1fr 1fr",
     backgroundColor: "#ffffff",
-    borderRadius: "20px", 
-    width: "900px", 
+    borderRadius: "20px",
+    width: "900px",
     height: "600px",
-    boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.1)", 
-    overflow: "hidden", 
+    boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.1)",
+    overflow: "hidden",
   },
   leftPanel: {
-    backgroundSize: "cover", 
-    backgroundPosition: "center", 
+    backgroundSize: "cover",
+    backgroundPosition: "center",
     backgroundRepeat: "no-repeat",
-    color: "#1d4ed8", 
+    color: "#1d4ed8",
     padding: "40px",
     display: "flex",
     flexDirection: "column",
-    justifyContent: "flex-end", 
-    alignItems: "center",    
+    justifyContent: "flex-end",
+    alignItems: "center",
     position: "relative",
     textAlign: "center"
   },
@@ -200,22 +203,22 @@ const styles = {
     display: "flex",
     flexDirection: "column",
     gap: "8px",
-    zIndex: 2, 
-    marginBottom: "60px" 
+    zIndex: 2,
+    marginBottom: "60px"
   },
   logoText: {
     margin: 0,
     fontWeight: "700",
     fontSize: "20px",
     lineHeight: "1.4",
-    color: "#3c3e8d", 
-    textShadow: "0 1px 4px rgba(255, 255, 255, 0.6)" 
+    color: "#3c3e8d",
+    textShadow: "0 1px 4px rgba(255, 255, 255, 0.6)"
   },
   logoSubText: {
     margin: 0,
     fontSize: "14px",
     fontWeight: "600",
-    color: "#2563eb", 
+    color: "#2563eb",
     textShadow: "0 1px 4px rgba(255, 255, 255, 0.6)"
   },
   rightPanel: {
@@ -227,10 +230,10 @@ const styles = {
     display: "flex",
     flexDirection: "column",
     flex: 1,
-    justifyContent: "center", 
+    justifyContent: "center",
   },
   title: {
-    fontSize: "28px", 
+    fontSize: "28px",
     fontWeight: "700",
     margin: "0 0 40px 0",
     color: "#1e293b",
@@ -257,14 +260,14 @@ const styles = {
     outline: "none",
     fontSize: "14px",
     color: "#334155",
-    backgroundColor: "#f8fafc", 
+    backgroundColor: "#f8fafc",
   },
   button: {
     width: "100%",
     padding: "14px",
     borderRadius: "8px",
     border: "none",
-    background: "#4f46e5", 
+    background: "#4f46e5",
     color: "#ffffff",
     fontWeight: "600",
     fontSize: "16px",
