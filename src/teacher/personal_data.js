@@ -237,6 +237,7 @@ const styles = {
     width: "100%",
     fontFamily: "'Kanit', sans-serif",
   },
+
   btnSave: {
     width: "100%",
     padding: "12px",
