@@ -61,11 +61,7 @@ function parseDateForMySQL(dateStr) {
 // 👤 ระบบ API จัดการข้อมูลผู้ใช้งาน (USERS)
 // ==========================================
 app.get(["/users", "/api/users"], (req, res) => {
-  const sql = `
-SELECT User_id, Name, Phone, UserName, Password, Role, Status
-FROM users
-ORDER BY User_id DESC
-`;
+  const sql = "SELECT User_id, Name, Phone, UserName, Password, Role FROM users ORDER BY User_id DESC";
   db.query(sql, (err, result) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json(result);
@@ -89,60 +85,15 @@ app.get("/users/:id", (req, res) => {
 });
 
 app.put("/users/:id", (req, res) => {
-  const { Name, Phone, UserName, Role, Status, Password } = req.body;
+  const { Name, Phone, UserName, Role, Password } = req.body;
+  let sql = (Password && Password.trim() !== "")
+    ? `UPDATE users SET Name=?, Phone=?, UserName=?, Role=?, Password=? WHERE User_id=?`
+    : `UPDATE users SET Name=?, Phone=?, UserName=?, Role=? WHERE User_id=?`;
+  let params = (Password && Password.trim() !== "") ? [Name, Phone, UserName, Role, Password, req.params.id] : [Name, Phone, UserName, Role, req.params.id];
 
-  let sql;
-  let params;
-
-  if (Password && Password.trim() !== "") {
-    sql = `
-      UPDATE users
-      SET Name=?,
-          Phone=?,
-          UserName=?,
-          Role=?,
-          Status=?,
-          Password=?
-      WHERE User_id=?
-    `;
-
-    params = [
-      Name,
-      Phone,
-      UserName,
-      Role,
-      Status,
-      Password,
-      req.params.id
-    ];
-  } else {
-    sql = `
-      UPDATE users
-      SET Name=?,
-          Phone=?,
-          UserName=?,
-          Role=?,
-          Status=?
-      WHERE User_id=?
-    `;
-
-    params = [
-      Name,
-      Phone,
-      UserName,
-      Role,
-      Status,
-      req.params.id
-    ];
-  }
-
-  db.query(sql, params, (err) => {
+  db.query(sql, params, (err, result) => {
     if (err) return res.status(500).json(err);
-
-    res.json({
-      success: true,
-      message: "อัปเดตผู้ใช้งานสำเร็จ"
-    });
+    res.json({ success: true, message: "อัปเดตผู้ใช้งานสำเร็จ" });
   });
 });
 
@@ -280,21 +231,7 @@ app.delete("/api/students/:id", (req, res) => {
 // 📢 ระบบ API จัดการข้อมูลการแจ้งเตือน (NOTIFICATIONS)
 // ==========================================
 app.get("/notifications", (req, res) => {
-  const sql = `
-    SELECT
-      Notification_id,
-      User_id,
-      Class_level,
-      Subject,
-      DATE_FORMAT(Deadline, '%Y-%m-%d') AS Deadline,
-      DATE_FORMAT(\`Date\`, '%Y-%m-%d') AS Date,
-      Details
-    FROM notification
-    WHERE Deadline IS NULL
-       OR Deadline >= CURDATE()
-    ORDER BY Deadline ASC
-  `;
-
+  const sql = "SELECT Notification_id, User_id, Class_level, Subject, DATE_FORMAT(Deadline, '%Y-%m-%d') AS Deadline, DATE_FORMAT(\`Date\`, '%Y-%m-%d') AS Date, Details FROM notification ORDER BY Notification_id DESC";
   db.query(sql, (err, results) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json(results);
@@ -305,8 +242,7 @@ app.post("/notifications", (req, res) => {
   const body = req.body || {};
   const { Class_level, Subject, Details } = body;
   const cleanDeadline = parseDateForMySQL(body.Deadline || body.deadline);
-  const today = new Date().toISOString().split("T")[0];
-  const cleanDate = today;
+  const cleanDate = parseDateForMySQL(body.Date || body.date);
   const User_id = parseInt(body.User_id || body.user_id, 10) || 2;
 
   const sql = "INSERT INTO notification (User_id, Class_level, Subject, Deadline, \`Date\`, Details) VALUES (?, ?, ?, ?, ?, ?)";
@@ -327,29 +263,6 @@ app.put("/notifications/:id", (req, res) => {
   db.query(sql, [User_id, Class_level, Subject, cleanDeadline, cleanDate, Details || null, req.params.id], (err, result) => {
     if (err) { console.error(err); return res.status(500).json({ error: err.message }); }
     res.json({ message: "แก้ไขข้อมูลแจ้งเตือนสำเร็จ" });
-  });
-});
-app.delete("/notifications/:id", (req, res) => {
-  const sql = "DELETE FROM notification WHERE Notification_id = ?";
-
-  db.query(sql, [req.params.id], (err, result) => {
-    if (err) {
-      console.error(err);
-      return res.status(500).json({
-        error: err.message
-      });
-    }
-
-    if (result.affectedRows === 0) {
-      return res.status(404).json({
-        message: "ไม่พบข้อมูล"
-      });
-    }
-
-    res.json({
-      success: true,
-      message: "ลบการแจ้งเตือนสำเร็จ"
-    });
   });
 });
 
@@ -681,9 +594,9 @@ app.post('/api/register', (req, res) => {
 
     // 🚨 1. บังคับกำหนดสิทธิ์ใหม่ (ไม่ใช้ค่า Role ที่หน้าบ้านส่งมาเด็ดขาด!)
     let fixedRole = "ผู้ปกครอง"; // ตั้งค่า Default ปลอดภัยไว้ก่อน
-    
+
     const lowerClass = String(Class_level || "").toLowerCase();
-    
+
     // ถ้าหน้าบ้านส่ง Class_level มาเป็นค่าว่าง หรือ NULL แสดงว่าเป็น "ครูผู้สอน"
     if (!Class_level || lowerClass === "null" || lowerClass === "") {
       fixedRole = "ครูผู้สอน";
@@ -699,8 +612,8 @@ app.post('/api/register', (req, res) => {
     // - ? ตัวที่ 5 (ช่อง Role)   -> เราบังคับใส่ตัวแปร fixedRole (ที่สลัดคำว่าถูกระงับสิทธิ์ทิ้งไปแล้ว)
     // - ? ตัวที่ 7 (ช่อง Status) -> บังคับใส่ข้อความ "ถูกระงับสิทธิ์"
     db.query(
-      insertQuery, 
-      [Name, Phone, Password, UserName, fixedRole, Class_level, "ถูกระงับสิทธิ์"], 
+      insertQuery,
+      [Name, Phone, Password, UserName, fixedRole, Class_level, "ถูกระงับสิทธิ์"],
       (err, result) => {
         if (err) return res.status(500).json({ error: err.message });
         return res.status(200).json({ message: 'ลงทะเบียนเรียบร้อยแล้ว!' });
