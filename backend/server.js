@@ -242,7 +242,7 @@ app.get("/notifications", (req, res) => {
     WHERE Deadline >= CURDATE()
     ORDER BY Notification_id DESC
   `;
-  
+
   db.query(sql, (err, results) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json(results);
@@ -427,78 +427,162 @@ app.post("/attendance/save", (req, res) => {
   });
 });
 
-// ==========================================
-// 🚀 API สำหรับระบบประเมินพัฒนาการเด็ก (Development)
-// ==========================================
-app.get('/api/development', (req, res) => {
-  // 🌟 ปรับ SQL ให้ผูกตาราง student ดึงชื่อจริง (s.Name) มาในคีย์ชื่อ Student_name
-  const sql = `
-    SELECT 
-      d.*, 
-      s.Name AS Student_name, 
-      DATE_FORMAT(d.\`Date\`, "%Y-%m-%d") AS date_clean 
-    FROM development d
-    INNER JOIN student s ON d.Student_id = s.Student_id 
-    ORDER BY d.Year DESC, d.Term DESC, d.Development_id DESC
-  `;
 
-  db.query(sql, (err, results) => {
+
+// ==========================================
+// 🧑‍🎓 1. [GET] ดึงรายชื่อนักเรียนเฉพาะห้องเรียนของครู
+// ==========================================
+app.get('/api/student', (req, res) => {
+  const { class_level } = req.query;
+
+  if (!class_level) {
+    return res.status(400).json({ message: "กรุณาระบุ class_level ของคุณครู" });
+  }
+
+  // 🛠️ จุดที่ 1: เปลี่ยนจาก students เป็น student
+  const sql = "SELECT * FROM student WHERE class_level = ?";
+  db.query(sql, [class_level], (err, results) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json(results);
   });
 });
 
-app.post('/api/development', (req, res) => {
-  const body = req.body || {};
-  const { Student_id, student_id, Year, year, Term, term, Physical, Weight, Height, Dental_health, Vaccination, Motor_skills, Emotional, Emotion, Emotion_control, Confidence, Social, Stress, Interaction, Assistance, Intellectual, Problem_solving, Communication, Remembering } = body;
-  const cleanDate = parseDateForMySQL(body.date || body.Date) || new Date().toISOString().split('T')[0];
+// ==========================================
+// 📊 2. [GET] ดึงประวัติพัฒนาการทั้งหมดเฉพาะห้องเรียนของครู
+// ==========================================
+app.get('/api/development', (req, res) => {
+  const { class_level } = req.query;
 
-  const sql = `INSERT INTO development (Student_id, Year, Term, \`Date\`, Physical, Weight, Height, Dental_health, Vaccination, Motor_skills, Emotional, Emotion, Emotion_control, Confidence, Social, Stress, Interaction, Assistance, Intellectual, Problem_solving, Communication, Remembering) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-  const values = [Student_id || student_id || 1, Year || year || "2569", Term || term || "ภาคเรียนที่ 1", cleanDate, Physical || null, Weight || null, Height || null, Dental_health || null, Vaccination || null, Motor_skills || null, Emotional || null, Emotion || null, Emotion_control || null, Confidence || null, Social || null, Stress || null, Interaction || null, Assistance || null, Intellectual || null, Problem_solving || null, Communication || null, Remembering || null];
+  if (!class_level) {
+    return res.status(400).json({ message: "กรุณาระบุ class_level ของคุณครู" });
+  }
 
-  db.query(sql, values, (err, result) => {
+  // 🛠️ จุดที่ 2: เปลี่ยนตรง JOIN จาก students s เป็น student s
+  const sql = `
+    SELECT d.*, s.Name as Student_name, s.class_level,
+           DATE_FORMAT(d.date, '%Y-%m-%d') as date_clean
+    FROM development d
+    JOIN student s ON d.Student_id = s.Student_id
+    WHERE s.class_level = ?
+    ORDER BY d.date DESC, d.Development_id DESC
+  `;
+
+  db.query(sql, [class_level], (err, results) => {
     if (err) return res.status(500).json({ error: err.message });
-    res.status(201).json({ message: 'บันทึกพัฒนาการสำเร็จ', id: result.insertId });
+    res.json(results);
   });
 });
 
-app.put('/api/development/:id', (req, res) => {
-  const devId = req.params.id;
-  const body = req.body || {};
-  const { Student_id, student_id, Year, year, Term, term, Physical, Weight, Height, Dental_health, Vaccination, Motor_skills, Emotional, Emotion, Emotion_control, Confidence, Social, Stress, Interaction, Assistance, Intellectual, Problem_solving, Communication, Remembering } = body;
+// ==========================================
+// ➕ 3. [POST] บันทึกข้อมูลพัฒนาการใหม่
+// ==========================================
+app.post('/api/development', (req, res) => {
+  const {
+    Student_id, Year, Term, date, Physical, Weight, Height, Dental_health,
+    Vaccination, Motor_skills, Emotional, Emotion, Emotion_control, Confidence,
+    Social, Stress, Interaction, Assistance, Intellectual, Problem_solving,
+    Communication, Remembering
+  } = req.body;
 
   const sql = `
-    UPDATE development 
-    SET 
-      Student_id = ?, Year = ?, Term = ?, 
-      Physical = ?, Weight = ?, Height = ?, Dental_health = ?, Vaccination = ?, 
-      Motor_skills = ?, Emotional = ?, Emotion = ?, Emotion_control = ?, Confidence = ?, 
-      Social = ?, Stress = ?, Interaction = ?, Assistance = ?, 
-      Intellectual = ?, Problem_solving = ?, Communication = ?, Remembering = ?
-    WHERE Development_id = ?
+    INSERT INTO development 
+    (Student_id, Year, Term, date, Physical, Weight, Height, Dental_health, 
+     Vaccination, Motor_skills, Emotional, Emotion, Emotion_control, Confidence, 
+     Social, Stress, Interaction, Assistance, Intellectual, Problem_solving, 
+     Communication, Remembering) 
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
 
   const values = [
-    Student_id || student_id || 1, Year || year || "2569", Term || term || "ภาคเรียนที่ 1",
-    Physical || null, Weight || null, Height || null, Dental_health || null, Vaccination || null,
-    Motor_skills || null, Emotional || null, Emotion || null, Emotion_control || null, Confidence || null,
-    Social || null, Stress || null, Interaction || null, Assistance || null,
-    Intellectual || null, Problem_solving || null, Communication || null, Remembering || null,
-    devId
+    Student_id, Year, Term, date, Physical, Weight, Height, Dental_health,
+    Vaccination, Motor_skills, Emotional, Emotion, Emotion_control, Confidence,
+    Social, Stress, Interaction, Assistance, Intellectual, Problem_solving,
+    Communication, Remembering
   ];
 
   db.query(sql, values, (err, result) => {
-    if (err) { console.error("Database error (PUT DEV):", err); return res.status(500).json({ error: "ไม่สามารถอัปเดตข้อมูลพัฒนาการได้", details: err.message }); }
-    res.json({ message: "แก้ไขข้อมูลประเมินพัฒนาการสำเร็จ" });
+    if (err) return res.status(500).json({ error: err.message });
+    res.json({ message: "บันทึกข้อมูลพัฒนาการสำเร็จ", insertId: result.insertId });
   });
 });
 
+// ==========================================
+// 📝 4. [PUT] อัปเดต/แก้ไขข้อมูลพัฒนาการ (บล็อกข้ามห้องเรียน)
+// ==========================================
+app.put('/api/development/:id', (req, res) => {
+  const devId = req.params.id;
+  const {
+    class_level, Student_id, Year, Term, date, Physical, Weight, Height,
+    Dental_health, Vaccination, Motor_skills, Emotional, Emotion, Emotion_control,
+    Confidence, Social, Stress, Interaction, Assistance, Intellectual,
+    Problem_solving, Communication, Remembering
+  } = req.body;
+
+  // 🛠️ จุดที่ 3: เปลี่ยนตรง JOIN จาก students s เป็น student s เพื่อตรวจสอบสิทธิ์
+  const verifySql = `
+    SELECT d.Development_id FROM development d
+    JOIN student s ON d.Student_id = s.Student_id
+    WHERE d.Development_id = ? AND s.class_level = ?
+  `;
+
+  db.query(verifySql, [devId, class_level], (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (rows.length === 0) {
+      return res.status(403).json({ message: "⚠️ ปฏิเสธการเข้าถึง: คุณไม่มีสิทธิ์แก้ไขข้อมูลพัฒนาการของห้องเรียนอื่น" });
+    }
+
+    const updateSql = `
+      UPDATE development SET 
+        Student_id = ?, Year = ?, Term = ?, date = ?, Physical = ?, Weight = ?, Height = ?, 
+        Dental_health = ?, Vaccination = ?, Motor_skills = ?, Emotional = ?, Emotion = ?, 
+        Emotion_control = ?, Confidence = ?, Social = ?, Stress = ?, Interaction = ?, 
+        Assistance = ?, Intellectual = ?, Problem_solving = ?, Communication = ?, Remembering = ?
+      WHERE Development_id = ?
+    `;
+
+    const values = [
+      Student_id, Year, Term, date, Physical, Weight, Height, Dental_health,
+      Vaccination, Motor_skills, Emotional, Emotion, Emotion_control, Confidence,
+      Social, Stress, Interaction, Assistance, Intellectual, Problem_solving,
+      Communication, Remembering, devId
+    ];
+
+    db.query(updateSql, values, (err, result) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json({ message: "แก้ไขข้อมูลพัฒนาการสำเร็จ" });
+    });
+  });
+});
+
+// ==========================================
+// 🗑️ 5. [DELETE] ลบข้อมูลพัฒนาการ (บล็อกข้ามห้องเรียน)
+// ==========================================
 app.delete('/api/development/:id', (req, res) => {
   const devId = req.params.id;
-  const sql = "DELETE FROM development WHERE Development_id = ?";
-  db.query(sql, [devId], (err, result) => {
-    if (err) { console.error("Database error (DELETE DEV):", err); return res.status(500).json({ error: "ไม่สามารถลบข้อมูลพัฒนาการได้", details: err.message }); }
-    res.json({ message: "ลบข้อมูลประเมินพัฒนาการเรียบร้อยแล้ว" });
+  const { class_level } = req.query;
+
+  if (!class_level) {
+    return res.status(400).json({ message: "กรุณาระบุ class_level เพื่อตรวจสอบสิทธิ์การลบ" });
+  }
+
+  // 🛠️ จุดที่ 4: เปลี่ยนตรง JOIN จาก students s เป็น student s ก่อนสั่งลบ
+  const verifySql = `
+    SELECT d.Development_id FROM development d
+    JOIN student s ON d.Student_id = s.Student_id
+    WHERE d.Development_id = ? AND s.class_level = ?
+  `;
+
+  db.query(verifySql, [devId, class_level], (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (rows.length === 0) {
+      return res.status(403).json({ message: "⚠️ ปฏิเสธการเข้าถึง: คุณไม่มีสิทธิ์ลบข้อมูลพัฒนาการของห้องเรียนอื่น" });
+    }
+
+    const deleteSql = "DELETE FROM development WHERE Development_id = ?";
+    db.query(deleteSql, [devId], (err, result) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json({ message: "ลบข้อมูลการประเมินพัฒนาการเรียบร้อย" });
+    });
   });
 });
 

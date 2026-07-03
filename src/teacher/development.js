@@ -45,6 +45,17 @@ export default function Development() {
   const API_URL = 'http://localhost:3001/api/development';
   const STUDENTS_API_URL = 'http://localhost:3001/api/students?id=all';
 
+  // ฟังก์ชันดึงค่า class_level ของนักเรียนปัจจุบันหรือคนแรก เพื่อใช้รีเฟรชข้อมูล
+  const getCurrentClassLevel = (studentId) => {
+    const targetId = studentId || formData.Student_id;
+    if (!targetId && students.length > 0) {
+      const first = students[0];
+      return first.Class_level || first.class_level || first.Level || first.level;
+    }
+    const found = students.find(s => String(s.Student_id || s.id || s.student_id) === String(targetId));
+    return found ? (found.Class_level || found.class_level || found.Level || found.level) : null;
+  };
+
   const fetchStudentsData = async () => {
     try {
       const res = await fetch(STUDENTS_API_URL);
@@ -52,12 +63,18 @@ export default function Development() {
         const data = await res.json();
         const cleanData = Array.isArray(data) ? data : [];
         setStudents(cleanData);
-        
+
         // 🌟 สิ่งที่เพิ่มเข้ามา: ถ้ามีข้อมูลนักเรียน ให้ตั้งค่ารหัสคนแรกลงฟอร์มทันที
         if (cleanData.length > 0) {
           const firstStudent = cleanData[0];
           const firstId = String(firstStudent.Student_id || firstStudent.id || firstStudent.student_id);
           setFormData(prev => ({ ...prev, Student_id: firstId }));
+
+          // 🌟 เมื่อได้ข้อมูลนักเรียนแล้ว ให้ดึงระดับชั้นไปสั่งโหลดข้อมูลพัฒนาการต่อทันที
+          const level = firstStudent.Class_level || firstStudent.class_level || firstStudent.Level || firstStudent.level;
+          if (level) {
+            fetchDevelopmentData(level);
+          }
         }
       }
     } catch (err) {
@@ -65,10 +82,14 @@ export default function Development() {
     }
   };
 
-  const fetchDevelopmentData = async () => {
+  const fetchDevelopmentData = async (classLevel) => {
+    // 🌟 ถ้าไม่มีการส่งระดับชั้นมา จะไม่เรียก API เพื่อป้องกัน Error 400 Bad Request
+    if (!classLevel) return;
+
     setLoading(true);
     try {
-      const res = await fetch(API_URL);
+      // 🌟 แนบ Query Parameter (?class_level=...) ไปกับคำขอตามที่ Backend กำหนด
+      const res = await fetch(`${API_URL}?class_level=${encodeURIComponent(classLevel)}`);
       if (res.ok) {
         const data = await res.json();
         setDevList(data);
@@ -82,7 +103,7 @@ export default function Development() {
 
   useEffect(() => {
     fetchStudentsData();
-    fetchDevelopmentData();
+    // เอา fetchDevelopmentData() ออกจากตรงนี้ ย้ายไปรันต่อท้าย fetchStudentsData แทนเพื่อให้มีระดับชั้นส่งไป
   }, []);
 
   const getStudentName = useCallback((studentId) => {
@@ -134,8 +155,11 @@ export default function Development() {
       if (res.ok) {
         alert("บันทึกการประเมินพัฒนาการเรียบร้อย!");
         setIsAddOpen(false);
+
+        // 🌟 ดึงระดับชั้นของนักเรียนปัจจุบันมาอัปเดตหน้าจอหลักหลังจากเพิ่มข้อมูลเสร็จ
+        const currentLevel = getCurrentClassLevel(formData.Student_id);
         resetForm();
-        fetchDevelopmentData();
+        fetchDevelopmentData(currentLevel);
       } else {
         alert("ไม่สามารถบันทึกข้อมูลได้");
       }
@@ -206,8 +230,11 @@ export default function Development() {
       if (res.ok) {
         alert("แก้ไขข้อมูลการประเมินสำเร็จ!");
         setIsEditOpen(false);
+
+        // 🌟 ดึงระดับชั้นมาอัปเดตหน้าจอหลักหลังจากแก้ไขเสร็จ
+        const currentLevel = getCurrentClassLevel(formData.Student_id);
         resetForm();
-        fetchDevelopmentData();
+        fetchDevelopmentData(currentLevel);
       } else {
         alert("ไม่สามารถแก้ไขข้อมูลได้");
       }
@@ -223,8 +250,11 @@ export default function Development() {
       if (res.ok) {
         alert("ลบข้อมูลการประเมินเรียบร้อย!");
         setIsDeleteOpen(false);
+
+        // 🌟 ดึงระดับชั้นมาอัปเดตหน้าจอหลักหลังจากลบข้อมูลเสร็จ
+        const currentLevel = getCurrentClassLevel(formData.Student_id);
         resetForm();
-        fetchDevelopmentData();
+        fetchDevelopmentData(currentLevel);
       } else {
         alert("ไม่สามารถลบข้อมูลได้");
       }
@@ -318,7 +348,7 @@ export default function Development() {
                   <div style={styles.bodyDetailsSummary}>
                     <span>⚖️ น้ำหนัก: <strong>{item.Weight || '-'}</strong> กก.</span>
                     <span>📏 ส่วนสูง: <strong>{item.Height || '-'}</strong> ซม.</span>
-                    <span>🦷 สุขภาพฟัน: <strong style={{color: '#2e7d32'}}>{item.Dental_health || 'ปกติ'}</strong></span>
+                    <span>🦷 สุขภาพฟัน: <strong style={{ color: '#2e7d32' }}>{item.Dental_health || 'ปกติ'}</strong></span>
                   </div>
                 </div>
               );
@@ -341,9 +371,8 @@ export default function Development() {
             <div style={styles.formScrollable}>
               <div style={{ backgroundColor: '#f0f4f8', padding: '12px', borderRadius: '8px', marginBottom: '15px' }}>
                 <div style={{ fontSize: '15px', fontWeight: 'bold', marginBottom: '4px', color: '#000' }}>
-                {/* สลับมาใช้ Student_name เช่นกัน เพื่อให้เวลาเปิดดูรายละเอียด ชื่อเด็กขึ้นโชว์ถูกต้องแน่นอน */}
                   นักเรียน: {selectedDetailItem.Student_name || getStudentName(selectedDetailItem.Student_id)}
-                  </div>
+                </div>
                 <div style={{ fontSize: '12px', color: '#555' }}>
                   วันที่ทำรายการประเมิน: {selectedDetailItem.date_clean || (selectedDetailItem.date ? String(selectedDetailItem.date).split('T')[0] : 'ไม่ระบุ')}
                 </div>
@@ -606,8 +635,7 @@ const styles = {
   circleUnit: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' },
   circleScore: { width: '50px', height: '50px', borderRadius: '50%', border: '1px solid #888', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: 'bold', backgroundColor: '#fff' },
   circleLabel: { fontSize: '11px', color: '#555' },
-  
-  // 🌟 เพิ่มสไตล์ bodyDetailsSummary ของฝั่งครูเพื่อจัดรูปแบบข้อมูลร่างกายที่เพิ่มเข้ามาใหม่
+
   bodyDetailsSummary: { display: 'flex', justifyContent: 'space-between', backgroundColor: '#fff', padding: '8px 12px', borderRadius: '6px', fontSize: '12px', color: '#555', border: '1px solid #eee', marginTop: '14px' },
 
   overlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 },
