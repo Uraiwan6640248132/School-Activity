@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 export default function Developmentp() {
   const [devList, setDevList] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [students, setStudents] = useState([]); 
+  const [students, setStudents] = useState([]);
 
   // State สำหรับเปิด-ปิดหน้าต่าง Pop-up รายละเอียดพัฒนาการ
   const [isDetailOpen, setIsDetailOpen] = useState(false);
@@ -23,7 +23,7 @@ export default function Developmentp() {
         const data = await res.json();
         const cleanData = Array.isArray(data) ? data : [];
         setStudents(cleanData);
-        
+
         if (cleanData.length > 0) {
           const childIds = cleanData.map(s => Number(s.Student_id || s.id || s.student_id || s.Student_Id));
           return childIds;
@@ -76,12 +76,18 @@ export default function Developmentp() {
       }
 
       const loadParentDashboard = async () => {
-        // ดึงข้อมูลปกติ
-        await fetchStudentsData(userId); 
-        
-        // บังคับล็อกเป้าหมายไปที่ไอดี 11
-        setStudentIdOfParent(11); 
-        await fetchDevelopmentData(11); 
+        // 🔒 ดึงเฉพาะรายชื่อ "ลูกของผู้ปกครองคนนี้" จาก backend (กรองด้วย userId)
+        const childIds = await fetchStudentsData(userId);
+
+        if (childIds && childIds.length > 0) {
+          // ใช้ลูกคนแรกแสดงในหัวข้อ (ถ้ามีมากกว่า 1 คน รายการด้านล่างจะแสดงครบทุกคนอยู่แล้ว)
+          setStudentIdOfParent(childIds[0]);
+          // 🔒 ส่งเฉพาะไอดีลูกของผู้ปกครองคนนี้ไปกรองข้อมูลพัฒนาการ ห้ามเห็นของเด็กคนอื่น
+          await fetchDevelopmentData(childIds);
+        } else {
+          console.warn("ไม่พบข้อมูลนักเรียนที่ผูกกับบัญชีผู้ปกครองนี้");
+          setStudentIdOfParent(null);
+        }
       };
 
       loadParentDashboard();
@@ -90,15 +96,9 @@ export default function Developmentp() {
       console.error("เกิดข้อผิดพลาดในการอ่านข้อมูลผู้ใช้:", error);
     }
   }, []);
-  
-  // 🌟 ฟังก์ชันค้นหาชื่อนักเรียนตามรหัส (เพิ่มดัก Bypass เลข 11 ให้ขึ้นชื่อ ปิม ทันที)
+
   const getStudentName = useCallback((studentId) => {
     if (!studentId) return "ไม่ระบุรหัส";
-    
-    // 🔥 จุดแก้ไขเร่งด่วน: ถ้าหาไอดี 11 ให้แสดงชื่อ "ปิม" ทันที ไม่ต้องรอโหลดจาก API
-    if (Number(studentId) === 11) {
-      return "ปิม";
-    }
 
     if (!students || students.length === 0) return `กำลังค้นหารหัส: ${studentId}...`;
 
@@ -119,7 +119,7 @@ export default function Developmentp() {
     const validScores = scores.map(s => isNaN(Number(s)) ? 0 : Number(s));
     const sum = validScores.reduce((a, b) => a + b, 0);
     const avg = sum / validScores.length;
-    return Math.round(avg * 20); 
+    return Math.round(avg * 20);
   };
 
   const openDetailModal = (item) => {
@@ -143,13 +143,18 @@ export default function Developmentp() {
   return (
     <div style={styles.container}>
       <div style={styles.cardMain}>
-        
+
         {/* ส่วนหัวแสดงข้อมูลของนักเรียน */}
         <div style={styles.headerRow}>
           <div>
             <h2 style={styles.mainTitle}>สรุปผลพัฒนาการนักเรียน</h2>
             <p style={styles.studentNameDisplay}>
-              <strong>นักเรียน:</strong> <span style={{ color: '#1e3a8a', fontWeight: 'bold' }}>{getStudentName(studentIdOfParent)}</span>
+              <strong>นักเรียน:</strong>{' '}
+              {studentIdOfParent ? (
+                <span style={{ color: '#1e3a8a', fontWeight: 'bold' }}>{getStudentName(studentIdOfParent)}</span>
+              ) : (
+                <span style={{ color: '#b91c1c' }}>ไม่พบข้อมูลนักเรียนที่ผูกกับบัญชีของคุณ</span>
+              )}
             </p>
           </div>
           <div style={styles.badgeParent}>ฝั่งผู้ปกครอง</div>
@@ -163,21 +168,21 @@ export default function Developmentp() {
             <div style={styles.emptyState}>ยังไม่มีข้อมูลการประเมินพัฒนาการจากคุณครูในขณะนี้</div>
           ) : (
             devList.map((item, idx) => {
-              const scoreBody = item.Weight && item.Height ? 100 : 75; 
+              const scoreBody = item.Weight && item.Height ? 100 : 75;
               const scoreIntellect = calculateSectionScore([item.Problem_solving, item.Communication, item.Remembering]);
               const scoreEmotion = calculateSectionScore([item.Emotion, item.Emotion_control, item.Confidence]);
               const scoreSocial = calculateSectionScore([item.Stress, item.Interaction, item.Assistance]);
-              
-              const displayDate = item.date_clean || 
-                                  (item.Date ? String(item.Date).split('T')[0] : '') || 
-                                  (item.date ? String(item.date).split('T')[0] : 'ไม่ได้ระบุ');
+
+              const displayDate = item.date_clean ||
+                (item.Date ? String(item.Date).split('T')[0] : '') ||
+                (item.date ? String(item.date).split('T')[0] : 'ไม่ได้ระบุ');
 
               let displayTerm = item.Term || item.term || "ภาคเรียนที่ 1";
               if (displayTerm.trim() === 'ภาคเรียนที่') {
-                displayTerm = idx === 0 ? 'ภาคเรียนที่ 1' : 'ภาคเรียนที่ 2'; 
+                displayTerm = idx === 0 ? 'ภาคเรียนที่ 1' : 'ภาคเรียนที่ 2';
               }
 
-              const currentItemStudentId = item.Student_id || item.student_id || item.Student_Id || 11;
+              const currentItemStudentId = item.Student_id || item.student_id || item.Student_Id;
 
               return (
                 <div key={idx} style={styles.devCardItem}>
@@ -190,8 +195,8 @@ export default function Developmentp() {
                   </div>
 
                   {/* แถววงกลมคะแนน 4 ด้านหลัก */}
-                  <div 
-                    style={{ ...styles.circlesRow, cursor: 'pointer' }} 
+                  <div
+                    style={{ ...styles.circlesRow, cursor: 'pointer' }}
                     onClick={() => openDetailModal(item)}
                     title="คลิกเพื่อดูรายละเอียดเพิ่มเติม"
                   >
@@ -217,7 +222,7 @@ export default function Developmentp() {
                   <div style={styles.bodyDetailsSummary}>
                     <span>⚖️ น้ำหนัก: <strong>{item.Weight || '-'}</strong> กก.</span>
                     <span>📏 ส่วนสูง: <strong>{item.Height || '-'}</strong> ซม.</span>
-                    <span>🦷 สุขภาพฟัน: <strong style={{color: '#2e7d32'}}>{item.Dental_health || 'ปกติ'}</strong></span>
+                    <span>🦷 สุขภาพฟัน: <strong style={{ color: '#2e7d32' }}>{item.Dental_health || 'ปกติ'}</strong></span>
                   </div>
                 </div>
               );
@@ -241,7 +246,7 @@ export default function Developmentp() {
             <div style={styles.formScrollable}>
               <div style={{ backgroundColor: '#f0f4f8', padding: '12px', borderRadius: '8px', marginBottom: '15px' }}>
                 <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#000' }}>
-                  นักเรียน: {getStudentName(selectedDetailItem.Student_id || selectedDetailItem.student_id || selectedDetailItem.Student_Id || 11)}
+                  นักเรียน: {getStudentName(selectedDetailItem.Student_id || selectedDetailItem.student_id || selectedDetailItem.Student_Id)}
                 </div>
                 <div style={{ fontSize: '12px', color: '#555', marginTop: '3px' }}>
                   วันที่ประเมินล่าสุด: {selectedDetailItem.date_clean || (selectedDetailItem.date ? String(selectedDetailItem.date).split('T')[0] : 'ไม่ระบุ')}
@@ -310,9 +315,9 @@ export default function Developmentp() {
                 </tbody>
               </table>
 
-              <button 
-                type="button" 
-                style={styles.btnCloseDetail} 
+              <button
+                type="button"
+                style={styles.btnCloseDetail}
                 onClick={() => setIsDetailOpen(false)}
               >
                 ปิดหน้ารายงานรายละเอียด

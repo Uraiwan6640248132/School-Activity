@@ -65,22 +65,22 @@ function Navbar({ children }) {
           />
         </div>
 
-        {/* รายการเมนูลิงก์ภายในแอป */}
-        <div style={styles.menuList}>
-          <Link to="/home" style={menu("/home")}>📊 หน้าหลัก</Link>
-          <Link to="/personal" style={menu("/personal")}>👤 ข้อมูลส่วนตัว</Link>
-          <Link to="/students" style={menu("/students")}>🧑‍🎓 ข้อมูลนักเรียน</Link>
-          <Link to="/activity" style={menu("/activity")}>📅 กิจกรรม</Link>
+        {/* รายการเมนูลิงก์ภายในแอป (ปรับไอคอนให้เป็นทางการขึ้น) */}
+        <div style={styles.menuList} className="sidebar-menu-list">
+          <Link to="/home" style={menu("/home")}>🏢 หน้าหลัก</Link>
+          <Link to="/personal" style={menu("/personal")}>📋 ข้อมูลส่วนตัว</Link>
+          <Link to="/students" style={menu("/students")}>🎓 ข้อมูลนักเรียน</Link>
+          <Link to="/activity" style={menu("/activity")}>📜 กิจกรรม</Link>
           <Link to="/publicrelations" style={menu("/publicrelations")}>📢 ประชาสัมพันธ์</Link>
           <Link to="/notification" style={menu("/notification")}>📝 แจ้งเตือนการบ้าน</Link>
-          <Link to="/event" style={menu("/event")}>🗓️ ปฏิทินกิจกรรม</Link>
+          <Link to="/event" style={menu("/event")}>📅 ปฏิทินกิจกรรม</Link>
           <Link to="/participating" style={menu("/participating")}>🤝 เข้าร่วมกิจกรรม</Link>
-          <Link to="/development" style={menu("/development")}>📈 พัฒนาการนักเรียน</Link>
+          <Link to="/development" style={menu("/development")}>📊 พัฒนาการนักเรียน</Link>
         </div>
 
         {/* 🚪 ปุ่มออกจากระบบ: จัดไว้ที่ด้านล่างสุด */}
         <button onClick={handleLogout} style={styles.logoutBtn}>
-          🚪 ออกจากระบบ
+          🔒 ออกจากระบบ
         </button>
       </div>
 
@@ -94,10 +94,10 @@ function Navbar({ children }) {
             ยินดีต้อนรับกลับสู่ระบบ
           </div>
 
-          {/* ปุ่มโปรไฟล์ผู้ใช้งานด้านขวา สไตล์แคปซูลโค้งมน */}
+          {/* ปุ่มโปรไฟล์ผู้ใช้งานด้านขวา สไตล์แคปซูลโค้งมน (นำ 🔔 ออกเพื่อไม่ให้กวนสายตา) */}
           <div style={styles.profileBadge}>
             <span style={styles.statusDot}></span>
-            <span style={styles.username}>🔔 {userName}</span>
+            <span style={styles.username}>{userName}</span>
           </div>
         </div>
 
@@ -135,12 +135,12 @@ const styles = {
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
-    padding: "24px", // ขนาดเดิม
+    padding: "24px",
     borderBottom: "1px solid #f1f5f9",
-    marginBottom: "16px", // ขนาดเดิม
+    marginBottom: "16px",
   },
   logoImage: {
-    width: "110px", // ขนาดเดิม
+    width: "110px",
     height: "auto",
     objectFit: "contain",
   },
@@ -148,23 +148,25 @@ const styles = {
     flex: 1,
     display: "flex",
     flexDirection: "column",
-    gap: "4px", // ระยะห่างเดิม
-    overflowY: "hidden" // 🌟 [แก้ไขจุดนี้] เปลี่ยนจาก "auto" เป็น "hidden" เพื่อซ่อนแถบเลื่อนสีเทาออกไปครับ
+    gap: "4px",
+    overflowY: "auto", // 🌟 [แนะนำปรับเป็น auto] เพื่อรองรับหน้าจอที่เตี้ย แต่จะซ่อนแถบเลื่อนด้วย CSS แทนเพื่อความเนียนตา
+    msOverflowStyle: "none",  /* IE and Edge */
+    scrollbarWidth: "none",  /* Firefox */
   },
   menu: {
     display: "block",
-    padding: "12px 20px", // ขนาดเดิม
+    padding: "12px 20px",
     margin: "0 12px",
     borderRadius: "12px",
     textDecoration: "none",
     cursor: "pointer",
-    fontSize: "14px", // ขนาดตัวหนังสือเดิมที่ชอบ
+    fontSize: "14px",
     transition: "all 0.2s ease",
   },
   logoutBtn: {
     display: "block",
     width: "calc(100% - 24px)",
-    padding: "12px 20px", // ขนาดเดิม
+    padding: "12px 20px",
     margin: "12px",
     color: "#e11d48",
     background: "none",
@@ -172,7 +174,7 @@ const styles = {
     borderRadius: "12px",
     textAlign: "left",
     cursor: "pointer",
-    fontSize: "14px", // ขนาดเดิม
+    fontSize: "14px",
     fontWeight: "500",
     borderTop: "1px solid #f1f5f9",
     fontFamily: "'Kanit', 'Segoe UI', sans-serif",
@@ -185,7 +187,7 @@ const styles = {
     minWidth: 0
   },
   topbar: {
-    height: 64, // ขนาดเดิม
+    height: 64,
     background: "rgba(255, 255, 255, 0.6)",
     backdropFilter: "blur(12px)",
     display: "flex",
