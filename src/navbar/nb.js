@@ -50,6 +50,9 @@ function Navbar({ children }) {
     boxShadow: location.pathname === path ? "0 1px 3px 0 rgba(79, 70, 229, 0.1)" : "none",
   });
 
+
+
+  
   return (
     <div style={styles.layout}>
 

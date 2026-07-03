@@ -72,6 +72,11 @@ function UserInformation() {
   }
 };
 
+
+
+
+
+
   if (loading) return <div style={{ textAlign: 'center', padding: '50px', fontFamily: "'Kanit', sans-serif" }}>กำลังโหลดข้อมูลผู้ใช้งาน...</div>;
 
   return (
