@@ -14,9 +14,7 @@ export default function Development() {
 
   const [selectedId, setSelectedId] = useState(null);
 
-  // 🌟 1. ดึงระดับชั้น/ห้องเรียนของคุณครูที่บันทึกไว้ตอนล็อกอิน (เช่น 'อนุบาล1 ห้องปกติ')
-  const teacherClassLevel = localStorage.getItem('class_level') || '';
-
+  // ค่าเริ่มต้นที่สะอาดไม่มีข้อมูลของเด็กคนอื่นค้าง
   const initialFormState = {
     Student_id: '',
     Year: 2569,
@@ -44,12 +42,21 @@ export default function Development() {
 
   const [formData, setFormData] = useState(initialFormState);
 
-  // 🌟 2. แนบพารามิเตอร์ class_level ส่งไปกับ API ทุกครั้งเพื่อคัดกรองข้อมูลตั้งแต่ต้นทาง
-  const API_URL = `http://localhost:3001/api/development?class_level=${encodeURIComponent(teacherClassLevel)}`;
-  const STUDENTS_API_URL = `http://localhost:3001/api/students?class_level=${encodeURIComponent(teacherClassLevel)}`;
+  const API_URL = 'http://localhost:3001/api/development';
+  const STUDENTS_API_URL = 'http://localhost:3001/api/students?id=all';
+
+  // ฟังก์ชันดึงค่า class_level ของนักเรียนปัจจุบันหรือคนแรก เพื่อใช้รีเฟรชข้อมูล
+  const getCurrentClassLevel = (studentId) => {
+    const targetId = studentId || formData.Student_id;
+    if (!targetId && students.length > 0) {
+      const first = students[0];
+      return first.Class_level || first.class_level || first.Level || first.level;
+    }
+    const found = students.find(s => String(s.Student_id || s.id || s.student_id) === String(targetId));
+    return found ? (found.Class_level || found.class_level || found.Level || found.level) : null;
+  };
 
   const fetchStudentsData = async () => {
-    if (!teacherClassLevel) return;
     try {
       const res = await fetch(STUDENTS_API_URL);
       if (res.ok) {
@@ -57,10 +64,17 @@ export default function Development() {
         const cleanData = Array.isArray(data) ? data : [];
         setStudents(cleanData);
 
+        // 🌟 สิ่งที่เพิ่มเข้ามา: ถ้ามีข้อมูลนักเรียน ให้ตั้งค่ารหัสคนแรกลงฟอร์มทันที
         if (cleanData.length > 0) {
           const firstStudent = cleanData[0];
           const firstId = String(firstStudent.Student_id || firstStudent.id || firstStudent.student_id);
           setFormData(prev => ({ ...prev, Student_id: firstId }));
+
+          // 🌟 เมื่อได้ข้อมูลนักเรียนแล้ว ให้ดึงระดับชั้นไปสั่งโหลดข้อมูลพัฒนาการต่อทันที
+          const level = firstStudent.Class_level || firstStudent.class_level || firstStudent.Level || firstStudent.level;
+          if (level) {
+            fetchDevelopmentData(level);
+          }
         }
       }
     } catch (err) {
@@ -68,11 +82,14 @@ export default function Development() {
     }
   };
 
-  const fetchDevelopmentData = async () => {
-    if (!teacherClassLevel) return;
+  const fetchDevelopmentData = async (classLevel) => {
+    // 🌟 ถ้าไม่มีการส่งระดับชั้นมา จะไม่เรียก API เพื่อป้องกัน Error 400 Bad Request
+    if (!classLevel) return;
+
     setLoading(true);
     try {
-      const res = await fetch(API_URL);
+      // 🌟 แนบ Query Parameter (?class_level=...) ไปกับคำขอตามที่ Backend กำหนด
+      const res = await fetch(`${API_URL}?class_level=${encodeURIComponent(classLevel)}`);
       if (res.ok) {
         const data = await res.json();
         setDevList(data);
@@ -86,8 +103,8 @@ export default function Development() {
 
   useEffect(() => {
     fetchStudentsData();
-    fetchDevelopmentData();
-  }, [teacherClassLevel]); // โหลดข้อมูลใหม่เมื่อ class_level เปลี่ยนแปลง
+    // เอา fetchDevelopmentData() ออกจากตรงนี้ ย้ายไปรันต่อท้าย fetchStudentsData แทนเพื่อให้มีระดับชั้นส่งไป
+  }, []);
 
   const getStudentName = useCallback((studentId) => {
     if (!students || students.length === 0) return `รหัส: ${studentId}`;
@@ -100,12 +117,14 @@ export default function Development() {
 
   const calculateSectionScore = (scores) => {
     if (!scores || scores.length === 0) return 0;
+    // แปลงค่าและกรองค่า NaN ออกป้องกันวงกลมขึ้น NaN ดื้อๆ
     const validScores = scores.map(s => isNaN(Number(s)) ? 0 : Number(s));
     const sum = validScores.reduce((a, b) => a + b, 0);
     const avg = sum / validScores.length;
     return Math.round(avg * 20);
   };
 
+  // 🌟 ปรับปรุงการรับค่าเพื่อให้ทำงานร่วมกับ Dropdown <select> ได้เสถียรและไม่ล็อกค่า
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -115,9 +134,11 @@ export default function Development() {
     setFormData(prev => ({ ...prev, [field]: String(value) }));
   };
 
+  // 🌟 ปรับล้างฟอร์มใหม่ให้สะอาดหมดจด ดึงรหัสนักเรียนคนแรกแบบ Dynamic
   const resetForm = () => {
     setFormData({
       ...initialFormState,
+      // ถ้ามีรายชื่อนักเรียนในระบบ ให้เลือกคนแรกมารอไว้เลย
       Student_id: students.length > 0 ? String(students[0].Student_id || students[0].id || students[0].student_id) : ''
     });
     setSelectedId(null);
@@ -126,7 +147,7 @@ export default function Development() {
   const handleAddSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch('http://localhost:3001/api/development', {
+      const res = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
@@ -134,8 +155,11 @@ export default function Development() {
       if (res.ok) {
         alert("บันทึกการประเมินพัฒนาการเรียบร้อย!");
         setIsAddOpen(false);
+
+        // 🌟 ดึงระดับชั้นของนักเรียนปัจจุบันมาอัปเดตหน้าจอหลักหลังจากเพิ่มข้อมูลเสร็จ
+        const currentLevel = getCurrentClassLevel(formData.Student_id);
         resetForm();
-        fetchDevelopmentData();
+        fetchDevelopmentData(currentLevel);
       } else {
         alert("ไม่สามารถบันทึกข้อมูลได้");
       }
@@ -149,6 +173,7 @@ export default function Development() {
     setIsDetailOpen(true);
   };
 
+  // 🌟 แปลงประเภท Student_id ให้กลายเป็น String เสมอเพื่อให้ตรงกับ Value ของตระกูล <option> ตัวค้างถึงจะหายไป
   const openEditModal = (item) => {
     setSelectedId(item.Development_id || item.development_id);
 
@@ -167,7 +192,7 @@ export default function Development() {
     }
 
     setFormData({
-      Student_id: String(item.Student_id || ''),
+      Student_id: String(item.Student_id || ''), // 🌟 แปลงเป็น String ป้องกัน Dropdown ค้างหรือล็อกเปลี่ยนไม่ได้
       Year: item.Year || 2569,
       Term: dbTerm,
       date: cleanDate,
@@ -197,7 +222,7 @@ export default function Development() {
     e.preventDefault();
     if (!selectedId) return;
     try {
-      const res = await fetch(`http://localhost:3001/api/development/${selectedId}`, {
+      const res = await fetch(`${API_URL}/${selectedId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
@@ -205,8 +230,11 @@ export default function Development() {
       if (res.ok) {
         alert("แก้ไขข้อมูลการประเมินสำเร็จ!");
         setIsEditOpen(false);
+
+        // 🌟 ดึงระดับชั้นมาอัปเดตหน้าจอหลักหลังจากแก้ไขเสร็จ
+        const currentLevel = getCurrentClassLevel(formData.Student_id);
         resetForm();
-        fetchDevelopmentData();
+        fetchDevelopmentData(currentLevel);
       } else {
         alert("ไม่สามารถแก้ไขข้อมูลได้");
       }
@@ -218,12 +246,15 @@ export default function Development() {
   const handleDeleteSubmit = async () => {
     if (!selectedId) return;
     try {
-      const res = await fetch(`http://localhost:3001/api/development/${selectedId}`, { method: 'DELETE' });
+      const res = await fetch(`${API_URL}/${selectedId}`, { method: 'DELETE' });
       if (res.ok) {
         alert("ลบข้อมูลการประเมินเรียบร้อย!");
         setIsDeleteOpen(false);
+
+        // 🌟 ดึงระดับชั้นมาอัปเดตหน้าจอหลักหลังจากลบข้อมูลเสร็จ
+        const currentLevel = getCurrentClassLevel(formData.Student_id);
         resetForm();
-        fetchDevelopmentData();
+        fetchDevelopmentData(currentLevel);
       } else {
         alert("ไม่สามารถลบข้อมูลได้");
       }
@@ -245,22 +276,12 @@ export default function Development() {
     return found ? `${found.label} (${val})` : val || 'ไม่มีข้อมูล';
   };
 
-  // 🌟 3. ป้องกันกรณีเปิดหน้าขึ้นมาโดยยังไม่มีข้อมูลห้องเรียนของคุณครู
-  if (!teacherClassLevel) {
-    return (
-      <div style={{ ...styles.container, color: '#d32f2f', padding: '50px', textAlign: 'center' }}>
-        <h3>⚠️ ไม่พบข้อมูลระดับชั้นเรียนของคุณครู กรุณาเข้าสู่ระบบใหม่อีกครั้ง</h3>
-      </div>
-    );
-  }
-
   return (
     <div style={styles.container}>
-      {/* โครงสร้าง UI แสดงตารางและ Modal ฟอร์มที่เหลือคงเดิมตามไฟล์เดิมของคุณทั้งหมด */}
       <div style={styles.cardMain}>
         <div style={styles.headerRow}>
           <div>
-            <h2 style={styles.mainTitle}>บันทึกพัฒนาการเด็ก ({teacherClassLevel})</h2>
+            <h2 style={styles.mainTitle}>บันทึกพัฒนาการเด็ก</h2>
             <p style={styles.studentNameDisplay}>
               <strong>กำลังแสดงผลฟอร์มของ:</strong> {getStudentName(formData.Student_id)}
             </p>
@@ -272,7 +293,7 @@ export default function Development() {
 
         <div style={styles.listContainer}>
           {devList.length === 0 ? (
-            <div style={{ textAlign: 'center', color: '#888', padding: '30px' }}>ยังไม่มีข้อมูลการประเมินพัฒนาการของห้องเรียนนี้</div>
+            <div style={{ textAlign: 'center', color: '#888', padding: '30px' }}>ยังไม่มีข้อมูลการประเมินพัฒนาการ</div>
           ) : (
             devList.map((item, idx) => {
               const scoreBody = item.Weight && item.Height ? 100 : 75;
@@ -293,6 +314,7 @@ export default function Development() {
                 <div key={idx} style={styles.devCardItem}>
                   <div style={styles.cardItemHeader}>
                     <span style={styles.yearText}>
+                      {/* สลับมาใช้ item.Student_name ที่ดึงมาจาก SQL เป็นหลัก ถ้าไม่มีค่อย Fallback ไปใช้ฟังก์ชันเดิม */}
                       <strong style={{ color: '#1e3a8a' }}>{item.Student_name || getStudentName(item.Student_id)}</strong><br />
                       ปีการศึกษา {item.Year || item.year || '2569'} - {displayTerm}<br />
                       <span style={{ fontSize: '12px', color: '#666', fontWeight: 'normal' }}>วันที่ประเมิน: {displayDate}</span>
@@ -322,6 +344,7 @@ export default function Development() {
                     </div>
                   </div>
 
+                  {/* 🆕 จุดที่แก้ไข: เพิ่มกล่องข้อความสรุปข้อมูลส่วนสูง น้ำหนัก ฟันของเด็ก ให้ฝั่งคุณครูเห็นด้วย */}
                   <div style={styles.bodyDetailsSummary}>
                     <span>⚖️ น้ำหนัก: <strong>{item.Weight || '-'}</strong> กก.</span>
                     <span>📏 ส่วนสูง: <strong>{item.Height || '-'}</strong> ซม.</span>
@@ -334,7 +357,6 @@ export default function Development() {
         </div>
       </div>
 
-      {/* Modal Detail, Form Add/Edit, และ Delete คงโครงสร้างเดิมไว้... */}
       {isDetailOpen && selectedDetailItem && (
         <div style={styles.overlay} onClick={() => setIsDetailOpen(false)}>
           <div style={styles.modalDev} onClick={(e) => e.stopPropagation()}>
@@ -441,7 +463,7 @@ export default function Development() {
 
             <form onSubmit={isAddOpen ? handleAddSubmit : handleEditSubmit} style={styles.formScrollable}>
               <div style={{ marginBottom: '15px' }}>
-                <label style={styles.labelMini}>เลือกนักเรียนที่ต้องการประเมิน ({teacherClassLevel})</label>
+                <label style={styles.labelMini}>เลือกนักเรียนที่ต้องการประเมิน</label>
                 <select
                   name="Student_id"
                   value={String(formData.Student_id)}
@@ -596,7 +618,6 @@ export default function Development() {
   );
 }
 
-// styles คงเดิม...
 const styles = {
   container: { padding: '20px', width: '100%', display: 'flex', justifyContent: 'center', fontFamily: 'sans-serif' },
   cardMain: { border: '1px solid #ccc', borderRadius: '8px', padding: '20px', width: '100%', maxWidth: '650px', backgroundColor: '#fff', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' },
@@ -614,16 +635,20 @@ const styles = {
   circleUnit: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' },
   circleScore: { width: '50px', height: '50px', borderRadius: '50%', border: '1px solid #888', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: 'bold', backgroundColor: '#fff' },
   circleLabel: { fontSize: '11px', color: '#555' },
+
   bodyDetailsSummary: { display: 'flex', justifyContent: 'space-between', backgroundColor: '#fff', padding: '8px 12px', borderRadius: '6px', fontSize: '12px', color: '#555', border: '1px solid #eee', marginTop: '14px' },
+
   overlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 },
   modalDev: { backgroundColor: '#fff', width: '90%', maxWidth: '520px', height: '85vh', borderRadius: '12px', border: '1px solid #999', padding: '20px', display: 'flex', flexDirection: 'column', boxSizing: 'border-box', boxShadow: '0 8px 24px rgba(0,0,0,0.15)' },
   modalHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '10px', borderBottom: '1px solid #eee' },
   closeX: { cursor: 'pointer', fontWeight: 'bold', color: '#999' },
   formScrollable: { overflowY: 'auto', flex: 1, paddingRight: '5px', marginTop: '15px' },
+
   bodyMetricsRow: { display: 'flex', gap: '10px', justifyContent: 'space-between' },
   inputMiniGroup: { display: 'flex', flexDirection: 'column', gap: '4px', width: '32%' },
   labelMini: { fontSize: '12px', color: '#333' },
   inputMini: { padding: '6px', border: '1px solid #ccc', borderRadius: '4px', fontSize: '13px', width: '100%', boxSizing: 'border-box' },
+
   tableSectionTitle: { fontSize: '13px', margin: '16px 0 6px 0', color: '#000', borderBottom: '1px solid #ccc', paddingBottom: '2px', fontWeight: 'bold' },
   evalTable: { width: '100%', borderCollapse: 'collapse', marginBottom: '10px' },
   thLeft: { textAlign: 'left', fontSize: '11px', color: '#333', padding: '6px', fontWeight: 'bold', backgroundColor: '#f5f5f5' },
@@ -631,6 +656,7 @@ const styles = {
   tdLeft: { fontSize: '12px', padding: '8px 6px', borderBottom: '1px solid #eee', color: '#444' },
   tdCenter: { textAlign: 'center', padding: '8px 6px', borderBottom: '1px solid #eee' },
   btnSaveEvaluation: { width: '100%', padding: '10px', marginTop: '20px', backgroundColor: '#fff', border: '1px solid #333', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' },
+
   deleteModal: { backgroundColor: '#fff', width: '320px', padding: '25px', borderRadius: '12px', border: '1px solid #bbb', textAlign: 'center', boxShadow: '0 4px 16px rgba(0,0,0,0.1)' },
   deleteIcon: { fontSize: '40px', marginBottom: '12px' },
   deleteTitle: { margin: '0 0 6px 0', fontSize: '16px', color: '#000', fontWeight: 'bold' },

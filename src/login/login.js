@@ -32,7 +32,18 @@ function Login({ onLoginSuccess }) {
         navigate("/login");
         return;
       }
+      // เปลี่ยนจาก response.ok -> เป็น res.ok
+      if (res.ok) {
+        const data = await res.json(); // เปลี่ยนจาก response.json() -> เป็น res.json()
 
+        localStorage.setItem('role', data.Role);
+        localStorage.setItem('username', data.UserName);
+
+        // เก็บค่า Class_level เข้า LocalStorage
+        if (data.Class_level) {
+          localStorage.setItem('class_level', data.Class_level || data.class_level || '');
+        }
+      }
       // =================================
       // 2. ดักตรวจสอบสิทธิ์การใช้งาน (แก้ไขจุดนี้)
       // =================================
