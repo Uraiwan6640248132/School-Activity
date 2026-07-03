@@ -231,7 +231,18 @@ app.delete("/api/students/:id", (req, res) => {
 // 📢 ระบบ API จัดการข้อมูลการแจ้งเตือน (NOTIFICATIONS)
 // ==========================================
 app.get("/notifications", (req, res) => {
-  const sql = "SELECT Notification_id, User_id, Class_level, Subject, DATE_FORMAT(Deadline, '%Y-%m-%d') AS Deadline, DATE_FORMAT(\`Date\`, '%Y-%m-%d') AS Date, Details FROM notification ORDER BY Notification_id DESC";
+  // 🟢 แก้ไขคำสั่ง SQL ตรงนี้เพื่อเพิ่มเงื่อนไขการกรองวันที่
+  const sql = `
+    SELECT 
+      Notification_id, User_id, Class_level, Subject, 
+      DATE_FORMAT(Deadline, '%Y-%m-%d') AS Deadline, 
+      DATE_FORMAT(\`Date\`, '%Y-%m-%d') AS Date, 
+      Details 
+    FROM notification 
+    WHERE Deadline >= CURDATE()
+    ORDER BY Notification_id DESC
+  `;
+  
   db.query(sql, (err, results) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json(results);
