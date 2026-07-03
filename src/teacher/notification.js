@@ -49,28 +49,33 @@ function Notification() {
   };
 
   const saveData = async (e) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    const data = {
-      User_id: 1, 
-      Class_level: class_level, 
-      Subject: subject, 
-      Deadline: deadline || null,  
-      Details: details || null 
-    };
+  // ดึงวันที่ปัจจุบันมาเป็นค่าเริ่มต้น เผื่อกรณีที่ไม่ได้ระบุข้อมูล (format: YYYY-MM-DD)
+  const todayStr = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Bangkok" });
 
-    try {
-      if (editId) {
-        await axios.put(`${BASE_URL}/notifications/${editId}`, data);
-      } else {
-        await axios.post(`${BASE_URL}/notifications`, data);
-      }
-      resetForm();
-      getData();
-    } catch (err) {
-      console.log(err);
-    }
+  const data = {
+    User_id: 1, 
+    Class_level: class_level, 
+    Subject: subject, 
+    // 🟢 แก้จาก deadline || null เป็นให้ใส่ค่าวันนี้แทน เพื่อป้องกัน DB ปฏิเสธค่าว่าง
+    Deadline: deadline || todayStr,  
+    Date: todayStr, // กำหนดวันที่แจ้งเตือนเป็นวันนี้ไปเลย
+    Details: details || null 
   };
+
+  try {
+    if (editId) {
+      await axios.put(`${BASE_URL}/notifications/${editId}`, data);
+    } else {
+      await axios.post(`${BASE_URL}/notifications`, data);
+    }
+    resetForm();
+    getData();
+  } catch (err) {
+    console.log(err);
+  }
+};
 
   const openEdit = (item) => {
     setEditId(item.Notification_id || item.notification_id);
