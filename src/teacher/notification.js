@@ -10,7 +10,8 @@ function Notification() {
   const [deleteId, setDeleteId] = useState(null);
 
   // สเตตสำหรับเก็บค่าอินพุต
-  const [class_level, setClassLevel] = useState("");
+  // เปลี่ยนตรงบรรทัดประกาศสเตต class_level ด้านบนของไฟล์
+  const [class_level, setClassLevel] = useState("อนุบาล 1 ห้องปกติ"); // 👈 ใส่ชื่อห้องเป็นค่าเริ่มต้นไว้เลย
   const [subject, setSubject] = useState("");
   const [details, setDetails] = useState("");
   const [deadline, setDeadline] = useState("");
@@ -40,13 +41,13 @@ function Notification() {
   };
 
   const resetForm = () => {
-    setEditId(null);
-    setClassLevel("");
-    setSubject("");
-    setDetails("");
-    setDeadline("");
-    setShowModal(false);
-  };
+  setEditId(null);
+  setClassLevel("อนุบาล 1 ห้องปกติ"); // 👈 แก้จาก "" เป็นชื่อห้องเรียนหลัก
+  setSubject("");
+  setDetails("");
+  setDeadline("");
+  setShowModal(false);
+};
 
   const saveData = async (e) => {
   e.preventDefault();
@@ -108,21 +109,27 @@ function Notification() {
       </div>
 
       <div style={page.grid}>
-        {list.map((item) => (
-          <div key={item.Notification_id || item.notification_id} style={page.card}>
-            <h3>{item.Class_level || item.class_level}</h3>
-            <p><b>วิชา :</b> {item.Subject || item.subject}</p>
-            <p>{item.Details || item.details}</p>
-            <p>📅 ส่งงาน : {(item.Deadline || item.deadline) ? (item.Deadline || item.deadline).split("T")[0] : "-"}</p>
-            <p>🔔 แจ้งเมื่อ : {(item.Date || item.date) ? (item.Date || item.date).split("T")[0] : "-"}</p>
+  {list
+    // 🟢 ใส่ .filter ดักไว้ก่อน .map เพื่อล็อกให้แสดงเฉพาะห้องเรียนที่ต้องการ
+    .filter((item) => {
+      const currentClass = item.Class_level || item.class_level;
+      return currentClass === "อนุบาล 1 ห้องปกติ"; // 👈 พิมพ์ชื่อห้องของลูกคุณตรงนี้ให้ตรงกับในระบบ
+    })
+    .map((item) => (
+      <div key={item.Notification_id || item.notification_id} style={page.card}>
+        <h3>{item.Class_level || item.class_level}</h3>
+        <p><b>วิชา :</b> {item.Subject || item.subject}</p>
+        <p>{item.Details || item.details}</p>
+        <p>📅 ส่งงาน : {(item.Deadline || item.deadline) ? (item.Deadline || item.deadline).split("T")[0] : "-"}</p>
+        <p>🔔 แจ้งเมื่อ : {(item.Date || item.date) ? (item.Date || item.date).split("T")[0] : "-"}</p>
 
-            <div style={page.actions}>
-              <button style={page.editBtn} onClick={() => openEdit(item)}>แก้ไข</button>
-              <button style={page.deleteBtn} onClick={() => setDeleteId(item.Notification_id || item.notification_id)}>ลบ</button>
-            </div>
-          </div>
-        ))}
+        <div style={page.actions}>
+          <button style={page.editBtn} onClick={() => openEdit(item)}>แก้ไข</button>
+          <button style={page.deleteBtn} onClick={() => setDeleteId(item.Notification_id || item.notification_id)}>ลบ</button>
+        </div>
       </div>
+    ))}
+</div>
 
       {showModal && (
         <div style={modal.overlay}>
