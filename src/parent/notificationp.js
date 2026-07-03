@@ -31,48 +31,55 @@ function Notification() {
       </div>
 
       <div style={page.grid}>
-        {list.map((item) => {
-          // ตรวจสอบว่าเป็นห้อง 3 ภาษาเพื่อปรับแต่งธีมขอบการ์ดให้เด่นขึ้น (ถ้าต้องการ)
-          const isSpecialClass = (item.Class_level || item.class_level)?.includes("3 ภาษา");
+  {list
+    // 🟢 1. ใส่ filter ดักไว้ตรงนี้เพื่อล็อกเอาเฉพาะห้องเรียนของลูกเรา
+    .filter((item) => {
+      const currentClass = item.Class_level || item.class_level;
+      return currentClass === "อนุบาล 1 ห้องปกติ";
+    })
+    // 2. นำข้อมูลเฉพาะห้องที่กรองแล้วมาวาดการ์ดแสดงผลต่อ
+    .map((item) => {
+      // ตรวจสอบว่าเป็นห้อง 3 ภาษาเพื่อปรับแต่งธีมขอบการ์ดให้เด่นขึ้น (ถ้าต้องการ)
+      const isSpecialClass = (item.Class_level || item.class_level)?.includes("3 ภาษา");
 
-          return (
-            <div 
-              key={item.Notification_id || item.notification_id} 
-              style={{
-                ...page.card,
-                borderTop: isSpecialClass ? "5px solid #e67e22" : "5px solid #3498db"
-              }}
-            >
-              <span style={{
-                ...page.badge,
-                background: isSpecialClass ? "#edf2f7" : "#ebf8ff",
-                color: isSpecialClass ? "#b7791f" : "#2b6cb0"
-              }}>
-                {item.Class_level || item.class_level}
-              </span>
+      return (
+        <div 
+          key={item.Notification_id || item.notification_id} 
+          style={{
+            ...page.card,
+            borderTop: isSpecialClass ? "5px solid #e67e22" : "5px solid #3498db"
+          }}
+        >
+          <span style={{
+            ...page.badge,
+            background: isSpecialClass ? "#edf2f7" : "#ebf8ff",
+            color: isSpecialClass ? "#b7791f" : "#2b6cb0"
+          }}>
+            {item.Class_level || item.class_level}
+          </span>
 
-              <h3 style={page.subjectText}>
-                <b>วิชา:</b> {item.Subject || item.subject}
-              </h3>
-              
-              <p style={page.detailsText}>
-                {item.Details || item.details || "— ไม่มีรายละเอียดเพิ่มเติม —"}
-              </p>
-              
-              <hr style={page.divider} />
+          <h3 style={page.subjectText}>
+            <b>วิชา:</b> {item.Subject || item.subject}
+          </h3>
+          
+          <p style={page.detailsText}>
+            {item.Details || item.details || "— ไม่มีรายละเอียดเพิ่มเติม —"}
+          </p>
+          
+          <hr style={page.divider} />
 
-              <div style={page.dateInfo}>
-                <p style={page.dateText}>
-                  📅 <b>ส่งงานภายใน:</b> {(item.Deadline || item.deadline) ? (item.Deadline || item.deadline).split("T")[0] : "-"}
-                </p>
-                <p style={page.dateNotifyText}>
-                  🔔 <b>วันที่แจ้งงาน:</b> {(item.Date || item.date) ? (item.Date || item.date).split("T")[0] : "-"}
-                </p>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+          <div style={page.dateInfo}>
+            <p style={page.dateText}>
+              📅 <b>ส่งงานภายใน:</b> {(item.Deadline || item.deadline) ? (item.Deadline || item.deadline).split("T")[0] : "-"}
+            </p>
+            <p style={page.dateNotifyText}>
+              🔔 <b>วันที่แจ้งงาน:</b> {(item.Date || item.date) ? (item.Date || item.date).split("T")[0] : "-"}
+            </p>
+          </div>
+        </div>
+      );
+    })}
+</div>
 
       {!loading && list.length === 0 && (
         <div style={page.emptyState}>ไม่มีรายการแจ้งเตือนการบ้านในขณะนี้</div>
