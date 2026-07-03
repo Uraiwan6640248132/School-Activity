@@ -45,8 +45,28 @@ export default function Development() {
   const API_URL = 'http://localhost:3001/api/development';
   const STUDENTS_API_URL = 'http://localhost:3001/api/students?id=all';
 
+  // 🔒 ดึงข้อมูลผู้ใช้ที่ล็อกอินอยู่ (เก็บไว้ตอน login ใน localStorage key "user")
+  const getLoggedInUser = () => {
+    try {
+      const raw = localStorage.getItem('user');
+      return raw ? JSON.parse(raw) : null;
+    } catch (err) {
+      return null;
+    }
+  };
+
+  const loggedInUser = getLoggedInUser();
+  const loggedInRole = String(loggedInUser?.Role || loggedInUser?.role || '').trim();
+  // 🔒 ห้อง/ระดับชั้นของครูที่ล็อกอินอยู่ ใช้เป็นตัวกรองหลักของทั้งหน้า
+  const teacherClassLevel = (loggedInRole === 'ครูผู้สอน')
+    ? (loggedInUser?.Class_level || loggedInUser?.class_level || null)
+    : null;
+
   // ฟังก์ชันดึงค่า class_level ของนักเรียนปัจจุบันหรือคนแรก เพื่อใช้รีเฟรชข้อมูล
   const getCurrentClassLevel = (studentId) => {
+    // 🔒 ถ้าเป็นครู ให้ยึดห้องของครูเป็นหลักเสมอ ไม่อิงจากนักเรียนที่เลือก
+    if (teacherClassLevel) return teacherClassLevel;
+
     const targetId = studentId || formData.Student_id;
     if (!targetId && students.length > 0) {
       const first = students[0];
@@ -56,22 +76,42 @@ export default function Development() {
     return found ? (found.Class_level || found.class_level || found.Level || found.level) : null;
   };
 
+  // 🔒 ตรวจสอบว่านักเรียนคนนี้อยู่ในห้องของครูที่ล็อกอินอยู่หรือไม่ (กันเผื่อข้อมูลค้าง/ถูกแก้ผ่าน DOM)
+  const isStudentAllowed = (studentId) => {
+    if (!teacherClassLevel) return true; // ไม่ใช่ครู (เช่นแอดมิน) ไม่จำกัดสิทธิ์นี้
+    return students.some(s => String(s.Student_id || s.id || s.student_id) === String(studentId));
+  };
+
   const fetchStudentsData = async () => {
     try {
       const res = await fetch(STUDENTS_API_URL);
       if (res.ok) {
         const data = await res.json();
-        const cleanData = Array.isArray(data) ? data : [];
+        const allData = Array.isArray(data) ? data : [];
+
+        // 🔒 ถ้าเป็นครูผู้สอน ให้กรองเหลือเฉพาะนักเรียนที่อยู่ห้อง/ระดับชั้นเดียวกับครูเท่านั้น
+        const cleanData = teacherClassLevel
+          ? allData.filter(s => {
+            const level = s.Class_level || s.class_level || s.Level || s.level;
+            return String(level) === String(teacherClassLevel);
+          })
+          : allData;
+
         setStudents(cleanData);
 
-        // 🌟 สิ่งที่เพิ่มเข้ามา: ถ้ามีข้อมูลนักเรียน ให้ตั้งค่ารหัสคนแรกลงฟอร์มทันที
+        // 🌟 ถ้ามีข้อมูลนักเรียน ให้ตั้งค่ารหัสคนแรกลงฟอร์มทันที
         if (cleanData.length > 0) {
           const firstStudent = cleanData[0];
           const firstId = String(firstStudent.Student_id || firstStudent.id || firstStudent.student_id);
           setFormData(prev => ({ ...prev, Student_id: firstId }));
+        }
 
-          // 🌟 เมื่อได้ข้อมูลนักเรียนแล้ว ให้ดึงระดับชั้นไปสั่งโหลดข้อมูลพัฒนาการต่อทันที
-          const level = firstStudent.Class_level || firstStudent.class_level || firstStudent.Level || firstStudent.level;
+        // 🔒 ถ้าเป็นครู ให้ยึดห้องของครูเป็นหลักในการโหลดรายการพัฒนาการเสมอ
+        // (ไม่อิงจากนักเรียนคนแรก เพราะครูอาจไม่มีนักเรียนในห้องเลยก็ได้)
+        if (teacherClassLevel) {
+          fetchDevelopmentData(teacherClassLevel);
+        } else if (cleanData.length > 0) {
+          const level = cleanData[0].Class_level || cleanData[0].class_level || cleanData[0].Level || cleanData[0].level;
           if (level) {
             fetchDevelopmentData(level);
           }
@@ -146,6 +186,11 @@ export default function Development() {
 
   const handleAddSubmit = async (e) => {
     e.preventDefault();
+    // 🔒 กันไว้อีกชั้น: ห้ามบันทึกถ้านักเรียนที่เลือกไม่ได้อยู่ในห้องของครู
+    if (!isStudentAllowed(formData.Student_id)) {
+      alert("คุณสามารถเพิ่มพัฒนาการได้เฉพาะนักเรียนในห้องของคุณเท่านั้น");
+      return;
+    }
     try {
       const res = await fetch(API_URL, {
         method: 'POST',
@@ -221,6 +266,11 @@ export default function Development() {
   const handleEditSubmit = async (e) => {
     e.preventDefault();
     if (!selectedId) return;
+    // 🔒 กันไว้อีกชั้น: ห้ามแก้ไขถ้านักเรียนที่เลือกไม่ได้อยู่ในห้องของครู
+    if (!isStudentAllowed(formData.Student_id)) {
+      alert("คุณสามารถแก้ไขพัฒนาการได้เฉพาะนักเรียนในห้องของคุณเท่านั้น");
+      return;
+    }
     try {
       const res = await fetch(`${API_URL}/${selectedId}`, {
         method: 'PUT',
@@ -282,17 +332,30 @@ export default function Development() {
         <div style={styles.headerRow}>
           <div>
             <h2 style={styles.mainTitle}>บันทึกพัฒนาการเด็ก</h2>
+            {teacherClassLevel && (
+              <p style={styles.studentNameDisplay}>
+                <strong>ห้องที่รับผิดชอบ:</strong> {teacherClassLevel}
+              </p>
+            )}
             <p style={styles.studentNameDisplay}>
               <strong>กำลังแสดงผลฟอร์มของ:</strong> {getStudentName(formData.Student_id)}
             </p>
           </div>
-          <button style={styles.btnAddDev} onClick={() => { resetForm(); setIsAddOpen(true); }}>+ พัฒนาการ</button>
+          <button
+            style={styles.btnAddDev}
+            onClick={() => { resetForm(); setIsAddOpen(true); }}
+            disabled={teacherClassLevel !== null && students.length === 0}
+          >
+            + พัฒนาการ
+          </button>
         </div>
 
         {loading && <p style={{ fontSize: '13px', color: '#666' }}>กำลังโหลดข้อมูล...</p>}
 
         <div style={styles.listContainer}>
-          {devList.length === 0 ? (
+          {teacherClassLevel && students.length === 0 ? (
+            <div style={{ textAlign: 'center', color: '#888', padding: '30px' }}>ไม่พบนักเรียนในห้อง "{teacherClassLevel}" ของคุณ</div>
+          ) : devList.length === 0 ? (
             <div style={{ textAlign: 'center', color: '#888', padding: '30px' }}>ยังไม่มีข้อมูลการประเมินพัฒนาการ</div>
           ) : (
             devList.map((item, idx) => {
