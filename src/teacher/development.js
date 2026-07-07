@@ -256,32 +256,41 @@ export default function Development() {
   };
 
   const handleEditSubmit = async (e) => {
-    e.preventDefault();
-    if (!selectedId) return;
-    if (!isStudentAllowed(formData.Student_id)) {
-      alert("คุณสามารถแก้ไขพัฒนาการได้เฉพาะนักเรียนในห้องของคุณเท่านั้น");
-      return;
-    }
-    try {
-      const res = await fetch(`${API_URL}/${selectedId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
-      });
-      if (res.ok) {
-        alert("แก้ไขข้อมูลการประเมินสำเร็จ!");
-        setIsEditOpen(false);
+  e.preventDefault();
+  if (!selectedId) return;
+  if (!isStudentAllowed(formData.Student_id)) {
+    alert("คุณสามารถแก้ไขพัฒนาการได้เฉพาะนักเรียนในห้องของคุณเท่านั้น");
+    return;
+  }
+  try {
+    // 🛠️ ดึงระดับชั้นปัจจุบันของนักเรียนคนนี้ เพื่อส่งไปเช็กสิทธิ์ที่หลังบ้าน
+    const studentClassLevel = getCurrentClassLevel(formData.Student_id);
 
-        const currentLevel = getCurrentClassLevel(formData.Student_id);
-        resetForm();
-        fetchDevelopmentData(currentLevel);
-      } else {
-        alert("ไม่สามารถแก้ไขข้อมูลได้");
-      }
-    } catch (err) {
-      alert("เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
+    const res = await fetch(`${API_URL}/${selectedId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ...formData,
+        class_level: studentClassLevel // ✅ แนบ class_level เพิ่มเติมเข้าไปในคำขอ PUT
+      })
+    });
+    
+    if (res.ok) {
+      alert("แก้ไขข้อมูลการประเมินสำเร็จ!");
+      setIsEditOpen(false);
+
+      const currentLevel = getCurrentClassLevel(formData.Student_id);
+      resetForm();
+      fetchDevelopmentData(currentLevel);
+    } else {
+      // 💡 แสดงข้อความแจ้งเตือนที่ละเอียดขึ้นถ้าหลังบ้านปฏิเสธคำขอ
+      const errData = await res.json().catch(() => ({}));
+      alert(errData.message || errData.error || "ไม่สามารถแก้ไขข้อมูลได้");
     }
-  };
+  } catch (err) {
+    alert("เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
+  }
+};
 
   const handleDeleteSubmit = async () => {
     if (!selectedId) return;
