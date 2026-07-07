@@ -62,11 +62,14 @@ function parseDateForMySQL(dateStr) {
 // ==========================================
 // ตัวอย่างโค้ดฝั่ง Backend (Express + MySQL)
 // เพิ่มเส้นทางนี้ที่หลังบ้าน เพื่อส่งรายชื่อผู้ปกครองทั้งหมดให้หน้าบ้านไปเลือก
+// 🟢 1. แก้ไขให้ดึงข้อมูลครบทุกฟิลด์เพื่อนำไปแสดงผลบนตารางหน้าบ้าน
+// 🟢 แก้ไขตรงนี้เพื่อให้ดึงข้อมูลครบทุกคอลัมน์และทุกคนตามฐานข้อมูล
 app.get("/users", (req, res) => {
-  const sql = "SELECT User_id, Name FROM users WHERE Role = 'ผู้ปกครอง'";
+  // นำ WHERE Role = 'ผู้ปกครอง' ออก เพื่อให้ดึงผู้ใช้ทุกคนมาแสดง
+  const sql = "SELECT User_id, Name, Phone, Password, UserName, Role, Class_level, Status FROM users";
   db.query(sql, (err, result) => {
     if (err) return res.status(500).json(err);
-    res.json(result);
+    res.json(result); // ส่งข้อมูลทั้งหมดกลับไปที่หน้าบ้าน (React)
   });
 });
 
@@ -86,12 +89,17 @@ app.get("/users/:id", (req, res) => {
   });
 });
 
+// 🟢 อัปเดตส่วนนี้เพื่อให้ระบบสามารถบันทึกและแก้ไขสถานะ (Status) ของทุกสิทธิ์ได้จริง
 app.put("/users/:id", (req, res) => {
-  const { Name, Phone, UserName, Role, Password } = req.body;
+  const { Name, Phone, UserName, Role, Password, Status } = req.body;
+  
   let sql = (Password && Password.trim() !== "")
-    ? `UPDATE users SET Name=?, Phone=?, UserName=?, Role=?, Password=? WHERE User_id=?`
-    : `UPDATE users SET Name=?, Phone=?, UserName=?, Role=? WHERE User_id=?`;
-  let params = (Password && Password.trim() !== "") ? [Name, Phone, UserName, Role, Password, req.params.id] : [Name, Phone, UserName, Role, req.params.id];
+    ? `UPDATE users SET Name=?, Phone=?, UserName=?, Role=?, Password=?, Status=? WHERE User_id=?`
+    : `UPDATE users SET Name=?, Phone=?, UserName=?, Role=?, Status=? WHERE User_id=?`;
+    
+  let params = (Password && Password.trim() !== "") 
+    ? [Name, Phone, UserName, Role, Password, Status, req.params.id] 
+    : [Name, Phone, UserName, Role, Status, req.params.id];
 
   db.query(sql, params, (err, result) => {
     if (err) return res.status(500).json(err);

@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom'; // 🆕 นำเข้า useNavigate เพื่อใช้สั่งเปลี่ยนหน้าของ React Router
 // 🛠️ ปรับ Path ให้วิ่งย้อนกลับไปดึงไฟล์รูปภาพจากโฟลเดอร์ src ให้ถูกต้องตามโครงสร้างของพี่ครับ
 import schoolImg from '../school-building.jpg.JPG';
+import bgImg from '../bg-pattern.jpg'; 
 
 function Login({ onLoginSuccess }) {
   const [username, setUsername] = useState('');
@@ -175,41 +176,44 @@ function Login({ onLoginSuccess }) {
 
 const styles = {
   container: {
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    minHeight: "100vh",
-    width: "100vw",
-    background: "linear-gradient(135deg, #f7fcff 0%, #dff3ff 52%, #edf9ff 100%)",
-    fontFamily: "'Inter', 'Kanit', sans-serif",
-    position: "absolute",
-    top: 0,
-    left: 0,
-    zIndex: 9999
-  },
+  display: "flex",
+  justifyContent: "center",
+  alignItems: "center",
+  minHeight: "100vh",
+  width: "100vw",
+  backgroundImage: `url(${bgImg})`,     // 🆕 เปลี่ยนจาก gradient เป็นรูปใหม่
+  backgroundSize: "cover",
+  backgroundPosition: "center",
+  backgroundRepeat: "no-repeat",
+  fontFamily: "'Inter', 'Kanit', sans-serif",
+  position: "absolute",
+  top: 0,
+  left: 0,
+  zIndex: 9999
+},
   card: {
-    display: "grid",
-    gridTemplateColumns: "1fr 1fr",
-    backgroundColor: "#ffffff",
-    borderRadius: "20px",
-    width: "900px",
-    height: "600px",
-    boxShadow: "0 28px 60px rgba(2, 132, 199, 0.18)",
-    overflow: "hidden",
-  },
-  leftPanel: {
-    backgroundSize: "cover",
-    backgroundPosition: "center",
-    backgroundRepeat: "no-repeat",
-    color: "#1d4ed8",
-    padding: "40px",
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "flex-end",
-    alignItems: "center",
-    position: "relative",
-    textAlign: "center"
-  },
+  display: "grid",
+  gridTemplateColumns: "1fr 1fr",
+  backgroundColor: "transparent",   // 🆕 เอาสีทึบออก ถ้ายังมี backgroundColor: "#ffffff" อยู่ต้องลบออก
+  borderRadius: "20px",
+  width: "900px",
+  height: "600px",
+  boxShadow: "0 28px 60px rgba(2, 132, 199, 0.18)",
+  overflow: "hidden",
+},
+ leftPanel: {
+  backgroundSize: "cover",
+  backgroundPosition: "center",
+  backgroundRepeat: "no-repeat",
+  color: "#1d4ed8",
+  padding: "40px",
+  display: "flex",
+  flexDirection: "column",
+  justifyContent: "flex-end",
+  alignItems: "center",
+  position: "relative",
+  textAlign: "center"
+},
   logoArea: {
     display: "flex",
     flexDirection: "column",
@@ -233,10 +237,14 @@ const styles = {
     textShadow: "0 1px 4px rgba(255, 255, 255, 0.6)"
   },
   rightPanel: {
-    padding: "40px 60px",
-    display: "flex",
-    flexDirection: "column",
-  },
+  padding: "40px 60px",
+  display: "flex",
+  flexDirection: "column",
+  backgroundColor: "rgba(255, 255, 255, 0)",   // 🆕 ใสเลย ไม่มีสีขาวผสมเลยแม้แต่นิดเดียว
+  backdropFilter: "blur(6px)",                  // 🆕 เบลอนิดเดียวพอ ให้พอรู้ว่าเป็นกระจก ไม่ใช่ทะลุจนมองไม่ออกว่ามีการ์ด
+  WebkitBackdropFilter: "blur(6px)",
+  borderLeft: "1px solid rgba(255, 255, 255, 0.3)",
+},
   formContent: {
     display: "flex",
     flexDirection: "column",
@@ -263,16 +271,16 @@ const styles = {
     textAlign: "left"
   },
   input: {
-    width: "100%",
-    padding: "12px 16px",
-    borderRadius: "8px",
-    border: "1px solid #bae6fd",
-    boxSizing: "border-box",
-    outline: "none",
-    fontSize: "14px",
-    color: "#334155",
-    backgroundColor: "#f4fbff",
-  },
+  width: "100%",
+  padding: "12px 16px",
+  borderRadius: "8px",
+  border: "1px solid rgba(255, 255, 255, 0.5)",
+  boxSizing: "border-box",
+  outline: "none",
+  fontSize: "14px",
+  color: "#334155",
+  backgroundColor: "rgba(255, 255, 255, 0.35)",   // 🆕 คงความอ่านง่าย แม้พื้นหลังรอบข้างใสมาก
+},
   button: {
     width: "100%",
     padding: "14px",
