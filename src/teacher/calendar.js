@@ -263,7 +263,7 @@ function CalendarActivity() {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', width: '100%', padding: '20px', boxSizing: 'border-box', backgroundColor: '#f8fafc' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', width: '100%', padding: '20px', boxSizing: 'border-box', backgroundColor: '#dff3ff 48%' }}>
       {loading && <p style={{ fontSize: '13px', color: '#666' }}>กำลังอัปเดตปฏิทิน...</p>}
 
       {/* 🌟 กรอบปฏิทินหลักใช้ Class ของระบบ */}
@@ -412,14 +412,14 @@ function CalendarActivity() {
                   className="teacher-btn teacher-btn-edit"
                   onClick={() => { setIsDetailOpen(false); setIsEditOpen(true); }}
                 >
-                   แก้ไข
+                  แก้ไข
                 </button>
                 <button
                   type="button"
                   className="teacher-btn teacher-btn-delete"
                   onClick={() => { setIsDetailOpen(false); setIsDeleteOpen(true); }}
                 >
-                   ลบ
+                  ลบ
                 </button>
               </div>
             </div>

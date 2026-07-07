@@ -371,8 +371,10 @@ export default function Development() {
                       <span style={{ fontSize: '12px', color: '#666', fontWeight: 'normal' }}>วันที่ประเมิน: {displayDate}</span>
                     </span>
                     <div style={styles.actionGroup}>
-                      <button style={{ ...styles.actionBtnSmall, ...styles.actionBtnDelete }} onClick={() => { setSelectedId(item.Development_id || item.development_id); setIsDeleteOpen(true); }}>🗑️</button>
-                      <button style={{ ...styles.actionBtnSmall, ...styles.actionBtnEdit }} onClick={() => openEditModal(item)}>📝</button>
+                      <button style={{ ...styles.actionBtnSmall, ...styles.actionBtnEdit }} onClick={() => openEditModal(item)}>แก้ไข</button>
+                      <button style={{ ...styles.actionBtnSmall, ...styles.actionBtnDelete }} onClick={() => { setSelectedId(item.Development_id || item.development_id); setIsDeleteOpen(true); }}>ลบ</button>
+
+
                     </div>
                   </div>
 
