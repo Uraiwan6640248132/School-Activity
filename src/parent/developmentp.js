@@ -36,24 +36,21 @@ export default function Developmentp() {
   };
 
   // 🌟 ฟังก์ชันดึงข้อมูลพัฒนาการและกรองเอาเฉพาะข้อมูลของลูก
-  const fetchDevelopmentData = async (targetStudentIds) => {
+ // 🌟 ปรับฟังก์ชันดึงข้อมูลพัฒนาการโดยแนบไอดีลูกไปด้วย
+const fetchDevelopmentData = async (targetStudentIds) => {
     if (!targetStudentIds || (Array.isArray(targetStudentIds) && targetStudentIds.length === 0)) return;
     setLoading(true);
     try {
-      const res = await fetch(API_URL);
+      const singleStudentId = Array.isArray(targetStudentIds) ? targetStudentIds[0] : targetStudentIds;
+
+      // 🔄 เปลี่ยนคีย์พารามิเตอร์เป็น Student_id (ตัว S ใหญ่)
+      const res = await fetch(`${API_URL}?Student_id=${singleStudentId}`);
+      
       if (res.ok) {
         const data = await res.json();
-        const rawData = Array.isArray(data) ? data : [];
-
-        const filteredData = rawData.filter(item => {
-          const itemStudentId = Number(item.Student_id || item.student_id || item.Student_Id);
-          if (Array.isArray(targetStudentIds)) {
-            return targetStudentIds.includes(itemStudentId);
-          }
-          return itemStudentId === Number(targetStudentIds);
-        });
-
-        setDevList(filteredData);
+        setDevList(Array.isArray(data) ? data : []);
+      } else {
+        console.error("เซิร์ฟเวอร์ปฏิเสธคำขอสถานะ:", res.status);
       }
     } catch (err) {
       console.error("Error fetching student development data:", err);

@@ -8,30 +8,25 @@ export default function CalendarActivity() {
   const [currentYear, setCurrentYear] = useState(2026);
   const [currentMonth, setCurrentMonth] = useState(8); // เดือน 8 = สิงหาคม
 
-  // 🔒 ควบคุมเฉพาะหน้าต่างรายละเอียด (ตัดหน้าต่างเพิ่ม แก้ไข และลบออกเพื่อความปลอดภัย)
+  // 🔒 ควบคุมเฉพาะหน้าต่างรายละเอียด
   const [isDetailOpen, setIsDetailOpen] = useState(false);
-
-  // กิจกรรมที่ถูกเลือก
   const [selectedEvent, setSelectedEvent] = useState(null);
 
-  // โครงสร้าง state ฟอร์มสำหรับแสดงผล
   const [formData, setFormData] = useState({
     Name: '',
     Date: '',
     Time: '',
-    Location: '' // 🌟 เพิ่ม Location ในสเตทฟอร์ม
+    Location: ''
   });
 
   const API_URL = 'http://localhost:3001/api/calendar';
 
-  // ดึงข้อมูลกิจกรรมทั้งหมด (ยังคงดึงค่าแบบปกติ)
   const fetchCalendarData = async () => {
     setLoading(true);
     try {
       const res = await fetch(API_URL);
       if (res.ok) {
         const data = await res.json();
-        console.log("ข้อมูลดิบจากฐานข้อมูล (Array ล่าสุด):", data);
         setCalendarList(data);
       }
     } catch (err) {
@@ -46,11 +41,10 @@ export default function CalendarActivity() {
   }, []);
 
   const clearForm = () => {
-    setFormData({ Name: '', Date: '', Time: '', Location: '' }); // 🌟 ล้างค่า Location
+    setFormData({ Name: '', Date: '', Time: '', Location: '' });
     setSelectedEvent(null);
   };
 
-  // ปรับฟังก์ชันจับคู่กิจกรรมให้คำนวณตามปีและเดือนที่กำลังเปิดดูอยู่จริง ๆ
   const getEventForDate = (dayNumber) => {
     if (!calendarList || calendarList.length === 0) return null;
 
@@ -62,7 +56,7 @@ export default function CalendarActivity() {
       const rawDate = item.Date || item.date;
       if (!rawDate) return false;
 
-      const cleanDateOnly = String(rawDate).split('T')[0]; // ผลลัพธ์จะเป็น "YYYY-MM-DD"
+      const cleanDateOnly = String(rawDate).split('T')[0];
       const parts = cleanDateOnly.split('-');
 
       if (parts.length >= 3) {
@@ -72,19 +66,17 @@ export default function CalendarActivity() {
 
         return dbYear === currentYearStr && dbMonth === currentMonthStr && dbDay === currentDayStr;
       }
-
       return false;
     });
   };
 
-  // เมื่อคลิกเลือกดูงานบนช่องปฏิทิน
   const handleSelectEvent = (eventItem) => {
     setSelectedEvent(eventItem);
 
     const rawDate = eventItem.Date || eventItem.date;
     const rawName = eventItem.Name || eventItem.name;
     const rawTime = eventItem.Time || eventItem.time;
-    const rawLocation = eventItem.Location || eventItem.location; // 🌟 ดึงข้อมูลสถานที่
+    const rawLocation = eventItem.Location || eventItem.location;
 
     let cleanDate = '';
     if (rawDate) {
@@ -95,7 +87,7 @@ export default function CalendarActivity() {
       Name: rawName || '',
       Date: cleanDate,
       Time: rawTime || '',
-      Location: rawLocation || 'ไม่ระบุสถานที่' // 🌟 บันทึกสถานที่ลงฟอร์ม
+      Location: rawLocation || 'ไม่ระบุสถานที่'
     });
     setIsDetailOpen(true);
   };
@@ -105,7 +97,6 @@ export default function CalendarActivity() {
     return String(timeStr);
   };
 
-  // ฟังก์ชันสำหรับเลื่อนเดือนย้อนกลับ (<) และเลื่อนไปข้างหน้า (>)
   const handlePrevMonth = () => {
     if (currentMonth === 1) {
       setCurrentMonth(12);
@@ -129,7 +120,6 @@ export default function CalendarActivity() {
     "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"
   ];
 
-  // คำนวณหาจำนวนวันในเดือนนั้น ๆ และวันเริ่มต้นของสัปดาห์
   const totalDaysInMonth = new Date(currentYear, currentMonth, 0).getDate();
   const daysInMonthArray = Array.from({ length: totalDaysInMonth }, (_, i) => i + 1);
   const firstDayIndex = new Date(currentYear, currentMonth - 1, 1).getDay();
@@ -137,14 +127,14 @@ export default function CalendarActivity() {
 
   return (
     <div style={styles.contentBody}>
-      {loading && <p style={{ fontSize: '13px', color: '#666' }}>กำลังอัปเดตปฏิทิน...</p>}
+      {loading && <p style={{ fontSize: '13px', color: '#666', marginBottom: '10px' }}>กำลังอัปเดตปฏิทิน...</p>}
 
       <div style={styles.calendarCard}>
         <div style={styles.calendarHeader}>
           <span style={styles.calendarMonthTitle}>
-            ปฏิทินกิจกรรม - {monthNamesThai[currentMonth - 1]} {currentYear + 543}
+            📅 ปฏิทินกิจกรรมโรงเรียน - {monthNamesThai[currentMonth - 1]} {currentYear + 543}
           </span>
-          <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
             <button style={styles.arrowBtn} onClick={handlePrevMonth}>&lt;</button>
             <button style={styles.arrowBtn} onClick={handleNextMonth}>&gt;</button>
           </div>
@@ -155,12 +145,10 @@ export default function CalendarActivity() {
             <div key={day} style={styles.dayOfWeekLabel}>{day}</div>
           ))}
 
-          {/* ช่องว่างก่อนเริ่มวันที่ 1 ของเดือน */}
           {emptySpacesArray.map((val) => (
             <div key={`empty-${val}`} style={styles.dayCellEmpty} />
           ))}
 
-          {/* รายการวันที่ในเดือน */}
           {daysInMonthArray.map((day) => {
             const eventItem = getEventForDate(day);
             const isSelected = selectedEvent && eventItem &&
@@ -172,8 +160,9 @@ export default function CalendarActivity() {
                 key={day}
                 style={{
                   ...styles.dayCell,
-                  backgroundColor: eventItem ? '#e5e5e5' : '#fff',
-                  border: isSelected ? '2px solid #000' : '1px solid #dcdcdc',
+                  // 🎨 ปรับสีพื้นหลังวันที่มีกิจกรรมให้เป็นสีฟ้าอ่อนพาสเทล ดูสบายตาขึ้น
+                  backgroundColor: eventItem ? '#f0f9ff' : '#fff',
+                  border: isSelected ? '2px solid #0284c7' : '1px solid #e2e8f0',
                   cursor: eventItem ? 'pointer' : 'default'
                 }}
                 onClick={() => {
@@ -200,12 +189,12 @@ export default function CalendarActivity() {
         </div>
       </div>
 
-      {/* 🔍 POPUP: รายละเอียดปฏิทิน (แบบอ่านอย่างเดียวอย่างสมบูรณ์) */}
+      {/* 🔍 POPUP: รายละเอียดปฏิทิน */}
       {isDetailOpen && (
         <div style={styles.overlay}>
           <div style={styles.modal}>
             <div style={styles.modalHeader}>
-              <strong style={styles.modalTitle}>รายละเอียดปฏิทิน</strong>
+              <strong style={styles.modalTitle}>🔍 รายละเอียดกิจกรรม</strong>
               <span style={styles.closeX} onClick={() => { setIsDetailOpen(false); clearForm(); }}>X</span>
             </div>
             <div>
@@ -236,27 +225,28 @@ export default function CalendarActivity() {
   );
 }
 
+// 🎨 อัปเดตสไตล์ให้ซอฟต์ ละมุน และดูเป็นสากลขึ้นครับ
 const styles = {
-  contentBody: { padding: '10px', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', width: '100%' },
-  calendarCard: { border: '1px solid #999', borderRadius: '6px', padding: '20px', backgroundColor: '#fff', width: '100%', maxWidth: '780px', boxSizing: 'border-box' },
+  contentBody: { padding: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', width: '100%', boxSizing: 'border-box', backgroundColor: '#f8fafc' },
+  calendarCard: { border: '1px solid #e2e8f0', borderRadius: '12px', padding: '24px', backgroundColor: '#fff', width: '100%', maxWidth: '840px', boxSizing: 'border-box', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05)' },
   calendarHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' },
-  calendarMonthTitle: { fontSize: '16px', fontWeight: '500', color: '#000' },
-  arrowBtn: { padding: '3px 8px', backgroundColor: '#f5f5f5', border: '1px solid #dcdcdc', borderRadius: '4px', cursor: 'pointer', fontSize: '11px' },
-  calendarGrid: { display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '6px', width: '100%' },
-  dayOfWeekLabel: { textAlign: 'center', fontSize: '13px', paddingBottom: '8px', color: '#222', fontWeight: 'bold' },
-  dayCell: { border: '1px solid #cccccc', borderRadius: '6px', minHeight: '85px', padding: '6px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', boxSizing: 'border-box' },
-  dayCellEmpty: { minHeight: '85px', boxSizing: 'border-box' },
-  dayNumberText: { alignSelf: 'flex-start', fontSize: '11px', color: '#444' },
+  calendarMonthTitle: { fontSize: '18px', fontWeight: '700', color: '#1e293b' },
+  arrowBtn: { padding: '6px 12px', backgroundColor: '#fff', border: '1px solid #e2e8f0', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold', color: '#64748b', transition: 'all 0.2s' },
+  calendarGrid: { display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px', width: '100%' },
+  dayOfWeekLabel: { textAlign: 'center', fontSize: '13px', paddingBottom: '8px', color: '#64748b', fontWeight: '700' },
+  dayCell: { border: '1px solid #e2e8f0', borderRadius: '8px', minHeight: '95px', padding: '8px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', boxSizing: 'border-box', transition: 'all 0.15s ease' },
+  dayCellEmpty: { minHeight: '95px', boxSizing: 'border-box' },
+  dayNumberText: { alignSelf: 'flex-start', fontSize: '12px', color: '#64748b', fontWeight: '600' },
   eventBadgeContent: { display: 'flex', flexDirection: 'column', width: '100%', textAlign: 'left', gap: '2px', marginTop: '4px' },
-  eventTitleText: { fontSize: '10px', fontWeight: 'bold', color: '#000', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' },
-  eventTimeText: { fontSize: '9px', color: '#555', paddingLeft: '2px' },
-  eventLocationText: { fontSize: '9px', color: '#666', paddingLeft: '2px', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' },
-  overlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 },
-  modal: { backgroundColor: '#fff', width: '350px', padding: '25px', borderRadius: '12px', border: '1px solid #999', position: 'relative', boxSizing: 'border-box' },
+  eventTitleText: { fontSize: '11px', fontWeight: '700', color: '#0f172a', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' },
+  eventTimeText: { fontSize: '10px', color: '#475569', paddingLeft: '2px' },
+  eventLocationText: { fontSize: '10px', color: '#0284c7', paddingLeft: '2px', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', fontWeight: '500' },
+  overlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(15, 23, 42, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, backdropFilter: 'blur(4px)' },
+  modal: { backgroundColor: '#fff', width: '360px', padding: '24px', borderRadius: '16px', border: '1px solid #e2e8f0', position: 'relative', boxSizing: 'border-box', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)' },
   modalHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' },
-  modalTitle: { fontSize: '16px', color: '#000', fontWeight: 'bold' },
-  closeX: { cursor: 'pointer', fontWeight: 'bold', color: '#aaa', fontSize: '14px' },
-  label: { display: 'block', fontSize: '12px', color: '#333', marginBottom: '5px', marginTop: '10px', textAlign: 'left' },
-  inputReadOnly: { width: '100%', padding: '8px', border: '1px solid #ccc', backgroundColor: '#f9f9f9', borderRadius: '5px', boxSizing: 'border-box', fontSize: '13px', color: '#333' },
-  btnClose: { width: '100%', padding: '9px', marginTop: '20px', backgroundColor: '#f5f5f5', border: '1px solid #ccc', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px', color: '#333' }
+  modalTitle: { fontSize: '18px', color: '#1e293b', fontWeight: '700' },
+  closeX: { cursor: 'pointer', fontWeight: '700', color: '#94a3b8', fontSize: '16px' },
+  label: { display: 'block', fontSize: '12px', color: '#475569', marginBottom: '5px', marginTop: '12px', textAlign: 'left', fontWeight: '600' },
+  inputReadOnly: { width: '100%', padding: '10px', border: '1px solid #e2e8f0', backgroundColor: '#f8fafc', borderRadius: '8px', boxSizing: 'border-box', fontSize: '13px', color: '#1e293b', outline: 'none' },
+  btnClose: { width: '100%', padding: '10px', marginTop: '24px', backgroundColor: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', fontSize: '13px', color: '#475569', transition: 'all 0.2s' }
 };

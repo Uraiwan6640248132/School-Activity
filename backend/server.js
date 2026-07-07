@@ -486,33 +486,24 @@ app.get('/api/development', (req, res) => {
 // ==========================================
 // ➕ 3. [POST] บันทึกข้อมูลพัฒนาการใหม่
 // ==========================================
-app.post('/api/development', (req, res) => {
-  const {
-    Student_id, Year, Term, date, Physical, Weight, Height, Dental_health,
-    Vaccination, Motor_skills, Emotional, Emotion, Emotion_control, Confidence,
-    Social, Stress, Interaction, Assistance, Intellectual, Problem_solving,
-    Communication, Remembering
-  } = req.body;
+// 🌟 เพิ่มโค้ดชุดนี้ในฝั่ง Backend เพื่อรองรับการดึงข้อมูลพัฒนาการรายบุคคล
+app.get('/api/development', (req, res) => {
+  // 🔄 ดักรับเผื่อไว้ทุกรูปแบบ ไม่ว่าจะส่ง student_id, studentId หรือ Student_id มาจากหน้าบ้าน
+  const studentId = req.query.student_id || req.query.studentId || req.query.Student_id; 
 
-  const sql = `
-    INSERT INTO development 
-    (Student_id, Year, Term, date, Physical, Weight, Height, Dental_health, 
-     Vaccination, Motor_skills, Emotional, Emotion, Emotion_control, Confidence, 
-     Social, Stress, Interaction, Assistance, Intellectual, Problem_solving, 
-     Communication, Remembering) 
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `;
+  if (!studentId) {
+    return res.status(400).json({ error: "กรุณาระบุรหัสนักเรียน (student_id)" });
+  }
 
-  const values = [
-    Student_id, Year, Term, date, Physical, Weight, Height, Dental_health,
-    Vaccination, Motor_skills, Emotional, Emotion, Emotion_control, Confidence,
-    Social, Stress, Interaction, Assistance, Intellectual, Problem_solving,
-    Communication, Remembering
-  ];
+  // ใช้คีย์ฟิลด์ให้ตรงตามโครงสร้างฐานข้อมูล (ในตารางของคุณคือ Student_id ตัวใหญ่)
+  const sql = `SELECT * FROM development WHERE Student_id = ? ORDER BY Year DESC, Term DESC`;
 
-  db.query(sql, values, (err, result) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json({ message: "บันทึกข้อมูลพัฒนาการสำเร็จ", insertId: result.insertId });
+  db.query(sql, [studentId], (err, results) => {
+    if (err) {
+      console.error("Database error:", err);
+      return res.status(500).json({ error: err.message });
+    }
+    res.json(results);
   });
 });
 
