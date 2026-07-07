@@ -13,7 +13,7 @@ const DownloadIcon = ({ size = 16, color = "currentColor" }) => (
 function ActivityP() {
   const [activities, setActivities] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
-  
+
   const [showModal, setShowModal] = useState(false);
   const [selectedActivity, setSelectedActivity] = useState(null);
 
@@ -56,7 +56,7 @@ function ActivityP() {
   const downloadAllImages = (e, imagesArray, activityName) => {
     e.stopPropagation();
     if (imagesArray.length === 0) return alert("ไม่มีรูปภาพให้ดาวน์โหลด");
-    
+
     if (window.confirm(`คุณต้องการดาวน์โหลดรูปภาพทั้งหมดจำนวน ${imagesArray.length} รูปใช่หรือไม่?`)) {
       imagesArray.forEach((imgData, idx) => {
         setTimeout(() => {
@@ -87,8 +87,8 @@ function ActivityP() {
         {/* ส่วนหัวหน้าจอ */}
         <div style={page.header}>
           <div>
-            <button style={page.titleBtn}>กิจกรรม</button>
-            <h1 style={page.pageTitle}>จัดการข้อมูลกิจกรรม</h1>
+
+            <h2 style={page.pageTitle}>ข้อมูลกิจกรรม</h2>
           </div>
         </div>
 
@@ -113,9 +113,9 @@ function ActivityP() {
               const previewImg = imgList.length > 0 ? imgList[0] : null;
 
               return (
-                <div 
-                  key={item.Activity_id} 
-                  style={page.card} 
+                <div
+                  key={item.Activity_id}
+                  style={page.card}
                   onClick={() => { setSelectedActivity(item); setShowModal(true); }}
                 >
                   {/* รูปภาพพรีวิวหลักของการ์ด */}
@@ -142,8 +142,8 @@ function ActivityP() {
                   {/* แถวล่างสุด: ป้ายจำนวนรูปภาพ และ ปุ่มดาวน์โหลดทั้งหมด */}
                   <div style={page.actionsRow}>
                     <span style={page.imageCountBadge}>{imgList.length} ภาพ</span>
-                    <button 
-                      onClick={(e) => downloadAllImages(e, imgList, item.Name_activity)} 
+                    <button
+                      onClick={(e) => downloadAllImages(e, imgList, item.Name_activity)}
                       style={page.downloadAllBtn}
                     >
                       <DownloadIcon size={14} color="#1e293b" />
@@ -161,7 +161,7 @@ function ActivityP() {
         {showModal && selectedActivity && (
           <div style={modal.overlay} onClick={() => setShowModal(false)}>
             <div style={modal.box} onClick={(e) => e.stopPropagation()}>
-              
+
               <div style={modal.header}>
                 <div>
                   <h2 style={modal.mainTitle}>{selectedActivity.Name_activity}</h2>
@@ -175,7 +175,7 @@ function ActivityP() {
                   <div key={idx} style={modal.galleryItem}>
                     <img src={imgUrl} alt={`sub-img-${idx}`} style={modal.galleryImage} />
                     {/* เปลี่ยนไอคอนดาวน์โหลดรูปเดี่ยวเป็น SVG มินิมอล */}
-                    <button 
+                    <button
                       onClick={() => downloadSingleImage(imgUrl, idx, selectedActivity.Name_activity)}
                       style={modal.singleDownloadBtn}
                       title="ดาวน์โหลดรูปภาพนี้"
@@ -184,7 +184,7 @@ function ActivityP() {
                     </button>
                   </div>
                 ))}
-                
+
                 {parseActivityImages(selectedActivity.Image).length === 0 && (
                   <p style={{ gridColumn: "span 4", textAlign: "center", color: "#94a3b8", padding: "20px 0" }}>ไม่มีรูปภาพในอัลบั้มนี้</p>
                 )}
@@ -212,7 +212,7 @@ function ActivityP() {
 }
 
 const page = {
-  container: { backgroundColor: "#f8fafc", minHeight: "100vh", padding: "1.5rem", display: "flex", justifyContent: "center", color: "#334155", fontFamily: "'Inter', 'Kanit', sans-serif" },
+  container: { backgroundColor: "#dff3ff 48%", minHeight: "100vh", padding: "1.5rem", display: "flex", justifyContent: "center", color: "#334155", fontFamily: "'Inter', 'Kanit', sans-serif" },
   wrapper: { width: "100%", maxWidth: "1200px" },
   header: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.2rem" },
   titleBtn: { backgroundColor: "#ffffff", border: "1px solid #cbd5e1", color: "#334155", padding: "4px 16px", borderRadius: "6px", fontSize: "14px", marginBottom: "6px", cursor: "default" },
@@ -221,7 +221,7 @@ const page = {
   searchInput: { width: "100%", border: "1px solid #cbd5e1", borderRadius: "6px", padding: "8px 12px", fontSize: "14px", outline: "none", boxSizing: "border-box" },
   grid: { display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px" },
   noData: { gridColumn: "span 4", textAlign: "center", padding: "3rem 0", fontSize: "14px", color: "#94a3b8" },
-  
+
   card: { backgroundColor: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "10px", display: "flex", flexDirection: "column", minHeight: "280px", overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.02)", cursor: "pointer", transition: "transform 0.2s" },
   cardImageContainer: { width: "100%", height: "130px", borderBottom: "1px solid #f1f5f9", backgroundColor: "#f1f5f9" },
   cardImage: { width: "100%", height: "100%", objectFit: "cover" },
@@ -230,19 +230,19 @@ const page = {
   cardTitle: { fontSize: "16px", fontWeight: "600", margin: "0 0 6px 0", color: "#1e293b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
   infoList: { display: "flex", flexDirection: "column", gap: "4px", marginBottom: "10px" },
   infoText: { color: "#64748b", fontSize: "13px", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
-  
+
   actionsRow: { display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "auto", padding: "0 14px 14px 14px" },
   imageCountBadge: { border: "1px solid #e2e8f0", padding: "3px 10px", borderRadius: "6px", fontSize: "12px", color: "#475569", backgroundColor: "#f8fafc" },
-  
+
   // 🌟 ปรับแต่งสไตล์ปุ่มดาวน์โหลดหลักให้มี Flexbox รองรับไอคอน SVG อย่างสวยงาม
-  downloadAllBtn: { 
-    backgroundColor: "#ffffff", 
-    border: "1px solid #cbd5e1", 
-    color: "#1e293b", 
-    fontSize: "12px", 
-    fontWeight: "500", 
-    padding: "6px 12px", 
-    borderRadius: "6px", 
+  downloadAllBtn: {
+    backgroundColor: "#ffffff",
+    border: "1px solid #cbd5e1",
+    color: "#1e293b",
+    fontSize: "12px",
+    fontWeight: "500",
+    padding: "6px 12px",
+    borderRadius: "6px",
     cursor: "pointer",
     display: "flex",
     alignItems: "center",
@@ -257,26 +257,26 @@ const modal = {
   header: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px", borderBottom: "1px solid #f1f5f9", paddingBottom: "12px" },
   mainTitle: { fontSize: "18px", fontWeight: "600", margin: 0, color: "#1e293b" },
   closeBtn: { background: "none", border: "none", fontSize: "20px", color: "#94a3b8", cursor: "pointer", padding: "0 4px" },
-  
+
   galleryGrid: { display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "12px", marginTop: "4px" },
   galleryItem: { position: "relative", width: "100%", paddingBottom: "100%", height: 0, borderRadius: "8px", overflow: "hidden", border: "1px solid #e2e8f0", backgroundColor: "#f8fafc" },
   galleryImage: { position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover" },
-  
+
   // 🌟 ปรับปุ่มดาวน์โหลดเดี่ยวบนรูปภาพให้กลม มินิมอล มีมิติขึ้นเมื่อได้ไอคอน SVG ไปใส่
-  singleDownloadBtn: { 
-    position: "absolute", 
-    bottom: "6px", 
-    right: "6px", 
-    backgroundColor: "rgba(255, 255, 255, 0.95)", 
-    border: "1px solid #e2e8f0", 
+  singleDownloadBtn: {
+    position: "absolute",
+    bottom: "6px",
+    right: "6px",
+    backgroundColor: "rgba(255, 255, 255, 0.95)",
+    border: "1px solid #e2e8f0",
     borderRadius: "50%", // ปรับเป็นวงกลมให้ดูโมเดิร์นขึ้น
-    width: "28px", 
-    height: "28px", 
-    display: "flex", 
-    alignItems: "center", 
-    justifyContent: "center", 
-    cursor: "pointer", 
-    boxShadow: "0 2px 4px rgba(0,0,0,0.06)" 
+    width: "28px",
+    height: "28px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    cursor: "pointer",
+    boxShadow: "0 2px 4px rgba(0,0,0,0.06)"
   }
 };
 

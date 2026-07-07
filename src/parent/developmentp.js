@@ -12,10 +12,10 @@ export default function Developmentp() {
   // Dynamic Student ID State
   const [studentIdOfParent, setStudentIdOfParent] = useState(null);
 
-  const API_URL = `http://localhost:3001/api/development`;
+  const API_URL = `http://localhost:3001/api/development/student`;
   const STUDENTS_API_URL = 'http://localhost:3001/api/students';
 
-  // 🌟 ฟังก์ชันดึงรายชื่อนักเรียน
+  // 🌟 ฟังก์ชันดึงรายชื่อนักเรียน (ลูกๆ ที่ผูกกับผู้ปกครอง)
   const fetchStudentsData = async (userId) => {
     try {
       const res = await fetch(`${STUDENTS_API_URL}?userId=${userId}`);
@@ -25,6 +25,7 @@ export default function Developmentp() {
         setStudents(cleanData);
 
         if (cleanData.length > 0) {
+          // ดึง ID ออกมาโดยรองรับทั้งพิมพ์เล็ก พิมพ์ใหญ่ และ id ปกติ
           const childIds = cleanData.map(s => Number(s.Student_id || s.id || s.student_id || s.Student_Id));
           return childIds;
         }
@@ -35,17 +36,17 @@ export default function Developmentp() {
     return null;
   };
 
-  // 🌟 ฟังก์ชันดึงข้อมูลพัฒนาการและกรองเอาเฉพาะข้อมูลของลูก
- // 🌟 ปรับฟังก์ชันดึงข้อมูลพัฒนาการโดยแนบไอดีลูกไปด้วย
-const fetchDevelopmentData = async (targetStudentIds) => {
+  // 🌟 ฟังก์ชันดึงข้อมูลพัฒนาการโดยแนบไอดีลูกไปด้วย
+  const fetchDevelopmentData = async (targetStudentIds) => {
     if (!targetStudentIds || (Array.isArray(targetStudentIds) && targetStudentIds.length === 0)) return;
     setLoading(true);
     try {
+      // ดึง ID ของลูกคนแรกมาเป็นตัวหลักในการค้นหา หรือส่งเป็น Array ถ้าเซิร์ฟเวอร์รองรับ
       const singleStudentId = Array.isArray(targetStudentIds) ? targetStudentIds[0] : targetStudentIds;
 
-      // 🔄 เปลี่ยนคีย์พารามิเตอร์เป็น Student_id (ตัว S ใหญ่)
+      // 🔄 แนบพารามิเตอร์ Student_id ส่งไปยัง Backend
       const res = await fetch(`${API_URL}?Student_id=${singleStudentId}`);
-      
+
       if (res.ok) {
         const data = await res.json();
         setDevList(Array.isArray(data) ? data : []);
@@ -65,7 +66,7 @@ const fetchDevelopmentData = async (targetStudentIds) => {
 
     try {
       const userData = JSON.parse(storedUser);
-      const userId = userData.User_id || userData.id;
+      const userId = userData.User_id || userData.id || userData.user_id;
 
       if (!userId || userId === "undefined") {
         console.warn("หน้าบ้านระงับการทำงานเนื่องจากไม่พบ userId ของผู้ปกครอง");
@@ -73,13 +74,12 @@ const fetchDevelopmentData = async (targetStudentIds) => {
       }
 
       const loadParentDashboard = async () => {
-        // 🔒 ดึงเฉพาะรายชื่อ "ลูกของผู้ปกครองคนนี้" จาก backend (กรองด้วย userId)
+        // 🔒 ดึงรายชื่อ "ลูกของผู้ปกครองคนนี้" 
         const childIds = await fetchStudentsData(userId);
 
         if (childIds && childIds.length > 0) {
-          // ใช้ลูกคนแรกแสดงในหัวข้อ (ถ้ามีมากกว่า 1 คน รายการด้านล่างจะแสดงครบทุกคนอยู่แล้ว)
           setStudentIdOfParent(childIds[0]);
-          // 🔒 ส่งเฉพาะไอดีลูกของผู้ปกครองคนนี้ไปกรองข้อมูลพัฒนาการ ห้ามเห็นของเด็กคนอื่น
+          // 🔒 ส่งไอดีลูกไปกรองข้อมูลพัฒนาการ
           await fetchDevelopmentData(childIds);
         } else {
           console.warn("ไม่พบข้อมูลนักเรียนที่ผูกกับบัญชีผู้ปกครองนี้");
@@ -113,10 +113,10 @@ const fetchDevelopmentData = async (targetStudentIds) => {
   // ฟังก์ชันคำนวณคะแนนเฉลี่ยแปลงเป็นเปอร์เซ็นต์เต็ม 100
   const calculateSectionScore = (scores) => {
     if (!scores || scores.length === 0) return 0;
-    const validScores = scores.map(s => isNaN(Number(s)) ? 0 : Number(s));
+    const validScores = scores.map(s => isNaN(Number(s)) || s === '' ? 0 : Number(s));
     const sum = validScores.reduce((a, b) => a + b, 0);
     const avg = sum / validScores.length;
-    return Math.round(avg * 20);
+    return Math.round(avg * 20); // แปลงจากคะแนนเต็ม 5 เป็น 100%
   };
 
   const openDetailModal = (item) => {
@@ -146,7 +146,7 @@ const fetchDevelopmentData = async (targetStudentIds) => {
           <div>
             <h2 style={styles.mainTitle}>สรุปผลพัฒนาการนักเรียน</h2>
             <p style={styles.studentNameDisplay}>
-              <strong>นักเรียน:</strong>{' '}
+              <strong>นักเรียนในความปกครอง:</strong>{' '}
               {studentIdOfParent ? (
                 <span style={{ color: '#1e3a8a', fontWeight: 'bold' }}>{getStudentName(studentIdOfParent)}</span>
               ) : (
@@ -154,7 +154,7 @@ const fetchDevelopmentData = async (targetStudentIds) => {
               )}
             </p>
           </div>
-          <div style={styles.badgeParent}>ฝั่งผู้ปกครอง</div>
+
         </div>
 
         {loading && <p style={styles.statusText}>กำลังโหลดรายงานพัฒนาการ...</p>}
@@ -185,7 +185,7 @@ const fetchDevelopmentData = async (targetStudentIds) => {
                 <div key={idx} style={styles.devCardItem}>
                   <div style={styles.cardItemHeader}>
                     <span style={styles.yearText}>
-                      <strong style={{ color: '#1e3a8a' }}>นักเรียน: {getStudentName(currentItemStudentId)}</strong><br />
+                      <strong style={{ color: '#1e3a8a' }}>นักเรียน: {item.Student_name || getStudentName(currentItemStudentId)}</strong><br />
                       ปีการศึกษา {item.Year || item.year || '2569'} - {displayTerm}
                     </span>
                     <span style={styles.dateText}>วันที่ประเมิน: {displayDate}</span>
@@ -198,19 +198,19 @@ const fetchDevelopmentData = async (targetStudentIds) => {
                     title="คลิกเพื่อดูรายละเอียดเพิ่มเติม"
                   >
                     <div style={styles.circleUnit}>
-                      <div style={styles.circleScore}>{scoreBody}</div>
+                      <div style={styles.circleScore}>{isNaN(scoreBody) ? 0 : scoreBody}</div>
                       <span style={styles.circleLabel}>ด้านร่างกาย</span>
                     </div>
                     <div style={styles.circleUnit}>
-                      <div style={styles.circleScore}>{scoreIntellect}</div>
+                      <div style={styles.circleScore}>{isNaN(scoreIntellect) ? 0 : scoreIntellect}</div>
                       <span style={styles.circleLabel}>ด้านสติปัญญา</span>
                     </div>
                     <div style={styles.circleUnit}>
-                      <div style={styles.circleScore}>{scoreEmotion}</div>
+                      <div style={styles.circleScore}>{isNaN(scoreEmotion) ? 0 : scoreEmotion}</div>
                       <span style={styles.circleLabel}>ด้านอารมณ์</span>
                     </div>
                     <div style={styles.circleUnit}>
-                      <div style={styles.circleScore}>{scoreSocial}</div>
+                      <div style={styles.circleScore}>{isNaN(scoreSocial) ? 0 : scoreSocial}</div>
                       <span style={styles.circleLabel}>ด้านสังคม</span>
                     </div>
                   </div>
@@ -243,7 +243,7 @@ const fetchDevelopmentData = async (targetStudentIds) => {
             <div style={styles.formScrollable}>
               <div style={{ backgroundColor: '#f0f4f8', padding: '12px', borderRadius: '8px', marginBottom: '15px' }}>
                 <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#000' }}>
-                  นักเรียน: {getStudentName(selectedDetailItem.Student_id || selectedDetailItem.student_id || selectedDetailItem.Student_Id)}
+                  นักเรียน: {selectedDetailItem.Student_name || getStudentName(selectedDetailItem.Student_id || selectedDetailItem.student_id || selectedDetailItem.Student_Id)}
                 </div>
                 <div style={{ fontSize: '12px', color: '#555', marginTop: '3px' }}>
                   วันที่ประเมินล่าสุด: {selectedDetailItem.date_clean || (selectedDetailItem.date ? String(selectedDetailItem.date).split('T')[0] : 'ไม่ระบุ')}

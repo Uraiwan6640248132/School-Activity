@@ -145,7 +145,7 @@ function PersonalDataParent() {
 }
 
 const styles = {
-  container: { padding: "40px 20px", backgroundColor: "#f8fafc", minHeight: "100vh", fontFamily: "'Kanit', sans-serif", display: "flex", flexDirection: "column", alignItems: "center" },
+  container: { padding: "40px 20px", backgroundColor: "#dff3ff 48%", minHeight: "100vh", fontFamily: "'Kanit', sans-serif", display: "flex", flexDirection: "column", alignItems: "center" },
   mainTitle: { fontSize: "24px", fontWeight: "600", color: "#1e293b", margin: "0 0 4px 0", width: "100%", maxWidth: "480px", textAlign: "left" },
   subTitle: { fontSize: "14px", color: "#64748b", margin: "0 0 24px 0", width: "100%", maxWidth: "480px", textAlign: "left" },
   formCard: { background: "#ffffff", borderRadius: "16px", border: "1px solid #e2e8f0", boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.05)", padding: "40px", width: "100%", maxWidth: "480px", boxSizing: "border-box" },

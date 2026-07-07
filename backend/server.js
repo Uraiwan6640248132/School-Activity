@@ -499,9 +499,10 @@ app.get('/api/development', (req, res) => {
 // ==========================================
 // 🌟 เพิ่มโค้ดชุดนี้ในฝั่ง Backend เพื่อรองรับการดึงข้อมูลพัฒนาการรายบุคคล
 // ==========================================
-// 🔍 1. [GET] ดึงข้อมูลพัฒนาการรายบุคคล
+// 🔍 1. [GET] ดึงข้อมูลพัฒนาการรายบุคคล (ฝั่งผู้ปกครอง)
 // ==========================================
-app.get('/api/development', (req, res) => {
+app.get('/api/development/student', (req, res) => {
+  console.log("👉 Query ที่ได้รับ:", req.query);
   const studentId = req.query.student_id || req.query.studentId || req.query.Student_id;
 
   if (!studentId) {
