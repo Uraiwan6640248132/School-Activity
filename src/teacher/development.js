@@ -14,7 +14,7 @@ export default function Development() {
 
   const [selectedId, setSelectedId] = useState(null);
 
-  // ค่าเริ่มต้นที่สะอาดไม่มีข้อมูลของเด็กคนอื่นค้าง
+  // 🛠️ แก้ไขตรงนี้: ล้างค่าคะแนนเริ่มต้นเป็นค่าว่าง เพื่อไม่ให้ข้อมูลติ๊กค้างตอนกดเพิ่มใหม่
   const initialFormState = {
     Student_id: '',
     Year: 2569,
@@ -27,17 +27,17 @@ export default function Development() {
     Vaccination: '',
     Motor_skills: '',
     Emotional: '',
-    Emotion: '4',
-    Emotion_control: '3',
-    Confidence: '4',
+    Emotion: '',
+    Emotion_control: '',
+    Confidence: '',
     Social: '',
-    Stress: '2',
-    Interaction: '5',
-    Assistance: '5',
+    Stress: '',
+    Interaction: '',
+    Assistance: '',
     Intellectual: '',
-    Problem_solving: '2',
-    Communication: '3',
-    Remembering: '3'
+    Problem_solving: '',
+    Communication: '',
+    Remembering: ''
   };
 
   const [formData, setFormData] = useState(initialFormState);
@@ -143,7 +143,6 @@ export default function Development() {
 
   useEffect(() => {
     fetchStudentsData();
-    // เอา fetchDevelopmentData() ออกจากตรงนี้ ย้ายไปรันต่อท้าย fetchStudentsData แทนเพื่อให้มีระดับชั้นส่งไป
   }, []);
 
   const getStudentName = useCallback((studentId) => {
@@ -157,14 +156,12 @@ export default function Development() {
 
   const calculateSectionScore = (scores) => {
     if (!scores || scores.length === 0) return 0;
-    // แปลงค่าและกรองค่า NaN ออกป้องกันวงกลมขึ้น NaN ดื้อๆ
-    const validScores = scores.map(s => isNaN(Number(s)) ? 0 : Number(s));
+    const validScores = scores.map(s => isNaN(Number(s)) || s === '' ? 0 : Number(s));
     const sum = validScores.reduce((a, b) => a + b, 0);
     const avg = sum / validScores.length;
     return Math.round(avg * 20);
   };
 
-  // 🌟 ปรับปรุงการรับค่าเพื่อให้ทำงานร่วมกับ Dropdown <select> ได้เสถียรและไม่ล็อกค่า
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -174,11 +171,9 @@ export default function Development() {
     setFormData(prev => ({ ...prev, [field]: String(value) }));
   };
 
-  // 🌟 ปรับล้างฟอร์มใหม่ให้สะอาดหมดจด ดึงรหัสนักเรียนคนแรกแบบ Dynamic
   const resetForm = () => {
     setFormData({
       ...initialFormState,
-      // ถ้ามีรายชื่อนักเรียนในระบบ ให้เลือกคนแรกมารอไว้เลย
       Student_id: students.length > 0 ? String(students[0].Student_id || students[0].id || students[0].student_id) : ''
     });
     setSelectedId(null);
@@ -186,7 +181,6 @@ export default function Development() {
 
   const handleAddSubmit = async (e) => {
     e.preventDefault();
-    // 🔒 กันไว้อีกชั้น: ห้ามบันทึกถ้านักเรียนที่เลือกไม่ได้อยู่ในห้องของครู
     if (!isStudentAllowed(formData.Student_id)) {
       alert("คุณสามารถเพิ่มพัฒนาการได้เฉพาะนักเรียนในห้องของคุณเท่านั้น");
       return;
@@ -201,7 +195,6 @@ export default function Development() {
         alert("บันทึกการประเมินพัฒนาการเรียบร้อย!");
         setIsAddOpen(false);
 
-        // 🌟 ดึงระดับชั้นของนักเรียนปัจจุบันมาอัปเดตหน้าจอหลักหลังจากเพิ่มข้อมูลเสร็จ
         const currentLevel = getCurrentClassLevel(formData.Student_id);
         resetForm();
         fetchDevelopmentData(currentLevel);
@@ -218,7 +211,6 @@ export default function Development() {
     setIsDetailOpen(true);
   };
 
-  // 🌟 แปลงประเภท Student_id ให้กลายเป็น String เสมอเพื่อให้ตรงกับ Value ของตระกูล <option> ตัวค้างถึงจะหายไป
   const openEditModal = (item) => {
     setSelectedId(item.Development_id || item.development_id);
 
@@ -237,7 +229,7 @@ export default function Development() {
     }
 
     setFormData({
-      Student_id: String(item.Student_id || ''), // 🌟 แปลงเป็น String ป้องกัน Dropdown ค้างหรือล็อกเปลี่ยนไม่ได้
+      Student_id: String(item.Student_id || ''),
       Year: item.Year || 2569,
       Term: dbTerm,
       date: cleanDate,
@@ -248,17 +240,17 @@ export default function Development() {
       Vaccination: item.Vaccination || '',
       Motor_skills: item.Motor_skills || '',
       Emotional: item.Emotional || '',
-      Emotion: String(item.Emotion || '3'),
-      Emotion_control: String(item.Emotion_control || '3'),
-      Confidence: String(item.Confidence || '3'),
+      Emotion: item.Emotion ? String(item.Emotion) : '',
+      Emotion_control: item.Emotion_control ? String(item.Emotion_control) : '',
+      Confidence: item.Confidence ? String(item.Confidence) : '',
       Social: item.Social || '',
-      Stress: String(item.Stress || '3'),
-      Interaction: String(item.Interaction || '3'),
-      Assistance: String(item.Assistance || '3'),
+      Stress: item.Stress ? String(item.Stress) : '',
+      Interaction: item.Interaction ? String(item.Interaction) : '',
+      Assistance: item.Assistance ? String(item.Assistance) : '',
       Intellectual: item.Intellectual || '',
-      Problem_solving: String(item.Problem_solving || '3'),
-      Communication: String(item.Communication || '3'),
-      Remembering: String(item.Remembering || '3')
+      Problem_solving: item.Problem_solving ? String(item.Problem_solving) : '',
+      Communication: item.Communication ? String(item.Communication) : '',
+      Remembering: item.Remembering ? String(item.Remembering) : ''
     });
     setIsEditOpen(true);
   };
@@ -266,7 +258,6 @@ export default function Development() {
   const handleEditSubmit = async (e) => {
     e.preventDefault();
     if (!selectedId) return;
-    // 🔒 กันไว้อีกชั้น: ห้ามแก้ไขถ้านักเรียนที่เลือกไม่ได้อยู่ในห้องของครู
     if (!isStudentAllowed(formData.Student_id)) {
       alert("คุณสามารถแก้ไขพัฒนาการได้เฉพาะนักเรียนในห้องของคุณเท่านั้น");
       return;
@@ -281,7 +272,6 @@ export default function Development() {
         alert("แก้ไขข้อมูลการประเมินสำเร็จ!");
         setIsEditOpen(false);
 
-        // 🌟 ดึงระดับชั้นมาอัปเดตหน้าจอหลักหลังจากแก้ไขเสร็จ
         const currentLevel = getCurrentClassLevel(formData.Student_id);
         resetForm();
         fetchDevelopmentData(currentLevel);
@@ -301,7 +291,6 @@ export default function Development() {
         alert("ลบข้อมูลการประเมินเรียบร้อย!");
         setIsDeleteOpen(false);
 
-        // 🌟 ดึงระดับชั้นมาอัปเดตหน้าจอหลักหลังจากลบข้อมูลเสร็จ
         const currentLevel = getCurrentClassLevel(formData.Student_id);
         resetForm();
         fetchDevelopmentData(currentLevel);
@@ -377,7 +366,6 @@ export default function Development() {
                 <div key={idx} style={styles.devCardItem}>
                   <div style={styles.cardItemHeader}>
                     <span style={styles.yearText}>
-                      {/* สลับมาใช้ item.Student_name ที่ดึงมาจาก SQL เป็นหลัก ถ้าไม่มีค่อย Fallback ไปใช้ฟังก์ชันเดิม */}
                       <strong style={{ color: '#1e3a8a' }}>{item.Student_name || getStudentName(item.Student_id)}</strong><br />
                       ปีการศึกษา {item.Year || item.year || '2569'} - {displayTerm}<br />
                       <span style={{ fontSize: '12px', color: '#666', fontWeight: 'normal' }}>วันที่ประเมิน: {displayDate}</span>
@@ -407,7 +395,6 @@ export default function Development() {
                     </div>
                   </div>
 
-                  {/* 🆕 จุดที่แก้ไข: เพิ่มกล่องข้อความสรุปข้อมูลส่วนสูง น้ำหนัก ฟันของเด็ก ให้ฝั่งคุณครูเห็นด้วย */}
                   <div style={styles.bodyDetailsSummary}>
                     <span>⚖️ น้ำหนัก: <strong>{item.Weight || '-'}</strong> กก.</span>
                     <span>📏 ส่วนสูง: <strong>{item.Height || '-'}</strong> ซม.</span>

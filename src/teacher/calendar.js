@@ -34,9 +34,8 @@ function CalendarActivity() {
 
   const API_URL = 'http://localhost:3001/api/calendar';
 
-  // 🔄 ผูกค่าเวลาจาก 4 ช่องพิมพ์มารวมกันใน formData.Time เสมอเมื่อมีการเปลี่ยนแปลง
+  // 🔄 ผูกค่าเวลาจาก 4 ช่องพิมพ์มารรวมกันใน formData.Time เสมอเมื่อมีการเปลี่ยนแปลง
   useEffect(() => {
-    // ฟังก์ชันช่วยเติมเลข 0 ข้างหน้ากรณีผู้ใช้พิมพ์ตัวเลขตัวเดียว เช่น "9" -> "09"
     const formatPad = (val) => String(val || '00').padStart(2, '0');
 
     setFormData(prev => ({
@@ -184,7 +183,6 @@ function CalendarActivity() {
       cleanDate = String(rawDate).split('T')[0];
     }
 
-    // แยกช่วงเวลาที่บันทึกไว้กลับมาใส่ใน Input พิมพ์ตัวเลข (รองรับ "HH:MM - HH:MM")
     if (rawTime && rawTime.includes('-')) {
       const parts = rawTime.split('-');
       const startTime = parts[0].trim().split(':');
@@ -225,7 +223,6 @@ function CalendarActivity() {
     return String(timeStr);
   };
 
-  // ฟังก์ชันสำหรับเลื่อนเดือนย้อนกลับ (<) และเลื่อนไปข้างหน้า (>)
   const handlePrevMonth = () => {
     if (currentMonth === 1) {
       setCurrentMonth(12);
@@ -254,7 +251,6 @@ function CalendarActivity() {
   const firstDayIndex = new Date(currentYear, currentMonth - 1, 1).getDay();
   const emptySpacesArray = Array.from({ length: firstDayIndex }, (_, i) => i);
 
-  // ฟังก์ชันช่วยจัดฟอร์แมตตัวเลขเมื่อหลุดโฟกัสออกไป (Blur) ให้เป็นเลข 2 หลักเสมอ
   const handleTimeBlur = (val, setter, maxVal) => {
     if (!val || isNaN(val)) {
       setter('00');
@@ -267,27 +263,28 @@ function CalendarActivity() {
   };
 
   return (
-    <div style={styles.contentBody}>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', width: '100%', padding: '20px', boxSizing: 'border-box', backgroundColor: '#f8fafc' }}>
       {loading && <p style={{ fontSize: '13px', color: '#666' }}>กำลังอัปเดตปฏิทิน...</p>}
 
-      <div style={styles.calendarCard}>
-        <div style={styles.calendarHeader}>
-          <span style={styles.calendarMonthTitle}>
+      {/* 🌟 กรอบปฏิทินหลักใช้ Class ของระบบ */}
+      <div className="app-card" style={{ width: '100%', maxWidth: '780px', boxSizing: 'border-box' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+          <span style={{ fontSize: '20px', fontWeight: '700', color: 'var(--brand-700)' }}>
             ปฏิทินกิจกรรม - {monthNamesThai[currentMonth - 1]} {currentYear + 543}
           </span>
           <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
-            <button style={styles.arrowBtn} onClick={handlePrevMonth}>&lt;</button>
-            <button style={styles.arrowBtn} onClick={handleNextMonth}>&gt;</button>
+            <button style={{ padding: '5px 10px', backgroundColor: '#fff', border: '1px solid #e2e8f0', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }} onClick={handlePrevMonth}>&lt;</button>
+            <button style={{ padding: '5px 10px', backgroundColor: '#fff', border: '1px solid #e2e8f0', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }} onClick={handleNextMonth}>&gt;</button>
           </div>
         </div>
 
-        <div style={styles.calendarGrid}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '6px', width: '100%' }}>
           {['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'].map(day => (
-            <div key={day} style={styles.dayOfWeekLabel}>{day}</div>
+            <div key={day} style={{ textAlign: 'center', fontSize: '14px', paddingBottom: '8px', color: 'var(--text)', fontWeight: '700' }}>{day}</div>
           ))}
 
           {emptySpacesArray.map((val) => (
-            <div key={`empty-${val}`} style={styles.dayCellEmpty} />
+            <div key={`empty-${val}`} style={{ minHeight: '95px', boxSizing: 'border-box' }} />
           ))}
 
           {daysInMonthArray.map((day) => {
@@ -300,9 +297,17 @@ function CalendarActivity() {
               <div
                 key={day}
                 style={{
-                  ...styles.dayCell,
-                  backgroundColor: eventItem ? '#e5e5e5' : '#fff',
-                  border: isSelected ? '2px solid #000' : '1px solid #dcdcdc'
+                  borderRadius: '8px',
+                  minHeight: '95px',
+                  padding: '6px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  boxSizing: 'border-box',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                  backgroundColor: eventItem ? '#f0f9ff' : '#fff',
+                  border: isSelected ? '2px solid var(--brand-500)' : '1px solid #e2e8f0'
                 }}
                 onClick={() => {
                   if (eventItem) {
@@ -312,12 +317,12 @@ function CalendarActivity() {
                   }
                 }}
               >
-                <span style={styles.dayNumberText}>{day}</span>
+                <span style={{ alignSelf: 'flex-start', fontSize: '12px', color: '#64748b', fontWeight: '600' }}>{day}</span>
                 {eventItem && (
-                  <div style={styles.eventBadgeContent}>
-                    <div style={styles.eventTitleText}>• {eventItem.Name || eventItem.name}</div>
-                    <div style={styles.eventTimeText}>🕒 {formatTimeDisplay(eventItem.Time || eventItem.time)}</div>
-                    <div style={styles.eventLocationText}>📍 {eventItem.Location || eventItem.location || 'ไม่ระบุ'}</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', width: '100%', textAlign: 'left', gap: '2px', marginTop: '4px' }}>
+                    <div style={{ fontSize: '11px', fontWeight: '700', color: '#0f172a', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>• {eventItem.Name || eventItem.name}</div>
+                    <div style={{ fontSize: '10px', color: '#475569', paddingLeft: '2px' }}>🕒 {formatTimeDisplay(eventItem.Time || eventItem.time)}</div>
+                    <div style={{ fontSize: '10px', color: 'var(--brand-600)', paddingLeft: '2px', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', fontWeight: '600' }}>📍 {eventItem.Location || eventItem.location || 'ไม่ระบุ'}</div>
                   </div>
                 )}
               </div>
@@ -328,30 +333,29 @@ function CalendarActivity() {
 
       {/* 📥 POPUP 1: เพิ่มปฏิทิน */}
       {isAddOpen && (
-        <div style={styles.overlay}>
-          <div style={styles.modal}>
-            <div style={styles.modalHeader}>
-              <strong style={styles.modalTitle}>เพิ่มปฏิทิน</strong>
-              <span style={styles.closeX} onClick={() => { setIsAddOpen(false); clearForm(); }}>X</span>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(15, 23, 42, 0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, backdropFilter: 'blur(4px)' }}>
+          <div style={{ backgroundColor: '#fff', width: '360px', padding: '24px', borderRadius: '16px', border: '1px solid #e2e8f0', position: 'relative', boxSizing: 'border-box', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+              <strong style={{ fontSize: '18px', color: 'var(--text)', fontWeight: '700' }}>เพิ่มปฏิทิน</strong>
+              <span style={{ cursor: 'pointer', fontWeight: '700', color: '#94a3b8', fontSize: '16px' }} onClick={() => { setIsAddOpen(false); clearForm(); }}>X</span>
             </div>
             <form onSubmit={handleAddSubmit}>
-              <label style={styles.label}>ชื่อกิจกรรม</label>
-              <input type="text" style={styles.input} value={formData.Name} onChange={(e) => setFormData({ ...formData, Name: e.target.value })} required />
+              <label className="app-label">ชื่อกิจกรรม</label>
+              <input type="text" className="app-input" value={formData.Name} onChange={(e) => setFormData({ ...formData, Name: e.target.value })} required />
 
-              <label style={styles.label}>วัน/เดือน/ปี</label>
-              <input type="date" style={styles.input} value={formData.Date} onChange={(e) => setFormData({ ...formData, Date: e.target.value })} required />
+              <label className="app-label">วัน/เดือน/ปี</label>
+              <input type="date" className="app-input" value={formData.Date} onChange={(e) => setFormData({ ...formData, Date: e.target.value })} required />
 
-              {/* ✍️ เปลี่ยนเป็นช่อง พิมพ์ตัวเลขเอง 4 ช่อง */}
-              <label style={styles.label}>เวลาที่จัด</label>
-              <div style={styles.timeRow}>
+              <label className="app-label">เวลาที่จัด</label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', width: '100%', marginTop: '4px' }}>
                 <input
-                  type="number" placeholder="00" min="0" max="23" style={styles.timeInput}
+                  type="number" placeholder="00" min="0" max="23" style={{ padding: '8px 4px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '14px', backgroundColor: '#f8fafc', width: '56px', textAlign: 'center', outline: 'none' }}
                   value={startHour} onChange={(e) => setStartHour(e.target.value)}
                   onBlur={(e) => handleTimeBlur(e.target.value, setStartHour, 23)} required
                 />
                 <span>:</span>
                 <input
-                  type="number" placeholder="00" min="0" max="59" style={styles.timeInput}
+                  type="number" placeholder="00" min="0" max="59" style={{ padding: '8px 4px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '14px', backgroundColor: '#f8fafc', width: '56px', textAlign: 'center', outline: 'none' }}
                   value={startMinute} onChange={(e) => setStartMinute(e.target.value)}
                   onBlur={(e) => handleTimeBlur(e.target.value, setStartMinute, 59)} required
                 />
@@ -359,23 +363,23 @@ function CalendarActivity() {
                 <span style={{ margin: '0 6px', color: '#666' }}>ถึง</span>
 
                 <input
-                  type="number" placeholder="00" min="0" max="23" style={styles.timeInput}
+                  type="number" placeholder="00" min="0" max="23" style={{ padding: '8px 4px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '14px', backgroundColor: '#f8fafc', width: '56px', textAlign: 'center', outline: 'none' }}
                   value={endHour} onChange={(e) => setEndHour(e.target.value)}
                   onBlur={(e) => handleTimeBlur(e.target.value, setEndHour, 23)} required
                 />
                 <span>:</span>
                 <input
-                  type="number" placeholder="00" min="0" max="59" style={styles.timeInput}
+                  type="number" placeholder="00" min="0" max="59" style={{ padding: '8px 4px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '14px', backgroundColor: '#f8fafc', width: '56px', textAlign: 'center', outline: 'none' }}
                   value={endMinute} onChange={(e) => setEndMinute(e.target.value)}
                   onBlur={(e) => handleTimeBlur(e.target.value, setEndMinute, 59)} required
                 />
                 <span style={{ fontSize: '12px', color: '#333', marginLeft: '2px' }}>น.</span>
               </div>
 
-              <label style={styles.label}>สถานที่</label>
-              <input type="text" style={styles.input} placeholder="กรอกสถานที่จัดกิจกรรม" value={formData.Location} onChange={(e) => setFormData({ ...formData, Location: e.target.value })} required />
+              <label className="app-label">สถานที่</label>
+              <input type="text" className="app-input" placeholder="กรอกสถานที่จัดกิจกรรม" value={formData.Location} onChange={(e) => setFormData({ ...formData, Location: e.target.value })} required />
 
-              <button type="submit" style={styles.btnSubmit}>บันทึก</button>
+              <button type="submit" className="teacher-btn teacher-btn-save teacher-btn-full" style={{ marginTop: '20px' }}>บันทึก</button>
             </form>
           </div>
         </div>
@@ -383,26 +387,40 @@ function CalendarActivity() {
 
       {/* 🔍 POPUP 2: รายละเอียดปฏิทิน */}
       {isDetailOpen && (
-        <div style={styles.overlay}>
-          <div style={styles.modal}>
-            <div style={styles.modalHeader}>
-              <strong style={styles.modalTitle}>รายละเอียดปฏิทิน</strong>
-              <span style={styles.closeX} onClick={() => { setIsDetailOpen(false); clearForm(); }}>X</span>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(15, 23, 42, 0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, backdropFilter: 'blur(4px)' }}>
+          <div style={{ backgroundColor: '#fff', width: '360px', padding: '24px', borderRadius: '16px', border: '1px solid #e2e8f0', position: 'relative', boxSizing: 'border-box', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+              <strong style={{ fontSize: '18px', color: 'var(--text)', fontWeight: '700' }}>รายละเอียดปฏิทิน</strong>
+              <span style={{ cursor: 'pointer', fontWeight: '700', color: '#94a3b8', fontSize: '16px' }} onClick={() => { setIsDetailOpen(false); clearForm(); }}>X</span>
             </div>
             <div>
-              <label style={styles.label}>ชื่อกิจกรรม</label>
-              <input type="text" style={styles.inputReadOnly} value={formData.Name} readOnly />
-              <label style={styles.label}>วัน/เดือน/ปี</label>
-              <input type="text" style={styles.inputReadOnly} value={formData.Date} readOnly />
-              <label style={styles.label}>เวลาที่จัด</label>
-              <input type="text" style={styles.inputReadOnly} value={formatTimeDisplay(formData.Time)} readOnly />
+              <label className="app-label">ชื่อกิจกรรม</label>
+              <input type="text" className="app-input" value={formData.Name} readOnly />
 
-              <label style={styles.label}>สถานที่</label>
-              <input type="text" style={styles.inputReadOnly} value={formData.Location || 'ไม่ระบุสถานที่'} readOnly />
+              <label className="app-label">วัน/เดือน/ปี</label>
+              <input type="text" className="app-input" value={formData.Date} readOnly />
 
-              <div style={styles.modalActionRow}>
-                <button type="button" style={{ ...styles.iconActionBtn, ...styles.iconDeleteBtn }} onClick={() => { setIsDetailOpen(false); setIsDeleteOpen(true); }}>🗑️</button>
-                <button type="button" style={{ ...styles.iconActionBtn, ...styles.iconEditBtn }} onClick={() => { setIsDetailOpen(false); setIsEditOpen(true); }}>📝</button>
+              <label className="app-label">เวลาที่จัด</label>
+              <input type="text" className="app-input" value={formatTimeDisplay(formData.Time)} readOnly />
+
+              <label className="app-label">สถานที่</label>
+              <input type="text" className="app-input" value={formData.Location || 'ไม่ระบุสถานที่'} readOnly />
+
+              <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', marginTop: '20px' }}>
+                <button
+                  type="button"
+                  className="teacher-btn teacher-btn-edit"
+                  onClick={() => { setIsDetailOpen(false); setIsEditOpen(true); }}
+                >
+                   แก้ไข
+                </button>
+                <button
+                  type="button"
+                  className="teacher-btn teacher-btn-delete"
+                  onClick={() => { setIsDetailOpen(false); setIsDeleteOpen(true); }}
+                >
+                   ลบ
+                </button>
               </div>
             </div>
           </div>
@@ -411,30 +429,29 @@ function CalendarActivity() {
 
       {/* ✏️ POPUP 3: แก้ไขปฏิทิน */}
       {isEditOpen && (
-        <div style={styles.overlay}>
-          <div style={styles.modal}>
-            <div style={styles.modalHeader}>
-              <strong style={styles.modalTitle}>แก้ไขปฏิทิน</strong>
-              <span style={styles.closeX} onClick={() => { setIsEditOpen(false); clearForm(); }}>X</span>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(15, 23, 42, 0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, backdropFilter: 'blur(4px)' }}>
+          <div style={{ backgroundColor: '#fff', width: '360px', padding: '24px', borderRadius: '16px', border: '1px solid #e2e8f0', position: 'relative', boxSizing: 'border-box', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+              <strong style={{ fontSize: '18px', color: 'var(--text)', fontWeight: '700' }}>แก้ไขปฏิทิน</strong>
+              <span style={{ cursor: 'pointer', fontWeight: '700', color: '#94a3b8', fontSize: '16px' }} onClick={() => { setIsEditOpen(false); clearForm(); }}>X</span>
             </div>
             <form onSubmit={handleEditSubmit}>
-              <label style={styles.label}>ชื่อกิจกรรม</label>
-              <input type="text" style={styles.input} value={formData.Name} onChange={(e) => setFormData({ ...formData, Name: e.target.value })} required />
-              <label style={styles.label}>วัน/เดือน/ปี</label>
-              <input type="date" style={styles.input} value={formData.Date} onChange={(e) => setFormData({ ...formData, Date: e.target.value })} required />
+              <label className="app-label">ชื่อกิจกรรม</label>
+              <input type="text" className="app-input" value={formData.Name} onChange={(e) => setFormData({ ...formData, Name: e.target.value })} required />
 
-              {/* ✍️ ช่องพิมพ์ตัวเลขเอง 4 ช่องในหน้าแก้ไข */}
+              <label className="app-label">วัน/เดือน/ปี</label>
+              <input type="date" className="app-input" value={formData.Date} onChange={(e) => setFormData({ ...formData, Date: e.target.value })} required />
 
-              <label style={styles.label}>เวลาที่จัด</label>
-              <div style={styles.timeRow}>
+              <label className="app-label">เวลาที่จัด</label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', width: '100%', marginTop: '4px' }}>
                 <input
-                  type="number" min="0" max="23" style={styles.timeInput}
+                  type="number" min="0" max="23" style={{ padding: '8px 4px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '14px', backgroundColor: '#f8fafc', width: '56px', textAlign: 'center', outline: 'none' }}
                   value={startHour} onChange={(e) => setStartHour(e.target.value)}
                   onBlur={(e) => handleTimeBlur(e.target.value, setStartHour, 23)} required
                 />
                 <span>:</span>
                 <input
-                  type="number" min="0" max="59" style={styles.timeInput}
+                  type="number" min="0" max="59" style={{ padding: '8px 4px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '14px', backgroundColor: '#f8fafc', width: '56px', textAlign: 'center', outline: 'none' }}
                   value={startMinute} onChange={(e) => setStartMinute(e.target.value)}
                   onBlur={(e) => handleTimeBlur(e.target.value, setStartMinute, 59)} required
                 />
@@ -442,42 +459,38 @@ function CalendarActivity() {
                 <span style={{ margin: '0 6px', color: '#666' }}>ถึง</span>
 
                 <input
-                  type="number" min="0" max="23" style={styles.timeInput}
+                  type="number" min="0" max="23" style={{ padding: '8px 4px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '14px', backgroundColor: '#f8fafc', width: '56px', textAlign: 'center', outline: 'none' }}
                   value={endHour} onChange={(e) => setEndHour(e.target.value)}
                   onBlur={(e) => handleTimeBlur(e.target.value, setEndHour, 23)} required
                 />
                 <span>:</span>
                 <input
-                  type="number" min="0" max="59" style={styles.timeInput}
+                  type="number" min="0" max="59" style={{ padding: '8px 4px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '14px', backgroundColor: '#f8fafc', width: '56px', textAlign: 'center', outline: 'none' }}
                   value={endMinute} onChange={(e) => setEndMinute(e.target.value)}
                   onBlur={(e) => handleTimeBlur(e.target.value, setEndMinute, 59)} required
                 />
                 <span style={{ fontSize: '12px', color: '#333', marginLeft: '2px' }}>น.</span>
               </div>
 
-              <label style={styles.label}>สถานที่</label>
-              <input type="text" style={styles.input} value={formData.Location} onChange={(e) => setFormData({ ...formData, Location: e.target.value })} required />
+              <label className="app-label">สถานที่</label>
+              <input type="text" className="app-input" value={formData.Location} onChange={(e) => setFormData({ ...formData, Location: e.target.value })} required />
 
-              <button type="submit" style={styles.btnSubmit}>บันทึก</button>
+              <button type="submit" className="teacher-btn teacher-btn-save teacher-btn-full" style={{ marginTop: '20px' }}>บันทึก</button>
             </form>
           </div>
         </div>
       )}
 
-
-
-
-
       {/* ❌ POPUP 4: ยืนยันการลบข้อมูล */}
       {isDeleteOpen && (
-        <div style={styles.overlay}>
-          <div style={{ ...styles.modal, width: '340px', textAlign: 'center', padding: '30px 20px' }}>
-            <div style={styles.deleteIconContainer}>🗑️</div>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(15, 23, 42, 0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, backdropFilter: 'blur(4px)' }}>
+          <div style={{ backgroundColor: '#fff', width: '340px', padding: '30px 20px', borderRadius: '16px', border: '1px solid #e2e8f0', position: 'relative', boxSizing: 'border-box', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)', textAlign: 'center' }}>
+            <div style={{ fontSize: '40px', marginBottom: '10px' }}>🗑️</div>
             <strong style={{ fontSize: '18px', display: 'block', marginBottom: '6px', color: '#000' }}>ยืนยันการลบ</strong>
             <p style={{ color: '#666', fontSize: '13px', margin: '0 0 25px 0' }}>คุณต้องการลบข้อมูลนี้หรือไม่</p>
             <div style={{ display: 'flex', gap: '15px', justifyContent: 'center' }}>
-              <button type="button" style={styles.btnCancel} onClick={() => { setIsDeleteOpen(false); clearForm(); }}>ยกเลิก</button>
-              <button type="button" style={styles.btnConfirmDelete} onClick={handleDeleteSubmit}>ลบ</button>
+              <button type="button" className="teacher-btn teacher-btn-cancel" onClick={() => { setIsDeleteOpen(false); clearForm(); }}>ยกเลิก</button>
+              <button type="button" className="teacher-btn teacher-btn-delete" onClick={handleDeleteSubmit}>ลบ</button>
             </div>
           </div>
         </div>
@@ -485,42 +498,5 @@ function CalendarActivity() {
     </div>
   );
 }
-
-const styles = {
-  contentBody: { padding: '10px', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', width: '100%' },
-  calendarCard: { border: '1px solid #999', borderRadius: '6px', padding: '20px', backgroundColor: '#fff', width: '100%', maxWidth: '780px', boxSizing: 'border-box' },
-  calendarHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' },
-  calendarMonthTitle: { fontSize: '16px', fontWeight: '500', color: '#000' },
-  arrowBtn: { padding: '3px 8px', backgroundColor: '#f5f5f5', border: '1px solid #dcdcdc', borderRadius: '4px', cursor: 'pointer', fontSize: '11px' },
-  calendarGrid: { display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '6px', width: '100%' },
-  dayOfWeekLabel: { textAlign: 'center', fontSize: '13px', paddingBottom: '8px', color: '#222', fontWeight: 'bold' },
-  dayCell: { border: '1px solid #cccccc', borderRadius: '6px', minHeight: '90px', padding: '6px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', boxSizing: 'border-box', cursor: 'pointer' },
-  dayCellEmpty: { minHeight: '90px', boxSizing: 'border-box' },
-  dayNumberText: { alignSelf: 'flex-start', fontSize: '11px', color: '#444' },
-  eventBadgeContent: { display: 'flex', flexDirection: 'column', width: '100%', textAlign: 'left', gap: '2px', marginTop: '4px' },
-  eventTitleText: { fontSize: '10px', fontWeight: 'bold', color: '#000', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' },
-  eventTimeText: { fontSize: '9px', color: '#555', paddingLeft: '4px' },
-  eventLocationText: { fontSize: '9px', color: '#0284c7', paddingLeft: '4px', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', fontWeight: '500' },
-  overlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 },
-  modal: { backgroundColor: '#fff', width: '350px', padding: '25px', borderRadius: '12px', border: '1px solid #999', position: 'relative', boxSizing: 'border-box' },
-  modalHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' },
-  modalTitle: { fontSize: '16px', color: '#000', fontWeight: 'bold' },
-  closeX: { cursor: 'pointer', fontWeight: 'bold', color: '#aaa', fontSize: '14px' },
-  label: { display: 'block', fontSize: '12px', color: '#333', marginBottom: '5px', marginTop: '10px', textAlign: 'left' },
-  input: { width: '100%', padding: '8px', border: '1px solid #aaa', borderRadius: '5px', boxSizing: 'border-box', fontSize: '13px' },
-  inputReadOnly: { width: '100%', padding: '8px', border: '1px solid #ccc', backgroundColor: '#f9f9f9', borderRadius: '5px', boxSizing: 'border-box', fontSize: '13px', color: '#333' },
-  modalActionRow: { display: 'flex', justifyContent: 'center', gap: '15px', marginTop: '20px' },
-  iconActionBtn: { width: '40px', height: '40px', borderRadius: '8px', cursor: 'pointer', fontSize: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '700' },
-  iconEditBtn: { backgroundColor: '#eff8ff', color: '#0369a1', border: '1px solid #bae6fd' },
-  iconDeleteBtn: { backgroundColor: '#fff1f2', color: '#be123c', border: '1px solid #fecdd3' },
-  btnSubmit: { width: '100%', padding: '10px', marginTop: '20px', background: 'linear-gradient(135deg, #0ea5e9, #0369a1)', color: '#ffffff', border: '1px solid #0284c7', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', fontSize: '13px', boxShadow: '0 10px 22px rgba(14,165,233,0.22)' },
-  deleteIconContainer: { fontSize: '40px', marginBottom: '10px' },
-  btnCancel: { padding: '8px 24px', backgroundColor: '#fff', border: '1px solid #cfe8f7', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', color: '#31556b', fontWeight: '700' },
-  btnConfirmDelete: { padding: '8px 24px', backgroundColor: '#fff1f2', border: '1px solid #fecdd3', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', color: '#be123c', fontWeight: '700' },
-
-  // ✍️ สไตล์เพิ่มเติมสำหรับแถวกรอกตัวเลขเวลาเอง 4 ช่อง
-  timeRow: { display: 'flex', alignItems: 'center', gap: '4px', width: '100%' },
-  timeInput: { padding: '6px 4px', border: '1px solid #aaa', borderRadius: '5px', fontSize: '13px', backgroundColor: '#fff', width: '52px', textAlign: 'center' }
-};
 
 export default CalendarActivity;

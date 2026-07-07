@@ -175,12 +175,9 @@ function Activity() {
     <div style={styles.container}>
       <div style={styles.wrapper}>
 
-
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "25px", flexWrap: "wrap", gap: "16px", width: "100%" }}>
           <div>
-            <h1 style={{ ...styles.mainTitle, fontSize: "28px" }}>
-              จัดการข้อมูล<span style={styles.titleAccent}>กิจกรรม</span>
-            </h1>
+            <h2>ข้อมูลกิจกรรม</h2>
           </div>
           <button
             onClick={() => { if (showForm) clearForm(); else setShowForm(true); }}
@@ -189,8 +186,6 @@ function Activity() {
             {showForm ? "✕ ปิดฟอร์มบันทึก" : "➕ เพิ่มกิจกรรมใหม่"}
           </button>
         </div>
-
-
 
         {/* Form Modal */}
         {showForm && (
@@ -333,10 +328,10 @@ function Activity() {
                   {/* Action Buttons */}
                   <div style={styles.cardActionsRow}>
                     <button onClick={() => handleEdit(item)} style={{ ...styles.actionBtn, ...styles.btnEdit }}>
-                      ✏️ แก้ไข
+                      แก้ไข
                     </button>
                     <button onClick={() => handleDelete(item.Activity_id)} style={{ ...styles.actionBtn, ...styles.btnDelete }}>
-                      🗑️ ลบออก
+                      ลบ
                     </button>
                   </div>
 
@@ -426,7 +421,6 @@ function Activity() {
   );
 }
 
-// 💡 ยกรีเซ็ตสไตล์มาควบคุมระบบด้วยโครงสร้าง CSS-in-JS แบบที่หน้า HomeParent ใช้งานทั้งหมด 
 const styles = {
   container: {
     padding: "20px 10px",
@@ -678,9 +672,9 @@ const styles = {
   activityCard: {
     backgroundColor: "#ffffff",
     border: "1px solid #ccc",
-    borderRadius: "8px",
+    borderRadius: "12px",
     boxShadow: "0 4px 10px rgba(0, 0, 0, 0.05)",
-    width: "calc(25% - 15px)", // สำหรับ Desktop 4 คอลัมน์ (เฉลี่ย Flex)
+    width: "calc(25% - 15px)",
     minWidth: "260px",
     display: "flex",
     flexDirection: "column",
@@ -711,7 +705,7 @@ const styles = {
     height: "100%",
     display: "flex",
     flexDirection: "column",
-    itemsCenter: "center",
+    alignItems: "center",
     justifyContent: "center",
     gap: "6px",
   },
@@ -740,39 +734,42 @@ const styles = {
   },
   cardDetailItem: {
     fontSize: "13px",
-    color: "#475569",
+    color: "#000000",          // 💡 เปลี่ยนรายละเอียดข้อมูลหลังไอคอนให้เป็นสีดำเข้มชัดเจน
+    fontWeight: "bold",        // 💡 เพิ่มความหนาให้ตัวหนังสืออ่านง่ายขึ้น
     margin: 0,
   },
   detailLabel: {
-    color: "#94a3b8",
-    fontWeight: "normal",
+    color: "#000000",          // 💡 เปลี่ยนคำว่า "ผู้บันทึก:", "วันที่:", "สถานที่:" ให้เป็นสีดำเข้ม
+    fontWeight: "bold",
   },
   primaryColor: {
     color: "#0284c7",
   },
   cardActionsRow: {
     display: "flex",
-    borderTop: "1px solid #f1f5f9",
-    backgroundColor: "#f8fafc",
-    padding: "8px",
-    gap: "6px",
+    backgroundColor: "#ffffff",
+    padding: "12px 16px",
+    gap: "12px",
   },
   actionBtn: {
     flex: 1,
-    padding: "6px 0",
-    fontSize: "12px",
+    padding: "10px 0",
+    fontSize: "14px",
     fontWeight: "bold",
-    border: "none",
-    borderRadius: "4px",
+    borderRadius: "10px",
     cursor: "pointer",
+    transition: "all 0.2s ease-in-out",
+    textAlign: "center",
   },
   btnEdit: {
-    backgroundColor: "#f0f9ff",
+    backgroundColor: "#e0f2fe",
     color: "#0369a1",
+    border: "1px solid #bae6fd",
   },
   btnDelete: {
-    backgroundColor: "#fef2f2",
+    backgroundColor: "#ffe4e6",
     color: "#b91c1c",
+    border: "1px solid #fecdd3",
   },
   galleryContainer: {
     backgroundColor: "#ffffff",
