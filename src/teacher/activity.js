@@ -172,100 +172,85 @@ function Activity() {
   });
 
   return (
-    <div className="p-6 md:p-10 min-h-screen bg-gradient-to-br from-brand-lightBg to-[#e0f2fe] w-full box-border font-sans antialiased">
-      <div className="max-w-[1240px] mx-auto w-full">
+    <div style={styles.container}>
+      <div style={styles.wrapper}>
 
-        {/* Header Section */}
-        <div className="flex justify-between items-center mb-8 flex-wrap gap-4 bg-white/60 backdrop-blur-md p-5 rounded-2xl border border-sky-100/50 shadow-sm">
+
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "25px", flexWrap: "wrap", gap: "16px", width: "100%" }}>
           <div>
-            <span className="px-3 py-1 text-xs font-semibold bg-sky-100 text-brand-primary rounded-full inline-block mb-1.5">
-              Workspace
-            </span>
-            <h1 className="text-2xl md:text-3xl font-extrabold text-brand-darkText tracking-tight m-0">
-              จัดการข้อมูล<span className="text-brand-primary">กิจกรรม</span>
+            <h1 style={{ ...styles.mainTitle, fontSize: "28px" }}>
+              จัดการข้อมูล<span style={styles.titleAccent}>กิจกรรม</span>
             </h1>
           </div>
           <button
             onClick={() => { if (showForm) clearForm(); else setShowForm(true); }}
-            className="teacher-btn teacher-btn-add"
+            style={showForm ? { ...styles.btn, ...styles.btnDanger } : { ...styles.btn, ...styles.btnPrimary }}
           >
             {showForm ? "✕ ปิดฟอร์มบันทึก" : "➕ เพิ่มกิจกรรมใหม่"}
           </button>
         </div>
 
-        {/* Search Bar */}
-        <div className="mb-8 w-full group">
-          <div className="relative flex items-center">
-            <span className="absolute left-4 text-sky-400 text-lg">🔍</span>
-            <input
-              type="text"
-              placeholder="ค้นหาชื่อกิจกรรม, สถานที่ หรือผู้บันทึกภาพ..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-11 pr-4 py-3.5 bg-white border border-sky-100 rounded-xl text-sm box-border focus:outline-none focus:border-brand-primary focus:ring-4 focus:ring-sky-100 transition-all placeholder:text-slate-400 text-slate-700"
-            />
-          </div>
-        </div>
+
 
         {/* Form Modal */}
         {showForm && (
-          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-[9999] p-4">
-            <form onSubmit={handleSubmit} className="bg-white rounded-2xl w-full max-w-[480px] p-6 shadow-2xl border border-sky-50 box-border relative">
-              <div className="flex justify-between items-center mb-5 border-b border-slate-100 pb-3">
-                <h2 className="text-lg font-bold text-brand-darkText m-0 flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 bg-brand-primary rounded-full inline-block"></span>
+          <div style={styles.modalOverlay}>
+            <form onSubmit={handleSubmit} style={styles.modalForm}>
+              <div style={styles.modalHeader}>
+                <h2 style={styles.modalTitle}>
+                  <span style={styles.titleDot}></span>
                   {editId ? "แก้ไขข้อมูลกิจกรรม" : "เพิ่มกิจกรรมใหม่"}
                 </h2>
-                <button type="button" onClick={clearForm} className="bg-none border-none text-xl text-slate-400 cursor-pointer hover:text-slate-600 transition">✕</button>
+                <button type="button" onClick={clearForm} style={styles.closeBtn}>✕</button>
               </div>
 
               {/* Upload Zone */}
-              <div className="flex items-center border border-dashed border-sky-200 rounded-xl p-4 mb-5 bg-sky-50/50">
-                <label className="cursor-pointer border border-sky-100 rounded-xl p-3 bg-white inline-block hover:border-brand-primary transition-all text-center min-w-[70px]">
-                  <input type="file" accept="image/*" multiple onChange={handleImageChange} className="hidden" />
-                  <div className="flex flex-col justify-center items-center">
-                    <svg width="22" height="22" fill="none" stroke="#0284c7" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M12 4v16m8-8H4" />
+              <div style={styles.uploadZone}>
+                <label style={styles.uploadLabel}>
+                  <input type="file" accept="image/*" multiple onChange={handleImageChange} style={{ display: "none" }} />
+                  <div style={styles.uploadIconContainer}>
+                    <svg width="20" height="20" fill="none" stroke="#0284c7" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
                     </svg>
-                    <span className="mt-1 text-[11px] font-bold text-brand-primary">รูปภาพ</span>
+                    <span style={styles.uploadText}>รูปภาพ</span>
                   </div>
                 </label>
 
-                <div className="flex gap-2 flex-wrap flex-1 ml-4 overflow-y-auto max-h-[75px] pr-1">
+                <div style={styles.previewContainer}>
                   {previewImages.map((src, index) => (
-                    <div key={index} className="w-[50px] h-[50px] rounded-lg overflow-hidden border border-sky-100 shadow-sm flex-shrink-0">
-                      <img src={src} alt={`preview-${index}`} className="w-full h-full object-cover" />
+                    <div key={index} style={styles.previewBox}>
+                      <img src={src} alt={`preview-${index}`} style={styles.coverImg} />
                     </div>
                   ))}
-                  {previewImages.length === 0 && <span className="text-xs text-slate-400 italic">ยังไม่มีการเลือกรูปภาพ</span>}
+                  {previewImages.length === 0 && <span style={styles.emptyItalic}>ยังไม่มีการเลือกรูปภาพ</span>}
                 </div>
               </div>
 
               {/* Form Inputs */}
-              <div className="space-y-4">
+              <div style={styles.formGroupStack}>
                 <div>
-                  <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wider">ชื่อกิจกรรม</label>
-                  <input type="text" placeholder="กรอกชื่อกิจกรรม" value={nameActivity} onChange={(e) => setNameActivity(e.target.value)} className="w-full px-3.5 py-2.5 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-sky-100 box-border text-slate-700" />
+                  <label style={styles.inputLabel}>ชื่อกิจกรรม</label>
+                  <input type="text" placeholder="กรอกชื่อกิจกรรม" value={nameActivity} onChange={(e) => setNameActivity(e.target.value)} style={styles.textInput} />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wider">ผู้บันทึกภาพ</label>
-                  <input type="text" placeholder="กรอกชื่อผู้บันทึกภาพ" value={photographer} onChange={(e) => setPhotographer(e.target.value)} className="w-full px-3.5 py-2.5 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-sky-100 box-border text-slate-700" />
+                  <label style={styles.inputLabel}>ผู้บันทึกภาพ</label>
+                  <input type="text" placeholder="กรอกชื่อผู้บันทึกภาพ" value={photographer} onChange={(e) => setPhotographer(e.target.value)} style={styles.textInput} />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div style={styles.gridTwoColumns}>
                   <div>
-                    <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wider">วันที่จัดกิจกรรม</label>
-                    <input type="date" value={activityDate} onChange={(e) => setActivityDate(e.target.value)} className="w-full px-3.5 py-2.5 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-sky-100 box-border text-slate-700" />
+                    <label style={styles.inputLabel}>วันที่จัดกิจกรรม</label>
+                    <input type="date" value={activityDate} onChange={(e) => setActivityDate(e.target.value)} style={styles.textInput} />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wider">สถานที่</label>
-                    <input type="text" placeholder="กรอกสถานที่" value={location} onChange={(e) => setLocation(e.target.value)} className="w-full px-3.5 py-2.5 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-sky-100 box-border text-slate-700" />
+                    <label style={styles.inputLabel}>สถานที่</label>
+                    <input type="text" placeholder="กรอกสถานที่" value={location} onChange={(e) => setLocation(e.target.value)} style={styles.textInput} />
                   </div>
                 </div>
               </div>
 
-              <button type="submit" className="teacher-btn teacher-btn-save teacher-btn-full mt-6">
+              <button type="submit" style={{ ...styles.btn, ...styles.btnSuccess, ...styles.btnFull, marginTop: "24px" }}>
                 💾 บันทึกข้อมูลกิจกรรม
               </button>
             </form>
@@ -273,11 +258,11 @@ function Activity() {
         )}
 
         {/* Activity Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 w-full">
+        <div style={styles.activityGrid}>
           {filteredActivities.length === 0 ? (
-            <div className="col-span-full text-center bg-white rounded-2xl py-12 px-4 border border-sky-100 shadow-sm">
-              <span className="text-4xl block mb-2">📁</span>
-              <p className="text-slate-400 text-sm m-0">ไม่พบข้อมูลกิจกรรมในระบบการค้นหา</p>
+            <div style={styles.noDataBox}>
+              <span style={{ fontSize: "36px", display: "block", marginBottom: "8px" }}>📁</span>
+              <p style={{ color: "#94a3b8", fontSize: "14px", margin: 0 }}>ไม่พบข้อมูลกิจกรรมในระบบการค้นหา</p>
             </div>
           ) : (
             filteredActivities.map((item) => {
@@ -293,11 +278,14 @@ function Activity() {
               }
 
               return (
-                <div key={item.Activity_id} className="bg-white rounded-2xl border border-sky-100/70 overflow-hidden flex flex-col shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1 group">
+                <div key={item.Activity_id} style={styles.activityCard}>
 
                   {/* Image Cover */}
                   <div
-                    className={`w-full h-44 bg-slate-50 relative overflow-hidden ${itemImages.length > 0 ? "cursor-zoom-in" : "cursor-default"}`}
+                    style={{
+                      ...styles.cardImageZone,
+                      cursor: itemImages.length > 0 ? "zoom-in" : "default"
+                    }}
                     onClick={() => {
                       if (itemImages.length > 0) {
                         setGalleryTitle(item.Name_activity || "คลังรูปภาพกิจกรรม");
@@ -306,50 +294,48 @@ function Activity() {
                     }}
                   >
                     {itemImages.length > 0 && itemImages[0] ? (
-                      <div className="w-full h-full relative">
-                        <img src={itemImages[0]} alt={item.Name_activity} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                      <div style={{ width: "100%", height: "100%", position: "relative" }}>
+                        <img src={itemImages[0]} alt={item.Name_activity} style={styles.coverImg} />
                         {itemImages.length > 1 && (
-                          <div className="absolute bottom-2 right-2 bg-slate-900/70 backdrop-blur-sm text-white text-[11px] font-bold px-2 py-0.5 rounded-md">
+                          <div style={styles.imageBadge}>
                             +{itemImages.length - 1} รูปภาพ
                           </div>
                         )}
                       </div>
                     ) : (
-                      <div className="w-full h-full flex flex-col items-center justify-center gap-1.5 bg-sky-50/50">
-                        <svg className="w-8 h-8 text-sky-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div style={styles.noImageZone}>
+                        <svg width="28" height="28" fill="none" stroke="#cbd5e1" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
-                        <span className="text-[11px] text-sky-300">ไม่มีรูปภาพ</span>
+                        <span style={{ fontSize: "11px", color: "#94a3b8" }}>ไม่มีรูปภาพ</span>
                       </div>
                     )}
                   </div>
 
                   {/* Information Details */}
-                  <div className="p-5 flex-grow flex flex-col justify-between">
-                    <div>
-                      <h2 className="text-base font-bold text-brand-darkText m-0 mb-3 overflow-hidden text-ellipsis whitespace-nowrap" title={item.Name_activity}>
-                        {item.Name_activity || "ไม่มีชื่อกิจกรรม"}
-                      </h2>
-                      <div className="space-y-2 border-l-2 border-sky-100 pl-3">
-                        <p className="text-xs text-slate-500 m-0 flex items-center gap-1.5">
-                          <span className="text-brand-primary">📸</span> <span className="font-medium text-slate-400">ผู้บันทึก:</span> {item.Photographer || "ไม่ระบุ"}
-                        </p>
-                        <p className="text-xs text-slate-500 m-0 flex items-center gap-1.5">
-                          <span className="text-brand-primary">📅</span> <span className="font-medium text-slate-400">วันที่:</span> {formatDate(item.Activity_date)}
-                        </p>
-                        <p className="text-xs text-slate-500 m-0 flex items-center gap-1.5">
-                          <span className="text-brand-primary">📍</span> <span className="font-medium text-slate-400">สถานที่:</span> {item.Location || "ไม่ระบุ"}
-                        </p>
-                      </div>
+                  <div style={styles.cardBody}>
+                    <h2 style={styles.cardTitle} title={item.Name_activity}>
+                      {item.Name_activity || "ไม่มีชื่อกิจกรรม"}
+                    </h2>
+                    <div style={styles.cardDetailsBorder}>
+                      <p style={styles.cardDetailItem}>
+                        <span style={styles.primaryColor}>📸</span> <strong style={styles.detailLabel}>ผู้บันทึก:</strong> {item.Photographer || "ไม่ระบุ"}
+                      </p>
+                      <p style={styles.cardDetailItem}>
+                        <span style={styles.primaryColor}>📅</span> <strong style={styles.detailLabel}>วันที่:</strong> {formatDate(item.Activity_date)}
+                      </p>
+                      <p style={styles.cardDetailItem}>
+                        <span style={styles.primaryColor}>📍</span> <strong style={styles.detailLabel}>สถานที่:</strong> {item.Location || "ไม่ระบุ"}
+                      </p>
                     </div>
                   </div>
 
                   {/* Action Buttons */}
-                  <div className="flex border-t border-slate-100 bg-slate-50/70 p-1.5 gap-1">
-                    <button onClick={() => handleEdit(item)} className="teacher-btn teacher-btn-edit teacher-btn-flex">
+                  <div style={styles.cardActionsRow}>
+                    <button onClick={() => handleEdit(item)} style={{ ...styles.actionBtn, ...styles.btnEdit }}>
                       ✏️ แก้ไข
                     </button>
-                    <button onClick={() => handleDelete(item.Activity_id)} className="teacher-btn teacher-btn-delete teacher-btn-flex">
+                    <button onClick={() => handleDelete(item.Activity_id)} style={{ ...styles.actionBtn, ...styles.btnDelete }}>
                       🗑️ ลบออก
                     </button>
                   </div>
@@ -362,27 +348,27 @@ function Activity() {
 
         {/* Gallery Modal */}
         {activeGalleryImages && activeGalleryImages.length > 0 && (
-          <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-[10000] p-4" onClick={() => setActiveGalleryImages(null)}>
-            <div className="bg-white border border-sky-100 rounded-2xl w-full max-w-[560px] p-6 shadow-2xl flex flex-col relative max-h-[80vh]" onClick={(e) => e.stopPropagation()}>
-              <div className="flex justify-between items-start w-full mb-4 border-b border-slate-100 pb-3">
+          <div style={styles.modalOverlay} onClick={() => setActiveGalleryImages(null)}>
+            <div style={styles.galleryContainer} onClick={(e) => e.stopPropagation()}>
+              <div style={styles.galleryHeader}>
                 <div>
-                  <h2 className="text-lg font-bold text-brand-darkText m-0 text-left">{galleryTitle}</h2>
-                  <span className="text-xs font-medium text-brand-primary mt-0.5 text-left">📂 คลังภาพถ่ายรวมทั้งหมด ({activeGalleryImages.length} รูป)</span>
+                  <h2 style={styles.modalTitle}>{galleryTitle}</h2>
+                  <span style={styles.gallerySub}>📂 คลังภาพถ่ายรวมทั้งหมด ({activeGalleryImages.length} รูป)</span>
                 </div>
-                <button onClick={() => setActiveGalleryImages(null)} className="bg-slate-50 border-none w-7 h-7 flex items-center justify-center rounded-full text-slate-400 text-sm cursor-pointer hover:bg-slate-100 transition">✕</button>
+                <button onClick={() => setActiveGalleryImages(null)} style={styles.circleCloseBtn}>✕</button>
               </div>
 
-              <div className="grid grid-cols-4 gap-3 overflow-y-auto pr-1 w-full box-border">
+              <div style={styles.galleryGrid}>
                 {activeGalleryImages.map((imgSrc, idx) => (
                   <div
                     key={idx}
-                    className="w-full aspect-square rounded-xl border border-slate-200 overflow-hidden bg-slate-50 relative cursor-zoom-in hover:border-brand-primary transition-all"
+                    style={styles.galleryItemBox}
                     onClick={() => {
                       setLightBoxImage(imgSrc);
                       setCurrentLightBoxIndex(idx);
                     }}
                   >
-                    <img src={imgSrc} alt={`gallery-item-${idx}`} className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" />
+                    <img src={imgSrc} alt={`gallery-item-${idx}`} style={styles.coverImg} />
                   </div>
                 ))}
               </div>
@@ -392,11 +378,11 @@ function Activity() {
 
         {/* LightBox Modal */}
         {lightBoxImage && (
-          <div className="fixed inset-0 bg-slate-950/95 flex items-center justify-center z-[11000] p-4" onClick={() => setLightBoxImage(null)}>
-            <div className="bg-transparent w-full max-w-[850px] flex flex-col items-center relative" onClick={(e) => e.stopPropagation()}>
-              <button onClick={() => setLightBoxImage(null)} className="absolute -top-12 right-0 bg-white/10 hover:bg-white/20 border-none text-white w-9 h-9 flex items-center justify-center rounded-full text-lg cursor-pointer transition">✕</button>
+          <div style={styles.lightboxOverlay} onClick={() => setLightBoxImage(null)}>
+            <div style={styles.lightboxContent} onClick={(e) => e.stopPropagation()}>
+              <button onClick={() => setLightBoxImage(null)} style={styles.lightboxCloseBtn}>✕</button>
 
-              <div className="flex w-full items-center justify-between gap-4">
+              <div style={styles.lightboxMainRow}>
                 {currentLightBoxIndex > 0 ? (
                   <button
                     onClick={() => {
@@ -404,14 +390,14 @@ function Activity() {
                       setCurrentLightBoxIndex(nextIndex);
                       setLightBoxImage(activeGalleryImages[nextIndex]);
                     }}
-                    className="w-12 h-12 rounded-full border border-white/20 bg-white/5 text-white flex items-center justify-center hover:bg-white/10 transition-all"
+                    style={styles.arrowBtn}
                   >
                     ◀
                   </button>
-                ) : <div className="w-12" />}
+                ) : <div style={{ width: "48px" }} />}
 
-                <div className="flex-1 h-[68vh] flex items-center justify-center overflow-hidden">
-                  <img src={lightBoxImage} alt="ขยายใหญ่" className="max-w-full max-h-full object-contain rounded-xl shadow-2xl" />
+                <div style={styles.lightboxImgContainer}>
+                  <img src={lightBoxImage} alt="ขยายใหญ่" style={styles.lightboxImg} />
                 </div>
 
                 {currentLightBoxIndex < activeGalleryImages.length - 1 ? (
@@ -421,14 +407,14 @@ function Activity() {
                       setCurrentLightBoxIndex(nextIndex);
                       setLightBoxImage(activeGalleryImages[nextIndex]);
                     }}
-                    className="w-12 h-12 rounded-full border border-white/20 bg-white/5 text-white flex items-center justify-center hover:bg-white/10 transition-all"
+                    style={styles.arrowBtn}
                   >
                     ▶
                   </button>
-                ) : <div className="w-12" />}
+                ) : <div style={{ width: "48px" }} />}
               </div>
 
-              <div className="mt-5 px-3 py-1 bg-white/10 backdrop-blur-md rounded-full text-xs text-white/80 font-medium">
+              <div style={styles.lightboxCounter}>
                 รูปภาพที่ {currentLightBoxIndex + 1} จาก {activeGalleryImages.length}
               </div>
             </div>
@@ -439,5 +425,494 @@ function Activity() {
     </div>
   );
 }
+
+// 💡 ยกรีเซ็ตสไตล์มาควบคุมระบบด้วยโครงสร้าง CSS-in-JS แบบที่หน้า HomeParent ใช้งานทั้งหมด 
+const styles = {
+  container: {
+    padding: "20px 10px",
+    fontFamily: "sans-serif",
+    backgroundColor: "transparent",
+    width: "100%",
+    boxSizing: "border-box",
+  },
+  wrapper: {
+    maxWidth: "1240px",
+    margin: "0 auto",
+    width: "100%",
+  },
+  headerBox: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: "25px",
+    flexWrap: "wrap",
+    gap: "16px",
+    backgroundColor: "#ffffff",
+    border: "1px solid #ccc",
+    borderRadius: "8px",
+    padding: "20px",
+    boxShadow: "0 4px 10px rgba(0, 0, 0, 0.05)",
+  },
+  badge: {
+    padding: "3px 10px",
+    fontSize: "12px",
+    fontWeight: "bold",
+    backgroundColor: "#e0f2fe",
+    color: "#0284c7",
+    borderRadius: "12px",
+    display: "inline-block",
+    marginBottom: "6px",
+  },
+  mainTitle: {
+    fontSize: "24px",
+    fontWeight: "bold",
+    margin: 0,
+    color: "#333333",
+  },
+  titleAccent: {
+    color: "#0284c7",
+  },
+  btn: {
+    padding: "10px 20px",
+    fontSize: "14px",
+    fontWeight: "bold",
+    borderRadius: "6px",
+    border: "none",
+    cursor: "pointer",
+    transition: "background-color 0.2s",
+  },
+  btnPrimary: {
+    backgroundColor: "#0284c7",
+    color: "#ffffff",
+  },
+  btnDanger: {
+    backgroundColor: "#ef4444",
+    color: "#ffffff",
+  },
+  btnSuccess: {
+    backgroundColor: "#10b981",
+    color: "#ffffff",
+  },
+  btnFull: {
+    width: "100%",
+  },
+  searchWrapper: {
+    position: "relative",
+    display: "flex",
+    alignItems: "center",
+    marginBottom: "25px",
+    width: "100%",
+  },
+  searchIcon: {
+    position: "absolute",
+    left: "15px",
+    fontSize: "16px",
+  },
+  searchInput: {
+    width: "100%",
+    padding: "12px 15px 12px 42px",
+    backgroundColor: "#ffffff",
+    border: "1px solid #ccc",
+    borderRadius: "8px",
+    fontSize: "14px",
+    boxSizing: "border-box",
+    color: "#333333",
+    outline: "none",
+  },
+  modalOverlay: {
+    position: "fixed",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(15, 23, 42, 0.4)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 9999,
+    padding: "16px",
+  },
+  modalForm: {
+    backgroundColor: "#ffffff",
+    borderRadius: "8px",
+    width: "100%",
+    maxWidth: "480px",
+    padding: "25px",
+    boxShadow: "0 10px 25px rgba(0, 0, 0, 0.15)",
+    border: "1px solid #ccc",
+    boxSizing: "border-box",
+  },
+  modalHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: "20px",
+    borderBottom: "1px solid #f1f5f9",
+    paddingBottom: "12px",
+  },
+  modalTitle: {
+    fontSize: "18px",
+    fontWeight: "bold",
+    margin: 0,
+    color: "#333333",
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+  },
+  titleDot: {
+    width: "10px",
+    height: "10px",
+    backgroundColor: "#0284c7",
+    borderRadius: "50%",
+    display: "inline-block",
+  },
+  closeBtn: {
+    background: "none",
+    border: "none",
+    fontSize: "20px",
+    color: "#94a3b8",
+    cursor: "pointer",
+  },
+  uploadZone: {
+    display: "flex",
+    alignItems: "center",
+    border: "1px dashed #0284c7",
+    borderRadius: "8px",
+    padding: "15px",
+    marginBottom: "20px",
+    backgroundColor: "#f0f9ff",
+  },
+  uploadLabel: {
+    cursor: "pointer",
+    border: "1px solid #ccc",
+    borderRadius: "8px",
+    padding: "10px",
+    backgroundColor: "#ffffff",
+    textAlign: "center",
+    minWidth: "70px",
+    boxSizing: "border-box",
+  },
+  uploadIconContainer: {
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  uploadText: {
+    marginTop: "4px",
+    fontSize: "11px",
+    fontWeight: "bold",
+    color: "#0284c7",
+  },
+  previewContainer: {
+    display: "flex",
+    gap: "8px",
+    flexWrap: "wrap",
+    flex: 1,
+    marginLeft: "16px",
+    overflowY: "auto",
+    maxHeight: "75px",
+    paddingRight: "4px",
+  },
+  previewBox: {
+    width: "50px",
+    height: "50px",
+    borderRadius: "6px",
+    overflow: "hidden",
+    border: "1px solid #f1f5f9",
+    boxShadow: "0 2px 4px rgba(0,0,0,0.02)",
+    flexShrink: 0,
+  },
+  coverImg: {
+    width: "100%",
+    height: "100%",
+    objectFit: "cover",
+  },
+  emptyItalic: {
+    fontSize: "12px",
+    color: "#94a3b8",
+    fontStyle: "italic",
+  },
+  formGroupStack: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "16px",
+  },
+  inputLabel: {
+    display: "block",
+    fontSize: "12px",
+    fontWeight: "bold",
+    color: "#475569",
+    marginBottom: "6px",
+  },
+  textInput: {
+    width: "100%",
+    padding: "10px 12px",
+    border: "1px solid #ccc",
+    borderRadius: "6px",
+    fontSize: "14px",
+    backgroundColor: "#ffffff",
+    boxSizing: "border-box",
+    color: "#333333",
+    outline: "none",
+  },
+  gridTwoColumns: {
+    display: "flex",
+    gap: "12px",
+  },
+  activityGrid: {
+    display: "flex",
+    gap: "20px",
+    flexWrap: "wrap",
+    width: "100%",
+  },
+  noDataBox: {
+    width: "100%",
+    textAlign: "center",
+    backgroundColor: "#ffffff",
+    borderRadius: "8px",
+    border: "1px solid #ccc",
+    padding: "40px 16px",
+    boxShadow: "0 4px 10px rgba(0,0,0,0.05)",
+  },
+  activityCard: {
+    backgroundColor: "#ffffff",
+    border: "1px solid #ccc",
+    borderRadius: "8px",
+    boxShadow: "0 4px 10px rgba(0, 0, 0, 0.05)",
+    width: "calc(25% - 15px)", // สำหรับ Desktop 4 คอลัมน์ (เฉลี่ย Flex)
+    minWidth: "260px",
+    display: "flex",
+    flexDirection: "column",
+    overflow: "hidden",
+    boxSizing: "border-box",
+    flexGrow: 1,
+  },
+  cardImageZone: {
+    width: "100%",
+    height: "176px",
+    backgroundColor: "#f8fafc",
+    position: "relative",
+    overflow: "hidden",
+  },
+  imageBadge: {
+    position: "absolute",
+    bottom: "8px",
+    right: "8px",
+    backgroundColor: "rgba(15, 23, 42, 0.75)",
+    color: "#ffffff",
+    fontSize: "11px",
+    fontWeight: "bold",
+    padding: "2px 8px",
+    borderRadius: "4px",
+  },
+  noImageZone: {
+    width: "100%",
+    height: "100%",
+    display: "flex",
+    flexDirection: "column",
+    itemsCenter: "center",
+    justifyContent: "center",
+    gap: "6px",
+  },
+  cardBody: {
+    padding: "16px",
+    flexGrow: 1,
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "space-between",
+  },
+  cardTitle: {
+    fontSize: "16px",
+    fontWeight: "bold",
+    margin: "0 0 12px 0",
+    color: "#333333",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+  },
+  cardDetailsBorder: {
+    borderLeft: "2px solid #e2e8f0",
+    paddingLeft: "12px",
+    display: "flex",
+    flexDirection: "column",
+    gap: "8px",
+  },
+  cardDetailItem: {
+    fontSize: "13px",
+    color: "#475569",
+    margin: 0,
+  },
+  detailLabel: {
+    color: "#94a3b8",
+    fontWeight: "normal",
+  },
+  primaryColor: {
+    color: "#0284c7",
+  },
+  cardActionsRow: {
+    display: "flex",
+    borderTop: "1px solid #f1f5f9",
+    backgroundColor: "#f8fafc",
+    padding: "8px",
+    gap: "6px",
+  },
+  actionBtn: {
+    flex: 1,
+    padding: "6px 0",
+    fontSize: "12px",
+    fontWeight: "bold",
+    border: "none",
+    borderRadius: "4px",
+    cursor: "pointer",
+  },
+  btnEdit: {
+    backgroundColor: "#f0f9ff",
+    color: "#0369a1",
+  },
+  btnDelete: {
+    backgroundColor: "#fef2f2",
+    color: "#b91c1c",
+  },
+  galleryContainer: {
+    backgroundColor: "#ffffff",
+    border: "1px solid #ccc",
+    borderRadius: "8px",
+    width: "100%",
+    maxWidth: "560px",
+    padding: "25px",
+    boxShadow: "0 15px 35px rgba(0,0,0,0.2)",
+    display: "flex",
+    flexDirection: "column",
+    maxHeight: "80vh",
+    boxSizing: "border-box",
+  },
+  galleryHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    width: "100%",
+    marginBottom: "16px",
+    borderBottom: "1px solid #f1f5f9",
+    paddingBottom: "12px",
+  },
+  gallerySub: {
+    fontSize: "12px",
+    fontWeight: "bold",
+    color: "#0284c7",
+    marginTop: "2px",
+    display: "block",
+  },
+  circleCloseBtn: {
+    backgroundColor: "#f1f5f9",
+    border: "none",
+    width: "28px",
+    height: "28px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: "50%",
+    color: "#94a3b8",
+    fontSize: "12px",
+    cursor: "pointer",
+  },
+  galleryGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(4, 1fr)",
+    gap: "12px",
+    overflowY: "auto",
+    paddingRight: "4px",
+    boxSizing: "border-box",
+  },
+  galleryItemBox: {
+    width: "100%",
+    aspectRatio: "1/1",
+    borderRadius: "6px",
+    border: "1px solid #ccc",
+    overflow: "hidden",
+    backgroundColor: "#f8fafc",
+    cursor: "zoom-in",
+  },
+  lightboxOverlay: {
+    position: "fixed",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(2, 6, 23, 0.95)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 11000,
+    padding: "16px",
+  },
+  lightboxContent: {
+    backgroundColor: "transparent",
+    width: "100%",
+    maxWidth: "850px",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    position: "relative",
+  },
+  lightboxCloseBtn: {
+    position: "absolute",
+    top: "-48px",
+    right: 0,
+    backgroundColor: "rgba(255,255,255,0.1)",
+    border: "none",
+    color: "#ffffff",
+    width: "36px",
+    height: "36px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: "50%",
+    fontSize: "16px",
+    cursor: "pointer",
+  },
+  lightboxMainRow: {
+    display: "flex",
+    width: "100%",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: "16px",
+  },
+  arrowBtn: {
+    width: "48px",
+    height: "48px",
+    borderRadius: "50%",
+    border: "1px solid rgba(255,255,255,0.2)",
+    backgroundColor: "rgba(255,255,255,0.05)",
+    color: "#ffffff",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    cursor: "pointer",
+  },
+  lightboxImgContainer: {
+    flex: 1,
+    height: "65vh",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+  },
+  lightboxImg: {
+    maxWidth: "100%",
+    maxHeight: "100%",
+    objectFit: "contain",
+    borderRadius: "8px",
+    boxShadow: "0 25px 50px rgba(0,0,0,0.5)",
+  },
+  lightboxCounter: {
+    marginTop: "20px",
+    padding: "4px 12px",
+    backgroundColor: "rgba(255,255,255,0.1)",
+    borderRadius: "12px",
+    fontSize: "12px",
+    color: "rgba(255,255,255,0.8)",
+  }
+};
 
 export default Activity;

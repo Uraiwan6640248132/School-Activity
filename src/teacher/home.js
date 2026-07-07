@@ -34,108 +34,218 @@ const Home = () => {
   }, []);
 
   return (
-    // 🌟 เอาส่วนหัวแถบสีทึบเดิมออกเรียบร้อยแล้ว ปล่อยพื้นที่ให้การ์ดเรียงตัวสวยงามทันที
-    <div className="max-w-7xl w-full mx-auto space-y-8 flex-grow">
-
-      {/* 🟢 ส่วนบน: เมนูการ์ดตัวนับจำนวนสไตล์ลอยตัวนุ่มนวล (Soft Shadow) */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-
+    <div style={styles.container}>
+      {/* 🟢 ส่วนบน: เมนูการ์ดตัวนับจำนวน (ใช้ระบบ Stylesheet แบบเดียวกับกล่องข้อมูล) */}
+      <div style={styles.cardRow}>
         {/* การ์ดนักเรียน */}
-        <Link to="/students" className="bg-white p-6 rounded-2xl border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)] flex items-center justify-between group hover:border-sky-200 hover:shadow-md transition-all text-auto no-underline">
+        <Link to="/students" style={styles.card}>
           <div>
-            <p className="text-sm font-medium text-slate-400 mb-1">นักเรียนทั้งหมด</p>
-            <h3 className="text-3xl font-black text-slate-800">
-              {loading ? <span className="text-xl font-medium text-slate-300">...</span> : counts.students}
-              {!loading && <span className="text-sm font-normal text-slate-400 ml-1">คน</span>}
+            <p style={styles.cardLabel}>นักเรียนทั้งหมด</p>
+            <h3 style={styles.cardValue}>
+              {loading ? <span style={styles.loadingDots}>...</span> : counts.students}
+              {!loading && <span style={styles.cardUnit}> คน</span>}
             </h3>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center text-xl font-bold shadow-inner group-hover:scale-105 transition-transform">🧑‍🎓</div>
+          <div style={styles.cardIcon}>🧑‍🎓</div>
         </Link>
 
         {/* การ์ดครูผู้สอน */}
-        <Link to="/users" className="bg-white p-6 rounded-2xl border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)] flex items-center justify-between group hover:border-sky-200 hover:shadow-md transition-all text-auto no-underline">
+        <Link to="/users" style={styles.card}>
           <div>
-            <p className="text-sm font-medium text-slate-400 mb-1">ครูผู้สอน</p>
-            <h3 className="text-3xl font-black text-slate-800">
-              {loading ? <span className="text-xl font-medium text-slate-300">...</span> : counts.users}
-              {!loading && <span className="text-sm font-normal text-slate-400 ml-1">คน</span>}
+            <p style={styles.cardLabel}>ครูผู้สอน</p>
+            <h3 style={styles.cardValue}>
+              {loading ? <span style={styles.loadingDots}>...</span> : counts.users}
+              {!loading && <span style={styles.cardUnit}> คน</span>}
             </h3>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center text-xl font-bold shadow-inner group-hover:scale-105 transition-transform">👩‍🏫</div>
+          <div style={styles.cardIcon}>👩‍🏫</div>
         </Link>
 
         {/* การ์ดกิจกรรม */}
-        <Link to="/activity" className="bg-white p-6 rounded-2xl border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)] flex items-center justify-between group hover:border-amber-200 hover:shadow-md transition-all text-auto no-underline">
+        <Link to="/activity" style={styles.card}>
           <div>
-            <p className="text-sm font-medium text-slate-400 mb-1">กิจกรรมระบบ</p>
-            <h3 className="text-3xl font-black text-slate-800">
-              {loading ? <span className="text-xl font-medium text-slate-300">...</span> : counts.activities}
-              {!loading && <span className="text-sm font-normal text-slate-400 ml-1">กิจกรรม</span>}
+            <p style={styles.cardLabel}>กิจกรรมระบบ</p>
+            <h3 style={styles.cardValue}>
+              {loading ? <span style={styles.loadingDots}>...</span> : counts.activities}
+              {!loading && <span style={styles.cardUnit}> กิจกรรม</span>}
             </h3>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl font-bold shadow-inner group-hover:scale-105 transition-transform">🎯</div>
+          <div style={styles.cardIcon}>🎯</div>
         </Link>
       </div>
 
-      {/* 🔵 ส่วนล่าง: กล่องข้อมูลอัปเดตล่าสุด 2 ฝั่งแบ่งคอลัมน์ */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+      {/* 🔵 ส่วนล่าง: กล่องข้อมูลอัปเดตล่าสุด 2 ฝั่งสไตล์เดียวกับ HomeParent */}
+      <div style={styles.contentRow}>
 
-        {/* กล่องการบ้านล่าสุด (กว้าง 3 ส่วน) */}
-        <div className="lg:col-span-3 bg-white p-6 rounded-2xl border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)] flex flex-col">
-          <div className="flex justify-between items-center mb-6 pb-3 border-b border-slate-100">
-            <h4 className="text-base font-bold text-slate-800 flex items-center gap-2">📝 การบ้านล่าสุด</h4>
-            <Link to="/notification" className="text-xs text-sky-600 font-semibold hover:underline no-underline">ดูทั้งหมด</Link>
+        {/* กล่องซ้าย: การแจ้งเตือนการบ้านล่าสุด */}
+        <div style={styles.infoBox}>
+          <div style={styles.boxHeader}>
+            <h3 style={styles.boxTitle}>📝 การแจ้งเตือนการบ้านล่าสุด</h3>
+            <Link to="/notification" style={styles.viewAllLink}>ดูทั้งหมด</Link>
           </div>
 
-          <div className="space-y-3 flex-1">
+          <div style={styles.listBox}>
             {loading ? (
-              <p className="text-sm text-slate-400 text-center py-8 animate-pulse">กำลังโหลดข้อมูล...</p>
+              <p style={styles.emptyText}>กำลังโหลดข้อมูลการบ้าน...</p>
             ) : latestNotifications.length > 0 ? (
               latestNotifications.map((item, index) => (
-                <div key={index} className="p-4 rounded-xl bg-slate-50/80 border border-slate-100 flex justify-between items-center hover:bg-slate-50 transition-colors">
-                  <div className="truncate pr-4">
-                    <strong className="text-sm font-bold text-slate-700 block md:inline">{item.Subject}</strong>
-                    <span className="text-xs text-slate-400 md:ml-2">— {item.Details || "ไม่มีรายละเอียด"}</span>
-                  </div>
-                  <span className="text-[11px] px-2.5 py-1 bg-white border border-slate-200/60 text-slate-500 rounded-lg font-medium shadow-sm shrink-0">
-                    ชั้น: {item.Class_level}
-                  </span>
+                <div key={index} style={styles.listItem}>
+                  <strong>{item.Subject}</strong> - {item.Details || "ไม่มีรายละเอียด"}
+                  <span style={styles.itemDate}> (ชั้น: {item.Class_level})</span>
                 </div>
               ))
             ) : (
-              <p className="text-sm text-slate-400 text-center py-8">ไม่มีข้อมูลการบ้านล่าสุด</p>
+              <p style={styles.emptyText}>ไม่มีข้อมูลการบ้านล่าสุด</p>
             )}
           </div>
         </div>
 
-        {/* กล่องกิจกรรมล่าสุด (กว้าง 2 ส่วน) */}
-        <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)] flex flex-col">
-          <div className="flex justify-between items-center mb-6 pb-3 border-b border-slate-100">
-            <h4 className="text-base font-bold text-slate-800 flex items-center gap-2">🚩 กิจกรรมล่าสุด</h4>
+        {/* กล่องขวา: กิจกรรมล่าสุด */}
+        <div style={styles.infoBox}>
+          <div style={styles.boxHeader}>
+            <h3 style={styles.boxTitle}>🚩 กิจกรรมล่าสุด</h3>
           </div>
 
-          <div className="divide-y divide-slate-100 flex-1">
+          <div style={styles.listBox}>
             {loading ? (
-              <p className="text-sm text-slate-400 text-center py-8 animate-pulse">กำลังโหลดข้อมูล...</p>
+              <p style={styles.emptyText}>กำลังโหลดข้อมูลกิจกรรม...</p>
             ) : latestActivities.length > 0 ? (
               latestActivities.map((item, index) => (
-                <Link to="/activity" key={index} className="py-3.5 flex justify-between items-center first:pt-0 last:pb-0 hover:bg-slate-50/60 px-2 rounded-xl transition-colors no-underline group">
-                  <span className="text-sm font-semibold text-slate-700 group-hover:text-sky-600 transition-colors">{item.Name_activity}</span>
-                  <span className="text-xs text-slate-400 flex items-center gap-1 font-medium bg-slate-50 group-hover:bg-white px-2 py-1 rounded-md border border-transparent group-hover:border-slate-100 transition-all shadow-sm">
-                    📍 {item.Location || "ไม่ระบุสถานที่"}
-                  </span>
+                <Link to="/activity" key={index} style={styles.listItemLink}>
+                  <strong>{item.Name_activity}</strong>
+                  <span style={styles.itemDate}> 📍 {item.Location || "ไม่ระบุสถานที่"}</span>
                 </Link>
               ))
             ) : (
-              <p className="text-sm text-slate-400 text-center py-8">ไม่มีข้อมูลกิจกรรมล่าสุด</p>
+              <p style={styles.emptyText}>ไม่มีข้อมูลกิจกรรมล่าสุด</p>
             )}
           </div>
         </div>
 
       </div>
-
     </div>
   );
+};
+
+// 💡 ยกรีเซ็ตสไตล์ของ HomeParent มาผสมผสานกับสไตล์ของการ์ดตัวนับแบบ CSS-in-JS ทั้งหมด
+const styles = {
+  container: {
+    padding: "20px 10px",
+    fontFamily: "sans-serif",
+    backgroundColor: "transparent",
+    width: "100%",
+    boxSizing: "border-box"
+  },
+  cardRow: {
+    display: "flex",
+    gap: "20px",
+    width: "100%",
+    marginBottom: "30px",
+    flexWrap: "wrap"
+  },
+  card: {
+    flex: 1,
+    minWidth: "250px",
+    backgroundColor: "#ffffff",
+    border: "1px solid #ccc",
+    borderRadius: "8px",
+    padding: "20px",
+    boxShadow: "0 4px 10px rgba(0, 0, 0, 0.05)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "between",
+    textDecoration: "none",
+    color: "inherit"
+  },
+  cardLabel: {
+    fontSize: "14px",
+    color: "#94a3b8",
+    margin: "0 0 5px 0",
+    fontWeight: "500"
+  },
+  cardValue: {
+    fontSize: "28px",
+    fontWeight: "bold",
+    margin: 0,
+    color: "#333333"
+  },
+  cardUnit: {
+    fontSize: "14px",
+    color: "#94a3b8",
+    fontWeight: "normal",
+    marginLeft: "4px"
+  },
+  loadingDots: {
+    fontSize: "20px",
+    color: "#cbd5e1"
+  },
+  cardIcon: {
+    fontSize: "24px",
+    marginLeft: "auto"
+  },
+  contentRow: {
+    display: "flex",
+    gap: "30px",
+    width: "100%",
+    flexWrap: "wrap"
+  },
+  infoBox: {
+    flex: 1,
+    minWidth: "300px",
+    backgroundColor: "#ffffff",
+    border: "1px solid #ccc",
+    borderRadius: "8px",
+    padding: "25px",
+    boxShadow: "0 4px 10px rgba(0, 0, 0, 0.08)",
+    minHeight: "400px"
+  },
+  boxHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    margin: "0 0 20px 0"
+  },
+  boxTitle: {
+    fontSize: "18px",
+    fontWeight: "bold",
+    margin: 0,
+    color: "#333333"
+  },
+  viewAllLink: {
+    fontSize: "13px",
+    color: "#0284c7",
+    textDecoration: "none",
+    fontWeight: "bold"
+  },
+  listBox: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "12px"
+  },
+  listItem: {
+    padding: "12px 0",
+    borderBottom: "1px solid #f1f5f9",
+    fontSize: "15px",
+    color: "#475569"
+  },
+  listItemLink: {
+    padding: "12px 0",
+    borderBottom: "1px solid #f1f5f9",
+    fontSize: "15px",
+    color: "#475569",
+    textDecoration: "none",
+    display: "block"
+  },
+  itemDate: {
+    fontSize: "13px",
+    color: "#94a3b8",
+    float: "right"
+  },
+  emptyText: {
+    color: "#94a3b8",
+    textAlign: "center",
+    padding: "40px"
+  },
 };
 
 export default Home;
