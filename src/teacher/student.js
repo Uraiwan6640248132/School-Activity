@@ -11,6 +11,7 @@ function StudentManagement() {
   const [parentSearch, setParentSearch] = useState('');          // ข้อความที่พิมพ์ในช่อง
   const [suggestions, setSuggestions] = useState([]);            // รายชื่อที่ค้นหาเจอจาก API
   const [showSuggestions, setShowSuggestions] = useState(false);  // เปิด/ปิด กล่องรายชื่อแนะนำ
+  const [isSelecting, setIsSelecting] = useState(false);          // สเตตป้องกันการดึงข้อมูลซ้ำซ้อนเมื่อเลือกแล้ว
   const suggestionRef = useRef(null);
 
   // 🔐 1. ดึงข้อมูลครูจาก localStorage
@@ -68,7 +69,7 @@ function StudentManagement() {
     Gender: 'ชาย',
     Class_level: selectedClass,
     Blood_group: '',
-    User_id: teacherData.userId, // ค่านี้จะเปลี่ยนไปตามผู้ปกครองที่ถูกเลือก
+    User_id: teacherData.userId,
     Image: ''
   });
 
@@ -79,9 +80,14 @@ function StudentManagement() {
     }));
   }, [selectedClass]);
 
-  // 🔍 ค้นหารายชื่อผู้ปกครองมากรองหน้าบ้าน (จับคู่กับ app.get("/users") ที่เพิ่มฝั่งหลังบ้าน)
+  // 🔍 ค้นหารายชื่อผู้ปกครองมากรองหน้าบ้าน
   useEffect(() => {
-    if (parentSearch.trim().length >= 2 && !parentSearch.includes('กำลังโหลด')) {
+    // ถ้าอยู่ระหว่างดึงข้อมูลแรกเข้า หรือเพิ่งกดเลือกผู้ปกครอง จะไม่ดึง API ซ้ำ
+    if (isSelecting || parentSearch.includes('กำลังโหลด')) {
+      return;
+    }
+
+    if (parentSearch.trim().length >= 2) {
       fetch(`http://localhost:3001/users`)
         .then(res => {
           if (!res.ok) throw new Error("ดึงข้อมูลไม่สำเร็จ");
@@ -90,7 +96,8 @@ function StudentManagement() {
         .then(allUsers => {
           if (Array.isArray(allUsers)) {
             const filtered = allUsers.filter(user => {
-              const userName = user.Name || '';
+              // 🛠️ จุดแก้ไขสำคัญ: รองรับทั้ง .Name และ .name ของ Object หลังบ้าน
+              const userName = user.Name || user.name || '';
               return userName.toLowerCase().includes(parentSearch.toLowerCase());
             });
             setSuggestions(filtered);
@@ -103,7 +110,7 @@ function StudentManagement() {
     } else {
       setSuggestions([]);
     }
-  }, [parentSearch]);
+  }, [parentSearch, isSelecting]);
 
   // คลิกปิดกล่องรายชื่อแนะนำเมื่อกดพื้นที่อื่นนอกเหนือจากตัวเลือก
   useEffect(() => {
@@ -128,20 +135,19 @@ function StudentManagement() {
       Gender: 'ชาย',
       Class_level: selectedClass,
       Blood_group: '',
-      User_id: '', // ✨ แก้ไขตรงนี้: ปล่อยว่างไว้ก่อนเพื่อให้ระบุผู้ปกครองใหม่
+      User_id: '',
       Image: ''
     });
-    setParentSearch(''); // ✨ ล้างช่องค้นหาชื่อผู้ปกครองให้ว่างเปล่า
+    setParentSearch('');
     setSuggestions([]);
+    setIsSelecting(false);
   };
 
   const handleOpenAddModal = () => {
-    resetForm(); // เรียกฟังก์ชันล้างข้อมูลให้ว่างทั้งหมด
-    // ❌ ลบโค้ดตระกูล if(currentUser) { setParentSearch(...) } ของเดิมออกไปได้เลยครับ
+    resetForm();
     setIsAddModalOpen(true);
   };
 
-  // ดึงข้อมูลนักเรียนทั้งหมด (เช็ก URL หลังบ้านของคุณว่ามี /api นำหน้าไหม)
   const fetchStudents = () => {
     fetch('http://localhost:3001/api/students')
       .then(res => {
@@ -209,6 +215,7 @@ function StudentManagement() {
 
   const handleOpenEditModal = (e, student) => {
     e.stopPropagation();
+    setIsSelecting(true); // ล็อคชั่วคราวไม่ให้ useEffect ทำงานตอนโหลดชื่อแรกเข้า
     const formattedBirthday = student.Birthday ? student.Birthday.split('T')[0] : '';
     const displayGender = (student.Gender === 2 || student.Gender === "2" || student.Gender === "หญิง") ? "หญิง" : "ชาย";
 
@@ -222,7 +229,6 @@ function StudentManagement() {
       User_id: student.User_id
     });
 
-    // 🛠️ จุดแก้ไขที่ 1: ตัด /api ออกเพื่อให้ตรงกับหลังบ้าน app.get("/users/:id")
     setParentSearch('กำลังโหลดชื่อผู้ปกครอง...');
     fetch(`http://localhost:3001/users/${student.User_id}`)
       .then(res => {
@@ -231,14 +237,23 @@ function StudentManagement() {
       })
       .then(data => {
         setParentSearch(data.Name || data.name || '');
+        setIsSelecting(false); // ปลดล็อคเพื่อให้ผู้ใช้พิมพ์แก้ไขค้นหาได้ต่อ
       })
-      .catch(() => setParentSearch(''));
+      .catch(() => {
+        setParentSearch('');
+        setIsSelecting(false);
+      });
 
     setIsEditModalOpen(true);
   };
 
   const handleEditSubmit = (e) => {
     e.preventDefault();
+
+    if (!formData.User_id) {
+      alert("กรุณาเลือกผู้ปกครองจากรายการค้นหาให้ถูกต้อง");
+      return;
+    }
 
     const genderValue = formData.Gender === "หญิง" ? 2 : 1;
     const payload = {
@@ -251,7 +266,6 @@ function StudentManagement() {
       Gender: genderValue
     };
 
-    // 🛠️ จุดแก้ไขที่ 2: ตรวจสอบ URL การแก้ไขข้อมูลนักเรียนให้ตรงกับ API หลังบ้านของคุณ
     fetch(`http://localhost:3001/api/students/${formData.Student_id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -296,7 +310,6 @@ function StudentManagement() {
     setViewingParentName('กำลังโหลดชื่อผู้ปกครอง...');
     setIsViewModalOpen(true);
 
-    // 🛠️ จุดแก้ไขที่ 3: ดึงข้อมูลจากเส้นทาง /users/:id (ไม่มี /api)
     fetch(`http://localhost:3001/users/${student.User_id}`)
       .then(res => {
         if (!res.ok) throw new Error("ไม่พบข้อมูลผู้ปกครอง");
@@ -304,7 +317,7 @@ function StudentManagement() {
       })
       .then(parentData => {
         if (parentData) {
-          setViewingParentName(parentData.Name || '-');
+          setViewingParentName(parentData.Name || parentData.name || '-');
         }
       })
       .catch((err) => {
@@ -324,9 +337,18 @@ function StudentManagement() {
   };
 
   const handleSelectParent = (parent) => {
-    setParentSearch(parent.Name || parent.name);
-    setFormData(prev => ({ ...prev, User_id: parent.User_id || parent.id }));
+    setIsSelecting(true); // ล็อคเพื่อแจ้งว่าเป็นการเลือก ไม่ใช่การพิมพ์ค้นหาใหม่
+    const parentId = parent.User_id || parent.id || parent.user_id;
+    const parentName = parent.Name || parent.name;
+
+    setParentSearch(parentName);
+    setFormData(prev => ({ ...prev, User_id: parentId }));
     setShowSuggestions(false);
+
+    // ตั้งหน่วงเวลาเล็กน้อยเพื่อให้ UI อัปเดตเสร็จก่อนปลดล็อคพิมพ์ค้นหาใหม่
+    setTimeout(() => {
+      setIsSelecting(false);
+    }, 200);
   };
 
   const filteredStudents = students.filter(
@@ -338,8 +360,7 @@ function StudentManagement() {
       <div style={styles.studentHeader}>
         <div style={styles.titleSection}>
           <h2 style={styles.headerTitle}>
-            <h2>แจ้งเตือนการบ้าน  : {selectedClass} </h2>
-
+            <h2>แจ้งเตือนการบ้าน : {selectedClass} </h2>
           </h2>
         </div>
 
@@ -521,7 +542,7 @@ function StudentManagement() {
       {isEditModalOpen && (
         <div style={styles.modalOverlay}>
           <div style={styles.modalContent}>
-            <button style={styles.closeX} onClick={() => setIsEditModalOpen(false)}>X</button>
+            <button style={styles.closeX} onClick={() => { setIsEditModalOpen(false); resetForm(); }}>X</button>
             <h3 style={styles.modalHeading}>แก้ไขนักเรียน</h3>
             <form onSubmit={handleEditSubmit}>
               <div style={styles.avatarUploadZone}>
@@ -577,11 +598,11 @@ function StudentManagement() {
               </div>
 
               <div style={{ ...styles.formGroup, position: 'relative' }} ref={suggestionRef}>
-                <label style={styles.formLabel}>ชื่อผู้ปกครอง (พิมพ์ค้นหาอย่างน้อย 2 ตัวอักษร)</label>
+                <label style={styles.formLabel}>ชื่อผู้ปกครอง (พิมพ์ค้นหาเพื่อเปลี่ยนคนใหม่)</label>
                 <input
                   type="text"
                   required
-                  placeholder="ค้นหาชื่อผู้ปกครอง..."
+                  placeholder="พิมพ์เพื่อค้นหาชื่อผู้ปกครองใหม่..."
                   style={styles.formInput}
                   value={parentSearch}
                   onChange={(e) => {
@@ -595,11 +616,11 @@ function StudentManagement() {
                   <ul style={styles.suggestionList}>
                     {suggestions.map((p) => (
                       <li
-                        key={p.User_id || p.id}
+                        key={p.User_id || p.id || p.user_id}
                         style={styles.suggestionItem}
                         onClick={() => handleSelectParent(p)}
                       >
-                        {p.Name || p.name} <span style={{ fontSize: '11px', color: '#999' }}>(ID: {p.User_id || p.id})</span>
+                        {p.Name || p.name} <span style={{ fontSize: '11px', color: '#999' }}>(ID: {p.User_id || p.id || p.user_id})</span>
                       </li>
                     ))}
                   </ul>
@@ -631,7 +652,7 @@ function StudentManagement() {
 }
 
 const styles = {
-  studentContainer: { padding: '30px', fontFamily: 'system-ui, -apple-system, sans-serif', backgroundColor: '#ffffff', minHeight: '100vh' },
+  studentContainer: { padding: '30px', fontFamily: 'system-ui, -apple-system, sans-serif', backgroundColor: '#dff3ff 48%', minHeight: '100vh' },
   studentHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '30px' },
   titleSection: { display: 'flex', flexDirection: 'column' },
   headerTitle: { marginTop: '15px', fontSize: '15px', color: '#000000', fontWeight: '600' },

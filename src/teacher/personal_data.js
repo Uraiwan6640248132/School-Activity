@@ -155,7 +155,7 @@ const styles = {
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
-    backgroundColor: "#ffffff",
+    backgroundColor: "#dff3ff 48%",
     width: "100%",
     boxSizing: "border-box",
   },
