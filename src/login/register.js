@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 // 🛠️ ดึงไฟล์รูปภาพจากโฟลเดอร์ตามโครงสร้างเดิมของพี่ครับ
 import schoolImg from '../school-building.jpg.JPG';
+import bgImg from '../bg-pattern.jpg'; // 🆕 นำเข้าไฟล์รูปภาพพื้นหลังเดียวกับหน้า Login
 
 function Register() {
     const [formData, setFormData] = useState({
@@ -76,7 +77,7 @@ function Register() {
                     </div>
                 </div>
 
-                {/* 📝 ฝั่งขวา: ฟอร์มลงทะเบียน */}
+                {/* 📝 ฝั่งขวา: ฟอร์มลงทะเบียนแบบกระจกใส */}
                 <div style={styles.rightPanel}>
                     <div style={styles.formScrollContainer}>
                         <form onSubmit={handleSubmit} style={styles.formContent} autoComplete="off">
@@ -179,7 +180,10 @@ const styles = {
         alignItems: "center",
         minHeight: "100vh",
         width: "100vw",
-        background: "linear-gradient(135deg, #f7fcff 0%, #dff3ff 52%, #edf9ff 100%)",
+        backgroundImage: `url(${bgImg})`,     // 🆕 เปลี่ยนมาใช้รูปภาพพื้นหลังเดียวกับหน้า Login
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
         fontFamily: "'Inter', 'Kanit', sans-serif",
         position: "absolute",
         top: 0,
@@ -189,10 +193,10 @@ const styles = {
     card: {
         display: "grid",
         gridTemplateColumns: "1fr 1fr",
-        backgroundColor: "#ffffff",
+        backgroundColor: "transparent",    // 🆕 เปลี่ยนเป็นโปร่งใส เพื่อให้ฉากหลังโชว์ดีไซน์กระจกแก้ว
         borderRadius: "20px",
         width: "900px",
-        height: "650px", // 🌟 ขยับความสูงเพิ่มนิดหน่อยให้สมดุลกับช่องกรอกข้อมูล
+        height: "650px", 
         boxShadow: "0 28px 60px rgba(2, 132, 199, 0.18)",
         overflow: "hidden",
     },
@@ -224,9 +228,13 @@ const styles = {
         textShadow: "0 1px 4px rgba(255, 255, 255, 0.6)"
     },
     rightPanel: {
-        padding: "25px 45px", // 🌟 ปรับ Padding ให้กระชับขึ้น
+        padding: "25px 45px", 
         display: "flex",
         flexDirection: "column",
+        backgroundColor: "rgba(255, 255, 255, 0)", // 🆕 เปลี่ยนให้ใสเคลียร์ 100%
+        backdropFilter: "blur(6px)",                 // 🆕 ทำเอฟเฟกต์เบลอกระจกฝ้าแบบหน้า Login
+        WebkitBackdropFilter: "blur(6px)",
+        borderLeft: "1px solid rgba(255, 255, 255, 0.3)",
         overflow: "hidden"
     },
     formScrollContainer: {
@@ -234,8 +242,8 @@ const styles = {
         height: "100%",
         display: "flex",
         flexDirection: "column",
-        overflowY: "auto", // 🌟 เปิดใช้งาน Scrollbar แนวตั้ง ป้องกันข้อมูลล้นหน้าจอ
-        paddingRight: "5px" // เว้นพื้นที่ให้แถบ Scrollbar
+        overflowY: "auto", 
+        paddingRight: "5px" 
     },
     formContent: {
         display: "flex",
@@ -256,10 +264,10 @@ const styles = {
     },
     inputContainer: {
         display: "flex",
-        border: "1px solid #bae6fd",
+        border: "1px solid rgba(255, 255, 255, 0.5)",     // 🆕 ปรับขอบให้กลืนไปกับสไตล์กระจกใส
         borderRadius: "8px",
         overflow: "hidden",
-        backgroundColor: "#f4fbff"
+        backgroundColor: "rgba(255, 255, 255, 0.35)",  // 🆕 ปรับสีกล่องให้มีความโปร่งใส ให้อ่านตัวหนังสือได้ชัดเจนขึ้น
     },
     input: {
         width: "100%",
@@ -316,8 +324,8 @@ const styles = {
         fontSize: "14px",
         textDecoration: "underline",
     },
-    alertDanger: { color: '#ef4444', backgroundColor: '#fef2f2', padding: '10px', borderRadius: '6px', border: '1px solid #fee2e2', fontSize: '13px', textAlign: 'center', marginBottom: '15px' },
-    alertSuccess: { color: '#10b981', backgroundColor: '#ecfdf5', padding: '10px', borderRadius: '6px', border: '1px solid #d1fae5', fontSize: '13px', textAlign: 'center', marginBottom: '15px' }
+    alertDanger: { color: '#ef4444', backgroundColor: 'rgba(254, 242, 242, 0.8)', padding: '10px', borderRadius: '6px', border: '1px solid #fee2e2', fontSize: '13px', textAlign: 'center', marginBottom: '15px' },
+    alertSuccess: { color: '#10b981', backgroundColor: 'rgba(236, 253, 245, 0.8)', padding: '10px', borderRadius: '6px', border: '1px solid #d1fae5', fontSize: '13px', textAlign: 'center', marginBottom: '15px' }
 };
 
 export default Register;
