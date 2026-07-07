@@ -1,0 +1,130 @@
+.page-shell {
+  min-height: 100vh;
+  padding: 28px;
+  color: var(--text);
+}
+
+.page-title {
+  margin: 0 0 8px;
+  color: var(--text);
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.page-subtitle {
+  margin: 0 0 24px;
+  color: var(--muted);
+  font-size: 15px;
+}
+
+.app-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  padding: 24px;
+}
+
+.app-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 10px 16px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.app-button-primary {
+  background: linear-gradient(135deg, var(--brand-500), var(--brand-700));
+  color: #ffffff;
+  box-shadow: 0 12px 24px rgba(14, 165, 233, 0.28);
+}
+
+.app-button-secondary {
+  background: #f2f9ff;
+  color: var(--brand-700);
+  border-color: var(--line);
+}
+
+.teacher-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-decoration: none;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
+}
+
+.teacher-btn-add,
+.teacher-btn-save {
+  background: linear-gradient(135deg, var(--brand-500), var(--brand-700));
+  color: #ffffff;
+  border-color: var(--brand-600);
+  box-shadow: 0 10px 22px rgba(14, 165, 233, 0.22);
+}
+
+.teacher-btn-edit {
+  background: #eff8ff;
+  color: var(--brand-700);
+  border-color: var(--brand-200);
+}
+
+.teacher-btn-delete {
+  background: #fff1f2;
+  color: #be123c;
+  border-color: #fecdd3;
+}
+
+.teacher-btn-cancel {
+  background: #ffffff;
+  color: #31556b;
+  border-color: var(--line);
+}
+
+.teacher-btn-full {
+  width: 100%;
+}
+
+.teacher-btn-flex {
+  flex: 1;
+}
+
+.app-input,
+.app-select,
+.app-textarea {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: #f7fcff;
+  color: var(--text);
+  font-size: 14px;
+  outline: none;
+}
+
+.app-textarea {
+  min-height: 96px;
+  resize: vertical;
+}
+
+.app-label {
+  display: block;
+  margin-bottom: 8px;
+  color: #31556b;
+  font-size: 13px;
+  font-weight: 700;
+}

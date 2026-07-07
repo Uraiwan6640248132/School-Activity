@@ -185,7 +185,7 @@ function Notification() {
               </div>
 
               <div style={{ display: "flex", gap: 10, marginTop: 15 }}>
-                <button type="button" onClick={resetForm} style={{ flex: 1, padding: 10, borderRadius: 10, border: "1px solid #ccc", background: "#fff", cursor: "pointer" }}>
+                <button type="button" onClick={resetForm} style={{ ...page.cancelBtn, flex: 1 }}>
                   ยกเลิก
                 </button>
                 <button type="submit" style={{ ...modal.saveBtn, flex: 1 }}>
@@ -202,7 +202,7 @@ function Notification() {
           <div style={modal.box}>
             <h3>ยืนยันการลบ</h3>
             <div style={{ display: "flex", gap: 10, marginTop: 15 }}>
-              <button onClick={() => setDeleteId(null)} style={{ flex: 1, padding: 10, borderRadius: 10, border: "1px solid #ccc", background: "#fff", cursor: "pointer" }}>
+              <button onClick={() => setDeleteId(null)} style={{ ...page.cancelBtn, flex: 1 }}>
                 ยกเลิก
               </button>
               <button style={page.deleteBtn} onClick={() => deleteData(deleteId)}>
@@ -223,12 +223,15 @@ const page = {
     marginBottom: 20,
   },
   addBtn: {
-    padding: 12,
-    border: "none",
-    borderRadius: 10,
-    background: "#2ecc71",
-    color: "#fff",
+    padding: "9px 16px",
+    border: "1px solid #0284c7",
+    borderRadius: 8,
+    background: "linear-gradient(135deg, #0ea5e9, #0369a1)",
+    color: "#ffffff",
     cursor: "pointer",
+    fontWeight: "700",
+    fontSize: "13px",
+    boxShadow: "0 10px 22px rgba(14,165,233,0.22)",
   },
   grid: {
     display: "grid",
@@ -248,21 +251,35 @@ const page = {
   },
   editBtn: {
     flex: 1,
-    background: "#3498db",
-    color: "#fff",
-    border: "none",
-    padding: 10,
-    borderRadius: 10,
+    background: "#eff8ff",
+    color: "#0369a1",
+    border: "1px solid #bae6fd",
+    padding: "8px 12px",
+    borderRadius: 8,
     cursor: "pointer",
+    fontWeight: "700",
+    fontSize: "13px",
   },
   deleteBtn: {
     flex: 1,
-    background: "#e74c3c",
-    color: "#fff",
-    border: "none",
-    padding: 10,
-    borderRadius: 10,
+    background: "#fff1f2",
+    color: "#be123c",
+    border: "1px solid #fecdd3",
+    padding: "8px 12px",
+    borderRadius: 8,
     cursor: "pointer",
+    fontWeight: "700",
+    fontSize: "13px",
+  },
+  cancelBtn: {
+    padding: "8px 12px",
+    borderRadius: 8,
+    border: "1px solid #cfe8f7",
+    background: "#ffffff",
+    color: "#31556b",
+    cursor: "pointer",
+    fontWeight: "700",
+    fontSize: "13px",
   },
 };
 
@@ -320,10 +337,12 @@ const modal = {
   saveBtn: {
     padding: 10,
     borderRadius: 10,
-    border: "none",
-    background: "#2ecc71",
-    color: "#fff",
+    background: "linear-gradient(135deg, #0ea5e9, #0369a1)",
+    color: "#ffffff",
+    border: "1px solid #0284c7",
     cursor: "pointer",
+    fontWeight: "700",
+    boxShadow: "0 10px 22px rgba(14,165,233,0.22)",
   },
 };
 

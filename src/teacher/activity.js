@@ -187,7 +187,7 @@ function Activity() {
           </div>
           <button
             onClick={() => { if (showForm) clearForm(); else setShowForm(true); }}
-            className="bg-brand-primary hover:bg-brand-primaryHover text-white border-none rounded-xl px-5 py-3 text-sm font-bold cursor-pointer shadow-md transition-all duration-200 active:scale-95"
+            className="teacher-btn teacher-btn-add"
           >
             {showForm ? "✕ ปิดฟอร์มบันทึก" : "➕ เพิ่มกิจกรรมใหม่"}
           </button>
@@ -265,7 +265,7 @@ function Activity() {
                 </div>
               </div>
 
-              <button type="submit" className="w-full py-3 mt-6 bg-brand-primary hover:bg-brand-primaryHover text-white border-none rounded-xl cursor-pointer font-bold text-sm shadow-md transition-all duration-200">
+              <button type="submit" className="teacher-btn teacher-btn-save teacher-btn-full mt-6">
                 💾 บันทึกข้อมูลกิจกรรม
               </button>
             </form>
@@ -346,10 +346,10 @@ function Activity() {
 
                   {/* Action Buttons */}
                   <div className="flex border-t border-slate-100 bg-slate-50/70 p-1.5 gap-1">
-                    <button onClick={() => handleEdit(item)} className="flex-1 py-2 text-xs font-bold text-brand-primary bg-transparent hover:bg-sky-100/70 border-none rounded-lg cursor-pointer transition">
+                    <button onClick={() => handleEdit(item)} className="teacher-btn teacher-btn-edit teacher-btn-flex">
                       ✏️ แก้ไข
                     </button>
-                    <button onClick={() => handleDelete(item.Activity_id)} className="flex-1 py-2 text-xs font-bold text-red-500 bg-transparent hover:bg-red-50 border-none rounded-lg cursor-pointer transition">
+                    <button onClick={() => handleDelete(item.Activity_id)} className="teacher-btn teacher-btn-delete teacher-btn-flex">
                       🗑️ ลบออก
                     </button>
                   </div>

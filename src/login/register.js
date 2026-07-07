@@ -179,7 +179,7 @@ const styles = {
         alignItems: "center",
         minHeight: "100vh",
         width: "100vw",
-        backgroundColor: "#e0f2fe",
+        background: "linear-gradient(135deg, #f7fcff 0%, #dff3ff 52%, #edf9ff 100%)",
         fontFamily: "'Inter', 'Kanit', sans-serif",
         position: "absolute",
         top: 0,
@@ -193,7 +193,7 @@ const styles = {
         borderRadius: "20px",
         width: "900px",
         height: "650px", // 🌟 ขยับความสูงเพิ่มนิดหน่อยให้สมดุลกับช่องกรอกข้อมูล
-        boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.1)",
+        boxShadow: "0 28px 60px rgba(2, 132, 199, 0.18)",
         overflow: "hidden",
     },
     leftPanel: {
@@ -220,7 +220,7 @@ const styles = {
         fontWeight: "700",
         fontSize: "20px",
         lineHeight: "1.4",
-        color: "#3c3e8d",
+        color: "#0f4f7a",
         textShadow: "0 1px 4px rgba(255, 255, 255, 0.6)"
     },
     rightPanel: {
@@ -246,7 +246,7 @@ const styles = {
         fontSize: "26px",
         fontWeight: "700",
         margin: "0 0 20px 0",
-        color: "#1e293b",
+        color: "#12324a",
         textAlign: "left"
     },
     field: {
@@ -256,10 +256,10 @@ const styles = {
     },
     inputContainer: {
         display: "flex",
-        border: "1px solid #e2e8f0",
+        border: "1px solid #bae6fd",
         borderRadius: "8px",
         overflow: "hidden",
-        backgroundColor: "#f8fafc"
+        backgroundColor: "#f4fbff"
     },
     input: {
         width: "100%",
@@ -287,13 +287,13 @@ const styles = {
         padding: "12px",
         borderRadius: "8px",
         border: "none",
-        background: "#4f46e5",
+        background: "linear-gradient(135deg, #0ea5e9, #0369a1)",
         color: "#ffffff",
         fontWeight: "600",
         fontSize: "16px",
         cursor: "pointer",
         marginTop: "10px",
-        boxShadow: "0 4px 6px -1px rgba(79, 70, 229, 0.3)",
+        boxShadow: "0 12px 24px rgba(14, 165, 233, 0.28)",
     },
     loginLinkContainer: {
         display: "flex",
@@ -309,7 +309,7 @@ const styles = {
     loginLinkButton: {
         background: "none",
         border: "none",
-        color: "#4f46e5",
+        color: "#0284c7",
         fontWeight: "600",
         cursor: "pointer",
         padding: "0",

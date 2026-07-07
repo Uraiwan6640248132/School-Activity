@@ -53,7 +53,7 @@ const Home = () => {
         </Link>
 
         {/* การ์ดครูผู้สอน */}
-        <Link to="/users" className="bg-white p-6 rounded-2xl border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)] flex items-center justify-between group hover:border-purple-200 hover:shadow-md transition-all text-auto no-underline">
+        <Link to="/users" className="bg-white p-6 rounded-2xl border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)] flex items-center justify-between group hover:border-sky-200 hover:shadow-md transition-all text-auto no-underline">
           <div>
             <p className="text-sm font-medium text-slate-400 mb-1">ครูผู้สอน</p>
             <h3 className="text-3xl font-black text-slate-800">
@@ -61,7 +61,7 @@ const Home = () => {
               {!loading && <span className="text-sm font-normal text-slate-400 ml-1">คน</span>}
             </h3>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center text-xl font-bold shadow-inner group-hover:scale-105 transition-transform">👩‍🏫</div>
+          <div className="w-12 h-12 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center text-xl font-bold shadow-inner group-hover:scale-105 transition-transform">👩‍🏫</div>
         </Link>
 
         {/* การ์ดกิจกรรม */}

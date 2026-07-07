@@ -44,10 +44,10 @@ function Navbar({ children }) {
   const menu = (path) => ({
     ...styles.menu,
     // 🌟 เปลี่ยนสีเมนูไฮไลต์แบบนุ่มละมุนเมื่อคลิกเลือกหน้านั้นๆ เหมือนหน้าผู้ปกครอง
-    backgroundColor: location.pathname === path ? "#f0f2ff" : "transparent",
-    color: location.pathname === path ? "#4f46e5" : "#64748b",
+    backgroundColor: location.pathname === path ? "#e0f2fe" : "transparent",
+    color: location.pathname === path ? "#0369a1" : "#426277",
     fontWeight: location.pathname === path ? "600" : "500",
-    boxShadow: location.pathname === path ? "0 1px 3px 0 rgba(79, 70, 229, 0.1)" : "none",
+    boxShadow: location.pathname === path ? "0 10px 24px rgba(14, 165, 233, 0.12)" : "none",
   });
 
 
@@ -118,17 +118,17 @@ const styles = {
   layout: {
     display: "flex",
     minHeight: "100vh",
-    backgroundColor: "#e0f2fe",
+    background: "linear-gradient(135deg, #f6fbff 0%, #dff3ff 48%, #eef9ff 100%)",
     fontFamily: "'Kanit', 'Segoe UI', sans-serif",
     WebkitFontSmoothing: "antialiased"
   },
   sidebar: {
     width: 256,
-    background: "#ffffff",
+    background: "rgba(255, 255, 255, 0.88)",
     display: "flex",
     flexDirection: "column",
-    borderRight: "1px solid rgba(226, 232, 240, 0.6)",
-    boxShadow: "4px 0 24px rgba(0,0,0,0.015)",
+    borderRight: "1px solid rgba(186, 230, 253, 0.85)",
+    boxShadow: "8px 0 30px rgba(2, 132, 199, 0.08)",
     position: "sticky",
     top: 0,
     height: "100vh",
@@ -139,7 +139,7 @@ const styles = {
     justifyContent: "center",
     alignItems: "center",
     padding: "24px",
-    borderBottom: "1px solid #f1f5f9",
+    borderBottom: "1px solid #d8eefb",
     marginBottom: "16px",
   },
   logoImage: {
@@ -171,15 +171,15 @@ const styles = {
     width: "calc(100% - 24px)",
     padding: "12px 20px",
     margin: "12px",
-    color: "#e11d48",
-    background: "none",
-    border: "none",
+    color: "#be123c",
+    background: "#fff5f7",
+    border: "1px solid #fecdd3",
     borderRadius: "12px",
     textAlign: "left",
     cursor: "pointer",
     fontSize: "14px",
     fontWeight: "500",
-    borderTop: "1px solid #f1f5f9",
+    borderTop: "1px solid #d8eefb",
     fontFamily: "'Kanit', 'Segoe UI', sans-serif",
     transition: "background-color 0.2s",
   },
@@ -191,20 +191,20 @@ const styles = {
   },
   topbar: {
     height: 64,
-    background: "rgba(255, 255, 255, 0.6)",
+    background: "rgba(255, 255, 255, 0.78)",
     backdropFilter: "blur(12px)",
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
     padding: "0 32px",
-    borderBottom: "1px solid rgba(226, 232, 240, 0.4)",
+    borderBottom: "1px solid rgba(186, 230, 253, 0.7)",
     position: "sticky",
     top: 0,
     zIndex: 10
   },
   welcomeText: {
     fontSize: "12px",
-    color: "#94a3b8",
+    color: "#4b7188",
     fontWeight: "500"
   },
   profileBadge: {
@@ -214,8 +214,8 @@ const styles = {
     background: "#ffffff",
     padding: "6px 16px",
     borderRadius: "9999px",
-    border: "1px solid rgba(226, 232, 240, 0.8)",
-    boxShadow: "0 1px 2px 0 rgba(0, 0, 0, 0.05)"
+    border: "1px solid rgba(186, 230, 253, 0.9)",
+    boxShadow: "0 8px 22px rgba(14, 165, 233, 0.12)"
   },
   statusDot: {
     width: "8px",
@@ -226,10 +226,10 @@ const styles = {
   username: {
     fontSize: "13px",
     fontWeight: "600",
-    color: "#475569"
+    color: "#12324a"
   },
   main: {
-    padding: "24px",
+    padding: "28px",
     flex: 1,
     overflowY: "auto"
   },

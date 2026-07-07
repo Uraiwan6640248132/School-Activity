@@ -5,12 +5,15 @@ module.exports = {
     ],
     theme: {
         extend: {
+            fontFamily: {
+                sans: ['Kanit', 'Segoe UI', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+            },
             colors: {
                 // 🎨 กำหนดชื่อสีหลักของเว็บ (เช่นอยากได้โทนน้ำเงิน-ฟ้า)
                 primary: {
-                    light: '#eff6ff', // สีฟ้าพาสเทลอ่อนๆ (เดิมคือ bg-indigo-50 หรือ bg-blue-50)
-                    DEFAULT: '#1654b7', // สีหลักของปุ่ม/ข้อความ (เดิมคือ text-indigo-600)
-                    dark: '#091f5e',   // สีตอนเอาเมาส์ไปชี้ (Hover)
+                    light: '#eff8ff',
+                    DEFAULT: '#0284c7',
+                    dark: '#0369a1',
                 }
             },
         },

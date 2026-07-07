@@ -1,0 +1,113 @@
+:root {
+  --brand-50: #eff8ff;
+  --brand-100: #dff3ff;
+  --brand-200: #bae6fd;
+  --brand-300: #7dd3fc;
+  --brand-500: #0ea5e9;
+  --brand-600: #0284c7;
+  --brand-700: #0369a1;
+  --brand-900: #0f2f4f;
+  --app-font: "Kanit", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --surface: rgba(255, 255, 255, 0.92);
+  --surface-solid: #ffffff;
+  --line: #cfe8f7;
+  --text: #12324a;
+  --muted: #64748b;
+  --danger: #dc2626;
+  --shadow: 0 18px 45px rgba(2, 132, 199, 0.12);
+  --shadow-soft: 0 8px 22px rgba(14, 165, 233, 0.12);
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--brand-100);
+}
+
+body {
+  margin: 0;
+  color: var(--text);
+  background:
+    radial-gradient(circle at top left, rgba(125, 211, 252, 0.35), transparent 34rem),
+    linear-gradient(135deg, #f7fcff 0%, var(--brand-100) 48%, #eaf7ff 100%);
+  font-family: var(--app-font);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+body,
+body * {
+  font-family: var(--app-font) !important;
+}
+
+a {
+  color: var(--brand-700);
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: var(--app-font) !important;
+}
+
+button {
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease, border-color 0.18s ease;
+}
+
+button:hover {
+  transform: translateY(-1px);
+}
+
+input,
+select,
+textarea {
+  border-color: var(--line) !important;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--brand-500) !important;
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.15) !important;
+}
+
+table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+th {
+  background-color: #eaf7ff !important;
+  color: var(--brand-900) !important;
+}
+
+td {
+  color: #25465d;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #9bd8f5;
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background-clip: padding-box;
+}
+

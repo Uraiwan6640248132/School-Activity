@@ -222,8 +222,8 @@ export default function PublicRelations() {
               </div>
             </div>
             <div style={styles.cardAction}>
-              <button style={styles.iconBtn} onClick={() => openDeleteModal(item.PublicRelation_id)}>🗑️</button>
-              <button style={styles.iconBtn} onClick={() => openEditModal(item)}>📝</button>
+              <button style={{ ...styles.iconBtn, ...styles.iconBtnDelete }} onClick={() => openDeleteModal(item.PublicRelation_id)}>🗑️</button>
+              <button style={{ ...styles.iconBtn, ...styles.iconBtnEdit }} onClick={() => openEditModal(item)}>📝</button>
             </div>
           </div>
         ))}
@@ -340,7 +340,7 @@ export default function PublicRelations() {
 const styles = {
   container: { padding: '20px', fontFamily: 'sans-serif' },
   headerRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' },
-  btnAdd: { padding: '8px 16px', backgroundColor: '#fff', border: '1px solid #ccc', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' },
+  btnAdd: { padding: '9px 16px', background: 'linear-gradient(135deg, #0ea5e9, #0369a1)', color: '#ffffff', border: '1px solid #0284c7', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', fontSize: '13px', boxShadow: '0 10px 22px rgba(14,165,233,0.22)' },
   cardContainer: { display: 'flex', flexDirection: 'column', gap: '15px' },
   card: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #ddd', padding: '15px', borderRadius: '4px', backgroundColor: '#fff' },
   cardLeft: { display: 'flex', gap: '20px', alignItems: 'center' },
@@ -348,7 +348,9 @@ const styles = {
   cardImgPlaceholder: { width: '100px', height: '100px', border: '1px solid #ccc', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', color: '#999', backgroundColor: '#f9f9f9' },
   cardInfo: { fontSize: '14px', lineHeight: '1.6' },
   cardAction: { display: 'flex', gap: '8px' },
-  iconBtn: { padding: '6px 10px', backgroundColor: '#fff', border: '1px solid #ccc', borderRadius: '4px', cursor: 'pointer' },
+  iconBtn: { padding: '7px 10px', borderRadius: '8px', cursor: 'pointer', fontWeight: '700' },
+  iconBtnEdit: { backgroundColor: '#eff8ff', color: '#0369a1', border: '1px solid #bae6fd' },
+  iconBtnDelete: { backgroundColor: '#fff1f2', color: '#be123c', border: '1px solid #fecdd3' },
   overlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 },
   modal: { backgroundColor: '#fff', width: '400px', padding: '20px', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', position: 'relative' },
   modalHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' },
@@ -357,9 +359,9 @@ const styles = {
   label: { display: 'block', fontSize: '13px', color: '#555', marginBottom: '4px', marginTop: '10px' },
   input: { width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '4px', boxSizing: 'border-box' },
   textarea: { width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '4px', boxSizing: 'border-box', fontFamily: 'sans-serif', resize: 'vertical' },
-  btnSubmit: { width: '100%', padding: '10px', marginTop: '20px', backgroundColor: '#fff', border: '1px solid #ccc', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' },
-  btnCancel: { padding: '8px 25px', backgroundColor: '#fff', border: '1px solid #ccc', borderRadius: '4px', cursor: 'pointer' },
-  btnConfirmDelete: { padding: '8px 25px', backgroundColor: '#d9534f', color: '#fff', border: '1px solid #d43f3a', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' },
+  btnSubmit: { width: '100%', padding: '10px', marginTop: '20px', background: 'linear-gradient(135deg, #0ea5e9, #0369a1)', color: '#ffffff', border: '1px solid #0284c7', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', boxShadow: '0 10px 22px rgba(14,165,233,0.22)' },
+  btnCancel: { padding: '8px 25px', backgroundColor: '#fff', color: '#31556b', border: '1px solid #cfe8f7', borderRadius: '8px', cursor: 'pointer', fontWeight: '700' },
+  btnConfirmDelete: { padding: '8px 25px', backgroundColor: '#fff1f2', color: '#be123c', border: '1px solid #fecdd3', borderRadius: '8px', cursor: 'pointer', fontWeight: '700' },
   loginUserBox: { 
     width: '100%', 
     padding: '10px', 

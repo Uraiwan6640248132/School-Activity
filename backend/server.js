@@ -63,7 +63,7 @@ function parseDateForMySQL(dateStr) {
 // ตัวอย่างโค้ดฝั่ง Backend (Express + MySQL)
 // เพิ่มเส้นทางนี้ที่หลังบ้าน เพื่อส่งรายชื่อผู้ปกครองทั้งหมดให้หน้าบ้านไปเลือก
 app.get("/users", (req, res) => {
-  const sql = "SELECT User_id, Name FROM users WHERE Role = 'ผู้ปกครอง'"; 
+  const sql = "SELECT User_id, Name FROM users WHERE Role = 'ผู้ปกครอง'";
   db.query(sql, (err, result) => {
     if (err) return res.status(500).json(err);
     res.json(result);

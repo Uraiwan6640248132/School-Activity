@@ -10,7 +10,7 @@ function Layout({ children }) {
       
       {/* ส่วนเนื้อหาหลัก ควบคุมความกว้างให้เท่ากันทุกหน้าด้วย container mx-auto */}
       <main className="flex-grow container mx-auto px-4 py-6 md:py-10">
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-purple-100">
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-sky-100">
           {children}
         </div>
       </main>

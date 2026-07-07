@@ -383,8 +383,8 @@ export default function Development() {
                       <span style={{ fontSize: '12px', color: '#666', fontWeight: 'normal' }}>วันที่ประเมิน: {displayDate}</span>
                     </span>
                     <div style={styles.actionGroup}>
-                      <button style={styles.actionBtnSmall} onClick={() => { setSelectedId(item.Development_id || item.development_id); setIsDeleteOpen(true); }}>🗑️</button>
-                      <button style={styles.actionBtnSmall} onClick={() => openEditModal(item)}>📝</button>
+                      <button style={{ ...styles.actionBtnSmall, ...styles.actionBtnDelete }} onClick={() => { setSelectedId(item.Development_id || item.development_id); setIsDeleteOpen(true); }}>🗑️</button>
+                      <button style={{ ...styles.actionBtnSmall, ...styles.actionBtnEdit }} onClick={() => openEditModal(item)}>📝</button>
                     </div>
                   </div>
 
@@ -505,7 +505,7 @@ export default function Development() {
 
               <button
                 type="button"
-                style={{ ...styles.btnSaveEvaluation, backgroundColor: '#3b82f6', color: '#fff', border: 'none', marginTop: '15px' }}
+                style={{ ...styles.btnSaveEvaluation, marginTop: '15px' }}
                 onClick={() => setIsDetailOpen(false)}
               >
                 ปิดหน้าต่างรายละเอียด
@@ -687,13 +687,15 @@ const styles = {
   headerRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid #eee', paddingBottom: '12px' },
   mainTitle: { margin: 0, fontSize: '18px', fontWeight: 'bold', color: '#333' },
   studentNameDisplay: { margin: '4px 0 0 0', fontSize: '14px', color: '#666' },
-  btnAddDev: { padding: '6px 16px', border: '1px solid #333', backgroundColor: '#fff', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' },
+  btnAddDev: { padding: '9px 16px', border: '1px solid #0284c7', background: 'linear-gradient(135deg, #0ea5e9, #0369a1)', color: '#ffffff', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', fontSize: '13px', boxShadow: '0 10px 22px rgba(14,165,233,0.22)' },
   listContainer: { display: 'flex', flexDirection: 'column', gap: '16px' },
   devCardItem: { border: '1px solid #e0e0e0', borderRadius: '8px', padding: '16px', backgroundColor: '#fafafa' },
   cardItemHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' },
   yearText: { fontSize: '14px', fontWeight: '500', color: '#444', lineHeight: '1.5' },
   actionGroup: { display: 'flex', gap: '8px' },
-  actionBtnSmall: { border: '1px solid #ccc', backgroundColor: '#fff', borderRadius: '4px', cursor: 'pointer', padding: '4px 6px', fontSize: '12px' },
+  actionBtnSmall: { borderRadius: '8px', cursor: 'pointer', padding: '6px 9px', fontSize: '12px', fontWeight: '700' },
+  actionBtnEdit: { border: '1px solid #bae6fd', backgroundColor: '#eff8ff', color: '#0369a1' },
+  actionBtnDelete: { border: '1px solid #fecdd3', backgroundColor: '#fff1f2', color: '#be123c' },
   circlesRow: { display: 'flex', justifyContent: 'space-around', alignItems: 'center', marginTop: '10px' },
   circleUnit: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' },
   circleScore: { width: '50px', height: '50px', borderRadius: '50%', border: '1px solid #888', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: 'bold', backgroundColor: '#fff' },
@@ -718,13 +720,13 @@ const styles = {
   thCenter: { textAlign: 'center', fontSize: '11px', color: '#333', padding: '6px', fontWeight: '500', minWidth: '45px', backgroundColor: '#f5f5f5' },
   tdLeft: { fontSize: '12px', padding: '8px 6px', borderBottom: '1px solid #eee', color: '#444' },
   tdCenter: { textAlign: 'center', padding: '8px 6px', borderBottom: '1px solid #eee' },
-  btnSaveEvaluation: { width: '100%', padding: '10px', marginTop: '20px', backgroundColor: '#fff', border: '1px solid #333', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' },
+  btnSaveEvaluation: { width: '100%', padding: '10px', marginTop: '20px', background: 'linear-gradient(135deg, #0ea5e9, #0369a1)', color: '#ffffff', border: '1px solid #0284c7', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', fontSize: '13px', boxShadow: '0 10px 22px rgba(14,165,233,0.22)' },
 
   deleteModal: { backgroundColor: '#fff', width: '320px', padding: '25px', borderRadius: '12px', border: '1px solid #bbb', textAlign: 'center', boxShadow: '0 4px 16px rgba(0,0,0,0.1)' },
   deleteIcon: { fontSize: '40px', marginBottom: '12px' },
   deleteTitle: { margin: '0 0 6px 0', fontSize: '16px', color: '#000', fontWeight: 'bold' },
   deleteSubtitle: { margin: '0 0 20px 0', fontSize: '13px', color: '#666' },
   deleteBtnRow: { display: 'flex', gap: '12px', justifyContent: 'center' },
-  btnCancel: { padding: '8px 20px', backgroundColor: '#fff', border: '1px solid #ccc', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', color: '#333' },
-  btnConfirmDelete: { padding: '8px 20px', backgroundColor: '#fff', border: '1px solid #333', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' }
+  btnCancel: { padding: '8px 20px', backgroundColor: '#fff', border: '1px solid #cfe8f7', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', color: '#31556b', fontWeight: '700' },
+  btnConfirmDelete: { padding: '8px 20px', backgroundColor: '#fff1f2', color: '#be123c', border: '1px solid #fecdd3', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: '700' }
 };

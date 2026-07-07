@@ -401,8 +401,8 @@ function CalendarActivity() {
               <input type="text" style={styles.inputReadOnly} value={formData.Location || 'ไม่ระบุสถานที่'} readOnly />
 
               <div style={styles.modalActionRow}>
-                <button type="button" style={styles.iconActionBtn} onClick={() => { setIsDetailOpen(false); setIsDeleteOpen(true); }}>🗑️</button>
-                <button type="button" style={styles.iconActionBtn} onClick={() => { setIsDetailOpen(false); setIsEditOpen(true); }}>📝</button>
+                <button type="button" style={{ ...styles.iconActionBtn, ...styles.iconDeleteBtn }} onClick={() => { setIsDetailOpen(false); setIsDeleteOpen(true); }}>🗑️</button>
+                <button type="button" style={{ ...styles.iconActionBtn, ...styles.iconEditBtn }} onClick={() => { setIsDetailOpen(false); setIsEditOpen(true); }}>📝</button>
               </div>
             </div>
           </div>
@@ -510,11 +510,13 @@ const styles = {
   input: { width: '100%', padding: '8px', border: '1px solid #aaa', borderRadius: '5px', boxSizing: 'border-box', fontSize: '13px' },
   inputReadOnly: { width: '100%', padding: '8px', border: '1px solid #ccc', backgroundColor: '#f9f9f9', borderRadius: '5px', boxSizing: 'border-box', fontSize: '13px', color: '#333' },
   modalActionRow: { display: 'flex', justifyContent: 'center', gap: '15px', marginTop: '20px' },
-  iconActionBtn: { width: '40px', height: '40px', backgroundColor: '#fff', border: '1px solid #ccc', borderRadius: '6px', cursor: 'pointer', fontSize: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' },
-  btnSubmit: { width: '100%', padding: '9px', marginTop: '20px', backgroundColor: '#fff', border: '1px solid #333', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px' },
+  iconActionBtn: { width: '40px', height: '40px', borderRadius: '8px', cursor: 'pointer', fontSize: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '700' },
+  iconEditBtn: { backgroundColor: '#eff8ff', color: '#0369a1', border: '1px solid #bae6fd' },
+  iconDeleteBtn: { backgroundColor: '#fff1f2', color: '#be123c', border: '1px solid #fecdd3' },
+  btnSubmit: { width: '100%', padding: '10px', marginTop: '20px', background: 'linear-gradient(135deg, #0ea5e9, #0369a1)', color: '#ffffff', border: '1px solid #0284c7', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', fontSize: '13px', boxShadow: '0 10px 22px rgba(14,165,233,0.22)' },
   deleteIconContainer: { fontSize: '40px', marginBottom: '10px' },
-  btnCancel: { padding: '8px 24px', backgroundColor: '#fff', border: '1px solid #ccc', borderRadius: '5px', cursor: 'pointer', fontSize: '13px', color: '#333' },
-  btnConfirmDelete: { padding: '8px 24px', backgroundColor: '#d9534f', border: '1px solid #d43f3a', borderRadius: '5px', cursor: 'pointer', fontSize: '13px', color: '#fff', fontWeight: 'bold' },
+  btnCancel: { padding: '8px 24px', backgroundColor: '#fff', border: '1px solid #cfe8f7', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', color: '#31556b', fontWeight: '700' },
+  btnConfirmDelete: { padding: '8px 24px', backgroundColor: '#fff1f2', border: '1px solid #fecdd3', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', color: '#be123c', fontWeight: '700' },
 
   // ✍️ สไตล์เพิ่มเติมสำหรับแถวกรอกตัวเลขเวลาเอง 4 ช่อง
   timeRow: { display: 'flex', alignItems: 'center', gap: '4px', width: '100%' },
