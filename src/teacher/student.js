@@ -120,7 +120,7 @@ function StudentManagement() {
   const [viewingStudent, setViewingStudent] = useState(null);
   const [viewingParentName, setViewingParentName] = useState('');
 
- const resetForm = () => {
+  const resetForm = () => {
     setFormData({
       Student_id: '',
       Name: '',
@@ -239,7 +239,7 @@ function StudentManagement() {
 
   const handleEditSubmit = (e) => {
     e.preventDefault();
-    
+
     const genderValue = formData.Gender === "หญิง" ? 2 : 1;
     const payload = {
       Name: formData.Name,
@@ -257,20 +257,20 @@ function StudentManagement() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     })
-    .then(res => {
-      if (!res.ok) throw new Error("อัปเดตไม่สำเร็จ");
-      return res.json();
-    })
-    .then(() => {
-      fetchStudents();
-      setIsEditModalOpen(false);
-      resetForm();
-      alert("อัปเดตข้อมูลนักเรียนสำเร็จ");
-    })
-    .catch(err => {
-      console.error(err);
-      alert("เกิดข้อผิดพลาดในการอัปเดตข้อมูล");
-    });
+      .then(res => {
+        if (!res.ok) throw new Error("อัปเดตไม่สำเร็จ");
+        return res.json();
+      })
+      .then(() => {
+        fetchStudents();
+        setIsEditModalOpen(false);
+        resetForm();
+        alert("อัปเดตข้อมูลนักเรียนสำเร็จ");
+      })
+      .catch(err => {
+        console.error(err);
+        alert("เกิดข้อผิดพลาดในการอัปเดตข้อมูล");
+      });
   };
 
   const handleOpenDeleteModal = (e, id) => {
@@ -482,28 +482,28 @@ function StudentManagement() {
 
               <div style={{ ...styles.formGroup, position: 'relative' }} ref={suggestionRef}>
                 <label style={styles.formLabel}>ชื่อผู้ปกครอง (พิมพ์ค้นหาอย่างน้อย 2 ตัวอักษร)</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   required
-                  placeholder="ค้นหาชื่อผู้ปกครอง..." 
-                  style={styles.formInput} 
-                  value={parentSearch} 
+                  placeholder="ค้นหาชื่อผู้ปกครอง..."
+                  style={styles.formInput}
+                  value={parentSearch}
                   onChange={(e) => {
                     setParentSearch(e.target.value);
                     setShowSuggestions(true);
                   }}
                   onFocus={() => setShowSuggestions(true)}
                 />
-                
+
                 {showSuggestions && suggestions.length > 0 && (
                   <ul style={styles.suggestionList}>
                     {suggestions.map((p) => (
-                      <li 
-                        key={p.User_id || p.id} 
+                      <li
+                        key={p.User_id || p.id}
                         style={styles.suggestionItem}
                         onClick={() => handleSelectParent(p)}
                       >
-                        {p.Name || p.name} <span style={{fontSize: '11px', color: '#999'}}>(ID: {p.User_id || p.id})</span>
+                        {p.Name || p.name} <span style={{ fontSize: '11px', color: '#999' }}>(ID: {p.User_id || p.id})</span>
                       </li>
                     ))}
                   </ul>
@@ -577,28 +577,28 @@ function StudentManagement() {
 
               <div style={{ ...styles.formGroup, position: 'relative' }} ref={suggestionRef}>
                 <label style={styles.formLabel}>ชื่อผู้ปกครอง (พิมพ์ค้นหาอย่างน้อย 2 ตัวอักษร)</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   required
-                  placeholder="ค้นหาชื่อผู้ปกครอง..." 
-                  style={styles.formInput} 
-                  value={parentSearch} 
+                  placeholder="ค้นหาชื่อผู้ปกครอง..."
+                  style={styles.formInput}
+                  value={parentSearch}
                   onChange={(e) => {
                     setParentSearch(e.target.value);
                     setShowSuggestions(true);
                   }}
                   onFocus={() => setShowSuggestions(true)}
                 />
-                
+
                 {showSuggestions && suggestions.length > 0 && (
                   <ul style={styles.suggestionList}>
                     {suggestions.map((p) => (
-                      <li 
-                        key={p.User_id || p.id} 
+                      <li
+                        key={p.User_id || p.id}
                         style={styles.suggestionItem}
                         onClick={() => handleSelectParent(p)}
                       >
-                        {p.Name || p.name} <span style={{fontSize: '11px', color: '#999'}}>(ID: {p.User_id || p.id})</span>
+                        {p.Name || p.name} <span style={{ fontSize: '11px', color: '#999' }}>(ID: {p.User_id || p.id})</span>
                       </li>
                     ))}
                   </ul>
@@ -663,7 +663,7 @@ const styles = {
   btnCancel: { flex: '1', padding: '8px 12px', border: '1px solid #cfe8f7', background: '#ffffff', color: '#31556b', borderRadius: '8px', cursor: 'pointer', fontWeight: '700' },
   btnConfirmDelete: { flex: '1', padding: '8px 12px', border: '1px solid #fecdd3', background: '#fff1f2', color: '#be123c', fontWeight: '700', borderRadius: '8px', cursor: 'pointer' },
   infoDisplayBox: { padding: '6px 10px', border: '1px solid #e5e5e5', borderRadius: '6px', fontSize: '13px', background: '#f9f9f9', color: '#333333', height: '32px', boxSizing: 'border-box', width: '100%', display: 'flex', alignItems: 'center' },
-  
+
   suggestionList: {
     position: 'absolute', top: '100%', left: 0, right: 0, padding: 0, margin: '4px 0 0 0',
     background: '#ffffff', border: '1px solid #cccccc', borderRadius: '6px', listStyle: 'none',

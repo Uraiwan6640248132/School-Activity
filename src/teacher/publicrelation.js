@@ -21,14 +21,14 @@ export default function PublicRelations() {
     Name: '',
     date: '',
     Location: '',
-    Detail: '', 
+    Detail: '',
     User_id: 1,
     Image: ''
   });
   const [selectedId, setSelectedId] = useState(null);
 
   const API_URL = 'http://localhost:3001/api/publicrelations';
-  const USERS_API_URL = 'http://localhost:3001/users'; 
+  const USERS_API_URL = 'http://localhost:3001/users';
 
   // ฟังก์ชันจับคู่หาชื่อผู้ใช้งานด้วย User_id (ส่งกลับเฉพาะชื่อเพียวๆ)
   const getUserNameById = useCallback((userId) => {
@@ -60,7 +60,7 @@ export default function PublicRelations() {
         const userData = JSON.parse(storedUser);
         const activeId = Number(userData.User_id || userData.id || userData.user_id || 1);
         const activeName = userData.Name || userData.name || userData.Username || 'ผู้ใช้งานระบบ';
-        
+
         const userObj = { id: activeId, name: activeName };
         setCurrentUser(userObj);
         return userObj;
@@ -87,9 +87,9 @@ export default function PublicRelations() {
   };
 
   useEffect(() => {
-    fetchUsersData(); 
-    checkAuthUser();  
-    fetchPRData();     
+    fetchUsersData();
+    checkAuthUser();
+    fetchPRData();
   }, []);
 
   const handleImageChange = (e) => {
@@ -163,8 +163,8 @@ export default function PublicRelations() {
       Name: '',
       date: '',
       Location: '',
-      Detail: '', 
-      User_id: activeUser.id, 
+      Detail: '',
+      User_id: activeUser.id,
       Image: ''
     });
     setSelectedId(null);
@@ -176,7 +176,7 @@ export default function PublicRelations() {
       Name: item.Name_activity || '',
       date: item.Date ? item.Date.substring(0, 10) : '',
       Location: item.Location || '',
-      Detail: item.Detail || '', 
+      Detail: item.Detail || '',
       User_id: item.User_id || currentUser.id,
       Image: item.Image || ''
     });
@@ -191,10 +191,6 @@ export default function PublicRelations() {
   return (
     <div style={styles.container}>
       <div style={styles.headerRow}>
-        <div>
-          <h2 style={{ margin: 0 }}>ประชาสัมพันธ์</h2>
-          <small style={{ color: '#666' }}>เพิ่ม ลบ แก้ไขงานประชาสัมพันธ์</small>
-        </div>
         <button style={styles.btnAdd} onClick={() => { clearForm(); setIsAddOpen(true); }}>
           + เพิ่มประชาสัมพันธ์
         </button>
@@ -222,8 +218,8 @@ export default function PublicRelations() {
               </div>
             </div>
             <div style={styles.cardAction}>
-              <button style={{ ...styles.iconBtn, ...styles.iconBtnDelete }} onClick={() => openDeleteModal(item.PublicRelation_id)}>🗑️</button>
-              <button style={{ ...styles.iconBtn, ...styles.iconBtnEdit }} onClick={() => openEditModal(item)}>📝</button>
+              <button style={{ ...styles.iconBtn, ...styles.iconBtnDelete }} onClick={() => openDeleteModal(item.PublicRelation_id)}>ลบ</button>
+              <button style={{ ...styles.iconBtn, ...styles.iconBtnEdit }} onClick={() => openEditModal(item)}>แก้ไข</button>
             </div>
           </div>
         ))}
@@ -362,12 +358,12 @@ const styles = {
   btnSubmit: { width: '100%', padding: '10px', marginTop: '20px', background: 'linear-gradient(135deg, #0ea5e9, #0369a1)', color: '#ffffff', border: '1px solid #0284c7', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', boxShadow: '0 10px 22px rgba(14,165,233,0.22)' },
   btnCancel: { padding: '8px 25px', backgroundColor: '#fff', color: '#31556b', border: '1px solid #cfe8f7', borderRadius: '8px', cursor: 'pointer', fontWeight: '700' },
   btnConfirmDelete: { padding: '8px 25px', backgroundColor: '#fff1f2', color: '#be123c', border: '1px solid #fecdd3', borderRadius: '8px', cursor: 'pointer', fontWeight: '700' },
-  loginUserBox: { 
-    width: '100%', 
-    padding: '10px', 
-    backgroundColor: '#f3f4f6', 
-    border: '1px solid #e5e7eb', 
-    borderRadius: '4px', 
+  loginUserBox: {
+    width: '100%',
+    padding: '10px',
+    backgroundColor: '#f3f4f6',
+    border: '1px solid #e5e7eb',
+    borderRadius: '4px',
     boxSizing: 'border-box',
     fontSize: '14px',
     color: '#1f2937',
