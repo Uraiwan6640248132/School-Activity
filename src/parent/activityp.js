@@ -87,8 +87,7 @@ function ActivityP() {
         {/* ส่วนหัวหน้าจอ */}
         <div style={page.header}>
           <div>
-
-            <h2 style={page.pageTitle}>ข้อมูลกิจกรรม</h2>
+            <h2 style={{ margin: 0, color: '#0369a1' }}>ข้อมูลกิจกรรม</h2>
           </div>
         </div>
 

@@ -105,8 +105,8 @@ function PersonalDataParent() {
 
   return (
     <div style={styles.container}>
-      <h1 style={styles.mainTitle}>จัดการข้อมูลส่วนตัว</h1>
-      <p style={styles.subTitle}>แก้ไขข้อมูลของคุณ</p>
+      <h2 style={{ margin: 10, color: '#0369a1' }}>แก้ไขข้อมูลส่วนตัว</h2>
+
       <div style={styles.formCard}>
         <form onSubmit={handleSubmit} style={styles.form}>
           <div style={styles.inputGroup}>

@@ -4,7 +4,7 @@ import axios from "axios";
 const StudentData = () => {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
-  
+
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [viewingStudent, setViewingStudent] = useState(null);
 
@@ -13,7 +13,7 @@ const StudentData = () => {
   useEffect(() => {
     const fetchStudentData = async () => {
       try {
-        setLoading(true); // 🌟 เริ่มต้นการโหลดข้อมูล
+        setLoading(true);
         const storedUser = localStorage.getItem("user");
         if (!storedUser) {
           setLoading(false);
@@ -28,19 +28,18 @@ const StudentData = () => {
           return;
         }
 
-        // 🛠️ คิวรีส่งข้อมูลไปยังหลังบ้านผ่าน id
         const res = await axios.get(`http://localhost:3001/api/students?id=${userId}`);
         setStudents(res.data);
       } catch (error) {
         console.error("Error fetching student data:", error);
       } finally {
-        setLoading(false); // 🌟 ปิดสถานะการโหลดเสมอไม่ว่าจะสำเร็จหรือเกิด Error
+        setLoading(false);
       }
     };
 
     fetchStudentData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // 🔒 ใส่คอมเมนต์ปิดปากคำเตือน ESLint เรื่องอาร์เรย์ว่างเรียบร้อยแล้ว
+  }, []);
 
   const formatThaiDate = (dateString) => {
     if (!dateString) return 'ไม่ได้ระบุ';
@@ -59,7 +58,10 @@ const StudentData = () => {
 
   return (
     <div style={styles.container}>
-      <div style={styles.headerButton}>ข้อมูลนักเรียน</div>
+      {/* 🌟 เพิ่ม Wrapper พร้อมระยะห่างด้านล่างให้กับหัวข้อ */}
+      <div style={styles.headerWrapper}>
+        <h2 style={{ margin: 0, color: '#0369a1' }}>ข้อมูลนักเรียน</h2>
+      </div>
 
       <div style={styles.cardContainer}>
         {loading ? (
@@ -67,7 +69,7 @@ const StudentData = () => {
         ) : students.length > 0 ? (
           students.map((student, index) => {
             const currentImage = student.Image;
-            const finalImageUrl = currentImage 
+            const finalImageUrl = currentImage
               ? (currentImage.startsWith("data:") || currentImage.startsWith("http") ? currentImage : `${BACKEND_IMAGE_URL}${currentImage}`)
               : null;
 
@@ -75,10 +77,10 @@ const StudentData = () => {
               <div key={index} style={styles.studentCard} onClick={() => handleOpenViewModal(student)}>
                 <div style={styles.avatarBox}>
                   {finalImageUrl ? (
-                    <img 
-                      src={finalImageUrl} 
-                      alt="Student" 
-                      style={styles.avatarImage} 
+                    <img
+                      src={finalImageUrl}
+                      alt="Student"
+                      style={styles.avatarImage}
                       onError={(e) => {
                         e.target.style.display = 'none';
                         const parent = e.target.parentElement;
@@ -99,7 +101,7 @@ const StudentData = () => {
                 <div style={styles.detailsBox}>
                   <h4 style={styles.studentName}>{student.Name || "ไม่ระบุชื่อ-นามสกุล"}</h4>
                   <p style={styles.studentClass}>ระดับชั้น: {student.Class_level || "ไม่ระบุชั้นเรียน"}</p>
-                  <small style={{ color: '#0066cc', cursor: 'pointer', fontSize: '12px' }}>ดูข้อมูลทั้งหมด ➡️</small>
+                  <small style={{ color: '#0066cc', cursor: 'pointer', fontSize: '12px', marginTop: '4px' }}>ดูข้อมูลทั้งหมด ➡️</small>
                 </div>
               </div>
             );
@@ -115,13 +117,13 @@ const StudentData = () => {
           <div style={styles.modalContent} onClick={(e) => e.stopPropagation()}>
             <button style={styles.closeX} onClick={() => setIsViewModalOpen(false)}>X</button>
             <h3 style={styles.modalHeading}>รายละเอียดข้อมูลนักเรียนทั้งหมด</h3>
-            
+
             <div style={styles.avatarUploadZone}>
               {viewingStudent.Image ? (
-                <img 
-                  src={viewingStudent.Image.startsWith("data:") || viewingStudent.Image.startsWith("http") ? viewingStudent.Image : `${BACKEND_IMAGE_URL}${viewingStudent.Image}`} 
-                  alt="profile" 
-                  style={styles.avatarBig} 
+                <img
+                  src={viewingStudent.Image.startsWith("data:") || viewingStudent.Image.startsWith("http") ? viewingStudent.Image : `${BACKEND_IMAGE_URL}${viewingStudent.Image}`}
+                  alt="profile"
+                  style={styles.avatarBig}
                 />
               ) : (
                 <div style={styles.avatarPlaceholderBig}><span>👤</span></div>
@@ -165,14 +167,26 @@ const StudentData = () => {
 };
 
 const styles = {
-  container: { padding: "20px 10px", fontFamily: "sans-serif", width: "100%", boxSizing: "border-box" },
+  // 🛠️ ปรับหน้าจอให้มีช่องว่างขอบด้านบนและด้านข้างเพิ่มขึ้น
+  container: { padding: "30px 20px", fontFamily: "sans-serif", width: "100%", boxSizing: "border-box" },
+
+  // 🛠️ เพิ่ม style นี้เพื่อดันการ์ดลงมาด้านล่าง ไม่ให้ชิดหัวข้อเกินไป
+  headerWrapper: { marginBottom: "25px" },
+
   headerButton: { display: "inline-block", backgroundColor: "#ffffff", border: "1px solid #94a3b8", padding: "10px 24px", borderRadius: "6px", fontSize: "16px", fontWeight: "bold", color: "#1e293b", boxShadow: "0 2px 4px rgba(0,0,0,0.05)", marginBottom: "40px" },
-  cardContainer: { display: "flex", flexDirection: "column", gap: "20px", maxWidth: "550px" },
-  studentCard: { display: "flex", alignItems: "center", backgroundColor: "#ffffff", border: "1px solid #cbd5e1", borderRadius: "12px", padding: "20px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)", gap: "20px", cursor: 'pointer' },
+
+  // 🛠️ เพิ่มช่องว่างระหว่างการ์ดแต่ละใบ (ถ้ามีหลายใบ)
+  cardContainer: { display: "flex", flexDirection: "column", gap: "24px", maxWidth: "550px" },
+
+  // 🛠️ เพิ่ม gap ภายในตัวการ์ดระหว่าง รูปภาพ กับ ข้อมูลตัวหนังสือ
+  studentCard: { display: "flex", alignItems: "center", backgroundColor: "#ffffff", border: "1px solid #cbd5e1", borderRadius: "12px", padding: "20px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)", gap: "24px", cursor: 'pointer' },
+
   avatarBox: { width: "75px", height: "75px", border: "1px solid #cbd5e1", borderRadius: "8px", display: "flex", justifyContent: "center", alignItems: "center", backgroundColor: "#f8fafc", overflow: "hidden" },
   avatarImage: { width: "100%", height: "100%", objectFit: "cover" },
   placeholderIcon: { color: "#94a3b8", fontSize: "32px" },
-  detailsBox: { display: "flex", flexDirection: "column", gap: "4px" },
+
+  // 🛠️ เพิ่ม gap ให้บรรทัดชื่อและระดับชั้นห่างกันนิดนึง และเพิ่ม line-height
+  detailsBox: { display: "flex", flexDirection: "column", gap: "6px", lineHeight: "1.4" },
   studentName: { margin: 0, fontSize: "17px", fontWeight: "bold", color: "#0f172a" },
   studentClass: { margin: 0, fontSize: "14px", color: "#64748b" },
   messageText: { color: "#94a3b8", fontSize: "14px" },

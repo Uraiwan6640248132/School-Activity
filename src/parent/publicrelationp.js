@@ -39,7 +39,7 @@ export default function PublicRelationsP() {
   };
 
   useEffect(() => {
-    fetchUsersData(); 
+    fetchUsersData();
     fetchPRData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // 🔒 ปิดปากคำเตือน ESLint ป้องกันหน้าเว็บค้างวนลูปเรียบร้อย
@@ -49,10 +49,8 @@ export default function PublicRelationsP() {
       {/* ส่วนหัวแสดงผลสำหรับผู้ปกครอง */}
       <div style={styles.headerRow}>
         <div>
-          <h2 style={{ margin: 0, color: '#333' }}>ข่าวสารประชาสัมพันธ์</h2>
-          <small style={{ color: '#666' }}>ข้อมูลกิจกรรมส่งตรงจากคุณครูและโรงเรียน</small>
+          <h2 style={{ margin: 0, color: '#0369a1' }}>ข่าวสารประชาสัมพันธ์</h2>
         </div>
-        <div style={styles.badgeParent}>ฝั่งผู้ปกครอง</div>
       </div>
 
       {loading && <p style={styles.statusText}>กำลังอัปเดตประกาศข่าวสารใหม่ล่าสุด...</p>}
@@ -64,10 +62,10 @@ export default function PublicRelationsP() {
           const activityName = item.Name_activity || item.name_activity || 'ไม่ได้ระบุชื่อกิจกรรม';
           const prLocation = item.Location || item.location || 'ไม่ได้ระบุสถานที่';
           const prDetail = item.Detail || item.detail || '';
-          
+
           // 🌟 จัดการแปลง URL รูปภาพประชาสัมพันธ์ให้ถูกต้องสมบูรณ์
           const currentImage = item.Image;
-          const finalImageUrl = currentImage 
+          const finalImageUrl = currentImage
             ? (currentImage.startsWith("data:") || currentImage.startsWith("http") ? currentImage : `${BACKEND_IMAGE_URL}${currentImage}`)
             : null;
 
@@ -75,10 +73,10 @@ export default function PublicRelationsP() {
             <div key={prId} style={styles.card}>
               <div style={styles.cardLeft}>
                 {finalImageUrl ? (
-                  <img 
-                    src={finalImageUrl} 
-                    alt="public relations" 
-                    style={styles.cardImg} 
+                  <img
+                    src={finalImageUrl}
+                    alt="public relations"
+                    style={styles.cardImg}
                     onError={(e) => {
                       // ดักกรณีไฟล์รูปภาพในโฟลเดอร์พัง ให้แสดงข้อความแทนรูปภาพ
                       e.target.style.display = 'none';
@@ -95,19 +93,19 @@ export default function PublicRelationsP() {
                 ) : (
                   <div style={styles.cardImgPlaceholder}>ไม่มีรูปภาพประกอบ</div>
                 )}
-                
+
                 <div style={styles.cardInfo}>
                   <div style={{ marginBottom: '4px' }}>
                     <strong style={styles.topicText}>ชื่อเรื่อง:</strong> {activityName}
                   </div>
                   <div><strong>วัน/เดือน/ปี:</strong> {item.Date ? item.Date.substring(0, 10) : '-'}</div>
                   <div><strong>สถานที่:</strong> {prLocation}</div>
-                  
+
                   {/* บล็อกรายละเอียดข่าวสาร */}
                   <div style={styles.detailBox}>
                     <strong>รายละเอียด:</strong> {prDetail || '-'}
                   </div>
-                  
+
                   <div style={{ marginTop: '6px' }}>
                     <strong>📢 ประชาสัมพันธ์โดย:</strong>{' '}
                     <span style={styles.authorText}>
@@ -119,7 +117,7 @@ export default function PublicRelationsP() {
             </div>
           );
         })}
-        
+
         {/* ดักกรณีไม่มีข้อมูลข่าว */}
         {!loading && prList.length === 0 && (
           <div style={styles.emptyState}>

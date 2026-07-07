@@ -144,7 +144,7 @@ export default function Developmentp() {
         {/* ส่วนหัวแสดงข้อมูลของนักเรียน */}
         <div style={styles.headerRow}>
           <div>
-            <h2 style={styles.mainTitle}>สรุปผลพัฒนาการนักเรียน</h2>
+            <h2 style={{ margin: 0, color: '#0369a1' }}>สรุปผลพัฒนาการนักเรียน</h2>
             <p style={styles.studentNameDisplay}>
               <strong>นักเรียนในความปกครอง:</strong>{' '}
               {studentIdOfParent ? (

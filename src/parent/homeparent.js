@@ -1,28 +1,34 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom"; // ⚡️ นำเข้า useNavigate เพื่อใช้เปลี่ยนหน้าใน React
 
 const HomeParent = () => {
   const [latestNotifications, setLatestNotifications] = useState([]);
   const [latestActivities, setLatestActivities] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // 1️⃣ ดึงข้อมูลห้องเรียนของผู้ปกครองจาก localStorage (หรือดึงมาจาก Auth Context/Token)
-  // สมมติว่าใน localStorage เก็บค่าเป็น "ม.1/1" หรือค่าตรงกับ item.Class_level ในฐานข้อมูลของคุณ
-  const parentClass = localStorage.getItem("parentClass") || "";
+  const navigate = useNavigate(); // ⚡️ เรียกใช้งานฟังก์ชันสำหรับเปลี่ยนหน้า
 
-  // 🌐 ดึงข้อมูลกิจกรรมและการบ้านล่าสุดจาก API
+  // ดึงข้อมูลห้องเรียนของผู้ปกครองจาก localStorage (ค่าเริ่มต้นเป็น "ม.1/1" เพื่อทดสอบหากยังไม่มีการ Login)
+  const parentClass = localStorage.getItem("parentClass") || "ม.1/1";
+
   useEffect(() => {
     const fetchParentHomeData = async () => {
       try {
         const activityRes = await axios.get("http://localhost:3001/activities");
         const notificationRes = await axios.get("http://localhost:3001/notifications");
 
-        // 2️⃣ กรอง (Filter) การบ้านให้ตรงกับ Class_level ของผู้ปกครองคนนี้ก่อน แล้วค่อยตัดเอา 4 รายการแรก
-        const filteredHomework = notificationRes.data.filter(
-          (item) => item.Class_level === parentClass
-        );
+        // กรองข้อมูลการบ้านให้ตรงกับห้องเรียน (ลบช่องว่างออกอัตโนมัติเพื่อป้องกันอักษรเขยื้อนไม่ตรงกัน)
+        const filteredHomework = notificationRes.data.filter((item) => {
+          if (!item.Class_level || !parentClass) return false;
 
-        // ดึงข้อมูลการบ้านที่กรองแล้ว และ กิจกรรมล่าสุด มาแสดงฝั่งละ 4 รายการ
+          const dbClass = item.Class_level.toString().replace(/\s+/g, '');
+          const currentParentClass = parentClass.toString().replace(/\s+/g, '');
+
+          return dbClass.includes(currentParentClass) || currentParentClass.includes(dbClass);
+        });
+
+        // ดึงมาแสดงผลฝั่งละ 4 รายการล่าสุด
         setLatestNotifications(filteredHomework.slice(0, 4));
         setLatestActivities(activityRes.data.slice(0, 4));
         setLoading(false);
@@ -33,50 +39,89 @@ const HomeParent = () => {
     };
 
     fetchParentHomeData();
-  }, [parentClass]); // ใส่ parentClass เผื่อกรณีมีการเปลี่ยน Account โดยไม่ Refresh หน้า
+  }, [parentClass]);
+
+  // 📚 ฟังก์ชันเมื่อคลิกการบ้าน
+  const handleHomeworkClick = (id) => {
+    // 💡 เปลี่ยนเส้นทางไปหน้าการบ้านตามโครงสร้าง Path ของโปรเจกต์คุณ (เช่น /homework/5 หรือ /homework-detail/5)
+    navigate(`/homework/${id}`);
+    console.log("ดูการบ้าน ID:", id);
+  };
+
+  // 📍 ฟังก์ชันเมื่อคลิกกิจกรรม (แก้ไขปัญหาการเปลี่ยนหน้า)
+  const handleActivityClick = (id) => {
+    // 💡 เปลี่ยนเส้นทางไปหน้ากิจกรรมตามโครงสร้าง Path ของโปรเจกต์คุณ (เช่น /activity/3 หรือ /activity-detail/3)
+    navigate(`/activity/${id}`);
+    console.log("ดูกิจกรรม ID:", id);
+  };
 
   return (
     <div style={styles.container}>
-      {/* 🔵 ส่วนล่าง: กล่องข้อมูลอัปเดตล่าสุด 2 ฝั่งแยกตามภาพดีไซน์ผู้ปกครองของคุณ */}
       <div style={styles.contentRow}>
 
         {/* กล่องซ้าย: การแจ้งเตือนการบ้านล่าสุด */}
         <div style={styles.infoBox}>
-          {/* เพิ่มการแสดงชื่อห้องตรงหัวข้อเพื่อให้ผู้ปกครองทราบ */}
-          <h3 style={styles.boxTitle}>
-            การแจ้งเตือนการบ้านล่าสุด {parentClass ? `(ห้อง ${parentClass})` : ""}
-          </h3>
+          <div style={styles.headerRow}>
+            <div style={styles.iconCircleBlue}>📚</div>
+            <h3 style={styles.boxTitle}>
+              การบ้านล่าสุด
+            </h3>
+          </div>
+
           <div style={styles.listBox}>
             {loading ? (
               <p style={styles.emptyText}>กำลังโหลดข้อมูลการบ้าน...</p>
             ) : latestNotifications.length > 0 ? (
               latestNotifications.map((item, index) => (
-                <div key={index} style={styles.listItem}>
-                  <strong>{item.Subject}</strong> - {item.Details || "ไม่มีรายละเอียด"}
-                  <span style={styles.itemDate}> (ชั้น: {item.Class_level})</span>
+                <div
+                  key={index}
+                  style={styles.listItem}
+                  onClick={() => handleHomeworkClick(item.id || index)}
+                >
+                  <div style={styles.itemMainText}>
+                    <strong style={styles.subjectText}>{item.Subject}</strong>
+                    <span style={styles.detailsText}>{item.Details || "ไม่มีรายละเอียด"}</span>
+                  </div>
+                  <span style={styles.itemBadge}>ชั้น {item.Class_level}</span>
                 </div>
               ))
             ) : (
-              <p style={styles.emptyText}>ไม่มีข้อมูลการบ้านของห้องเรียนนี้</p>
+              <div style={styles.emptyState}>
+                <p style={styles.emptyText}>ไม่มีข้อมูลการบ้านของห้องเรียนนี้</p>
+              </div>
             )}
           </div>
         </div>
 
         {/* กล่องขวา: กิจกรรมล่าสุด */}
         <div style={styles.infoBox}>
-          <h3 style={styles.boxTitle}>กิจกรรมล่าสุด</h3>
+          <div style={styles.headerRow}>
+            <div style={styles.iconCircleOrange}>📍</div>
+            <h3 style={styles.boxTitle}>กิจกรรมล่าสุดของโรงเรียน</h3>
+          </div>
+
           <div style={styles.listBox}>
             {loading ? (
               <p style={styles.emptyText}>กำลังโหลดข้อมูลกิจกรรม...</p>
             ) : latestActivities.length > 0 ? (
               latestActivities.map((item, index) => (
-                <div key={index} style={styles.listItem}>
-                  <strong>{item.Name_activity}</strong>
-                  <span style={styles.itemDate}> 📍 {item.Location || "ไม่ระบุสถานที่"}</span>
+                <div
+                  key={index}
+                  style={styles.listItem}
+                  onClick={() => handleActivityClick(item.id || index)} // ⚡️ เรียกฟังก์ชันนำทางเมื่อกด
+                >
+                  <div style={styles.itemMainText}>
+                    <strong style={styles.subjectText}>{item.Name_activity}</strong>
+                  </div>
+                  <span style={styles.locationBadge}>
+                    {item.Location || "ไม่ระบุสถานที่"}
+                  </span>
                 </div>
               ))
             ) : (
-              <p style={styles.emptyText}>ไม่มีข้อมูลกิจกรรมล่าสุด</p>
+              <div style={styles.emptyState}>
+                <p style={styles.emptyText}>ไม่มีข้อมูลกิจกรรมล่าสุด</p>
+              </div>
             )}
           </div>
         </div>
@@ -86,54 +131,143 @@ const HomeParent = () => {
   );
 };
 
+// 🎨 Minimalist Soft-Blue Styles
 const styles = {
   container: {
-    padding: "20px 10px",
-    fontFamily: "sans-serif",
-    backgroundColor: "transparent",
+    padding: "40px 24px",
+    fontFamily: "'Inter', 'Kanit', sans-serif",
+    backgroundColor: "#dff3ff 48%",
+    minHeight: "100vh",
     width: "100%",
     boxSizing: "border-box"
   },
   contentRow: {
     display: "flex",
-    gap: "30px",
-    width: "100%"
+    gap: "24px",
+    width: "100%",
+    maxWidth: "1200px",
+    margin: "0 auto",
+    flexWrap: "wrap"
   },
   infoBox: {
     flex: 1,
+    minWidth: "320px",
     backgroundColor: "#ffffff",
-    border: "1px solid #ccc",
-    borderRadius: "8px",
-    padding: "25px",
-    boxShadow: "0 4px 10px rgba(0, 0, 0, 0.08)",
-    minHeight: "400px"
+    borderRadius: "16px",
+    padding: "28px",
+    boxShadow: "0 10px 25px -5px rgba(14, 165, 233, 0.05), 0 8px 10px -6px rgba(14, 165, 233, 0.05)",
+    border: "1px solid #f0f4f8",
+    display: "flex",
+    flexDirection: "column",
+    minHeight: "420px"
+  },
+  headerRow: {
+    display: "flex",
+    alignItems: "center",
+    gap: "12px",
+    marginBottom: "24px",
+    borderBottom: "1px solid #f1f5f9",
+    paddingBottom: "16px"
+  },
+  iconCircleBlue: {
+    width: "36px",
+    height: "36px",
+    borderRadius: "10px",
+    backgroundColor: "#e0f2fe",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: "18px"
+  },
+  iconCircleOrange: {
+    width: "36px",
+    height: "36px",
+    borderRadius: "10px",
+    backgroundColor: "#ffedd5",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: "18px"
   },
   boxTitle: {
     fontSize: "18px",
-    fontWeight: "bold",
-    margin: "0 0 20px 0",
-    color: "#333333"
+    fontWeight: "600",
+    margin: 0,
+    color: "#0f172a",
+    display: "flex",
+    alignItems: "center",
+    gap: "8px"
+  },
+  titleBadge: {
+    fontSize: "13px",
+    backgroundColor: "#3e17dc",
+    color: "#ffffff",
+    padding: "2px 8px",
+    borderRadius: "20px",
+    fontWeight: "500"
   },
   listBox: {
     display: "flex",
     flexDirection: "column",
-    gap: "12px"
+    gap: "14px",
+    flex: 1
   },
   listItem: {
-    padding: "12px 0",
-    borderBottom: "1px solid #f1f5f9",
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: "14px 16px",
+    backgroundColor: "#f8fafc",
+    borderRadius: "12px",
     fontSize: "15px",
-    color: "#475569"
+    border: "1px solid transparent",
+    cursor: "pointer",
+    transition: "transform 0.1s ease, background-color 0.2s ease",
   },
-  itemDate: {
-    fontSize: "13px",
-    color: "#94a3b8",
-    float: "right"
+  itemMainText: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "4px",
+    flex: 1,
+    paddingRight: "12px"
+  },
+  subjectText: {
+    color: "#1e293b",
+    fontSize: "15px",
+    fontWeight: "500"
+  },
+  detailsText: {
+    color: "#64748b",
+    fontSize: "13px"
+  },
+  itemBadge: {
+    fontSize: "12px",
+    color: "#0284c7",
+    backgroundColor: "#81bbe1",
+    padding: "4px 10px",
+    borderRadius: "8px",
+    fontWeight: "500",
+    whiteSpace: "nowrap"
+  },
+  locationBadge: {
+    fontSize: "12px",
+    color: "#ea580c",
+    backgroundColor: "#ffedd5",
+    padding: "4px 10px",
+    borderRadius: "8px",
+    fontWeight: "500",
+    whiteSpace: "nowrap"
+  },
+  emptyState: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    flex: 1
   },
   emptyText: {
     color: "#94a3b8",
     textAlign: "center",
-    padding: "40px"
+    fontSize: "14px"
   },
 };
 
