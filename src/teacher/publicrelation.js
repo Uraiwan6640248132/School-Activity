@@ -191,7 +191,9 @@ export default function PublicRelations() {
   return (
     <div style={styles.container}>
       <div style={styles.headerRow}>
+        <h2>แจ้งเตือนการบ้าน</h2>
         <button style={styles.btnAdd} onClick={() => { clearForm(); setIsAddOpen(true); }}>
+
           + เพิ่มประชาสัมพันธ์
         </button>
       </div>

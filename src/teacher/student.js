@@ -337,9 +337,10 @@ function StudentManagement() {
     <div style={styles.studentContainer}>
       <div style={styles.studentHeader}>
         <div style={styles.titleSection}>
-          <h3 style={styles.headerTitle}>
-            รายชื่อนักเรียนชั้น: {selectedClass}
-          </h3>
+          <h2 style={styles.headerTitle}>
+            <h2>แจ้งเตือนการบ้าน  : {selectedClass} </h2>
+
+          </h2>
         </div>
 
         <div style={{ display: 'flex', gap: '10px' }}>

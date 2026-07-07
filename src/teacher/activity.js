@@ -177,9 +177,7 @@ function Activity() {
 
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "25px", flexWrap: "wrap", gap: "16px", width: "100%" }}>
           <div>
-            <h1 style={{ ...styles.mainTitle, fontSize: "28px" }}>
-              จัดการข้อมูลกิจกรรม
-            </h1>
+            <h2>ข้อมูลกิจกรรม</h2>
           </div>
           <button
             onClick={() => { if (showForm) clearForm(); else setShowForm(true); }}
