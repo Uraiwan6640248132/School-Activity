@@ -58,18 +58,15 @@ function parseDateForMySQL(dateStr) {
 }
 
 // ==========================================
-// 👤 ระบบ API จัดการข้อมูลผู้ใช้งาน (USERS)
+// 👤 ระบบ API จัดการข้อมูลผู้ใช้งาน (USERS) - แก้ไขแล้ว
 // ==========================================
-// ตัวอย่างโค้ดฝั่ง Backend (Express + MySQL)
-// เพิ่มเส้นทางนี้ที่หลังบ้าน เพื่อส่งรายชื่อผู้ปกครองทั้งหมดให้หน้าบ้านไปเลือก
-// 🟢 1. แก้ไขให้ดึงข้อมูลครบทุกฟิลด์เพื่อนำไปแสดงผลบนตารางหน้าบ้าน
-// 🟢 แก้ไขตรงนี้เพื่อให้ดึงข้อมูลครบทุกคอลัมน์และทุกคนตามฐานข้อมูล
+
 app.get("/users", (req, res) => {
-  // นำ WHERE Role = 'ผู้ปกครอง' ออก เพื่อให้ดึงผู้ใช้ทุกคนมาแสดง
+  // ดึงข้อมูลครบทุกคอลัมน์จากฐานข้อมูล
   const sql = "SELECT User_id, Name, Phone, Password, UserName, Role, Class_level, Status FROM users";
   db.query(sql, (err, result) => {
     if (err) return res.status(500).json(err);
-    res.json(result); // ส่งข้อมูลทั้งหมดกลับไปที่หน้าบ้าน (React)
+    res.json(result);
   });
 });
 
@@ -89,20 +86,34 @@ app.get("/users/:id", (req, res) => {
   });
 });
 
-// 🟢 อัปเดตส่วนนี้เพื่อให้ระบบสามารถบันทึกและแก้ไขสถานะ (Status) ของทุกสิทธิ์ได้จริง
+// 🟢 แก้ไขฟังก์ชันอัปเดต: เพิ่ม Class_level และดักจับตัวแปรจากหน้าบ้านให้ถูกต้อง
 app.put("/users/:id", (req, res) => {
-  const { Name, Phone, UserName, Role, Password, Status } = req.body;
-  
-  let sql = (Password && Password.trim() !== "")
-    ? `UPDATE users SET Name=?, Phone=?, UserName=?, Role=?, Password=?, Status=? WHERE User_id=?`
-    : `UPDATE users SET Name=?, Phone=?, UserName=?, Role=?, Status=? WHERE User_id=?`;
-    
-  let params = (Password && Password.trim() !== "") 
-    ? [Name, Phone, UserName, Role, Password, Status, req.params.id] 
-    : [Name, Phone, UserName, Role, Status, req.params.id];
+  // ดักจับทั้ง Username (n เล็ก) และ UserName (N ใหญ่) เผื่อจากหน้าบ้านส่งมาพลาด
+  const Name = req.body.Name || req.body.name;
+  const Phone = req.body.Phone || req.body.phone;
+  const UserName = req.body.UserName || req.body.Username || req.body.username;
+  const Role = req.body.Role || req.body.role;
+  const Class_level = req.body.Class_level || req.body.class_level;
+  const Status = req.body.Status || req.body.status || 'ใช้งาน'; // กำหนดค่าเริ่มต้นถ้าไม่ได้ส่งมา
+  const Password = req.body.Password || req.body.password;
+
+  let sql = "";
+  let params = [];
+
+  // ตรวจสอบว่ามีการเปลี่ยนรหัสผ่านใหม่มาด้วยหรือไม่
+  if (Password && Password.trim() !== "") {
+    sql = `UPDATE users SET Name=?, Phone=?, UserName=?, Role=?, Class_level=?, Status=?, Password=? WHERE User_id=?`;
+    params = [Name, Phone, UserName, Role, Class_level, Status, Password, req.params.id];
+  } else {
+    sql = `UPDATE users SET Name=?, Phone=?, UserName=?, Role=?, Class_level=?, Status=? WHERE User_id=?`;
+    params = [Name, Phone, UserName, Role, Class_level, Status, req.params.id];
+  }
 
   db.query(sql, params, (err, result) => {
-    if (err) return res.status(500).json(err);
+    if (err) {
+      console.error("Backend Error updating user:", err);
+      return res.status(500).json(err);
+    }
     res.json({ success: true, message: "อัปเดตผู้ใช้งานสำเร็จ" });
   });
 });
@@ -491,7 +502,7 @@ app.get('/api/development', (req, res) => {
 // 🔍 1. [GET] ดึงข้อมูลพัฒนาการรายบุคคล
 // ==========================================
 app.get('/api/development', (req, res) => {
-  const studentId = req.query.student_id || req.query.studentId || req.query.Student_id; 
+  const studentId = req.query.student_id || req.query.studentId || req.query.Student_id;
 
   if (!studentId) {
     return res.status(400).json({ error: "กรุณาระบุรหัสนักเรียน (student_id)" });
