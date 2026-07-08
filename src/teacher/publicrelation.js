@@ -191,7 +191,8 @@ export default function PublicRelations() {
   return (
     <div style={styles.container}>
       <div style={styles.headerRow}>
-        <h2>แจ้งเตือนการบ้าน</h2>
+        <h2 style={{ margin: 10, color: '#0369a1' }}>ประชาสัมพันธ์</h2>
+
         <button style={styles.btnAdd} onClick={() => { clearForm(); setIsAddOpen(true); }}>
 
           + เพิ่มประชาสัมพันธ์
@@ -220,8 +221,9 @@ export default function PublicRelations() {
               </div>
             </div>
             <div style={styles.cardAction}>
-              <button style={{ ...styles.iconBtn, ...styles.iconBtnDelete }} onClick={() => openDeleteModal(item.PublicRelation_id)}>ลบ</button>
               <button style={{ ...styles.iconBtn, ...styles.iconBtnEdit }} onClick={() => openEditModal(item)}>แก้ไข</button>
+              <button style={{ ...styles.iconBtn, ...styles.iconBtnDelete }} onClick={() => openDeleteModal(item.PublicRelation_id)}>ลบ</button>
+
             </div>
           </div>
         ))}
@@ -325,8 +327,9 @@ export default function PublicRelations() {
             <p style={{ color: '#666', fontSize: '14px', margin: '0 0 20px 0' }}>คุณต้องการลบข้อมูลนี้หรือไม่</p>
 
             <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
-              <button style={styles.btnCancel} onClick={() => { setIsDeleteOpen(false); clearForm(); }}>ยกเลิก</button>
               <button style={styles.btnConfirmDelete} onClick={handleDeleteSubmit}>ลบ</button>
+              <button style={styles.btnCancel} onClick={() => { setIsDeleteOpen(false); clearForm(); }}>ยกเลิก</button>
+
             </div>
           </div>
         </div>

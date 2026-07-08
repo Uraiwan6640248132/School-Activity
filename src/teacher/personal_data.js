@@ -82,8 +82,8 @@ const PersonalData = () => {
   return (
     <div style={styles.container}>
       <div style={styles.headerArea}>
-        <button type="button" style={styles.btnTitle}>จัดการข้อมูลส่วนตัว</button>
-        <p style={styles.subtitle}>แก้ไขข้อมูลของคุณ</p>
+        <h2 style={{ margin: 10, color: '#0369a1' }}>แก้ไขข้อมูลส่วนตัว</h2>
+
       </div>
 
       <form onSubmit={handleSubmit} style={styles.profileCard}>
