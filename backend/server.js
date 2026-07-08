@@ -745,11 +745,6 @@ app.post("/login", (req, res) => {
 });
 
 
-
-
-
-
-
 // ========================================================
 // 2. API สำหรับรับข้อมูลลงทะเบียน (เวอร์ชันหักดิบ บังคับค่าแก้ปัญหาหน้าบ้านส่งผิด)
 // ========================================================
@@ -768,28 +763,13 @@ app.post('/api/register', (req, res) => {
       return res.status(400).json({ message: 'ชื่อผู้ใช้นี้มีอยู่ในระบบแล้ว' });
     }
 
-    // 🚨 1. บังคับกำหนดสิทธิ์ใหม่ (ไม่ใช้ค่า Role ที่หน้าบ้านส่งมาเด็ดขาด!)
-    let fixedRole = "ผู้ปกครอง"; // ตั้งค่า Default ปลอดภัยไว้ก่อน
-
-    const lowerClass = String(Class_level || "").toLowerCase();
-
-    // ถ้าหน้าบ้านส่ง Class_level มาเป็นค่าว่าง หรือ NULL แสดงว่าเป็น "ครูผู้สอน"
-    if (!Class_level || lowerClass === "null" || lowerClass === "") {
-      fixedRole = "ครูผู้สอน";
-    } else {
-      // แต่ถ้ามีข้อมูลชั้นเรียน (เช่น อ.1, อ.2, อ.3) ให้จัดเป็น "ผู้ปกครอง"
-      fixedRole = "ผู้ปกครอง";
-    }
-
-    // 🚨 2. คำสั่ง SQL สั่งลงตำแหน่งคอลัมน์ให้ชัดเจน
+    // 🚨 ลบโค้ดเงื่อนไข fixedRole เก่าออกให้หมด แล้วใช้คำสั่ง SQL บันทึกค่า Role ตรงๆ แบบนี้:
     const insertQuery = 'INSERT INTO users (Name, Phone, Password, UserName, Role, Class_level, Status) VALUES (?, ?, ?, ?, ?, ?, ?)';
 
-    // 🚨 3. ส่งค่าเข้าตามลำดับเครื่องหมาย ?
-    // - ? ตัวที่ 5 (ช่อง Role)   -> เราบังคับใส่ตัวแปร fixedRole (ที่สลัดคำว่าถูกระงับสิทธิ์ทิ้งไปแล้ว)
-    // - ? ตัวที่ 7 (ช่อง Status) -> บังคับใส่ข้อความ "ถูกระงับสิทธิ์"
+    // นำค่า Role ที่รับมาจาก req.body (หน้าบ้าน) ใส่เข้าไปในตารางตรงๆ 
     db.query(
       insertQuery,
-      [Name, Phone, Password, UserName, fixedRole, Class_level, "ถูกระงับสิทธิ์"],
+      [Name, Phone, Password, UserName, Role, Class_level, "ใช้งาน"], // ✨ ใช้ Role ตรงนี้ และเปลี่ยนสถานะเป็น "ใช้งาน"
       (err, result) => {
         if (err) return res.status(500).json({ error: err.message });
         return res.status(200).json({ message: 'ลงทะเบียนเรียบร้อยแล้ว!' });

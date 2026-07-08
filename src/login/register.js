@@ -122,22 +122,21 @@ function Register() {
                                 </div>
                             </div>
 
-                            {/* 🛠️ ห้องเรียนประจำชั้น (แบ่งห้องปกติ และ 3 ภาษา ตั้งแต่อินุบาล 1 - 3) */}
                             <div style={styles.field}>
-                                <div style={styles.inputContainer}>
-                                    <select name="Class_level" value={formData.Class_level} onChange={handleChange} style={styles.selectInput} required>
-                                        <option value="">เลือกห้องเรียนประจำชั้น</option>
-                                        <option value="อ.1 ห้องปกติ">อนุบาล 1 ห้องปกติ</option>
-                                        <option value="อ.1 ห้อง 3 ภาษา">อนุบาล 1 ห้อง 3 ภาษา</option>
-                                        <option value="อ.2 ห้องปกติ">อนุบาล 2 ห้องปกติ</option>
-                                        <option value="อ.2 ห้อง 3 ภาษา">อนุบาล 2 ห้อง 3 ภาษา</option>
-                                        <option value="อ.3 ห้องปกติ">อนุบาล 3 ห้องปกติ</option>
-                                        <option value="อ.3 ห้อง 3 ภาษา">อนุบาล 3 ห้อง 3 ภาษา</option>
-                                        <option value="ไม่มี">ไม่มี (สำหรับผู้ปกครอง)</option>
-                                    </select>
-                                </div>
-                            </div>
-
+    <div style={styles.inputContainer}>
+        <select name="Class_level" value={formData.Class_level} onChange={handleChange} style={styles.selectInput} required>
+            <option value="">เลือกห้องเรียนประจำชั้น</option>
+            {/* 🔽 ต้องแก้ในช่อง value="..." ให้เป็นคำเต็มแบบนี้ครับ */}
+            <option value="อนุบาล1 ห้องปกติ">อนุบาล 1 ห้องปกติ</option>
+            <option value="อนุบาล1 ห้อง 3 ภาษา">อนุบาล 1 ห้อง 3 ภาษา</option>
+            <option value="อนุบาล2 ห้องปกติ">อนุบาล 2 ห้องปกติ</option>
+            <option value="อนุบาล2 ห้อง 3 ภาษา">อนุบาล 2 ห้อง 3 ภาษา</option>
+            <option value="อนุบาล3 ห้องปกติ">อนุบาล 3 ห้องปกติ</option>
+            <option value="อนุบาล3 ห้อง 3 ภาษา">อนุบาล 3 ห้อง 3 ภาษา</option>
+            <option value="ไม่มี">ไม่มี (สำหรับผู้ปกครอง)</option>
+        </select>
+    </div>
+</div>
                             {/* รหัสผ่าน */}
                             <div style={styles.field}>
                                 <div style={styles.inputContainer}>
