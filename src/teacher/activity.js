@@ -177,13 +177,14 @@ function Activity() {
 
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "25px", flexWrap: "wrap", gap: "16px", width: "100%" }}>
           <div>
-            <h2>ข้อมูลกิจกรรม</h2>
+            <h2 style={{ margin: 10, color: '#0369a1' }}>ข้อมูลกิจกรรม</h2>
+
           </div>
           <button
             onClick={() => { if (showForm) clearForm(); else setShowForm(true); }}
             style={showForm ? { ...styles.btn, ...styles.btnDanger } : { ...styles.btn, ...styles.btnPrimary }}
           >
-            {showForm ? "✕ ปิดฟอร์มบันทึก" : "➕ เพิ่มกิจกรรมใหม่"}
+            {showForm ? "✕ ปิดฟอร์มบันทึก" : "+ เพิ่มกิจกรรมใหม่"}
           </button>
         </div>
 
