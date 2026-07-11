@@ -36,7 +36,7 @@ function UserInformation() {
         });
 
         alert("ระงับสิทธิ์ผู้ใช้งานสำเร็จเรียบร้อยแล้ว");
-        fetchUsers(); 
+        fetchUsers();
       } catch (err) {
         console.error(err);
         alert("ไม่สามารถระงับสิทธิ์ผู้ใช้งานได้");
@@ -70,7 +70,7 @@ function UserInformation() {
 
   return (
     <div style={styles.container}>
-      <h1 style={styles.mainTitle}>จัดการผู้ใช้งาน</h1>
+      <h2 style={{ margin: 10, color: '#0369a1' }}>จัดการผู้ใช้งาน</h2>
       <p style={styles.subTitle}>ตรวจสอบสิทธิ์และบริหารจัดการการเข้าใช้งานของสมาชิกในระบบ</p>
 
       <div style={styles.tableCard}>
@@ -86,7 +86,8 @@ function UserInformation() {
               <th style={styles.th}>สิทธิ์ใช้งาน (Role)</th>
               <th style={styles.th}>ระดับชั้น (Class)</th>
               <th style={styles.th}>สถานะ</th>
-              <th style={styles.th} style={{ textAlign: 'center' }}>จัดการ</th>
+              {/* 🟢 แก้ไขจุดนี้: ยุบรวม style ซ้ำกันเข้าด้วยกันเพื่อไม่ให้แจ้งเตือนเตือน */}
+              <th style={{ ...styles.th, textAlign: 'center' }}>จัดการ</th>
             </tr>
           </thead>
           <tbody>
@@ -99,7 +100,7 @@ function UserInformation() {
                   key={user.User_id}
                   style={{
                     ...styles.trRow,
-                    backgroundColor: isSuspended ? '#f1f5f9' : '#ffffff' 
+                    backgroundColor: isSuspended ? '#a8cff7' : '#ffffff'
                   }}
                 >
                   {/* 🟢 แสดงข้อมูลในแต่ละช่องให้ตรงกับฐานข้อมูลเป๊ะๆ */}
@@ -147,14 +148,14 @@ function UserInformation() {
 }
 
 const styles = {
-  container: { padding: "30px", backgroundColor: "#ffffff", minHeight: "100vh", fontFamily: "'Kanit', sans-serif" },
+  container: { padding: "30px", backgroundColor: "#dff3ff 48%", minHeight: "100vh", fontFamily: "'Kanit', sans-serif" },
   mainTitle: { fontSize: "24px", fontWeight: "600", color: "#1e293b", margin: "0 0 6px 0" },
   subTitle: { fontSize: "15px", color: "#64748b", margin: "0 0 25px 0" },
-  tableCard: { background: "#ffffff", borderRadius: "8px", border: "1px solid #e2e8f0", overflow: "hidden" },
+  tableCard: { background: "#ffffff", borderRadius: "8px", border: "1px solid #858181", overflow: "hidden" },
   table: { width: "100%", borderCollapse: "collapse", textAlign: "left" },
-  thRow: { backgroundColor: "#f8fafc", borderBottom: "2px solid #e2e8f0" },
-  th: { padding: "14px 16px", fontSize: "14px", fontWeight: "600", color: "#334155" },
-  trRow: { borderBottom: "1px solid #e2e8f0", transition: "background-color 0.2s" },
+  thRow: { backgroundColor: "#3e82c6", borderBottom: "2px solid #e2e8f0" },
+  th: { padding: "14px 16px", fontSize: "14px", fontWeight: "600", color: "#768395" },
+  trRow: { borderBottom: "1px solid #d1def0", transition: "background-color 0.2s" },
   td: { padding: "14px 16px", fontSize: "14px", verticalAlign: "middle" },
 
   suspendButton: {

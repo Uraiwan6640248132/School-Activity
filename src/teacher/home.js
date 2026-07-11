@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom"; // ⚡️ เปลี่ยนมาใช้ useNavigate ตาม HomeParent
+import { useNavigate } from "react-router-dom";
 
 const Home = () => {
   const [counts, setCounts] = useState({ students: 0, users: 0, activities: 0 });
@@ -8,7 +8,7 @@ const Home = () => {
   const [latestActivities, setLatestActivities] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const navigate = useNavigate(); // ⚡️ เรียกใช้งานฟังก์ชันสำหรับเปลี่ยนหน้า
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchHomeData = async () => {
@@ -18,9 +18,12 @@ const Home = () => {
         const activityRes = await axios.get("http://localhost:3001/activities");
         const notificationRes = await axios.get("http://localhost:3001/notifications");
 
+        /// เปลี่ยนตรงท่อนกรองข้อมูล (Filter) ใน useEffect ให้เป็นแบบนี้:
+        const teacherUsers = userRes.data.filter(user => user.Role === "ครูผู้สอน");
+
         setCounts({
           students: studentRes.data.length,
-          users: userRes.data.length,
+          users: teacherUsers.length, // ✅ ตัวเลขครูจะขึ้นถูกต้องตามฐานข้อมูลแล้วครับ
           activities: activityRes.data.length,
         });
 
@@ -37,7 +40,7 @@ const Home = () => {
 
   return (
     <div style={styles.container}>
-      {/* 🟢 ส่วนบน: เมนูการ์ดตัวนับจำนวน (ปรับโฉมใหม่ให้เข้ากับดีไซน์ HomeParent) */}
+      {/* 🟢 ส่วนบน: เมนูการ์ดตัวนับจำนวน */}
       <div style={styles.cardRow}>
         {/* การ์ดนักเรียน */}
         <div onClick={() => navigate("/students")} style={styles.card}>
@@ -76,7 +79,7 @@ const Home = () => {
         </div>
       </div>
 
-      {/* 🔵 ส่วนล่าง: กล่องข้อมูลอัปเดตล่าสุด ถอดแบบดีไซน์มาจาก HomeParent */}
+      {/* 🔵 ส่วนล่าง: กล่องข้อมูลอัปเดตล่าสุด */}
       <div style={styles.contentRow}>
 
         {/* กล่องซ้าย: การแจ้งเตือนการบ้านล่าสุด */}
@@ -152,7 +155,7 @@ const Home = () => {
   );
 };
 
-// 🎨 ปรับปรุงชุดสไตล์ผสมผสานแบบ Modern Minimalist Soft-Blue จาก HomeParent
+// 🎨 Styles
 const styles = {
   container: {
     padding: "40px 24px",
