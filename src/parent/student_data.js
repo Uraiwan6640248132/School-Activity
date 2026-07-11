@@ -23,13 +23,43 @@ const StudentData = () => {
         const userData = JSON.parse(storedUser);
         const userId = userData.id || userData.User_id || userData.user_id;
 
+        // 📝 ปริ้นท์ดูค่าใน Console (กด F12 ดูได้ว่า ID ผู้ปกครองที่ล็อกอินคือเลขอะไร)
+        console.log("Logged in Parent ID:", userId);
+
         if (!userId) {
           setLoading(false);
           return;
         }
 
-        const res = await axios.get(`http://localhost:3001/api/students?id=${userId}`);
-        setStudents(res.data);
+        // ดึงข้อมูลนักเรียนทั้งหมดมา[cite: 1]
+        const res = await axios.get(`http://localhost:3001/api/students`);
+        
+        if (Array.isArray(res.data)) {
+          const myChildren = res.data.filter(student => {
+            const studentParentId = student.User_id || student.user_id;
+            
+            // 🚨 ดักแก่ที่ 1: ถ้าค่า ID ฝั่งใดฝั่งหนึ่งเป็นค่าว่าง ห้ามจับคู่กันเด็ดขาด
+            if (!userId || !studentParentId || userId === "undefined" || studentParentId === "undefined") {
+              return false;
+            }
+
+            // เงื่อนไขหลัก: เช็กว่า ID ผู้ปกครองตรงกันไหม[cite: 1]
+            const isCorrectParent = String(studentParentId) === String(userId);
+
+            // =================================================================
+            // 💡 สวิตช์ซ่อมฉุกเฉิน (ถ้าดาต้าเบสมันพังเพราะเพื่อนผูก ID ซ้ำกันมั่ว)
+            // ให้ลบเครื่องหมาย // ข้างหน้าบรรทัดข้างล่างนี้ออก เพื่อล็อกให้ขึ้นเฉพาะ "อุไรวรรณ อนุบาล1 ห้องปกติ" เท่านั้น!
+            // =================================================================
+            // return isCorrectParent && student.Name === "อุไรวรรณ" && student.Class_level === "อนุบาล1 ห้องปกติ";
+
+            return isCorrectParent;
+          });
+
+          setStudents(myChildren);
+        } else {
+          setStudents([]);
+        }
+
       } catch (error) {
         console.error("Error fetching student data:", error);
       } finally {
@@ -58,7 +88,6 @@ const StudentData = () => {
 
   return (
     <div style={styles.container}>
-      {/* 🌟 เพิ่ม Wrapper พร้อมระยะห่างด้านล่างให้กับหัวข้อ */}
       <div style={styles.headerWrapper}>
         <h2 style={{ margin: 0, color: '#0369a1' }}>ข้อมูลนักเรียน</h2>
       </div>
@@ -167,30 +196,18 @@ const StudentData = () => {
 };
 
 const styles = {
-  // 🛠️ ปรับหน้าจอให้มีช่องว่างขอบด้านบนและด้านข้างเพิ่มขึ้น
   container: { padding: "30px 20px", fontFamily: "sans-serif", width: "100%", boxSizing: "border-box" },
-
-  // 🛠️ เพิ่ม style นี้เพื่อดันการ์ดลงมาด้านล่าง ไม่ให้ชิดหัวข้อเกินไป
   headerWrapper: { marginBottom: "25px" },
-
   headerButton: { display: "inline-block", backgroundColor: "#ffffff", border: "1px solid #94a3b8", padding: "10px 24px", borderRadius: "6px", fontSize: "16px", fontWeight: "bold", color: "#1e293b", boxShadow: "0 2px 4px rgba(0,0,0,0.05)", marginBottom: "40px" },
-
-  // 🛠️ เพิ่มช่องว่างระหว่างการ์ดแต่ละใบ (ถ้ามีหลายใบ)
   cardContainer: { display: "flex", flexDirection: "column", gap: "24px", maxWidth: "550px" },
-
-  // 🛠️ เพิ่ม gap ภายในตัวการ์ดระหว่าง รูปภาพ กับ ข้อมูลตัวหนังสือ
   studentCard: { display: "flex", alignItems: "center", backgroundColor: "#ffffff", border: "1px solid #cbd5e1", borderRadius: "12px", padding: "20px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)", gap: "24px", cursor: 'pointer' },
-
   avatarBox: { width: "75px", height: "75px", border: "1px solid #cbd5e1", borderRadius: "8px", display: "flex", justifyContent: "center", alignItems: "center", backgroundColor: "#f8fafc", overflow: "hidden" },
   avatarImage: { width: "100%", height: "100%", objectFit: "cover" },
   placeholderIcon: { color: "#94a3b8", fontSize: "32px" },
-
-  // 🛠️ เพิ่ม gap ให้บรรทัดชื่อและระดับชั้นห่างกันนิดนึง และเพิ่ม line-height
   detailsBox: { display: "flex", flexDirection: "column", gap: "6px", lineHeight: "1.4" },
   studentName: { margin: 0, fontSize: "17px", fontWeight: "bold", color: "#0f172a" },
   studentClass: { margin: 0, fontSize: "14px", color: "#64748b" },
   messageText: { color: "#94a3b8", fontSize: "14px" },
-
   modalOverlay: { position: 'fixed', top: '0', left: '0', width: '100%', height: '100%', background: 'rgba(0, 0, 0, 0.35)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: '999' },
   modalContent: { background: '#ffffff', padding: '20px 25px', borderRadius: '16px', width: '320px', position: 'relative', boxShadow: '0 10px 25px rgba(0,0,0,0.15)', boxSizing: 'border-box' },
   modalHeading: { margin: '0 0 15px 0', fontSize: '15px', fontWeight: '600', color: '#000' },
