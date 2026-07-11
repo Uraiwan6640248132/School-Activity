@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom"; // ⚡️ เปลี่ยนมาใช้ useNavigate ตาม HomeParent
 
 const Home = () => {
   const [counts, setCounts] = useState({ students: 0, users: 0, activities: 0 });
   const [latestNotifications, setLatestNotifications] = useState([]);
   const [latestActivities, setLatestActivities] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const navigate = useNavigate(); // ⚡️ เรียกใช้งานฟังก์ชันสำหรับเปลี่ยนหน้า
 
   useEffect(() => {
     const fetchHomeData = async () => {
@@ -35,10 +37,10 @@ const Home = () => {
 
   return (
     <div style={styles.container}>
-      {/* 🟢 ส่วนบน: เมนูการ์ดตัวนับจำนวน (ใช้ระบบ Stylesheet แบบเดียวกับกล่องข้อมูล) */}
+      {/* 🟢 ส่วนบน: เมนูการ์ดตัวนับจำนวน (ปรับโฉมใหม่ให้เข้ากับดีไซน์ HomeParent) */}
       <div style={styles.cardRow}>
         {/* การ์ดนักเรียน */}
-        <Link to="/students" style={styles.card}>
+        <div onClick={() => navigate("/students")} style={styles.card}>
           <div>
             <p style={styles.cardLabel}>นักเรียนทั้งหมด</p>
             <h3 style={styles.cardValue}>
@@ -46,11 +48,11 @@ const Home = () => {
               {!loading && <span style={styles.cardUnit}> คน</span>}
             </h3>
           </div>
-          <div style={styles.cardIcon}>🧑‍🎓</div>
-        </Link>
+          <div style={styles.iconCircleBlue}>🧑‍🎓</div>
+        </div>
 
         {/* การ์ดครูผู้สอน */}
-        <Link to="/users" style={styles.card}>
+        <div onClick={() => navigate("/users")} style={styles.card}>
           <div>
             <p style={styles.cardLabel}>ครูผู้สอน</p>
             <h3 style={styles.cardValue}>
@@ -58,11 +60,11 @@ const Home = () => {
               {!loading && <span style={styles.cardUnit}> คน</span>}
             </h3>
           </div>
-          <div style={styles.cardIcon}>👩‍🏫</div>
-        </Link>
+          <div style={styles.iconCircleGreen}>👩‍🏫</div>
+        </div>
 
         {/* การ์ดกิจกรรม */}
-        <Link to="/activity" style={styles.card}>
+        <div onClick={() => navigate("/activity")} style={styles.card}>
           <div>
             <p style={styles.cardLabel}>กิจกรรมระบบ</p>
             <h3 style={styles.cardValue}>
@@ -70,18 +72,21 @@ const Home = () => {
               {!loading && <span style={styles.cardUnit}> กิจกรรม</span>}
             </h3>
           </div>
-          <div style={styles.cardIcon}>🎯</div>
-        </Link>
+          <div style={styles.iconCircleOrange}>🎯</div>
+        </div>
       </div>
 
-      {/* 🔵 ส่วนล่าง: กล่องข้อมูลอัปเดตล่าสุด 2 ฝั่งสไตล์เดียวกับ HomeParent */}
+      {/* 🔵 ส่วนล่าง: กล่องข้อมูลอัปเดตล่าสุด ถอดแบบดีไซน์มาจาก HomeParent */}
       <div style={styles.contentRow}>
 
         {/* กล่องซ้าย: การแจ้งเตือนการบ้านล่าสุด */}
         <div style={styles.infoBox}>
-          <div style={styles.boxHeader}>
-            <h3 style={styles.boxTitle}>📝 การแจ้งเตือนการบ้านล่าสุด</h3>
-            <Link to="/notification" style={styles.viewAllLink}>ดูทั้งหมด</Link>
+          <div style={styles.headerRow}>
+            <div style={styles.iconCircleBlue}>📚</div>
+            <div style={styles.headerTitleWrapper}>
+              <h3 style={styles.boxTitle}>การแจ้งเตือนการบ้านล่าสุด</h3>
+              <span onClick={() => navigate("/notification")} style={styles.viewAllLink}>ดูทั้งหมด</span>
+            </div>
           </div>
 
           <div style={styles.listBox}>
@@ -89,21 +94,31 @@ const Home = () => {
               <p style={styles.emptyText}>กำลังโหลดข้อมูลการบ้าน...</p>
             ) : latestNotifications.length > 0 ? (
               latestNotifications.map((item, index) => (
-                <div key={index} style={styles.listItem}>
-                  <strong>{item.Subject}</strong> - {item.Details || "ไม่มีรายละเอียด"}
-                  <span style={styles.itemDate}> (ชั้น: {item.Class_level})</span>
+                <div
+                  key={index}
+                  style={styles.listItem}
+                  onClick={() => navigate(`/homework/${item.id || index}`)}
+                >
+                  <div style={styles.itemMainText}>
+                    <strong style={styles.subjectText}>{item.Subject}</strong>
+                    <span style={styles.detailsText}>{item.Details || "ไม่มีรายละเอียด"}</span>
+                  </div>
+                  <span style={styles.itemBadge}>ชั้น {item.Class_level}</span>
                 </div>
               ))
             ) : (
-              <p style={styles.emptyText}>ไม่มีข้อมูลการบ้านล่าสุด</p>
+              <div style={styles.emptyState}>
+                <p style={styles.emptyText}>ไม่มีข้อมูลการบ้านล่าสุด</p>
+              </div>
             )}
           </div>
         </div>
 
         {/* กล่องขวา: กิจกรรมล่าสุด */}
         <div style={styles.infoBox}>
-          <div style={styles.boxHeader}>
-            <h3 style={styles.boxTitle}>🚩 กิจกรรมล่าสุด</h3>
+          <div style={styles.headerRow}>
+            <div style={styles.iconCircleOrange}>📍</div>
+            <h3 style={styles.boxTitle}>กิจกรรมล่าสุด</h3>
           </div>
 
           <div style={styles.listBox}>
@@ -111,13 +126,23 @@ const Home = () => {
               <p style={styles.emptyText}>กำลังโหลดข้อมูลกิจกรรม...</p>
             ) : latestActivities.length > 0 ? (
               latestActivities.map((item, index) => (
-                <Link to="/activity" key={index} style={styles.listItemLink}>
-                  <strong>{item.Name_activity}</strong>
-                  <span style={styles.itemDate}> 📍 {item.Location || "ไม่ระบุสถานที่"}</span>
-                </Link>
+                <div
+                  key={index}
+                  style={styles.listItem}
+                  onClick={() => navigate(`/activity/${item.id || index}`)}
+                >
+                  <div style={styles.itemMainText}>
+                    <strong style={styles.subjectText}>{item.Name_activity}</strong>
+                  </div>
+                  <span style={styles.locationBadge}>
+                    {item.Location || "ไม่ระบุสถานที่"}
+                  </span>
+                </div>
               ))
             ) : (
-              <p style={styles.emptyText}>ไม่มีข้อมูลกิจกรรมล่าสุด</p>
+              <div style={styles.emptyState}>
+                <p style={styles.emptyText}>ไม่มีข้อมูลกิจกรรมล่าสุด</p>
+              </div>
             )}
           </div>
         </div>
@@ -127,47 +152,49 @@ const Home = () => {
   );
 };
 
-// 💡 ยกรีเซ็ตสไตล์ของ HomeParent มาผสมผสานกับสไตล์ของการ์ดตัวนับแบบ CSS-in-JS ทั้งหมด
+// 🎨 ปรับปรุงชุดสไตล์ผสมผสานแบบ Modern Minimalist Soft-Blue จาก HomeParent
 const styles = {
   container: {
-    padding: "20px 10px",
-    fontFamily: "sans-serif",
-    backgroundColor: "transparent",
+    padding: "40px 24px",
+    fontFamily: "'Inter', 'Kanit', sans-serif",
+    backgroundColor: "rgba(223, 243, 255, 0.48)",
+    minHeight: "100vh",
     width: "100%",
     boxSizing: "border-box"
   },
   cardRow: {
     display: "flex",
-    gap: "20px",
+    gap: "24px",
     width: "100%",
-    marginBottom: "30px",
+    maxWidth: "1200px",
+    margin: "0 auto 30px auto",
     flexWrap: "wrap"
   },
   card: {
     flex: 1,
     minWidth: "250px",
     backgroundColor: "#ffffff",
-    border: "1px solid #ccc",
-    borderRadius: "8px",
-    padding: "20px",
-    boxShadow: "0 4px 10px rgba(0, 0, 0, 0.05)",
+    borderRadius: "16px",
+    padding: "24px",
+    boxShadow: "0 10px 25px -5px rgba(14, 165, 233, 0.05), 0 8px 10px -6px rgba(14, 165, 233, 0.05)",
+    border: "1px solid #f0f4f8",
     display: "flex",
     alignItems: "center",
-    justifyContent: "between",
-    textDecoration: "none",
+    justifyContent: "space-between",
+    cursor: "pointer",
     color: "inherit"
   },
   cardLabel: {
     fontSize: "14px",
-    color: "#94a3b8",
-    margin: "0 0 5px 0",
+    color: "#64748b",
+    margin: "0 0 6px 0",
     fontWeight: "500"
   },
   cardValue: {
     fontSize: "28px",
-    fontWeight: "bold",
+    fontWeight: "700",
     margin: 0,
-    color: "#333333"
+    color: "#0f172a"
   },
   cardUnit: {
     fontSize: "14px",
@@ -179,73 +206,146 @@ const styles = {
     fontSize: "20px",
     color: "#cbd5e1"
   },
-  cardIcon: {
-    fontSize: "24px",
-    marginLeft: "auto"
-  },
   contentRow: {
     display: "flex",
-    gap: "30px",
+    gap: "24px",
     width: "100%",
+    maxWidth: "1200px",
+    margin: "0 auto",
     flexWrap: "wrap"
   },
   infoBox: {
     flex: 1,
-    minWidth: "300px",
+    minWidth: "320px",
     backgroundColor: "#ffffff",
-    border: "1px solid #ccc",
-    borderRadius: "8px",
-    padding: "25px",
-    boxShadow: "0 4px 10px rgba(0, 0, 0, 0.08)",
-    minHeight: "400px"
+    borderRadius: "16px",
+    padding: "28px",
+    boxShadow: "0 10px 25px -5px rgba(14, 165, 233, 0.05), 0 8px 10px -6px rgba(14, 165, 233, 0.05)",
+    border: "1px solid #f0f4f8",
+    display: "flex",
+    flexDirection: "column",
+    minHeight: "420px"
   },
-  boxHeader: {
+  headerRow: {
+    display: "flex",
+    alignItems: "center",
+    gap: "12px",
+    marginBottom: "24px",
+    borderBottom: "1px solid #f1f5f9",
+    paddingBottom: "16px",
+    width: "100%"
+  },
+  headerTitleWrapper: {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    margin: "0 0 20px 0"
+    flex: 1
+  },
+  iconCircleBlue: {
+    width: "40px",
+    height: "40px",
+    borderRadius: "12px",
+    backgroundColor: "#e0f2fe",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: "20px"
+  },
+  iconCircleGreen: {
+    width: "40px",
+    height: "40px",
+    borderRadius: "12px",
+    backgroundColor: "#dcfce7",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: "20px"
+  },
+  iconCircleOrange: {
+    width: "40px",
+    height: "40px",
+    borderRadius: "12px",
+    backgroundColor: "#ffedd5",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: "20px"
   },
   boxTitle: {
     fontSize: "18px",
-    fontWeight: "bold",
+    fontWeight: "600",
     margin: 0,
-    color: "#333333"
+    color: "#0f172a"
   },
   viewAllLink: {
     fontSize: "13px",
     color: "#0284c7",
-    textDecoration: "none",
-    fontWeight: "bold"
+    cursor: "pointer",
+    fontWeight: "600",
+    textDecoration: "none"
   },
   listBox: {
     display: "flex",
     flexDirection: "column",
-    gap: "12px"
+    gap: "14px",
+    flex: 1
   },
   listItem: {
-    padding: "12px 0",
-    borderBottom: "1px solid #f1f5f9",
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: "14px 16px",
+    backgroundColor: "#f8fafc",
+    borderRadius: "12px",
     fontSize: "15px",
-    color: "#475569"
+    border: "1px solid transparent",
+    cursor: "pointer"
   },
-  listItemLink: {
-    padding: "12px 0",
-    borderBottom: "1px solid #f1f5f9",
+  itemMainText: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "4px",
+    flex: 1,
+    paddingRight: "12px"
+  },
+  subjectText: {
+    color: "#1e293b",
     fontSize: "15px",
-    color: "#475569",
-    textDecoration: "none",
-    display: "block"
+    fontWeight: "500"
   },
-  itemDate: {
-    fontSize: "13px",
-    color: "#94a3b8",
-    float: "right"
+  detailsText: {
+    color: "#64748b",
+    fontSize: "13px"
+  },
+  itemBadge: {
+    fontSize: "12px",
+    color: "#0284c7",
+    backgroundColor: "#e0f2fe",
+    padding: "4px 10px",
+    borderRadius: "8px",
+    fontWeight: "500",
+    whiteSpace: "nowrap"
+  },
+  locationBadge: {
+    fontSize: "12px",
+    color: "#ea580c",
+    backgroundColor: "#ffedd5",
+    padding: "4px 10px",
+    borderRadius: "8px",
+    fontWeight: "500",
+    whiteSpace: "nowrap"
+  },
+  emptyState: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    flex: 1
   },
   emptyText: {
     color: "#94a3b8",
     textAlign: "center",
-    padding: "40px"
-  },
+    fontSize: "14px"
+  }
 };
 
 export default Home;
