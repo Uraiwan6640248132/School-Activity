@@ -360,7 +360,8 @@ function StudentManagement() {
       <div style={styles.studentHeader}>
         <div style={styles.titleSection}>
           <h2 style={styles.headerTitle}>
-            <h2>แจ้งเตือนการบ้าน : {selectedClass} </h2>
+            <h2 style={{ margin: 10, color: '#0369a1' }}>ข้อมูลนักเรียน : {selectedClass} </h2>
+
           </h2>
         </div>
 

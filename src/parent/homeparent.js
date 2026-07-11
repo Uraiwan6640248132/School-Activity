@@ -98,6 +98,7 @@ const HomeParent = () => {
           <div style={styles.headerRow}>
             <div style={styles.iconCircleOrange}>📍</div>
             <h3 style={styles.boxTitle}>กิจกรรมล่าสุดของโรงเรียน</h3>
+
           </div>
 
           <div style={styles.listBox}>
