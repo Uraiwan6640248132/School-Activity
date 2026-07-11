@@ -78,7 +78,7 @@ function UserInformation() {
           <thead>
             <tr style={styles.thRow}>
               {/* 🟢 หัวตารางแสดงครบ 8 คอลัมน์ตามฐานข้อมูล */}
-              <th style={styles.th}>ID</th>
+              <th style={styles.th}></th>
               <th style={styles.th}>ชื่อ-นามสกุล</th>
               <th style={styles.th}>เบอร์โทร</th>
               <th style={styles.th}>รหัสผ่าน</th>

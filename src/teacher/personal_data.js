@@ -88,7 +88,7 @@ const PersonalData = () => {
 
       <form onSubmit={handleSubmit} style={styles.profileCard}>
         <div style={styles.avatarSection}>
-          <div style={styles.avatarCircle}></div>
+
           <h3 style={styles.teacherName}>{formData.name || "ครูผู้สอน"}</h3>
           <span style={styles.teacherRole}>{formData.role}</span>
         </div>
