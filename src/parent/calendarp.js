@@ -32,6 +32,20 @@ export default function CalendarActivity() {
     User_id: 1
   });
 
+  // 🔒 ระบบตรวจสอบสิทธิ์ผู้ใช้งาน (Role Check)
+  const getLoggedInUser = () => {
+    try {
+      const raw = localStorage.getItem('user');
+      return raw ? JSON.parse(raw) : null;
+    } catch (err) {
+      return null;
+    }
+  };
+
+  const loggedInUser = getLoggedInUser();
+  const loggedInRole = String(loggedInUser?.Role || loggedInUser?.role || '').trim();
+  const isParent = loggedInRole === 'ผู้ปกครอง'; // เช็คว่าเป็นผู้ปกครองหรือไม่
+
   const API_URL = 'http://localhost:3001/api/calendar';
 
   // 🔄 ผูกค่าเวลาจาก 4 ช่องพิมพ์มารรวมกันใน formData.Time เสมอเมื่อมีการเปลี่ยนแปลง
@@ -67,6 +81,7 @@ export default function CalendarActivity() {
   // บันทึกเพิ่มกิจกรรมใหม่ (POST)
   const handleAddSubmit = async (e) => {
     e.preventDefault();
+    if (isParent) return alert("คุณไม่มีสิทธิ์ในการทำรายการนี้");
     try {
       const res = await fetch(API_URL, {
         method: 'POST',
@@ -89,6 +104,7 @@ export default function CalendarActivity() {
   // แก้ไขกิจกรรม (PUT)
   const handleEditSubmit = async (e) => {
     e.preventDefault();
+    if (isParent) return alert("คุณไม่มีสิทธิ์ในการทำรายการนี้");
     const currentId = selectedEvent?.Calendar_id || selectedEvent?.calendar_id;
     if (!currentId) return;
 
@@ -113,6 +129,7 @@ export default function CalendarActivity() {
 
   // ลบกิจกรรม (DELETE)
   const handleDeleteSubmit = async () => {
+    if (isParent) return alert("คุณไม่มีสิทธิ์ในการทำรายการนี้");
     const currentId = selectedEvent?.Calendar_id || selectedEvent?.calendar_id;
     if (!currentId) return;
 
@@ -304,6 +321,11 @@ export default function CalendarActivity() {
                   if (eventItem) {
                     handleSelectEvent(eventItem);
                   } else {
+                    // 🔒 ตรวจสอบสิทธิ์: ถ้าเป็นผู้ปกครอง ห้ามเปิด Modal เพิ่มปฏิทิน
+                    if (isParent) {
+                      alert("เฉพาะเจ้าหน้าที่หรือครูผู้สอนเท่านั้นที่สามารถเพิ่มกิจกรรมปฏิทินได้");
+                      return;
+                    }
                     openAddModalOnDate(day);
                   }
                 }}
@@ -323,7 +345,7 @@ export default function CalendarActivity() {
       </div>
 
       {/* 📥 POPUP 1: เพิ่มปฏิทิน */}
-      {isAddOpen && (
+      {isAddOpen && !isParent && (
         <div style={styles.overlay}>
           <div style={styles.modal}>
             <div style={styles.modalHeader}>
@@ -397,17 +419,24 @@ export default function CalendarActivity() {
               <label className="app-label">สถานที่จัดกิจกรรม</label>
               <input type="text" className="app-input" style={{ backgroundColor: '#f1f5f9' }} value={formData.Location || 'ไม่ระบุสถานที่'} readOnly />
 
-              <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', marginTop: '24px' }}>
-                <button type="button" className="teacher-btn teacher-btn-edit teacher-btn-flex" onClick={() => { setIsDetailOpen(false); setIsEditOpen(true); }}>แก้ไข</button>
-                <button type="button" className="teacher-btn teacher-btn-delete teacher-btn-flex" onClick={() => { setIsDetailOpen(false); setIsDeleteOpen(true); }}>ลบ</button>
-              </div>
+              {/* 🔒 แยกการแสดงผลปุ่มควบคุมตามระดับสิทธิ์ */}
+              {!isParent ? (
+                <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', marginTop: '24px' }}>
+                  <button type="button" className="teacher-btn teacher-btn-edit teacher-btn-flex" onClick={() => { setIsDetailOpen(false); setIsEditOpen(true); }}>แก้ไข</button>
+                  <button type="button" className="teacher-btn teacher-btn-delete teacher-btn-flex" onClick={() => { setIsDetailOpen(false); setIsDeleteOpen(true); }}>ลบ</button>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', justifyContent: 'center', marginTop: '24px' }}>
+                  <button type="button" className="teacher-btn teacher-btn-cancel" style={{ width: '100%' }} onClick={() => { setIsDetailOpen(false); clearForm(); }}>ปิดหน้าต่าง</button>
+                </div>
+              )}
             </div>
           </div>
         </div>
       )}
 
       {/* ✏️ POPUP 3: แก้ไขปฏิทิน */}
-      {isEditOpen && (
+      {isEditOpen && !isParent && (
         <div style={styles.overlay}>
           <div style={styles.modal}>
             <div style={styles.modalHeader}>
@@ -461,7 +490,7 @@ export default function CalendarActivity() {
       )}
 
       {/* ❌ POPUP 4: ยืนยันการลบข้อมูล */}
-      {isDeleteOpen && (
+      {isDeleteOpen && !isParent && (
         <div style={styles.overlay}>
           <div style={{ ...styles.modal, padding: '30px 20px', textAlign: 'center' }}>
             <div style={{ fontSize: '40px', marginBottom: '10px' }}>🗑️</div>
