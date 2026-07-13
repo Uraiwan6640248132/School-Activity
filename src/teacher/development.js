@@ -336,9 +336,7 @@ export default function Development() {
                 <strong>ห้องที่รับผิดชอบ:</strong> {teacherClassLevel}
               </p>
             )}
-            <p style={styles.studentNameDisplay}>
-              <strong>กำลังแสดงผลฟอร์มของ:</strong> {getStudentName(formData.Student_id)}
-            </p>
+            
           </div>
           <button
             style={styles.btnAddDev}
