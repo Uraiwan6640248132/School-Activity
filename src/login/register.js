@@ -8,6 +8,7 @@ function Register() {
     const [formData, setFormData] = useState({
         Name: '',
         Phone: '',
+        Email: '',
         UserName: '',
         Role: '',
         Class_level: '',
@@ -47,7 +48,7 @@ function Register() {
 
             if (response.ok) {
                 setMessage({ text: data.message || 'ลงทะเบียนสำเร็จ!', type: 'success' });
-                setFormData({ Name: '', Phone: '', UserName: '', Role: '', Class_level: '', Password: '', ConfirmPassword: '' });
+                setFormData({ Name: '', Phone: '', Email: '', UserName: '', Role: '', Class_level: '', Password: '', ConfirmPassword: '' });
 
                 // ลงทะเบียนสำเร็จ 2 วินาที เด้งกลับหน้าล็อกอินให้อัตโนมัติ
                 setTimeout(() => {
@@ -104,7 +105,14 @@ function Register() {
                                 </div>
                             </div>
 
-                            {/* ชื่อผู้ใช้ */}
+                            {/* 🆕 แทรกกล่องรับอีเมลใหม่ตรงนี้เลยครับ */}
+                            <div style={styles.field}>
+                                <div style={styles.inputContainer}>
+                                    <input type="email" name="Email" placeholder="อีเมล" value={formData.Email} onChange={handleChange} style={styles.input} required />
+                                </div>
+                            </div>
+
+                            {/* ชื่อผู้ใช้ (ของเดิมจะอยู่ตรงนี้ต่อ) */}
                             <div style={styles.field}>
                                 <div style={styles.inputContainer}>
                                     <input type="text" name="UserName" placeholder="ชื่อผู้ใช้ (Username)" value={formData.UserName} onChange={handleChange} style={styles.input} required />

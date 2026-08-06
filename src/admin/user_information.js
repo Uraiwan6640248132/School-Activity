@@ -23,46 +23,29 @@ function UserInformation() {
       setLoading(false);
     }
   };
-
+// 🟢 แทรกฟังก์ชันนี้เพิ่มเข้าไปตรงนี้ครับ
+  const updateUser = async (user, updateData) => {
+    try {
+      const userId = user.User_id || user.id || user.user_id;
+      await axios.put(`http://127.0.0.1:3001/users/${userId}`, updateData);
+      await fetchUsers();
+    } catch (err) {
+      console.error("Error updating user:", err);
+      alert("เกิดข้อผิดพลาดในการอัปเดตสถานะผู้ใช้งาน");
+    }
+  };
+  
   const handleSuspendUser = async (user) => {
     if (window.confirm(`คุณแน่ใจใช่ไหมที่จะระงับสิทธิ์การใช้งานของ: ${user.Name}?`)) {
-      try {
-        await axios.put(`http://127.0.0.1:3001/users/${user.User_id}`, {
-          Name: user.Name,
-          Phone: user.Phone,
-          UserName: user.UserName,
-          Password: user.Password,
-          Role: user.Role,
-          Status: "ถูกระงับสิทธิ์"
-        });
-
-        alert("ระงับสิทธิ์ผู้ใช้งานสำเร็จเรียบร้อยแล้ว");
-        fetchUsers();
-      } catch (err) {
-        console.error(err);
-        alert("ไม่สามารถระงับสิทธิ์ผู้ใช้งานได้");
-      }
+      await updateUser(user, { Status: "ถูกระงับสิทธิ์" });
+      alert("ระงับสิทธิ์ผู้ใช้งานสำเร็จเรียบร้อยแล้ว");
     }
   };
 
   const handleUnsuspendUser = async (user) => {
     if (window.confirm(`คุณแน่ใจใช่ไหมที่จะปลดระงับสิทธิ์ของ: ${user.Name}?`)) {
-      try {
-        await axios.put(`http://127.0.0.1:3001/users/${user.User_id}`, {
-          Name: user.Name,
-          Phone: user.Phone,
-          UserName: user.UserName,
-          Password: user.Password,
-          Role: user.Role,
-          Status: "ใช้งาน"
-        });
-
-        alert("ปลดระงับสิทธิ์ผู้ใช้งานสำเร็จเรียบร้อยแล้ว");
-        fetchUsers();
-      } catch (err) {
-        console.error(err);
-        alert("ไม่สามารถปลดระงับสิทธิ์ได้");
-      }
+      await updateUser(user, { Status: "ใช้งาน" });
+      alert("ปลดระงับสิทธิ์ผู้ใช้งานสำเร็จเรียบร้อยแล้ว");
     }
   };
 
@@ -107,7 +90,6 @@ function UserInformation() {
               <th style={{ ...styles.th, width: '60px', textAlign: 'center' }}>ลำดับ</th>
               <th style={styles.th}>ชื่อ-นามสกุล</th>
               <th style={styles.th}>เบอร์โทร</th>
-              <th style={styles.th}>รหัสผ่าน</th>
               <th style={styles.th}>ชื่อผู้ใช้</th>
               <th style={styles.th}>สิทธิ์ใช้งาน (Role)</th>
               <th style={styles.th}>ระดับชั้น (Class)</th>
@@ -203,6 +185,17 @@ const styles = {
   th: { padding: "14px 16px", fontSize: "14px", fontWeight: "600", color: "#ffffff" },
   trRow: { borderBottom: "1px solid #d1def0", transition: "background-color 0.2s" },
   td: { padding: "14px 16px", fontSize: "14px", verticalAlign: "middle" },
+
+  selectRole: {
+    padding: "6px 10px",
+    borderRadius: "4px",
+    border: "1px solid #cbd5e1",
+    backgroundColor: "#f8fafc",
+    fontFamily: "'Kanit', sans-serif",
+    fontSize: "13px",
+    color: "#334155",
+    cursor: "pointer"
+  },
 
   suspendButton: {
     padding: "6px 12px", backgroundColor: "#ef4444", color: "#ffffff",

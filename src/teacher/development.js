@@ -1,4 +1,185 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+} from 'chart.js';
+import { Bar } from 'react-chartjs-2';
+
+// 📊 ลงทะเบียน Component ของ Chart.js
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+);
+
+// 📈 Component แสดงกราฟเปรียบเทียบแต่ละเทอม
+function TermComparisonChart({ studentDevList }) {
+  // กรองเฉพาะรายการที่มีเทอมระบุชัดเจน และเรียงตามเทอม
+  const term1Data = studentDevList.find(d => (d.Term || d.term || '').includes('1'));
+  const term2Data = studentDevList.find(d => (d.Term || d.term || '').includes('2'));
+
+  const calculateScore = (scores) => {
+    if (!scores || scores.length === 0) return 0;
+    const validScores = scores.map(s => isNaN(Number(s)) || s === '' ? 0 : Number(s));
+    const sum = validScores.reduce((a, b) => a + b, 0);
+    const avg = sum / validScores.length;
+    return Math.round(avg * 20);
+  };
+
+  const getScores = (data) => {
+    if (!data) return [0, 0, 0, 0];
+    const body = data.Weight && data.Height ? 100 : 75;
+    const intellect = calculateScore([data.Problem_solving, data.Communication, data.Remembering]);
+    const emotion = calculateScore([data.Emotion, data.Emotion_control, data.Confidence]);
+    const social = calculateScore([data.Stress, data.Interaction, data.Assistance]);
+    return [body, intellect, emotion, social];
+  };
+
+  const scoresTerm1 = getScores(term1Data);
+  const scoresTerm2 = getScores(term2Data);
+
+  const chartData = {
+    labels: ['ด้านร่างกาย', 'ด้านสติปัญญา', 'ด้านอารมณ์', 'ด้านสังคม'],
+    datasets: [
+      {
+        label: 'ภาคเรียนที่ 1',
+        data: scoresTerm1,
+        backgroundColor: '#ff6f00', // สีฟ้า
+        borderColor: '#ff6f00',
+        borderWidth: 1,
+        borderRadius: 4,
+      },
+      {
+        label: 'ภาคเรียนที่ 2',
+        data: scoresTerm2,
+        backgroundColor: '#42bd41', // สีเขียว
+        borderColor: '#42bd41',
+        borderWidth: 1,
+        borderRadius: 4,
+      }
+    ]
+  };
+
+ const options = {
+  responsive: true,
+  maintainAspectRatio: false,
+  animation: false,
+  devicePixelRatio: 3,
+
+  layout: {
+    padding: {
+      left: 20,
+      right: 20,
+      top: 15,
+      bottom: 15
+    }
+  },
+
+  plugins: {
+    legend: {
+      position: 'top',
+      labels: {
+        color: '#334155',
+        padding: 20,
+        usePointStyle: false,
+        font: {
+          family: 'Tahoma',
+          size: 14,
+          weight: 'bold'
+        }
+      }
+    },
+
+    title: {
+      display: true,
+      text: '📊 กราฟเปรียบเทียบพัฒนาการรายภาคเรียน (คะแนนเต็ม 100)',
+      color: '#1e293b',
+      padding: {
+        top: 10,
+        bottom: 20
+      },
+      font: {
+        family: 'Tahoma',
+        size: 16,
+        weight: 'bold'
+      }
+    },
+
+    tooltip: {
+      titleFont: {
+        family: 'Tahoma',
+        size: 14
+      },
+      bodyFont: {
+        family: 'Tahoma',
+        size: 13
+      }
+    }
+  },
+
+  scales: {
+    x: {
+      grid: {
+        display: false
+      },
+      ticks: {
+        color: '#334155',
+        padding: 8,
+        maxRotation: 0,
+        minRotation: 0,
+        font: {
+          family: 'Tahoma',
+          size: 13,
+          weight: 'bold'
+        }
+      }
+    },
+
+    y: {
+      beginAtZero: true,
+      max: 100,
+
+      ticks: {
+        stepSize: 20,
+        color: '#334155',
+        padding: 10,
+        font: {
+          family: 'Tahoma',
+          size: 13,
+          weight: 'bold'
+        }
+      },
+
+      grid: {
+        color: '#e2e8f0',
+        lineWidth: 1
+      }
+    }
+  }
+};
+  return (
+    <div
+  style={{
+    position: 'relative',
+    width: '100%',
+    height: '350px'
+  }}
+>
+  <Bar
+    data={chartData}
+    options={options}
+  />
+</div>
+  );
+}
 
 export default function Development() {
   const [devList, setDevList] = useState([]);
@@ -14,7 +195,6 @@ export default function Development() {
 
   const [selectedId, setSelectedId] = useState(null);
 
-  // 🛠️ แก้ไขตรงนี้: ล้างค่าคะแนนเริ่มต้นเป็นค่าว่าง เพื่อไม่ให้ข้อมูลติ๊กค้างตอนกดเพิ่มใหม่
   const initialFormState = {
     Student_id: '',
     Year: 2569,
@@ -45,7 +225,6 @@ export default function Development() {
   const API_URL = 'http://localhost:3001/api/development';
   const STUDENTS_API_URL = 'http://localhost:3001/api/students?id=all';
 
-  // 🔒 ดึงข้อมูลผู้ใช้ที่ล็อกอินอยู่ (เก็บไว้ตอน login ใน localStorage key "user")
   const getLoggedInUser = () => {
     try {
       const raw = localStorage.getItem('user');
@@ -57,14 +236,11 @@ export default function Development() {
 
   const loggedInUser = getLoggedInUser();
   const loggedInRole = String(loggedInUser?.Role || loggedInUser?.role || '').trim();
-  // 🔒 ห้อง/ระดับชั้นของครูที่ล็อกอินอยู่ ใช้เป็นตัวกรองหลักของทั้งหน้า
   const teacherClassLevel = (loggedInRole === 'ครูผู้สอน')
     ? (loggedInUser?.Class_level || loggedInUser?.class_level || null)
     : null;
 
-  // ฟังก์ชันดึงค่า class_level ของนักเรียนปัจจุบันหรือคนแรก เพื่อใช้รีเฟรชข้อมูล
   const getCurrentClassLevel = (studentId) => {
-    // 🔒 ถ้าเป็นครู ให้ยึดห้องของครูเป็นหลักเสมอ ไม่อิงจากนักเรียนที่เลือก
     if (teacherClassLevel) return teacherClassLevel;
 
     const targetId = studentId || formData.Student_id;
@@ -76,9 +252,8 @@ export default function Development() {
     return found ? (found.Class_level || found.class_level || found.Level || found.level) : null;
   };
 
-  // 🔒 ตรวจสอบว่านักเรียนคนนี้อยู่ในห้องของครูที่ล็อกอินอยู่หรือไม่ (กันเผื่อข้อมูลค้าง/ถูกแก้ผ่าน DOM)
   const isStudentAllowed = (studentId) => {
-    if (!teacherClassLevel) return true; // ไม่ใช่ครู (เช่นแอดมิน) ไม่จำกัดสิทธิ์นี้
+    if (!teacherClassLevel) return true;
     return students.some(s => String(s.Student_id || s.id || s.student_id) === String(studentId));
   };
 
@@ -89,7 +264,6 @@ export default function Development() {
         const data = await res.json();
         const allData = Array.isArray(data) ? data : [];
 
-        // 🔒 ถ้าเป็นครูผู้สอน ให้กรองเหลือเฉพาะนักเรียนที่อยู่ห้อง/ระดับชั้นเดียวกับครูเท่านั้น
         const cleanData = teacherClassLevel
           ? allData.filter(s => {
             const level = s.Class_level || s.class_level || s.Level || s.level;
@@ -99,15 +273,12 @@ export default function Development() {
 
         setStudents(cleanData);
 
-        // 🌟 ถ้ามีข้อมูลนักเรียน ให้ตั้งค่ารหัสคนแรกลงฟอร์มทันที
         if (cleanData.length > 0) {
           const firstStudent = cleanData[0];
           const firstId = String(firstStudent.Student_id || firstStudent.id || firstStudent.student_id);
           setFormData(prev => ({ ...prev, Student_id: firstId }));
         }
 
-        // 🔒 ถ้าเป็นครู ให้ยึดห้องของครูเป็นหลักในการโหลดรายการพัฒนาการเสมอ
-        // (ไม่อิงจากนักเรียนคนแรก เพราะครูอาจไม่มีนักเรียนในห้องเลยก็ได้)
         if (teacherClassLevel) {
           fetchDevelopmentData(teacherClassLevel);
         } else if (cleanData.length > 0) {
@@ -123,12 +294,10 @@ export default function Development() {
   };
 
   const fetchDevelopmentData = async (classLevel) => {
-    // 🌟 ถ้าไม่มีการส่งระดับชั้นมา จะไม่เรียก API เพื่อป้องกัน Error 400 Bad Request
     if (!classLevel) return;
 
     setLoading(true);
     try {
-      // 🌟 แนบ Query Parameter (?class_level=...) ไปกับคำขอตามที่ Backend กำหนด
       const res = await fetch(`${API_URL}?class_level=${encodeURIComponent(classLevel)}`);
       if (res.ok) {
         const data = await res.json();
@@ -263,7 +432,6 @@ export default function Development() {
       return;
     }
     try {
-      // 🛠️ ดึงระดับชั้นปัจจุบันของนักเรียนคนนี้ เพื่อส่งไปเช็กสิทธิ์ที่หลังบ้าน
       const studentClassLevel = getCurrentClassLevel(formData.Student_id);
 
       const res = await fetch(`${API_URL}/${selectedId}`, {
@@ -271,7 +439,7 @@ export default function Development() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...formData,
-          class_level: studentClassLevel // ✅ แนบ class_level เพิ่มเติมเข้าไปในคำขอ PUT
+          class_level: studentClassLevel
         })
       });
 
@@ -283,7 +451,6 @@ export default function Development() {
         resetForm();
         fetchDevelopmentData(currentLevel);
       } else {
-        // 💡 แสดงข้อความแจ้งเตือนที่ละเอียดขึ้นถ้าหลังบ้านปฏิเสธคำขอ
         const errData = await res.json().catch(() => ({}));
         alert(errData.message || errData.error || "ไม่สามารถแก้ไขข้อมูลได้");
       }
@@ -324,6 +491,14 @@ export default function Development() {
     return found ? `${found.label} (${val})` : val || 'ไม่มีข้อมูล';
   };
 
+  // Group devList ตาม Student_id เพื่อวาดกราฟเปรียบเทียบภาคเรียน
+  const groupedByStudent = devList.reduce((acc, item) => {
+    const sId = String(item.Student_id);
+    if (!acc[sId]) acc[sId] = [];
+    acc[sId].push(item);
+    return acc;
+  }, {});
+
   return (
     <div style={styles.container}>
       <div style={styles.cardMain}>
@@ -336,7 +511,6 @@ export default function Development() {
                 <strong>ห้องที่รับผิดชอบ:</strong> {teacherClassLevel}
               </p>
             )}
-            
           </div>
           <button
             style={styles.btnAddDev}
@@ -370,6 +544,8 @@ export default function Development() {
                 displayTerm = 'ภาคเรียนที่ 1';
               }
 
+              const studentDevs = groupedByStudent[String(item.Student_id)] || [];
+
               return (
                 <div key={idx} style={styles.devCardItem}>
                   <div style={styles.cardItemHeader}>
@@ -381,8 +557,6 @@ export default function Development() {
                     <div style={styles.actionGroup}>
                       <button style={{ ...styles.actionBtnSmall, ...styles.actionBtnEdit }} onClick={() => openEditModal(item)}>แก้ไข</button>
                       <button style={{ ...styles.actionBtnSmall, ...styles.actionBtnDelete }} onClick={() => { setSelectedId(item.Development_id || item.development_id); setIsDeleteOpen(true); }}>ลบ</button>
-
-
                     </div>
                   </div>
 
@@ -404,6 +578,9 @@ export default function Development() {
                       <span style={styles.circleLabel}>ด้านสังคม</span>
                     </div>
                   </div>
+
+                  {/* 📊 แสดงกราฟเปรียบเทียบภาคเรียน */}
+                  <TermComparisonChart studentDevList={studentDevs} />
 
                   <div style={styles.bodyDetailsSummary}>
                     <span>⚖️ น้ำหนัก: <strong>{item.Weight || '-'}</strong> กก.</span>
