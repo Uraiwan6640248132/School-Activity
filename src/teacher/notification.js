@@ -2,6 +2,7 @@ import axios from "axios";
 import { useEffect, useState } from "react";
 
 const BASE_URL = "http://localhost:3001";
+const MY_CLASS_LEVEL = "อนุบาล 1 ห้องปกติ"; // กำหนดระดับชั้นประจำของห้องนี้
 
 function Notification() {
   const [list, setList] = useState([]);
@@ -9,21 +10,11 @@ function Notification() {
   const [editId, setEditId] = useState(null);
   const [deleteId, setDeleteId] = useState(null);
 
-  // สเตตสำหรับเก็บค่าอินพุต
-  const [class_level, setClassLevel] = useState("อนุบาล 1 ห้องปกติ");
+  // สเตตสำหรับเก็บค่าอินพุต (ล็อกค่าเริ่มต้นเป็นห้องตัวเอง)
+  const [class_level, setClassLevel] = useState(MY_CLASS_LEVEL);
   const [subject, setSubject] = useState("");
   const [details, setDetails] = useState("");
   const [deadline, setDeadline] = useState("");
-
-  // รายการระดับชั้นเรียนแบบตัวเลือก
-  const classOptions = [
-    "อนุบาล 1 ห้องปกติ",
-    "อนุบาล 1 ห้อง 3 ภาษา",
-    "อนุบาล 2 ห้องปกติ",
-    "อนุบาล 2 ห้อง 3 ภาษา",
-    "อนุบาล 3 ห้องปกติ",
-    "อนุบาล 3 ห้อง 3 ภาษา",
-  ];
 
   useEffect(() => {
     getData();
@@ -40,7 +31,7 @@ function Notification() {
 
   const resetForm = () => {
     setEditId(null);
-    setClassLevel("อนุบาล 1 ห้องปกติ");
+    setClassLevel(MY_CLASS_LEVEL); // ล็อกระดับชั้นไว้เสมอ
     setSubject("");
     setDetails("");
     setDeadline("");
@@ -75,7 +66,7 @@ function Notification() {
 
   const openEdit = (item) => {
     setEditId(item.Notification_id || item.notification_id);
-    setClassLevel(item.Class_level || item.class_level || "");
+    setClassLevel(item.Class_level || item.class_level || MY_CLASS_LEVEL);
     setSubject(item.Subject || item.subject || "");
     setDetails(item.Details || item.details || "");
     setDeadline((item.Deadline || item.deadline)?.split("T")[0] || "");
@@ -106,7 +97,7 @@ function Notification() {
         {list
           .filter((item) => {
             const currentClass = item.Class_level || item.class_level;
-            return currentClass === "อนุบาล 1 ห้องปกติ";
+            return currentClass === MY_CLASS_LEVEL;
           })
           .map((item) => (
             <div key={item.Notification_id || item.notification_id} style={page.card}>
@@ -137,21 +128,15 @@ function Notification() {
             </h3>
 
             <form onSubmit={saveData}>
+              {/* 🔒 ล็อกช่องระดับชั้น ไม่ให้เปลี่ยนห้อง */}
               <div style={modal.field}>
                 <label style={modal.label}>ระดับชั้น</label>
-                <select
+                <input
+                  type="text"
                   value={class_level}
-                  onChange={(e) => setClassLevel(e.target.value)}
-                  required
-                  style={modal.select}
-                >
-                  <option value="" disabled>-- เลือกรดับชั้น --</option>
-                  {classOptions.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
+                  readOnly
+                  style={modal.inputReadOnly}
+                />
               </div>
 
               <div style={modal.field}>
@@ -345,15 +330,6 @@ const modal = {
     fontSize: "13px",
     color: "#475569"
   },
-  select: {
-    padding: "8px 12px",
-    borderRadius: "6px",
-    border: "1px solid #cbd5e1",
-    background: "#fff",
-    fontSize: "14px",
-    color: "#334155",
-    outline: "none",
-  },
   input: {
     padding: "8px 12px",
     borderRadius: "6px",
@@ -361,6 +337,18 @@ const modal = {
     fontSize: "14px",
     color: "#334155",
     outline: "none",
+  },
+  // 🔒 ตกแต่งสไตล์สำหรับ Input ที่ถูกล็อก
+  inputReadOnly: {
+    padding: "8px 12px",
+    borderRadius: "6px",
+    border: "1px solid #cbd5e1",
+    background: "#f1f5f9",
+    color: "#64748b",
+    fontSize: "14px",
+    fontWeight: "500",
+    outline: "none",
+    cursor: "not-allowed",
   },
   textarea: {
     padding: "8px 12px",

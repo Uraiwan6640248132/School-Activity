@@ -23,7 +23,18 @@ function UserInformation() {
       setLoading(false);
     }
   };
-
+// 🟢 แทรกฟังก์ชันนี้เพิ่มเข้าไปตรงนี้ครับ
+  const updateUser = async (user, updateData) => {
+    try {
+      const userId = user.User_id || user.id || user.user_id;
+      await axios.put(`http://127.0.0.1:3001/users/${userId}`, updateData);
+      await fetchUsers();
+    } catch (err) {
+      console.error("Error updating user:", err);
+      alert("เกิดข้อผิดพลาดในการอัปเดตสถานะผู้ใช้งาน");
+    }
+  };
+  
   const handleSuspendUser = async (user) => {
     if (window.confirm(`คุณแน่ใจใช่ไหมที่จะระงับสิทธิ์การใช้งานของ: ${user.Name}?`)) {
       await updateUser(user, { Status: "ถูกระงับสิทธิ์" });

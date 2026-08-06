@@ -303,77 +303,83 @@ app.post("/notifications", (req, res) => {
     res.status(201).json({ message: "เพิ่มข้อมูลแจ้งเตือนสำเร็จ", id: result.insertId });
 
     // =============================================================
-    // ✉️ ระบบส่งแจ้งเตือนทางอีเมล (เวอร์ชันปรับปรุงลบเว้นวรรค ป้องกันจับคู่พลาด)
+    // ✉️ ระบบส่งแจ้งเตือนทางอีเมล (เวอร์ชันดึงอีเมลผู้ปกครองทุกคนในห้อง)
     // =============================================================
-    const findEmailsSql = "SELECT Email, Class_level FROM users WHERE Role = 'ผู้ปกครอง' AND Email IS NOT NULL AND Email != ''";
     
-    db.query(findEmailsSql, (emailErr, parentRows) => {
+    // ทำความสะอาด Class_level ที่รับมาจากหน้าบ้าน (ลบเว้นวรรค และแปลงเป็นตัวพิมพ์เล็ก)
+    const targetClassClean = String(Class_level || "").replace(/\s+/g, "").toLowerCase();
+
+    // ค้นหาอีเมลผู้ปกครอง โดยสั่ง REPLACE ลบเว้นวรรคที่ระดับฐานข้อมูล
+    const findEmailsSql = `
+      SELECT Email 
+      FROM users 
+      WHERE Role = 'ผู้ปกครอง' 
+        AND Email IS NOT NULL 
+        AND Email != '' 
+        AND LOWER(REPLACE(Class_level, ' ', '')) = ?
+    `;
+    
+    db.query(findEmailsSql, [targetClassClean], (emailErr, parentRows) => {
       if (emailErr) {
         console.error("เกิดข้อผิดพลาดในการดึงอีเมลผู้ปกครอง:", emailErr);
         return;
       }
 
       if (parentRows && parentRows.length > 0) {
-        const targetClassClean = String(Class_level || "").replace(/\s+/g, "");
+        // ดึงอีเมล ตัดเว้นวรรคส่วนเกิน และกรองเอาเฉพาะอีเมลที่ไม่ซ้ำกัน
+        const rawEmails = parentRows.map(row => String(row.Email).trim());
+        const uniqueEmails = [...new Set(rawEmails)];
+        const emailList = uniqueEmails.join(",");
 
-        const matchedParents = parentRows.filter(row => {
-          const dbClassClean = String(row.Class_level || "").replace(/\s+/g, "");
-          return dbClassClean === targetClassClean;
+        console.log(`📧 พบอีเมลผู้ปกครองชั้น ${Class_level} ทั้งหมด ${uniqueEmails.length} ท่าน:`, emailList);
+
+        const transporter = nodemailer.createTransport({
+          service: 'gmail',
+          auth: {
+            user: 'anchanaarthan@gmail.com',  
+            pass: 'liaknnlnlogqazqj'          
+          }
         });
 
-        if (matchedParents.length > 0) {
-          const emailList = matchedParents.map(row => row.Email).join(",");
-
-          const transporter = nodemailer.createTransport({
-            service: 'gmail',
-            auth: {
-              user: 'anchanaarthan@gmail.com',  
-              pass: 'liaknnlnlogqazqj'          
-            }
-          });
-
-          const mailOptions = {
-            from: '"ระบบแจ้งเตือนการบ้าน โรงเรียนสาธิตฯ" <anchanaarthan@gmail.com>',
-            to: emailList, 
-            subject: `🔔 แจ้งเตือนการบ้านใหม่วิชา ${Subject} (${Class_level})`,
-            html: `
-              <div style="font-family: 'Kanit', sans-serif; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px; max-width: 600px; margin: 0 auto;">
-                <h2 style="color: #0369a1; border-bottom: 2px solid #0369a1; padding-bottom: 10px;">เรียน ผู้ปกครองนักเรียนชั้น ${Class_level}</h2>
-                <p style="font-size: 16px;">ขณะนี้ระบบได้ทำการเพิ่มการแจ้งเตือนการบ้านใหม่ มีรายละเอียดดังนี้ครับ:</p>
-                <div style="background-color: #f8fafc; padding: 15px; border-radius: 8px; margin: 20px 0;">
-                  <p style="margin: 5px 0;"><b>📚 วิชา:</b> ${Subject}</p>
-                  <p style="margin: 5px 0;"><b>📝 รายละเอียดงาน:</b> ${Details || "— ไม่มีรายละเอียดเพิ่มเติม —"}</p>
-                  <p style="margin: 5px 0; color: #be123c;"><b>📅 กำหนดส่งงาน:</b> ${cleanDeadline || "-"}</p>
-                </div>
-                <p style="font-size: 12px; color: #888888; text-align: center; margin-top: 30px;">
-                  * อีเมลนี้เป็นการแจ้งเตือนอัตโนมัติจากระบบบันทึกกิจกรรมนักเรียนระดับปฐมวัย กรุณาอย่าตอบกลับอีเมลนี้
-                </p>
+        const mailOptions = {
+          from: '"ระบบแจ้งเตือนการบ้าน โรงเรียนสาธิตฯ" <anchanaarthan@gmail.com>',
+          to: 'anchanaarthan@gmail.com', // อีเมลผู้ส่ง/แอดมิน เพื่อเป็นผู้รับหลัก
+          bcc: emailList, // ส่งแบบซ่อนผู้รับ ให้ผู้ปกครองทุกคนได้รับโดยไม่เห็นอีเมลคนอื่น
+          subject: `🔔 แจ้งเตือนการบ้านใหม่วิชา ${Subject} (${Class_level})`,
+          html: `
+            <div style="font-family: 'Kanit', sans-serif; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px; max-width: 600px; margin: 0 auto;">
+              <h2 style="color: #0369a1; border-bottom: 2px solid #0369a1; padding-bottom: 10px;">เรียน ผู้ปกครองนักเรียนชั้น ${Class_level}</h2>
+              <p style="font-size: 16px;">ขณะนี้ระบบได้ทำการเพิ่มการแจ้งเตือนการบ้านใหม่ มีรายละเอียดดังนี้ครับ:</p>
+              <div style="background-color: #f8fafc; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                <p style="margin: 5px 0;"><b>📚 วิชา:</b> ${Subject}</p>
+                <p style="margin: 5px 0;"><b>📝 รายละเอียดงาน:</b> ${Details || "— ไม่มีรายละเอียดเพิ่มเติม —"}</p>
+                <p style="margin: 5px 0; color: #be123c;"><b>📅 กำหนดส่งงาน:</b> ${cleanDeadline || "-"}</p>
               </div>
-            `
-          };
+              <p style="font-size: 12px; color: #888888; text-align: center; margin-top: 30px;">
+                * อีเมลนี้เป็นการแจ้งเตือนอัตโนมัติจากระบบบันทึกกิจกรรมนักเรียนระดับปฐมวัย กรุณาอย่าตอบกลับอีเมลนี้
+              </p>
+            </div>
+          `
+        };
 
-          transporter.sendMail(mailOptions, (mailSendErr, info) => {
-            if (mailSendErr) {
-              console.error("❌ ส่งอีเมลล้มเหลว:", mailSendErr);
-            } else {
-              console.log("✅ ส่งเมลแจ้งเตือนการบ้านให้ผู้ปกครองสำเร็จแล้ว!: " + info.response);
-            }
-          });
-        } else {
-          console.log(`⚠️ ไม่พบรายชื่อผู้ปกครองที่มีอีเมลในระดับชั้น ${Class_level} (เทียบคำแบบไร้เว้นวรรคแล้ว)`);
-        }
+        transporter.sendMail(mailOptions, (mailSendErr, info) => {
+          if (mailSendErr) {
+            console.error("❌ ส่งอีเมลล้มเหลว:", mailSendErr);
+          } else {
+            console.log("✅ ส่งเมลแจ้งเตือนการบ้านให้ผู้ปกครองทุกคนสำเร็จแล้ว!: " + info.response);
+          }
+        });
       } else {
-        console.log("⚠️ ไม่พบรายชื่อผู้ปกครองที่มีการกรอกอีเมลไว้ในระบบเลย");
+        console.log(`⚠️ ไม่พบรายชื่อผู้ปกครองที่มีอีเมลในระดับชั้น ${Class_level}`);
       }
     });
   });
 });
 
 // ==========================================
-// 🔔 2. [เพิ่มใหม่] ดึงข้อมูลการบ้านทั้งหมดไปแสดงในตาราง (GET)
+// 🔔 2. ดึงข้อมูลการบ้านทั้งหมดไปแสดงในตาราง (GET)
 // ==========================================
 app.get("/notifications", (req, res) => {
-  // เรียงลำดับตาม ID ล่าสุดขึ้นก่อน เพื่อให้การบ้านใหม่โยงไปอยู่ด้านบนของตาราง
   const sql = "SELECT * FROM notification ORDER BY Notification_id DESC";
   
   db.query(sql, (err, result) => {
@@ -406,7 +412,7 @@ app.put("/notifications/:id", (req, res) => {
 });
 
 // ==========================================
-// ❌ 4. [เพิ่มใหม่] ลบข้อมูลการบ้าน (DELETE)
+// ❌ 4. ลบข้อมูลการบ้าน (DELETE)
 // ==========================================
 app.delete("/notifications/:id", (req, res) => {
   const sql = "DELETE FROM notification WHERE Notification_id = ?";
