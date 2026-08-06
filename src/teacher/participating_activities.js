@@ -7,7 +7,7 @@ function ParticipatingActivities() {
   const [selectedActivity, setSelectedActivity] = useState("");
   const [isViewMode, setIsViewMode] = useState(false);
 
-  // 🔴 เปลี่ยนค่า Default ID ตรงนี้ให้ตรงกับ Database ของคุณ (เช่น 1, 2, 3 หรือ "M1")
+  // ดึงค่า class_id และ class_name จาก localStorage
   const loggedInClassId = localStorage.getItem("teacher_class_id") || "1";
   const loggedInClassName = localStorage.getItem("teacher_class_name") || "ชั้นเรียนของคุณ";
 
@@ -17,10 +17,12 @@ function ParticipatingActivities() {
     fetchActivitiesData();
   }, []);
 
+  // 1. ดึงรายการกิจกรรม
   const fetchActivitiesData = async () => {
     try {
       const resActivity = await axios.get(`${API_URL}/attendance/activities`);
-      setActivities(resActivity.data);
+      const actData = Array.isArray(resActivity.data) ? resActivity.data : (resActivity.data.data || []);
+      setActivities(actData);
     } catch (err) {
       console.error("ดึงข้อมูลกิจกรรมไม่สำเร็จ:", err);
     }
@@ -34,41 +36,50 @@ function ParticipatingActivities() {
     }
   }, [selectedActivity, loggedInClassId]);
 
+  // 2. ดึงรายชื่อนักเรียนเฉพาะห้องของตนเอง
   const fetchStudents = async (activityId, classId) => {
     try {
-      // ดึงรายชื่อนักเรียนโดยส่ง Query Params ไปยังเซิร์ฟเวอร์
       const res = await axios.get(
         `${API_URL}/attendance/students?activity=${activityId}&class=${classId}`
       );
 
-      console.log("นักเรียนที่ดึงได้จาก Backend:", res.data); // 👈 ตรวจสอบข้อมูลใน F12 Console
+      const rawStudents = Array.isArray(res.data) ? res.data : (res.data.data || []);
 
-      // กำหนดค่าเริ่มต้นให้ attended เป็น true (เข้าร่วม) หากยังไม่ได้เช็คชื่อมาก่อน
-      const formattedData = res.data.map(s => ({
+      const ownClassStudents = rawStudents.filter(
+        (student) => !student.class_id || String(student.class_id) === String(classId)
+      );
+
+      const formattedData = ownClassStudents.map((s) => ({
         ...s,
-        attended: s.attended !== undefined ? Boolean(s.attended) : true
+        attended: s.attended !== undefined ? Boolean(s.attended) : true,
       }));
 
       setStudents(formattedData);
     } catch (err) {
       console.error("ดึงรายชื่อนักเรียนไม่สำเร็จ:", err);
+      setStudents([]);
     }
   };
 
+  // คำนวณยอดรวม และ เปอร์เซ็นต์ (ทั้ง เข้าร่วม และ ไม่เข้าร่วม)
   const totalStudents = students.length;
-  const attendedCount = students.filter(s => s.attended).length;
+  const attendedCount = students.filter((s) => s.attended).length;
   const absentCount = totalStudents - attendedCount;
-  const percentage = totalStudents > 0 ? ((attendedCount / totalStudents) * 100).toFixed(1) : 0;
+  
+  const attendedPercentage = totalStudents > 0 ? ((attendedCount / totalStudents) * 100).toFixed(1) : 0;
+  const absentPercentage = totalStudents > 0 ? ((absentCount / totalStudents) * 100).toFixed(1) : 0;
 
+  // 3. เปลี่ยนสถานะ เข้าร่วม / ไม่เข้าร่วม
   const handleStatusChange = (studentId, status) => {
     if (isViewMode) return;
-    setStudents(prevStudents =>
-      prevStudents.map(student =>
+    setStudents((prevStudents) =>
+      prevStudents.map((student) =>
         student.id === studentId ? { ...student, attended: status } : student
       )
     );
   };
 
+  // 4. บันทึกข้อมูล -> ดึงข้อมูลใหม่ + สลับไปหน้าสรุป/ประวัติ (View Mode) ทันที
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!selectedActivity) return alert("กรุณาเลือกกิจกรรมก่อนบันทึก");
@@ -76,16 +87,21 @@ function ParticipatingActivities() {
     const payload = {
       activity_id: parseInt(selectedActivity, 10),
       class_id: parseInt(loggedInClassId, 10),
-      attendance_list: students.map(s => ({
+      attendance_list: students.map((s) => ({
         student_id: s.id,
-        attended: s.attended
-      }))
+        attended: s.attended,
+      })),
     };
 
     try {
       await axios.post(`${API_URL}/attendance/save`, payload);
       alert("บันทึกการเข้าร่วมกิจกรรมเรียบร้อยแล้ว!");
-      fetchStudents(selectedActivity, loggedInClassId);
+      
+      // ดึงข้อมูลล่าสุดอีกครั้ง
+      await fetchStudents(selectedActivity, loggedInClassId);
+      
+      // 🎯 สลับโหมดเป็น View Mode ทันที เพื่อให้ครูดูสรุปและรายชื่อได้ทันที
+      setIsViewMode(true);
     } catch (err) {
       console.error(err);
       alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล");
@@ -96,6 +112,7 @@ function ParticipatingActivities() {
     <div style={page.container}>
       <div style={page.wrapper}>
 
+        {/* แถบควบคุมสถานะหน้าจอ */}
         <div style={page.devControlPanel}>
           <span style={{ fontSize: "13px", color: "#1e3a8a", fontWeight: "500" }}>
             ประจำห้อง: <strong>{loggedInClassName}</strong> (ID: {loggedInClassId})
@@ -104,14 +121,22 @@ function ParticipatingActivities() {
             <button
               type="button"
               onClick={() => setIsViewMode(false)}
-              style={{ ...page.devBtn, backgroundColor: !isViewMode ? "#2563eb" : "#ffffff", color: !isViewMode ? "#ffffff" : "#2563eb" }}
+              style={{
+                ...page.devBtn,
+                backgroundColor: !isViewMode ? "#2563eb" : "#ffffff",
+                color: !isViewMode ? "#ffffff" : "#2563eb",
+              }}
             >
               หน้าบันทึกการเข้าร่วม
             </button>
             <button
               type="button"
               onClick={() => setIsViewMode(true)}
-              style={{ ...page.devBtn, backgroundColor: isViewMode ? "#2563eb" : "#ffffff", color: isViewMode ? "#ffffff" : "#2563eb" }}
+              style={{
+                ...page.devBtn,
+                backgroundColor: isViewMode ? "#2563eb" : "#ffffff",
+                color: isViewMode ? "#ffffff" : "#2563eb",
+              }}
             >
               หน้าประวัติเข้าร่วม
             </button>
@@ -122,10 +147,13 @@ function ParticipatingActivities() {
           <button type="button" style={page.titleBtn}>เข้าร่วมกิจกรรม</button>
         </div>
 
-        <h1 style={page.pageTitle}>บันทึกการเข้าร่วมกิจกรรม ({loggedInClassName})</h1>
+        <h1 style={page.pageTitle}>
+          {isViewMode ? "ประวัติการเข้าร่วมกิจกรรม" : "บันทึกการเข้าร่วมกิจกรรม"} ({loggedInClassName})
+        </h1>
 
         <div style={page.cardBox}>
           <div>
+            {/* เลือกกิจกรรม */}
             <div style={page.dropdownGrid}>
               <div style={page.fieldGroup}>
                 <label style={page.label}>เลือกกิจกรรม</label>
@@ -136,13 +164,18 @@ function ParticipatingActivities() {
                     style={page.select}
                   >
                     <option value="">-- กรุณาเลือกกิจกรรม --</option>
-                    {activities.map(act => <option key={act.id} value={act.id}>{act.name}</option>)}
+                    {activities.map((act) => (
+                      <option key={act.id} value={act.id}>
+                        {act.name}
+                      </option>
+                    ))}
                   </select>
                   <div style={page.selectArrow}>▽</div>
                 </div>
               </div>
             </div>
 
+            {/* การ์ดสรุปยอด (ใส่ % ให้กับทั้ง เข้าร่วม และ ไม่เข้าร่วม) */}
             {selectedActivity !== "" && (
               <div style={page.summaryContainer}>
                 <div style={page.summaryCard}>
@@ -152,16 +185,19 @@ function ParticipatingActivities() {
                 <div style={{ ...page.summaryCard, backgroundColor: "#f0fdf4", borderColor: "#bbf7d0" }}>
                   <span style={{ ...page.summaryLabel, color: "#166534" }}>เข้าร่วม</span>
                   <span style={{ ...page.summaryValue, color: "#15803d" }}>
-                    {attendedCount} คน (<small style={{ fontSize: "12px" }}>{percentage}%</small>)
+                    {attendedCount} คน (<small style={{ fontSize: "12px" }}>{attendedPercentage}%</small>)
                   </span>
                 </div>
                 <div style={{ ...page.summaryCard, backgroundColor: "#fef2f2", borderColor: "#fecaca" }}>
                   <span style={{ ...page.summaryLabel, color: "#991b1b" }}>ไม่เข้าร่วม</span>
-                  <span style={{ ...page.summaryValue, color: "#dc2626" }}>{absentCount} คน</span>
+                  <span style={{ ...page.summaryValue, color: "#dc2626" }}>
+                    {absentCount} คน (<small style={{ fontSize: "12px" }}>{absentPercentage}%</small>)
+                  </span>
                 </div>
               </div>
             )}
 
+            {/* ตารางรายชื่อนักเรียน */}
             <div style={page.tableHeader}>
               <div style={page.colStudent}>รายชื่อนักเรียน</div>
               <div style={page.colStatus}>สถานะการเข้าร่วม</div>
@@ -188,7 +224,7 @@ function ParticipatingActivities() {
                               ...page.toggleBtn,
                               backgroundColor: student.attended ? "#16a34a" : "#f1f5f9",
                               color: student.attended ? "#ffffff" : "#64748b",
-                              borderColor: student.attended ? "#16a34a" : "#cbd5e1"
+                              borderColor: student.attended ? "#16a34a" : "#cbd5e1",
                             }}
                           >
                             เข้าร่วม
@@ -200,19 +236,25 @@ function ParticipatingActivities() {
                               ...page.toggleBtn,
                               backgroundColor: !student.attended ? "#dc2626" : "#f1f5f9",
                               color: !student.attended ? "#ffffff" : "#64748b",
-                              borderColor: !student.attended ? "#dc2626" : "#cbd5e1"
+                              borderColor: !student.attended ? "#dc2626" : "#cbd5e1",
                             }}
                           >
                             ไม่เข้าร่วม
                           </button>
                         </div>
                       ) : (
-                        <span style={{
-                          fontSize: "13px",
-                          fontWeight: "bold",
-                          color: student.attended ? "#16a34a" : "#dc2626"
-                        }}>
-                          {student.attended ? "เข้าร่วม" : "ไม่เข้าร่วม"}
+                        /* แสดงสถานะแบบอ่านอย่างเดียว หลังกดบันทึก */
+                        <span
+                          style={{
+                            fontSize: "13px",
+                            fontWeight: "bold",
+                            padding: "4px 12px",
+                            borderRadius: "12px",
+                            backgroundColor: student.attended ? "#dcfce7" : "#fee2e2",
+                            color: student.attended ? "#15803d" : "#dc2626",
+                          }}
+                        >
+                          {student.attended ? "✓ เข้าร่วม" : "✕ ไม่เข้าร่วม"}
                         </span>
                       )}
                     </div>
@@ -222,11 +264,22 @@ function ParticipatingActivities() {
             </div>
           </div>
 
-          {!isViewMode && students.length > 0 && (
+          {/* ปุ่มบันทึก / ปุ่มแก้ไข */}
+          {students.length > 0 && (
             <div style={page.footerActionRow}>
-              <button type="button" onClick={handleSubmit} style={page.submitBtn}>
-                บันทึกการเข้าร่วม
-              </button>
+              {!isViewMode ? (
+                <button type="button" onClick={handleSubmit} style={page.submitBtn}>
+                  บันทึกการเข้าร่วม
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setIsViewMode(false)}
+                  style={{ ...page.submitBtn, backgroundColor: "#f8fafc" }}
+                >
+                  ✏️ แก้ไขการเข้าร่วม
+                </button>
+              )}
             </div>
           )}
         </div>
