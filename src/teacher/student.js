@@ -8,10 +8,10 @@ function StudentManagement() {
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
 
   // 📝 สเตตสำหรับระบบค้นหาชื่อผู้ปกครองอัตโนมัติ (Autocomplete)
-  const [parentSearch, setParentSearch] = useState('');          // ข้อความที่พิมพ์ในช่อง
-  const [suggestions, setSuggestions] = useState([]);            // รายชื่อที่ค้นหาเจอจาก API
-  const [showSuggestions, setShowSuggestions] = useState(false);  // เปิด/ปิด กล่องรายชื่อแนะนำ
-  const [isSelecting, setIsSelecting] = useState(false);          // สเตตป้องกันการดึงข้อมูลซ้ำซ้อนเมื่อเลือกแล้ว
+  const [parentSearch, setParentSearch] = useState('');
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isSelecting, setIsSelecting] = useState(false);
   const suggestionRef = useRef(null);
 
   // 🔐 1. ดึงข้อมูลครูจาก localStorage
@@ -46,9 +46,6 @@ function StudentManagement() {
     return 'อนุบาล1 ห้องปกติ';
   });
 
-  const currentUser = JSON.parse(localStorage.getItem("user"));
-  const isTeacher = currentUser?.Role === "ครูผู้สอน" || currentUser?.role === "ครูผู้สอน";
-
   useEffect(() => {
     if (teacherData.classLevel) {
       setSelectedClass(teacherData.classLevel);
@@ -61,7 +58,7 @@ function StudentManagement() {
     "อนุบาล3 ห้องปกติ", "อนุบาล3 ห้อง 3 ภาษา"
   ];
 
-  // 🔐 ตั้งค่าฟอร์มเริ่มต้น
+  // 🔐 ตั้งค่าฟอร์มเริ่มต้น (User_id เริ่มต้นเป็น null เสมอ)
   const [formData, setFormData] = useState({
     Student_id: '',
     Name: '',
@@ -69,7 +66,7 @@ function StudentManagement() {
     Gender: 'ชาย',
     Class_level: selectedClass,
     Blood_group: '',
-    User_id: teacherData.userId,
+    User_id: null,
     Image: ''
   });
 
@@ -82,7 +79,6 @@ function StudentManagement() {
 
   // 🔍 ค้นหารายชื่อผู้ปกครองมากรองหน้าบ้าน
   useEffect(() => {
-    // ถ้าอยู่ระหว่างดึงข้อมูลแรกเข้า หรือเพิ่งกดเลือกผู้ปกครอง จะไม่ดึง API ซ้ำ
     if (isSelecting || parentSearch.includes('กำลังโหลด')) {
       return;
     }
@@ -96,7 +92,6 @@ function StudentManagement() {
         .then(allUsers => {
           if (Array.isArray(allUsers)) {
             const filtered = allUsers.filter(user => {
-              // 🛠️ จุดแก้ไขสำคัญ: รองรับทั้ง .Name และ .name ของ Object หลังบ้าน
               const userName = user.Name || user.name || '';
               return userName.toLowerCase().includes(parentSearch.toLowerCase());
             });
@@ -112,7 +107,7 @@ function StudentManagement() {
     }
   }, [parentSearch, isSelecting]);
 
-  // คลิกปิดกล่องรายชื่อแนะนำเมื่อกดพื้นที่อื่นนอกเหนือจากตัวเลือก
+  // คลิกปิดกล่องรายชื่อแนะนำเมื่อกดพื้นที่อื่น
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (suggestionRef.current && !suggestionRef.current.contains(event.target)) {
@@ -127,6 +122,7 @@ function StudentManagement() {
   const [viewingStudent, setViewingStudent] = useState(null);
   const [viewingParentName, setViewingParentName] = useState('');
 
+  // 🔄 เคลียร์ข้อมูลในฟอร์ม
   const resetForm = () => {
     setFormData({
       Student_id: '',
@@ -135,7 +131,7 @@ function StudentManagement() {
       Gender: 'ชาย',
       Class_level: selectedClass,
       Blood_group: '',
-      User_id: '',
+      User_id: null,
       Image: ''
     });
     setParentSearch('');
@@ -179,6 +175,7 @@ function StudentManagement() {
     }
   };
 
+  // ➕ ฟังก์ชันเพิ่มนักเรียน
   const handleAddSubmit = (e) => {
     e.preventDefault();
     const genderValue = formData.Gender === "หญิง" ? 2 : 1;
@@ -188,7 +185,7 @@ function StudentManagement() {
       Birthday: formData.Birthday,
       Class_level: selectedClass,
       Blood_group: formData.Blood_group || '',
-      User_id: formData.User_id,
+      User_id: formData.User_id ? formData.User_id : null,
       Image: formData.Image || '',
       Gender: genderValue
     };
@@ -213,9 +210,10 @@ function StudentManagement() {
       });
   };
 
+  // ✏️ เปิด Modal แก้ไขข้อมูล
   const handleOpenEditModal = (e, student) => {
     e.stopPropagation();
-    setIsSelecting(true); // ล็อคชั่วคราวไม่ให้ useEffect ทำงานตอนโหลดชื่อแรกเข้า
+    setIsSelecting(true);
     const formattedBirthday = student.Birthday ? student.Birthday.split('T')[0] : '';
     const displayGender = (student.Gender === 2 || student.Gender === "2" || student.Gender === "หญิง") ? "หญิง" : "ชาย";
 
@@ -226,34 +224,35 @@ function StudentManagement() {
       Class_level: selectedClass || student.Class_level,
       Image: student.Image || '',
       Blood_group: student.Blood_group || '',
-      User_id: student.User_id
+      User_id: student.User_id || null
     });
 
-    setParentSearch('กำลังโหลดชื่อผู้ปกครอง...');
-    fetch(`http://localhost:3001/users/${student.User_id}`)
-      .then(res => {
-        if (!res.ok) throw new Error("ไม่พบข้อมูล");
-        return res.json();
-      })
-      .then(data => {
-        setParentSearch(data.Name || data.name || '');
-        setIsSelecting(false); // ปลดล็อคเพื่อให้ผู้ใช้พิมพ์แก้ไขค้นหาได้ต่อ
-      })
-      .catch(() => {
-        setParentSearch('');
-        setIsSelecting(false);
-      });
+    if (student.User_id) {
+      setParentSearch('กำลังโหลดชื่อผู้ปกครอง...');
+      fetch(`http://localhost:3001/users/${student.User_id}`)
+        .then(res => {
+          if (!res.ok) throw new Error("ไม่พบข้อมูล");
+          return res.json();
+        })
+        .then(data => {
+          setParentSearch(data.Name || data.name || '');
+          setIsSelecting(false);
+        })
+        .catch(() => {
+          setParentSearch('');
+          setIsSelecting(false);
+        });
+    } else {
+      setParentSearch('');
+      setIsSelecting(false);
+    }
 
     setIsEditModalOpen(true);
   };
 
+  // ✏️ ฟังก์ชันบันทึกแก้ไขข้อมูล
   const handleEditSubmit = (e) => {
     e.preventDefault();
-
-    if (!formData.User_id) {
-      alert("กรุณาเลือกผู้ปกครองจากรายการค้นหาให้ถูกต้อง");
-      return;
-    }
 
     const genderValue = formData.Gender === "หญิง" ? 2 : 1;
     const payload = {
@@ -261,7 +260,7 @@ function StudentManagement() {
       Birthday: formData.Birthday,
       Class_level: selectedClass,
       Blood_group: formData.Blood_group || '',
-      User_id: formData.User_id,
+      User_id: formData.User_id ? formData.User_id : null,
       Image: formData.Image || '',
       Gender: genderValue
     };
@@ -305,25 +304,30 @@ function StudentManagement() {
       .catch(err => console.error(err));
   };
 
+  // 👁️ เปิด Modal รายละเอียด
   const handleOpenViewModal = (student) => {
     setViewingStudent(student);
-    setViewingParentName('กำลังโหลดชื่อผู้ปกครอง...');
     setIsViewModalOpen(true);
 
-    fetch(`http://localhost:3001/users/${student.User_id}`)
-      .then(res => {
-        if (!res.ok) throw new Error("ไม่พบข้อมูลผู้ปกครอง");
-        return res.json();
-      })
-      .then(parentData => {
-        if (parentData) {
-          setViewingParentName(parentData.Name || parentData.name || '-');
-        }
-      })
-      .catch((err) => {
-        console.error("Error:", err);
-        setViewingParentName(`รหัสผู้ปกครอง: ${student.User_id}`);
-      });
+    if (student.User_id) {
+      setViewingParentName('กำลังโหลดชื่อผู้ปกครอง...');
+      fetch(`http://localhost:3001/users/${student.User_id}`)
+        .then(res => {
+          if (!res.ok) throw new Error("ไม่พบข้อมูลผู้ปกครอง");
+          return res.json();
+        })
+        .then(parentData => {
+          if (parentData) {
+            setViewingParentName(parentData.Name || parentData.name || '-');
+          }
+        })
+        .catch((err) => {
+          console.error("Error:", err);
+          setViewingParentName(`ไม่ได้ระบุ (ID ค้าง: ${student.User_id})`);
+        });
+    } else {
+      setViewingParentName('ไม่ได้ระบุ');
+    }
   };
 
   const formatThaiDate = (dateString) => {
@@ -337,7 +341,7 @@ function StudentManagement() {
   };
 
   const handleSelectParent = (parent) => {
-    setIsSelecting(true); // ล็อคเพื่อแจ้งว่าเป็นการเลือก ไม่ใช่การพิมพ์ค้นหาใหม่
+    setIsSelecting(true);
     const parentId = parent.User_id || parent.id || parent.user_id;
     const parentName = parent.Name || parent.name;
 
@@ -345,10 +349,16 @@ function StudentManagement() {
     setFormData(prev => ({ ...prev, User_id: parentId }));
     setShowSuggestions(false);
 
-    // ตั้งหน่วงเวลาเล็กน้อยเพื่อให้ UI อัปเดตเสร็จก่อนปลดล็อคพิมพ์ค้นหาใหม่
     setTimeout(() => {
       setIsSelecting(false);
     }, 200);
+  };
+
+  // 🧹 ฟังก์ชันสำหรับล้างชื่อผู้ปกครองออก (ไม่ระบุผู้ปกครอง)
+  const handleClearParent = () => {
+    setParentSearch('');
+    setFormData(prev => ({ ...prev, User_id: null }));
+    setSuggestions([]);
   };
 
   const filteredStudents = students.filter(
@@ -361,7 +371,6 @@ function StudentManagement() {
         <div style={styles.titleSection}>
           <h2 style={styles.headerTitle}>
             <h2 style={{ margin: 10, color: '#0369a1' }}>ข้อมูลนักเรียน : {selectedClass} </h2>
-
           </h2>
         </div>
 
@@ -504,15 +513,22 @@ function StudentManagement() {
               </div>
 
               <div style={{ ...styles.formGroup, position: 'relative' }} ref={suggestionRef}>
-                <label style={styles.formLabel}>ชื่อผู้ปกครอง (พิมพ์ค้นหาอย่างน้อย 2 ตัวอักษร)</label>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <label style={styles.formLabel}>ชื่อผู้ปกครอง (ถ้ามี)</label>
+                  {parentSearch && (
+                    <button type="button" onClick={handleClearParent} style={styles.btnClearParent}>ล้างข้อมูล</button>
+                  )}
+                </div>
                 <input
                   type="text"
-                  required
                   placeholder="ค้นหาชื่อผู้ปกครอง..."
                   style={styles.formInput}
                   value={parentSearch}
                   onChange={(e) => {
                     setParentSearch(e.target.value);
+                    if (e.target.value === '') {
+                      setFormData(prev => ({ ...prev, User_id: null }));
+                    }
                     setShowSuggestions(true);
                   }}
                   onFocus={() => setShowSuggestions(true)}
@@ -599,15 +615,22 @@ function StudentManagement() {
               </div>
 
               <div style={{ ...styles.formGroup, position: 'relative' }} ref={suggestionRef}>
-                <label style={styles.formLabel}>ชื่อผู้ปกครอง (พิมพ์ค้นหาเพื่อเปลี่ยนคนใหม่)</label>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <label style={styles.formLabel}>ชื่อผู้ปกครอง</label>
+                  {parentSearch && (
+                    <button type="button" onClick={handleClearParent} style={styles.btnClearParent}>ลบผู้ปกครองออก</button>
+                  )}
+                </div>
                 <input
                   type="text"
-                  required
-                  placeholder="พิมพ์เพื่อค้นหาชื่อผู้ปกครองใหม่..."
+                  placeholder="พิมพ์เพื่อค้นหาชื่อผู้ปกครอง..."
                   style={styles.formInput}
                   value={parentSearch}
                   onChange={(e) => {
                     setParentSearch(e.target.value);
+                    if (e.target.value === '') {
+                      setFormData(prev => ({ ...prev, User_id: null }));
+                    }
                     setShowSuggestions(true);
                   }}
                   onFocus={() => setShowSuggestions(true)}
@@ -686,7 +709,7 @@ const styles = {
   btnCancel: { flex: '1', padding: '8px 12px', border: '1px solid #cfe8f7', background: '#ffffff', color: '#31556b', borderRadius: '8px', cursor: 'pointer', fontWeight: '700' },
   btnConfirmDelete: { flex: '1', padding: '8px 12px', border: '1px solid #fecdd3', background: '#fff1f2', color: '#be123c', fontWeight: '700', borderRadius: '8px', cursor: 'pointer' },
   infoDisplayBox: { padding: '6px 10px', border: '1px solid #e5e5e5', borderRadius: '6px', fontSize: '13px', background: '#f9f9f9', color: '#333333', height: '32px', boxSizing: 'border-box', width: '100%', display: 'flex', alignItems: 'center' },
-
+  btnClearParent: { border: 'none', background: 'none', color: '#be123c', fontSize: '11px', cursor: 'pointer', textDecoration: 'underline', padding: 0 },
   suggestionList: {
     position: 'absolute', top: '100%', left: 0, right: 0, padding: 0, margin: '4px 0 0 0',
     background: '#ffffff', border: '1px solid #cccccc', borderRadius: '6px', listStyle: 'none',
