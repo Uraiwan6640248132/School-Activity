@@ -5,7 +5,9 @@ function UserInformation() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // 1. ดึงข้อมูลผู้ใช้ทั้งหมดเมื่อเปิดหน้าจอ
+  // State สำหรับเก็บบทบาทที่เลือก
+  const [selectedRole, setSelectedRole] = useState('ทั้งหมด');
+
   useEffect(() => {
     fetchUsers();
   }, []);
@@ -22,7 +24,6 @@ function UserInformation() {
     }
   };
 
-  // 2. ฟังก์ชันกดปุ่ม "ระงับสิทธิ์"
   const handleSuspendUser = async (user) => {
     if (window.confirm(`คุณแน่ใจใช่ไหมที่จะระงับสิทธิ์การใช้งานของ: ${user.Name}?`)) {
       try {
@@ -44,7 +45,6 @@ function UserInformation() {
     }
   };
 
-  // 3. ฟังก์ชัน "ปลดระงับสิทธิ์"
   const handleUnsuspendUser = async (user) => {
     if (window.confirm(`คุณแน่ใจใช่ไหมที่จะปลดระงับสิทธิ์ของ: ${user.Name}?`)) {
       try {
@@ -68,17 +68,43 @@ function UserInformation() {
 
   if (loading) return <div style={{ textAlign: 'center', padding: '50px', fontFamily: "'Kanit', sans-serif" }}>กำลังโหลดข้อมูลผู้ใช้งาน...</div>;
 
+  // กรองข้อมูลตามบทบาทที่เลือก
+  const filteredUsers = users.filter((user) => {
+    if (selectedRole === 'ทั้งหมด') return true;
+    if (selectedRole === 'ผู้ปกครอง') return user.Role === 'ผู้ปกครอง' || user.Role === 'Parent';
+    if (selectedRole === 'ครูผู้สอน') return user.Role === 'ครูผู้สอน' || user.Role === 'Teacher';
+    if (selectedRole === 'แอดมิน') return user.Role === 'แอดมิน' || user.Role === 'Admin';
+    return true;
+  });
+
   return (
     <div style={styles.container}>
       <h2 style={{ margin: 10, color: '#0369a1' }}>จัดการผู้ใช้งาน</h2>
       <p style={styles.subTitle}>ตรวจสอบสิทธิ์และบริหารจัดการการเข้าใช้งานของสมาชิกในระบบ</p>
 
+      {/* ปุ่มเลือกบทบาท (Tabs) */}
+      <div style={styles.filterContainer}>
+        {['ทั้งหมด', 'ผู้ปกครอง', 'ครูผู้สอน', 'แอดมิน'].map((role) => (
+          <button
+            key={role}
+            onClick={() => setSelectedRole(role)}
+            style={{
+              ...styles.tabButton,
+              backgroundColor: selectedRole === role ? '#3e82c6' : '#ffffff',
+              color: selectedRole === role ? '#ffffff' : '#475569',
+              borderColor: selectedRole === role ? '#3e82c6' : '#cbd5e1',
+            }}
+          >
+            {role}
+          </button>
+        ))}
+      </div>
+
       <div style={styles.tableCard}>
         <table style={styles.table}>
           <thead>
             <tr style={styles.thRow}>
-              {/* 🟢 หัวตารางแสดงครบ 8 คอลัมน์ตามฐานข้อมูล */}
-              <th style={styles.th}></th>
+              <th style={{ ...styles.th, width: '60px', textAlign: 'center' }}>ลำดับ</th>
               <th style={styles.th}>ชื่อ-นามสกุล</th>
               <th style={styles.th}>เบอร์โทร</th>
               <th style={styles.th}>รหัสผ่าน</th>
@@ -86,60 +112,68 @@ function UserInformation() {
               <th style={styles.th}>สิทธิ์ใช้งาน (Role)</th>
               <th style={styles.th}>ระดับชั้น (Class)</th>
               <th style={styles.th}>สถานะ</th>
-              {/* 🟢 แก้ไขจุดนี้: ยุบรวม style ซ้ำกันเข้าด้วยกันเพื่อไม่ให้แจ้งเตือนเตือน */}
               <th style={{ ...styles.th, textAlign: 'center' }}>จัดการ</th>
             </tr>
           </thead>
           <tbody>
-            {users.map((user) => {
-              const userStatus = user.Status || 'ใช้งาน';
-              const isSuspended = userStatus === 'ถูกระงับสิทธิ์';
+            {filteredUsers.length === 0 ? (
+              <tr>
+                <td colSpan="9" style={{ ...styles.td, textAlign: 'center', color: '#94a3b8' }}>
+                  ไม่พบข้อมูลผู้ใช้งานในประเภทนี้
+                </td>
+              </tr>
+            ) : (
+              /* 🟢 เพิ่ม index ตรงนี้เพื่อนำมารันลำดับที่ 1, 2, 3... */
+              filteredUsers.map((user, index) => {
+                const userStatus = user.Status || 'ใช้งาน';
+                const isSuspended = userStatus === 'ถูกระงับสิทธิ์';
 
-              return (
-                <tr
-                  key={user.User_id}
-                  style={{
-                    ...styles.trRow,
-                    backgroundColor: isSuspended ? '#a8cff7' : '#ffffff'
-                  }}
-                >
-                  {/* 🟢 แสดงข้อมูลในแต่ละช่องให้ตรงกับฐานข้อมูลเป๊ะๆ */}
-                  <td style={{ ...styles.td, color: isSuspended ? '#94a3b8' : '#475569', fontWeight: 'bold' }}>{user.User_id}</td>
-                  <td style={{ ...styles.td, color: isSuspended ? '#94a3b8' : '#475569' }}>{user.Name || '-'}</td>
-                  <td style={{ ...styles.td, color: isSuspended ? '#94a3b8' : '#475569' }}>{user.Phone || '-'}</td>
-                  <td style={{ ...styles.td, color: isSuspended ? '#94a3b8' : '#475569' }}>{user.Password || '-'}</td>
-                  <td style={{ ...styles.td, color: isSuspended ? '#94a3b8' : '#475569' }}>{user.UserName || '-'}</td>
-                  <td style={{ ...styles.td, color: isSuspended ? '#94a3b8' : '#475569' }}>{user.Role || '-'}</td>
-                  <td style={{ ...styles.td, color: isSuspended ? '#94a3b8' : '#475569' }}>{user.Class_level || '-'}</td>
+                return (
+                  <tr
+                    key={user.User_id || index}
+                    style={{
+                      ...styles.trRow,
+                      backgroundColor: isSuspended ? '#a8cff7' : '#ffffff'
+                    }}
+                  >
+                    {/* 🟢 แสดงลำดับเริ่มจาก 1 สำหรับทุกตาราง/ทุกหมวดหมู่ */}
+                    <td style={{ ...styles.td, color: isSuspended ? '#94a3b8' : '#475569', fontWeight: 'bold', textAlign: 'center' }}>
+                      {index + 1}
+                    </td>
+                    <td style={{ ...styles.td, color: isSuspended ? '#94a3b8' : '#475569' }}>{user.Name || '-'}</td>
+                    <td style={{ ...styles.td, color: isSuspended ? '#94a3b8' : '#475569' }}>{user.Phone || '-'}</td>
+                    <td style={{ ...styles.td, color: isSuspended ? '#94a3b8' : '#475569' }}>{user.Password || '-'}</td>
+                    <td style={{ ...styles.td, color: isSuspended ? '#94a3b8' : '#475569' }}>{user.UserName || '-'}</td>
+                    <td style={{ ...styles.td, color: isSuspended ? '#94a3b8' : '#475569' }}>{user.Role || '-'}</td>
+                    <td style={{ ...styles.td, color: isSuspended ? '#94a3b8' : '#475569' }}>{user.Class_level || '-'}</td>
 
-                  {/* แสดง Badge สถานะ */}
-                  <td style={styles.td}>
-                    <span style={styles.roleBadge(userStatus)}>
-                      {userStatus}
-                    </span>
-                  </td>
+                    <td style={styles.td}>
+                      <span style={styles.roleBadge(userStatus)}>
+                        {userStatus}
+                      </span>
+                    </td>
 
-                  {/* ปุ่มจัดการสิทธิ์ */}
-                  <td style={{ ...styles.td, textAlign: 'center' }}>
-                    {!isSuspended ? (
-                      <button
-                        onClick={() => handleSuspendUser(user)}
-                        style={styles.suspendButton}
-                      >
-                        ระงับสิทธิ์
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => handleUnsuspendUser(user)}
-                        style={styles.unsuspendButton}
-                      >
-                        ปลดระงับสิทธิ์
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
+                    <td style={{ ...styles.td, textAlign: 'center' }}>
+                      {!isSuspended ? (
+                        <button
+                          onClick={() => handleSuspendUser(user)}
+                          style={styles.suspendButton}
+                        >
+                          ระงับสิทธิ์
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleUnsuspendUser(user)}
+                          style={styles.unsuspendButton}
+                        >
+                          ปลดระงับสิทธิ์
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })
+            )}
           </tbody>
         </table>
       </div>
@@ -149,12 +183,24 @@ function UserInformation() {
 
 const styles = {
   container: { padding: "30px", backgroundColor: "#dff3ff 48%", minHeight: "100vh", fontFamily: "'Kanit', sans-serif" },
-  mainTitle: { fontSize: "24px", fontWeight: "600", color: "#1e293b", margin: "0 0 6px 0" },
   subTitle: { fontSize: "15px", color: "#64748b", margin: "0 0 25px 0" },
+
+  filterContainer: { display: "flex", gap: "10px", marginBottom: "20px" },
+  tabButton: {
+    padding: "8px 18px",
+    borderRadius: "6px",
+    border: "1px solid",
+    cursor: "pointer",
+    fontSize: "14px",
+    fontWeight: "500",
+    fontFamily: "'Kanit', sans-serif",
+    transition: "all 0.2s"
+  },
+
   tableCard: { background: "#ffffff", borderRadius: "8px", border: "1px solid #858181", overflow: "hidden" },
   table: { width: "100%", borderCollapse: "collapse", textAlign: "left" },
   thRow: { backgroundColor: "#3e82c6", borderBottom: "2px solid #e2e8f0" },
-  th: { padding: "14px 16px", fontSize: "14px", fontWeight: "600", color: "#768395" },
+  th: { padding: "14px 16px", fontSize: "14px", fontWeight: "600", color: "#ffffff" },
   trRow: { borderBottom: "1px solid #d1def0", transition: "background-color 0.2s" },
   td: { padding: "14px 16px", fontSize: "14px", verticalAlign: "middle" },
 
