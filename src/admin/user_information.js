@@ -22,47 +22,60 @@ function UserInformation() {
     }
   };
 
+  // ฟังก์ชันสำหรับอัปเดตข้อมูลผู้ใช้ (ใช้ร่วมกับการเปลี่ยนสิทธิ์และระงับสิทธิ์)
+  const updateUser = async (user, updatedFields) => {
+    try {
+      await axios.put(`http://127.0.0.1:3001/users/${user.User_id}`, {
+        Name: user.Name,
+        Phone: user.Phone,
+        UserName: user.UserName,
+        Password: user.Password,
+        Role: user.Role,
+        Class_level: user.Class_level,
+        Status: user.Status || "ใช้งาน",
+        ...updatedFields
+      });
+      fetchUsers();
+    } catch (err) {
+      console.error(err);
+      alert("ไม่สามารถบันทึกข้อมูลได้");
+      fetchUsers(); // รีเฟรชข้อมูลกลับมาถ้าเกิดข้อผิดพลาด
+    }
+  };
+
+  // เมื่อเปลี่ยนค่าใน Dropdown สิทธิ์การใช้งาน
+  const handleRoleChange = async (user, newRole) => {
+    try {
+      await axios.put(`http://127.0.0.1:3001/users/${user.User_id}`, {
+        Name: user.Name,
+        Phone: user.Phone,
+        UserName: user.UserName,
+        Password: user.Password,
+        Role: newRole,
+        Class_level: user.Class_level,
+        Status: user.Status || "ใช้งาน"
+      });
+      alert("เปลี่ยนสิทธิ์การใช้งานสำเร็จเรียบร้อยแล้ว");
+      fetchUsers();
+    } catch (err) {
+      console.error(err);
+      alert("ไม่สามารถเปลี่ยนสิทธิ์การใช้งานได้");
+    }
+  };
+
   // 2. ฟังก์ชันกดปุ่ม "ระงับสิทธิ์"
   const handleSuspendUser = async (user) => {
     if (window.confirm(`คุณแน่ใจใช่ไหมที่จะระงับสิทธิ์การใช้งานของ: ${user.Name}?`)) {
-      try {
-        await axios.put(`http://127.0.0.1:3001/users/${user.User_id}`, {
-          Name: user.Name,
-          Phone: user.Phone,
-          UserName: user.UserName,
-          Password: user.Password,
-          Role: user.Role,
-          Status: "ถูกระงับสิทธิ์"
-        });
-
-        alert("ระงับสิทธิ์ผู้ใช้งานสำเร็จเรียบร้อยแล้ว");
-        fetchUsers();
-      } catch (err) {
-        console.error(err);
-        alert("ไม่สามารถระงับสิทธิ์ผู้ใช้งานได้");
-      }
+      await updateUser(user, { Status: "ถูกระงับสิทธิ์" });
+      alert("ระงับสิทธิ์ผู้ใช้งานสำเร็จเรียบร้อยแล้ว");
     }
   };
 
   // 3. ฟังก์ชัน "ปลดระงับสิทธิ์"
   const handleUnsuspendUser = async (user) => {
     if (window.confirm(`คุณแน่ใจใช่ไหมที่จะปลดระงับสิทธิ์ของ: ${user.Name}?`)) {
-      try {
-        await axios.put(`http://127.0.0.1:3001/users/${user.User_id}`, {
-          Name: user.Name,
-          Phone: user.Phone,
-          UserName: user.UserName,
-          Password: user.Password,
-          Role: user.Role,
-          Status: "ใช้งาน"
-        });
-
-        alert("ปลดระงับสิทธิ์ผู้ใช้งานสำเร็จเรียบร้อยแล้ว");
-        fetchUsers();
-      } catch (err) {
-        console.error(err);
-        alert("ไม่สามารถปลดระงับสิทธิ์ได้");
-      }
+      await updateUser(user, { Status: "ใช้งาน" });
+      alert("ปลดระงับสิทธิ์ผู้ใช้งานสำเร็จเรียบร้อยแล้ว");
     }
   };
 
@@ -77,16 +90,13 @@ function UserInformation() {
         <table style={styles.table}>
           <thead>
             <tr style={styles.thRow}>
-              {/* 🟢 หัวตารางแสดงครบ 8 คอลัมน์ตามฐานข้อมูล */}
               <th style={styles.th}></th>
               <th style={styles.th}>ชื่อ-นามสกุล</th>
               <th style={styles.th}>เบอร์โทร</th>
-              <th style={styles.th}>รหัสผ่าน</th>
               <th style={styles.th}>ชื่อผู้ใช้</th>
               <th style={styles.th}>สิทธิ์ใช้งาน (Role)</th>
               <th style={styles.th}>ระดับชั้น (Class)</th>
               <th style={styles.th}>สถานะ</th>
-              {/* 🟢 แก้ไขจุดนี้: ยุบรวม style ซ้ำกันเข้าด้วยกันเพื่อไม่ให้แจ้งเตือนเตือน */}
               <th style={{ ...styles.th, textAlign: 'center' }}>จัดการ</th>
             </tr>
           </thead>
@@ -103,13 +113,24 @@ function UserInformation() {
                     backgroundColor: isSuspended ? '#a8cff7' : '#ffffff'
                   }}
                 >
-                  {/* 🟢 แสดงข้อมูลในแต่ละช่องให้ตรงกับฐานข้อมูลเป๊ะๆ */}
                   <td style={{ ...styles.td, color: isSuspended ? '#94a3b8' : '#475569', fontWeight: 'bold' }}>{user.User_id}</td>
                   <td style={{ ...styles.td, color: isSuspended ? '#94a3b8' : '#475569' }}>{user.Name || '-'}</td>
                   <td style={{ ...styles.td, color: isSuspended ? '#94a3b8' : '#475569' }}>{user.Phone || '-'}</td>
-                  <td style={{ ...styles.td, color: isSuspended ? '#94a3b8' : '#475569' }}>{user.Password || '-'}</td>
                   <td style={{ ...styles.td, color: isSuspended ? '#94a3b8' : '#475569' }}>{user.UserName || '-'}</td>
-                  <td style={{ ...styles.td, color: isSuspended ? '#94a3b8' : '#475569' }}>{user.Role || '-'}</td>
+                  
+                  {/* เปลี่ยนสิทธิ์ใช้งานเป็น Dropdown */}
+                  <td style={styles.td}>
+                    <select
+                      value={user.Role || ''}
+                      onChange={(e) => handleRoleChange(user, e.target.value)}
+                      style={styles.selectRole}
+                    >
+                      <option value="ผู้ดูแลระบบ">ผู้ดูแลระบบ</option>
+                      <option value="ครูผู้สอน">ครูผู้สอน</option>
+                      <option value="ผู้ปกครอง">ผู้ปกครอง</option>
+                    </select>
+                  </td>
+
                   <td style={{ ...styles.td, color: isSuspended ? '#94a3b8' : '#475569' }}>{user.Class_level || '-'}</td>
 
                   {/* แสดง Badge สถานะ */}
@@ -157,6 +178,17 @@ const styles = {
   th: { padding: "14px 16px", fontSize: "14px", fontWeight: "600", color: "#768395" },
   trRow: { borderBottom: "1px solid #d1def0", transition: "background-color 0.2s" },
   td: { padding: "14px 16px", fontSize: "14px", verticalAlign: "middle" },
+
+  selectRole: {
+    padding: "6px 10px",
+    borderRadius: "4px",
+    border: "1px solid #cbd5e1",
+    backgroundColor: "#f8fafc",
+    fontFamily: "'Kanit', sans-serif",
+    fontSize: "13px",
+    color: "#334155",
+    cursor: "pointer"
+  },
 
   suspendButton: {
     padding: "6px 12px", backgroundColor: "#ef4444", color: "#ffffff",

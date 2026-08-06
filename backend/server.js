@@ -4,6 +4,7 @@ const db = require("./db");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
+const nodemailer = require("nodemailer");
 
 const app = express();
 
@@ -61,19 +62,48 @@ function parseDateForMySQL(dateStr) {
 // 👤 ระบบ API จัดการข้อมูลผู้ใช้งาน (USERS) - แก้ไขแล้ว
 // ==========================================
 
-app.get("/users", (req, res) => {
-  // ดึงข้อมูลครบทุกคอลัมน์จากฐานข้อมูล
-  const sql = "SELECT User_id, Name, Phone, Password, UserName, Role, Class_level, Status FROM users";
-  db.query(sql, (err, result) => {
-    if (err) return res.status(500).json(err);
-    res.json(result);
+// ✅ แก้ไขยกบล็อก app.put("/users/:id") เป็นแบบนี้:
+app.put("/users/:id", (req, res) => {
+  const Name = req.body.Name || req.body.name;
+  const Phone = req.body.Phone || req.body.phone;
+  const Email = req.body.Email || req.body.email || null; // 🆕 รับค่า Email เพิ่มตรงนี้
+  const UserName = req.body.UserName || req.body.Username || req.body.username;
+  const Role = req.body.Role || req.body.role;
+  const Class_level = req.body.Class_level || req.body.class_level;
+  const Status = req.body.Status || req.body.status || 'ใช้งาน';
+  const Password = req.body.Password || req.body.password;
+
+  let sql = "";
+  let params = [];
+
+  // ตรวจสอบว่ามีการเปลี่ยนรหัสผ่านใหม่มาด้วยหรือไม่
+  if (Password && Password.trim() !== "") {
+    // 🆕 เพิ่ม Email=? และส่งตัวแปร Email ไปใน array params
+    sql = `UPDATE users SET Name=?, Phone=?, Email=?, UserName=?, Role=?, Class_level=?, Status=?, Password=? WHERE User_id=?`;
+    params = [Name, Phone, Email, UserName, Role, Class_level, Status, Password, req.params.id];
+  } else {
+    // 🆕 เพิ่ม Email=? และส่งตัวแปร Email ไปใน array params
+    sql = `UPDATE users SET Name=?, Phone=?, Email=?, UserName=?, Role=?, Class_level=?, Status=? WHERE User_id=?`;
+    params = [Name, Phone, Email, UserName, Role, Class_level, Status, req.params.id];
+  }
+
+  db.query(sql, params, (err, result) => {
+    if (err) {
+      console.error("Backend Error updating user:", err);
+      return res.status(500).json(err);
+    }
+    res.json({ success: true, message: "อัปเดตผู้ใช้งานสำเร็จ" });
   });
 });
 
-app.get("/users/teachers", (req, res) => {
-  const sql = "SELECT User_id, Name, UserName FROM users WHERE Role = 'ครูผู้สอน'";
+// 🟢 เพิ่มเส้นทาง /users (ดึงรายชื่อผู้ใช้ทั้งหมด) ที่ทำหายไปกลับคืนมา
+app.get("/users", (req, res) => {
+  const sql = "SELECT User_id, Name, Phone, Email, Password, UserName, Role, Class_level, Status FROM users";
   db.query(sql, (err, result) => {
-    if (err) return res.status(500).json(err);
+    if (err) {
+      console.error("เกิดข้อผิดพลาดในการดึงข้อมูล users:", err);
+      return res.status(500).json(err);
+    }
     res.json(result);
   });
 });
@@ -87,14 +117,15 @@ app.get("/users/:id", (req, res) => {
 });
 
 // 🟢 แก้ไขฟังก์ชันอัปเดต: เพิ่ม Class_level และดักจับตัวแปรจากหน้าบ้านให้ถูกต้อง
+// ✅ แก้ไขยกบล็อก app.put("/users/:id") เป็นแบบนี้:
 app.put("/users/:id", (req, res) => {
-  // ดักจับทั้ง Username (n เล็ก) และ UserName (N ใหญ่) เผื่อจากหน้าบ้านส่งมาพลาด
   const Name = req.body.Name || req.body.name;
   const Phone = req.body.Phone || req.body.phone;
+  const Email = req.body.Email || req.body.email || null; // 🆕 รับค่า Email เพิ่มตรงนี้
   const UserName = req.body.UserName || req.body.Username || req.body.username;
   const Role = req.body.Role || req.body.role;
   const Class_level = req.body.Class_level || req.body.class_level;
-  const Status = req.body.Status || req.body.status || 'ใช้งาน'; // กำหนดค่าเริ่มต้นถ้าไม่ได้ส่งมา
+  const Status = req.body.Status || req.body.status || 'ใช้งาน';
   const Password = req.body.Password || req.body.password;
 
   let sql = "";
@@ -102,11 +133,13 @@ app.put("/users/:id", (req, res) => {
 
   // ตรวจสอบว่ามีการเปลี่ยนรหัสผ่านใหม่มาด้วยหรือไม่
   if (Password && Password.trim() !== "") {
-    sql = `UPDATE users SET Name=?, Phone=?, UserName=?, Role=?, Class_level=?, Status=?, Password=? WHERE User_id=?`;
-    params = [Name, Phone, UserName, Role, Class_level, Status, Password, req.params.id];
+    // 🆕 เพิ่ม Email=? และส่งตัวแปร Email ไปใน array params
+    sql = `UPDATE users SET Name=?, Phone=?, Email=?, UserName=?, Role=?, Class_level=?, Status=?, Password=? WHERE User_id=?`;
+    params = [Name, Phone, Email, UserName, Role, Class_level, Status, Password, req.params.id];
   } else {
-    sql = `UPDATE users SET Name=?, Phone=?, UserName=?, Role=?, Class_level=?, Status=? WHERE User_id=?`;
-    params = [Name, Phone, UserName, Role, Class_level, Status, req.params.id];
+    // 🆕 เพิ่ม Email=? และส่งตัวแปร Email ไปใน array params
+    sql = `UPDATE users SET Name=?, Phone=?, Email=?, UserName=?, Role=?, Class_level=?, Status=? WHERE User_id=?`;
+    params = [Name, Phone, Email, UserName, Role, Class_level, Status, req.params.id];
   }
 
   db.query(sql, params, (err, result) => {
@@ -249,27 +282,8 @@ app.delete("/api/students/:id", (req, res) => {
   });
 });
 // ==========================================
-// 📢 ระบบ API จัดการข้อมูลการแจ้งเตือน (NOTIFICATIONS)
+// 📌 1. เพิ่มข้อมูลการบ้านใหม่ + ส่งอีเมล (POST)
 // ==========================================
-app.get("/notifications", (req, res) => {
-  // 🟢 แก้ไขคำสั่ง SQL ตรงนี้เพื่อเพิ่มเงื่อนไขการกรองวันที่
-  const sql = `
-    SELECT 
-      Notification_id, User_id, Class_level, Subject, 
-      DATE_FORMAT(Deadline, '%Y-%m-%d') AS Deadline, 
-      DATE_FORMAT(\`Date\`, '%Y-%m-%d') AS Date, 
-      Details 
-    FROM notification 
-    WHERE Deadline >= CURDATE()
-    ORDER BY Notification_id DESC
-  `;
-
-  db.query(sql, (err, results) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json(results);
-  });
-});
-
 app.post("/notifications", (req, res) => {
   const body = req.body || {};
   const { Class_level, Subject, Details } = body;
@@ -277,13 +291,103 @@ app.post("/notifications", (req, res) => {
   const cleanDate = parseDateForMySQL(body.Date || body.date);
   const User_id = parseInt(body.User_id || body.user_id, 10) || 2;
 
-  const sql = "INSERT INTO notification (User_id, Class_level, Subject, Deadline, \`Date\`, Details) VALUES (?, ?, ?, ?, ?, ?)";
+  const sql = "INSERT INTO notification (User_id, Class_level, Subject, Deadline, `Date`, Details) VALUES (?, ?, ?, ?, ?, ?)";
+  
   db.query(sql, [User_id, Class_level, Subject, cleanDeadline, cleanDate, Details || null], (err, result) => {
-    if (err) { console.error(err); return res.status(500).json({ error: "ล้มเหลว ตรวจสอบคีย์เชื่อมโยง", details: err.message }); }
+    if (err) { 
+      console.error(err); 
+      return res.status(500).json({ error: "ล้มเหลว ตรวจสอบคีย์เชื่อมโยง", details: err.message }); 
+    }
+    
+    // ตอบกลับหน้าบ้าน React ทันทีเมื่อบันทึกการบ้านสำเร็จ
     res.status(201).json({ message: "เพิ่มข้อมูลแจ้งเตือนสำเร็จ", id: result.insertId });
+
+    // =============================================================
+    // ✉️ ระบบส่งแจ้งเตือนทางอีเมล (เวอร์ชันปรับปรุงลบเว้นวรรค ป้องกันจับคู่พลาด)
+    // =============================================================
+    const findEmailsSql = "SELECT Email, Class_level FROM users WHERE Role = 'ผู้ปกครอง' AND Email IS NOT NULL AND Email != ''";
+    
+    db.query(findEmailsSql, (emailErr, parentRows) => {
+      if (emailErr) {
+        console.error("เกิดข้อผิดพลาดในการดึงอีเมลผู้ปกครอง:", emailErr);
+        return;
+      }
+
+      if (parentRows && parentRows.length > 0) {
+        const targetClassClean = String(Class_level || "").replace(/\s+/g, "");
+
+        const matchedParents = parentRows.filter(row => {
+          const dbClassClean = String(row.Class_level || "").replace(/\s+/g, "");
+          return dbClassClean === targetClassClean;
+        });
+
+        if (matchedParents.length > 0) {
+          const emailList = matchedParents.map(row => row.Email).join(",");
+
+          const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+              user: 'anchanaarthan@gmail.com',  
+              pass: 'liaknnlnlogqazqj'          
+            }
+          });
+
+          const mailOptions = {
+            from: '"ระบบแจ้งเตือนการบ้าน โรงเรียนสาธิตฯ" <anchanaarthan@gmail.com>',
+            to: emailList, 
+            subject: `🔔 แจ้งเตือนการบ้านใหม่วิชา ${Subject} (${Class_level})`,
+            html: `
+              <div style="font-family: 'Kanit', sans-serif; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #0369a1; border-bottom: 2px solid #0369a1; padding-bottom: 10px;">เรียน ผู้ปกครองนักเรียนชั้น ${Class_level}</h2>
+                <p style="font-size: 16px;">ขณะนี้ระบบได้ทำการเพิ่มการแจ้งเตือนการบ้านใหม่ มีรายละเอียดดังนี้ครับ:</p>
+                <div style="background-color: #f8fafc; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                  <p style="margin: 5px 0;"><b>📚 วิชา:</b> ${Subject}</p>
+                  <p style="margin: 5px 0;"><b>📝 รายละเอียดงาน:</b> ${Details || "— ไม่มีรายละเอียดเพิ่มเติม —"}</p>
+                  <p style="margin: 5px 0; color: #be123c;"><b>📅 กำหนดส่งงาน:</b> ${cleanDeadline || "-"}</p>
+                </div>
+                <p style="font-size: 12px; color: #888888; text-align: center; margin-top: 30px;">
+                  * อีเมลนี้เป็นการแจ้งเตือนอัตโนมัติจากระบบบันทึกกิจกรรมนักเรียนระดับปฐมวัย กรุณาอย่าตอบกลับอีเมลนี้
+                </p>
+              </div>
+            `
+          };
+
+          transporter.sendMail(mailOptions, (mailSendErr, info) => {
+            if (mailSendErr) {
+              console.error("❌ ส่งอีเมลล้มเหลว:", mailSendErr);
+            } else {
+              console.log("✅ ส่งเมลแจ้งเตือนการบ้านให้ผู้ปกครองสำเร็จแล้ว!: " + info.response);
+            }
+          });
+        } else {
+          console.log(`⚠️ ไม่พบรายชื่อผู้ปกครองที่มีอีเมลในระดับชั้น ${Class_level} (เทียบคำแบบไร้เว้นวรรคแล้ว)`);
+        }
+      } else {
+        console.log("⚠️ ไม่พบรายชื่อผู้ปกครองที่มีการกรอกอีเมลไว้ในระบบเลย");
+      }
+    });
   });
 });
 
+// ==========================================
+// 🔔 2. [เพิ่มใหม่] ดึงข้อมูลการบ้านทั้งหมดไปแสดงในตาราง (GET)
+// ==========================================
+app.get("/notifications", (req, res) => {
+  // เรียงลำดับตาม ID ล่าสุดขึ้นก่อน เพื่อให้การบ้านใหม่โยงไปอยู่ด้านบนของตาราง
+  const sql = "SELECT * FROM notification ORDER BY Notification_id DESC";
+  
+  db.query(sql, (err, result) => {
+    if (err) {
+      console.error("เกิดข้อผิดพลาดในการดึงข้อมูล:", err);
+      return res.status(500).json({ error: err.message });
+    }
+    res.json(result);
+  });
+});
+
+// ==========================================
+// ✏️ 3. แก้ไขข้อมูลการบ้าน (PUT)
+// ==========================================
 app.put("/notifications/:id", (req, res) => {
   const body = req.body || {};
   const { Class_level, Subject, Details } = body;
@@ -291,10 +395,27 @@ app.put("/notifications/:id", (req, res) => {
   const cleanDate = parseDateForMySQL(body.Date || body.date);
   const User_id = parseInt(body.User_id || body.user_id, 10) || 2;
 
-  const sql = "UPDATE notification SET User_id = ?, Class_level = ?, Subject = ?, Deadline = ?, \`Date\` = ?, Details = ? WHERE Notification_id = ?";
+  const sql = "UPDATE notification SET User_id = ?, Class_level = ?, Subject = ?, Deadline = ?, `Date` = ?, Details = ? WHERE Notification_id = ?";
   db.query(sql, [User_id, Class_level, Subject, cleanDeadline, cleanDate, Details || null, req.params.id], (err, result) => {
-    if (err) { console.error(err); return res.status(500).json({ error: err.message }); }
+    if (err) { 
+      console.error(err); 
+      return res.status(500).json({ error: err.message }); 
+    }
     res.json({ message: "แก้ไขข้อมูลแจ้งเตือนสำเร็จ" });
+  });
+});
+
+// ==========================================
+// ❌ 4. [เพิ่มใหม่] ลบข้อมูลการบ้าน (DELETE)
+// ==========================================
+app.delete("/notifications/:id", (req, res) => {
+  const sql = "DELETE FROM notification WHERE Notification_id = ?";
+  db.query(sql, [req.params.id], (err, result) => {
+    if (err) {
+      console.error("เกิดข้อผิดพลาดในการลบข้อมูล:", err);
+      return res.status(500).json({ error: err.message });
+    }
+    res.json({ message: "ลบข้อมูลแจ้งเตือนสำเร็จ" });
   });
 });
 
@@ -716,30 +837,24 @@ app.post("/login", (req, res) => {
       // Login สำเร็จ
       // ==========================================
       return res.json({
-        success: true,
-        message: "สำเร็จ",
-        user: {
-          id: user.User_id,
-          User_id: user.User_id,
-
-          username: user.UserName,
-          UserName: user.UserName,
-
-          name: user.Name,
-          Name: user.Name,
-
-          role: user.Role,
-          Role: user.Role,
-
-          status: user.Status,
-          Status: user.Status,
-
-          // ⭐ สำคัญมาก
-          Class_level: user.Class_level,
-
-
-        }
-      });
+  success: true,
+  message: "สำเร็จ",
+  user: {
+    id: user.User_id,
+    User_id: user.User_id,
+    username: user.UserName,
+    UserName: user.UserName,
+    name: user.Name,
+    Name: user.Name,
+    email: user.Email, // 🆕 เพิ่ม email เล็ก
+    Email: user.Email, // 🆕 เพิ่ม Email ใหญ่
+    role: user.Role,
+    Role: user.Role,
+    status: user.Status,
+    Status: user.Status,
+    Class_level: user.Class_level,
+  }
+});
     }
   );
 });
@@ -749,7 +864,18 @@ app.post("/login", (req, res) => {
 // 2. API สำหรับรับข้อมูลลงทะเบียน (เวอร์ชันหักดิบ บังคับค่าแก้ปัญหาหน้าบ้านส่งผิด)
 // ========================================================
 app.post('/api/register', (req, res) => {
-  const { Name, Phone, UserName, Role, Class_level, Password, ConfirmPassword } = req.body;
+  // 1. แยกรับแยกดักจับค่า เพื่อความชัวร์ 100%
+  const Name = req.body.Name || req.body.name;
+  const Phone = req.body.Phone || req.body.phone;
+  
+  // 🆕 ดักจับทั้ง Email (E ใหญ่) และ email (e เล็ก) เผื่อหน้าบ้านส่งมาแบบไหนก็รับได้
+  const Email = req.body.Email || req.body.email || null; 
+  
+  const UserName = req.body.UserName || req.body.Username || req.body.username;
+  const Role = req.body.Role || req.body.role;
+  const Class_level = req.body.Class_level || req.body.class_level;
+  const Password = req.body.Password || req.body.password;
+  const ConfirmPassword = req.body.ConfirmPassword || req.body.confirmpassword;
 
   if (Password !== ConfirmPassword) {
     return res.status(400).json({ message: 'รหัสผ่านและยืนยันรหัสผ่านไม่ตรงกัน!' });
@@ -763,13 +889,11 @@ app.post('/api/register', (req, res) => {
       return res.status(400).json({ message: 'ชื่อผู้ใช้นี้มีอยู่ในระบบแล้ว' });
     }
 
-    // 🚨 ลบโค้ดเงื่อนไข fixedRole เก่าออกให้หมด แล้วใช้คำสั่ง SQL บันทึกค่า Role ตรงๆ แบบนี้:
-    const insertQuery = 'INSERT INTO users (Name, Phone, Password, UserName, Role, Class_level, Status) VALUES (?, ?, ?, ?, ?, ?, ?)';
+    const insertQuery = 'INSERT INTO users (Name, Phone, Email, Password, UserName, Role, Class_level, Status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
 
-    // นำค่า Role ที่รับมาจาก req.body (หน้าบ้าน) ใส่เข้าไปในตารางตรงๆ 
     db.query(
       insertQuery,
-      [Name, Phone, Password, UserName, Role, Class_level, "ใช้งาน"], // ✨ ใช้ Role ตรงนี้ และเปลี่ยนสถานะเป็น "ใช้งาน"
+      [Name, Phone, Email, Password, UserName, Role, Class_level, "ใช้งาน"],
       (err, result) => {
         if (err) return res.status(500).json({ error: err.message });
         return res.status(200).json({ message: 'ลงทะเบียนเรียบร้อยแล้ว!' });
