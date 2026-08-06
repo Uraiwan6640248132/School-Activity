@@ -133,8 +133,8 @@ const styles = {
     marginBottom: "16px",
   },
   logoImage: {
-    width: "110px",
-    height: "auto",
+    width: "160px",      // 💡 ปรับเพิ่มขนาดความกว้างตรงนี้ได้ตามใจชอบ (เดิมคือ 110px)
+    height: "auto",      // ปล่อยให้ความสูงคำนวณอัตโนมัติเพื่อไม่ให้รูปเบี้ยว
     objectFit: "contain",
   },
   menuList: {
