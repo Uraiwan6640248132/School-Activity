@@ -43,19 +43,28 @@ const fileFilter = (req, file, cb) => {
 const upload = multer({ storage: storage, fileFilter: fileFilter, limits: { fileSize: 5 * 1024 * 1024 } });
 
 // ฟังก์ชันช่วยตรวจสอบและแปลงฟอร์แมตวันที่จากหน้าบ้านให้เป็น YYYY-MM-DD ก่อนบันทึกลงฐานข้อมูล
+// ฟังก์ชันแปลงวันที่สำหรับ MySQL (ตัดปัญหา Timezone เคลื่อน)
 function parseDateForMySQL(dateStr) {
-  if (!dateStr || dateStr === "") return null;
-  if (dateStr.includes("/")) {
-    const parts = dateStr.split("/");
-    if (parts.length === 3) {
-      if (parts[2].length === 4) {
-        return `${parts[2]}-${parts[0].padStart(2, '0')}-${parts[1].padStart(2, '0')}`;
-      } else if (parts[0].length === 4) {
-        return `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
-      }
+  if (!dateStr) return null;
+
+  // ถ้าส่งมาเป็น ISO string หรือสตริง เช่น "2026-08-30T00:00:00.000Z" หรือ "2026-08-30"
+  // ให้ใช้ Regex ดึงเฉพาะ YYYY-MM-DD ออกมาตรงๆ
+  if (typeof dateStr === 'string') {
+    const match = dateStr.match(/^\d{4}-\d{2}-\d{2}/);
+    if (match) {
+      return match[0]; // จะได้ "2026-08-30" พอดี ไม่โดนบวก/ลบเวลา
     }
   }
-  return dateStr;
+
+  // ป้องกันกรณีส่งมาเป็น Date Object
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return null;
+
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
 }
 
 // ==========================================
@@ -439,17 +448,30 @@ app.delete('/api/publicrelations/:id', (req, res) => {
     res.json({ message: "ลบข้อมูลประชาสัมพันธ์เรียบร้อยแล้ว" });
   });
 });
-
-// ==========================================
-// 📅 ระบบ API จัดการปฏิทินกิจกรรม (CALENDAR)
-// ==========================================
-app.get("/api/calendar", (req, res) => {
-  db.query(`SELECT Calendar_id, Name, DATE_FORMAT(Date, '%Y-%m-%d') AS Date, Time, Location, User_id FROM calendar ORDER BY Date ASC`, (err, result) => {
+app.get("/api/publicrelations", (req, res) => {
+  const sql = `SELECT PublicRelation_id, Name_activity, DATE_FORMAT(Date, '%Y-%m-%d') AS Date, Location, Detail, User_id, Image FROM publicrelations ORDER BY PublicRelation_id DESC`;
+  db.query(sql, (err, result) => {
     if (err) return res.status(500).json(err);
     res.json(result);
   });
 });
 
+// ==========================================
+// 📅 ระบบ API จัดการปฏิทินกิจกรรม (CALENDAR)
+// ==========================================
+
+// 1. ดึงข้อมูลปฏิทินทั้งหมด
+app.get("/api/calendar", (req, res) => {
+  db.query(
+    `SELECT Calendar_id, PublicRelation_id, Name, DATE_FORMAT(Date, '%Y-%m-%d') AS Date, Time, Location, User_id FROM calendar ORDER BY Date ASC`,
+    (err, result) => {
+      if (err) return res.status(500).json(err);
+      res.json(result);
+    }
+  );
+});
+
+// 2. เพิ่มกิจกรรมใหม่ลงปฏิทิน
 app.post("/api/calendar", (req, res) => {
   const body = req.body || {};
   const Name = body.Name || body.name || null;
@@ -457,14 +479,22 @@ app.post("/api/calendar", (req, res) => {
   const Time = body.Time || body.time || null;
   const Location = body.Location || body.location || null;
   const finalUserId = parseInt(body.User_id || body.user_id, 10) || 2;
+  const prId = body.PublicRelation_id || body.prId || null;
 
-  db.query("INSERT INTO calendar (Name, Date, Time, Location, User_id) VALUES (?, ?, ?, ?, ?)",
-    [Name, cleanDate, Time, Location, finalUserId], (err, result) => {
-      if (err) { console.error("❌ ล้มเหลวในการเพิ่มปฏิทิน:", err.message); return res.status(500).json(err); }
+  db.query(
+    "INSERT INTO calendar (Name, Date, Time, Location, User_id, PublicRelation_id) VALUES (?, ?, ?, ?, ?, ?)",
+    [Name, cleanDate, Time, Location, finalUserId, prId],
+    (err, result) => {
+      if (err) {
+        console.error("❌ ล้มเหลวในการเพิ่มปฏิทิน:", err.message);
+        return res.status(500).json(err);
+      }
       res.json({ message: "เพิ่มกิจกรรมลงปฏิทินสำเร็จ", Calendar_id: result.insertId });
-    });
+    }
+  );
 });
 
+// 3. แก้ไขกิจกรรมด้วย Calendar_id
 app.put("/api/calendar/:id", (req, res) => {
   const body = req.body || {};
   const Name = body.Name || body.name || null;
@@ -473,13 +503,51 @@ app.put("/api/calendar/:id", (req, res) => {
   const Location = body.Location || body.location || null;
   const finalUserId = parseInt(body.User_id || body.user_id, 10) || 2;
 
-  db.query("UPDATE calendar SET Name=?, Date=?, Time=?, Location=?, User_id=? WHERE Calendar_id=?",
-    [Name, cleanDate, Time, Location, finalUserId, req.params.id], (err, result) => {
-      if (err) { console.error("❌ ล้มเหลวในการแก้ไขปฏิทิน:", err.message); return res.status(500).json({ error: err.message }); }
+  db.query(
+    "UPDATE calendar SET Name=?, Date=?, Time=?, Location=?, User_id=? WHERE Calendar_id=?",
+    [Name, cleanDate, Time, Location, finalUserId, req.params.id],
+    (err, result) => {
+      if (err) {
+        console.error("❌ ล้มเหลวในการแก้ไขปฏิทิน:", err.message);
+        return res.status(500).json({ error: err.message });
+      }
       res.json({ message: "แก้ไขข้อมูลปฏิทินสำเร็จ" });
-    });
+    }
+  );
 });
 
+// 4. แก้ไขกิจกรรมในปฏิทินอ้างอิงจาก PublicRelation_id
+app.put("/api/calendar/pr/:prId", (req, res) => {
+  const { prId } = req.params;
+  const body = req.body || {};
+  const Name = body.Name || body.name || null;
+  const cleanDate = parseDateForMySQL(body.Date || body.date);
+  const Location = body.Location || body.location || null;
+
+  const sql = `UPDATE calendar SET Name = ?, Date = ?, Location = ? WHERE PublicRelation_id = ?`;
+
+  db.query(sql, [Name, cleanDate, Location, prId], (err, result) => {
+    if (err) {
+      console.error("❌ ล้มเหลวในการอัปเดตปฏิทินจาก PR:", err.message);
+      return res.status(500).json({ error: err.message });
+    }
+    res.json({ message: "อัปเดตข้อมูลปฏิทินเรียบร้อยแล้ว", affectedRows: result.affectedRows });
+  });
+});
+
+// 5. ลบกิจกรรมในปฏิทินอ้างอิงจาก PublicRelation_id
+app.delete("/api/calendar/pr/:prId", (req, res) => {
+  const { prId } = req.params;
+  const sql = `DELETE FROM calendar WHERE PublicRelation_id = ?`;
+
+  db.query(sql, [prId], (err, result) => {
+    if (err) {
+      console.error("❌ ล้มเหลวในการลบปฏิทินจาก PR:", err.message);
+      return res.status(500).json({ error: err.message });
+    }
+    res.json({ message: "ลบกิจกรรมในปฏิทินเรียบร้อยแล้ว" });
+  });
+});
 // ==========================================
 // 📝 ระบบ API เช็คชื่อการเข้าร่วมกิจกรรม
 // ==========================================
