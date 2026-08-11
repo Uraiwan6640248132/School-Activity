@@ -1,33 +1,43 @@
-import { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-// 🌟 Import ตราสัญลักษณ์โรงเรียนเข้ามาจากโฟลเดอร์ src หลัก
+import {
+  LayoutDashboard,
+  User,
+  GraduationCap,
+  ScrollText,
+  Megaphone,
+  BellRing,
+  CalendarDays,
+  TrendingUp,
+  LogOut,
+  Menu,
+  X,
+  Heart
+} from "lucide-react";
+
+// 🌟 Import ตราสัญลักษณ์โรงเรียน
 import logoSchool from "../logo_school.png";
 
 function Navbar({ children }) {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // 🌟 เพิ่มสเตทสำหรับเก็บชื่อผู้ปกครอง (ค่าเริ่มต้นเป็นคำว่า "ผู้ปกครอง")
   const [parentName, setParentName] = useState("ผู้ปกครอง");
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   useEffect(() => {
     // 🔐 ดึงข้อมูลผู้ใช้ที่ล็อกอินมาจาก localStorage
     const storedUser = localStorage.getItem("user");
 
     if (!storedUser) {
-      // ถ้าไม่มีข้อมูลการล็อกอิน ให้ดีดกลับไปหน้า Login ทันที
       navigate("/login");
     } else {
       try {
         const userData = JSON.parse(storedUser);
 
-        // 🌟 ดึงค่าชื่อ (ตรวจสอบทั้งตัวพิมพ์ใหญ่และตัวพิมพ์เล็ก)
         const firstname = userData.Firstname || userData.firstname || userData.Name || userData.name || userData.UserName || "";
-
-        // 🌟 ดึงค่านามสกุล (ตรวจสอบทั้งตัวพิมพ์ใหญ่และตัวพิมพ์เล็ก)
         const lastname = userData.Lastname || userData.lastname || userData.Surname || userData.surname || "";
 
-        // นำชื่อและนามสกุลมาต่อกันแบบเว้นวรรคสวยงาม
         if (firstname || lastname) {
           setParentName(`${firstname} ${lastname}`.trim());
         } else {
@@ -39,14 +49,10 @@ function Navbar({ children }) {
     }
   }, [navigate]);
 
-  const menu = (path) => ({
-    ...styles.menu,
-    // 🌟 ปรับไฮไลต์สีเมื่ออยู่หน้านั้นๆ เป็นสีฟ้านุ่มละมุน (Indigo-50) และเปลี่ยนตัวอักษรเป็นสีฟ้าคราม
-    backgroundColor: location.pathname === path ? "#e0f2fe" : "transparent",
-    color: location.pathname === path ? "#0369a1" : "#426277",
-    fontWeight: location.pathname === path ? "600" : "500",
-    boxShadow: location.pathname === path ? "0 10px 24px rgba(14, 165, 233, 0.12)" : "none",
-  });
+  // ปิด Sidebar บนมือถือเมื่อเปลี่ยนหน้า
+  useEffect(() => {
+    setIsMobileOpen(false);
+  }, [location.pathname]);
 
   // ฟังก์ชันเมื่อกดปุ่มออกจากระบบ
   const handleLogout = () => {
@@ -56,177 +62,341 @@ function Navbar({ children }) {
     }
   };
 
+  // 📌 รายการเมนูสำหรับผู้ปกครอง (ใช้ Lucide Icons)
+  const menuItems = [
+    { path: "/homeparent", label: "หน้าหลัก", icon: LayoutDashboard },
+    { path: "/personal_dataparent", label: "ข้อมูลส่วนตัว", icon: User },
+    { path: "/student_data", label: "ข้อมูลนักเรียน", icon: GraduationCap },
+    { path: "/activityp", label: "กิจกรรม", icon: ScrollText },
+    { path: "/publicrelationp", label: "ประชาสัมพันธ์", icon: Megaphone },
+    { path: "/notificationp", label: "แจ้งเตือนการบ้าน", icon: BellRing },
+    { path: "/calendarp", label: "ปฏิทินกิจกรรม", icon: CalendarDays },
+    { path: "/developmentp", label: "พัฒนาการนักเรียน", icon: TrendingUp },
+  ];
+
   return (
     <div style={styles.layout}>
-      {/* 🧭 Sidebar: ล็อคให้อยู่กับที่ด้วย position: "sticky" และเปลี่ยนเป็นธีมสีขาวคลีน */}
-      <div style={styles.sidebar}>
+      {/* Overlay สำหรับปิด Sidebar บนมือถือ */}
+      {isMobileOpen && (
+        <div
+          style={styles.mobileOverlay}
+          onClick={() => setIsMobileOpen(false)}
+        />
+      )}
 
-        {/* 🌟 ตราสัญลักษณ์โรงเรียน จัดวางสวยงาม มีเส้นคั่นบางๆ */}
+      {/* 🧭 SIDEBAR */}
+      <aside
+        style={{
+          ...styles.sidebar,
+          transform: isMobileOpen ? "translateX(0)" : "translateX(-100%)",
+        }}
+        className="app-sidebar"
+      >
+        {/* ส่วนตราสัญลักษณ์โรงเรียน */}
         <div style={styles.logoSection}>
-          <img
-            src={logoSchool}
-            alt="ตราสัญลักษณ์โรงเรียน"
-            style={styles.logoImage}
-          />
+          <div style={styles.logoWrapper}>
+            <img
+              src={logoSchool}
+              alt="ตราสัญลักษณ์โรงเรียน"
+              style={styles.logoImage}
+            />
+          </div>
+          <button
+            style={styles.closeBtn}
+            onClick={() => setIsMobileOpen(false)}
+            aria-label="Close Menu"
+          >
+            <X size={20} color="#64748b" />
+          </button>
         </div>
 
-        {/* รายการเมนูตามรูปภาพ (เพิ่มอีโมจิให้หน้าตาสวยงามเหมือนหน้าผู้ใช้งานทั่วไป) */}
-        <div style={styles.menuList}>
-          <Link to="/homeparent" style={menu("/homeparent")}>📊 หน้าหลัก</Link>
-          <Link to="/personal_dataparent" style={menu("/personal_dataparent")}>👤 ข้อมูลส่วนตัว</Link>
-          <Link to="/student_data" style={menu("/student_data")}>🧑‍🎓 ข้อมูลนักเรียน</Link>
-          <Link to="/activityp" style={menu("/activityp")}>📅 กิจกรรม</Link>
-          <Link to="/publicrelationp" style={menu("/publicrelationp")}>📢 ประชาสัมพันธ์</Link>
-          <Link to="/notificationp" style={menu("/notificationp")}>📝 แจ้งเตือนการบ้าน</Link>
-          <Link to="/calendarp" style={menu("/calendarp")}>🗓️ ปฏิทินกิจกรรม</Link>
-          <Link to="/developmentp" style={menu("/developmentp")}>📈 พัฒนาการนักเรียน</Link>
+        {/* รายการเมนูหลัก */}
+        <nav style={styles.menuList}>
+          {menuItems.map((item) => {
+            const IconComponent = item.icon;
+            const isActive = location.pathname === item.path;
+
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                style={{
+                  ...styles.menuItem,
+                  ...(isActive ? styles.menuItemActive : {}),
+                }}
+              >
+                <IconComponent
+                  size={18}
+                  style={{
+                    color: isActive ? "#0284c7" : "#64748b",
+                    transition: "color 0.2s ease"
+                  }}
+                />
+                <span>{item.label}</span>
+              </Link>
+            );
+          })}
+        </nav>
+
+        {/* ปุ่มออกจากระบบ */}
+        <div style={styles.footerSection}>
+          <button onClick={handleLogout} style={styles.logoutBtn}>
+            <LogOut size={18} />
+            <span>ออกจากระบบ</span>
+          </button>
         </div>
+      </aside>
 
-        {/* ปุ่มออกจากระบบอยู่ล่างสุด */}
-        <button onClick={handleLogout} style={styles.logoutBtn}>
-          🚪 ออกจากระบบ
-        </button>
-      </div>
-
-      {/* 🖥️ Content Area: ฝั่งขวาเลื่อนขึ้นลงได้อิสระ */}
+      {/* 🖥️ CONTENT AREA */}
       <div style={styles.content}>
-        {/* 🔝 TOP NAVBAR: สีขาวโปร่งแสง Backdrop blur */}
-        <div style={styles.topbar}>
-          {/* ส่วนแสดงความต้อนรับด้านซ้าย */}
-          <div style={styles.welcomeText}>
-            ยินดีต้อนรับกลับสู่ระบบผู้ปกครอง
+        {/* 🔝 TOP NAVBAR */}
+        <header style={styles.topbar}>
+          <div style={styles.topbarLeft}>
+            <button
+              style={styles.hamburgerBtn}
+              onClick={() => setIsMobileOpen(true)}
+              aria-label="Open Menu"
+            >
+              <Menu size={22} color="#0369a1" />
+            </button>
+            <div style={styles.welcomeContainer}>
+              <Heart size={16} color="#0ea5e9" style={{ marginRight: 6 }} />
+              <span style={styles.welcomeText}>ยินดีต้อนรับกลับสู่ระบบผู้ปกครอง</span>
+            </div>
           </div>
 
-          {/* ส่วนแสดง ชื่อ-นามสกุล ด้านบนขวา ครอบดีไซน์แบบแคปซูลมนๆ */}
           <div style={styles.profileBadge}>
-            <span style={styles.statusDot}></span>
-            <span style={styles.username}>🔔 {parentName}</span>
+            <div style={styles.statusDotWrapper}>
+              <span style={styles.statusDot}></span>
+            </div>
+            <span style={styles.username}>{parentName}</span>
           </div>
-        </div>
-        <div style={styles.main}>{children}</div>
+        </header>
+
+        <main style={styles.main}>{children}</main>
       </div>
+
+      <style>{`
+        @media (min-width: 1024px) {
+          .app-sidebar {
+            transform: translateX(0) !important;
+          }
+        }
+        nav::-webkit-scrollbar {
+          display: none;
+        }
+      `}</style>
     </div>
   );
 }
 
-// 🎨 ปรับปรุงสไตล์ใหม่ทั้งหมด คุมโทนให้ตรงกันทุกหน้าจอ
+// 🎨 CSS Style
 const styles = {
   layout: {
     display: "flex",
     minHeight: "100vh",
-    background: "linear-gradient(135deg, #f6fbff 0%, #dff3ff 48%, #eef9ff 100%)",
-    fontFamily: "'Kanit', 'Segoe UI', sans-serif",
-    WebkitFontSmoothing: "antialiased"
+    background: "linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 50%, #f0fdf4 100%)",
+    fontFamily: "'Kanit', 'Prompt', 'Segoe UI', sans-serif",
+    WebkitFontSmoothing: "antialiased",
+    position: "relative",
+    overflowX: "hidden"
+  },
+  mobileOverlay: {
+    position: "fixed",
+    inset: 0,
+    backgroundColor: "rgba(15, 23, 42, 0.35)",
+    backdropFilter: "blur(4px)",
+    zIndex: 40,
+    transition: "opacity 0.3s ease"
   },
   sidebar: {
-    width: 256,
-    background: "rgba(255, 255, 255, 0.88)",
+    width: 270,
+    background: "rgba(255, 255, 255, 0.92)",
+    backdropFilter: "blur(16px)",
     display: "flex",
     flexDirection: "column",
-    borderRight: "1px solid rgba(186, 230, 253, 0.85)",
-    boxShadow: "8px 0 30px rgba(2, 132, 199, 0.08)",
-    position: "sticky", // 🌟 ตรึงให้อยู่กับที่
+    borderRight: "1px solid rgba(224, 242, 254, 0.8)",
+    boxShadow: "4px 0 25px rgba(14, 165, 233, 0.05)",
+    position: "fixed",
     top: 0,
-    height: "100vh",
-    flexShrink: 0
+    bottom: 0,
+    left: 0,
+    zIndex: 50,
+    transition: "transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
   },
   logoSection: {
     display: "flex",
-    justifyContent: "center",
+    justifyContent: "space-between",
     alignItems: "center",
-    padding: "24px",
-    borderBottom: "1px solid #d8eefb",
-    marginBottom: "16px",
+    padding: "20px 24px",
+    borderBottom: "1px solid #f1f5f9",
+  },
+  logoWrapper: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: "100%",
   },
   logoImage: {
-    width: "160px",      // 💡 ปรับเพิ่มขนาดความกว้างตรงนี้ได้ตามใจชอบ (เดิมคือ 110px)
-    height: "auto",      // ปล่อยให้ความสูงคำนวณอัตโนมัติเพื่อไม่ให้รูปเบี้ยว
+    maxHeight: "60px",
+    maxWidth: "180px",
     objectFit: "contain",
+  },
+  closeBtn: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    background: "#f1f5f9",
+    border: "none",
+    borderRadius: "50%",
+    width: "32px",
+    height: "32px",
+    cursor: "pointer",
+    padding: 0,
   },
   menuList: {
     flex: 1,
     display: "flex",
     flexDirection: "column",
-    gap: "4px",
-    overflowY: "auto" // เมนูย่อยเลื่อนตัวเองได้หากในอนาคตมีเมนูเพิ่มขึ้นมา
+    gap: "6px",
+    padding: "16px 14px",
+    overflowY: "auto",
+    msOverflowStyle: "none",
+    scrollbarWidth: "none",
   },
-  menu: {
-    display: "block",
-    padding: "12px 20px",
-    margin: "0 12px",
-    borderRadius: "12px",
+  menuItem: {
+    display: "flex",
+    alignItems: "center",
+    gap: "12px",
+    padding: "11px 16px",
+    borderRadius: "14px",
     textDecoration: "none",
-    cursor: "pointer",
-    fontSize: "14px",
-    transition: "all 0.2s ease",
-  },
-  logoutBtn: {
-    display: "block",
-    width: "calc(100% - 24px)",
-    padding: "12px 20px",
-    margin: "12px",
-    color: "#be123c",
-    background: "#fff5f7",
-    border: "1px solid #fecdd3",
-    borderRadius: "12px",
-    textAlign: "left",
-    cursor: "pointer",
     fontSize: "14px",
     fontWeight: "500",
-    borderTop: "1px solid #d8eefb",
-    fontFamily: "'Kanit', 'Segoe UI', sans-serif",
-    transition: "background-color 0.2s",
+    color: "#475569",
+    transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+  },
+  menuItemActive: {
+    backgroundColor: "#e0f2fe",
+    color: "#0369a1",
+    fontWeight: "600",
+    boxShadow: "0 4px 12px rgba(14, 165, 233, 0.12)",
+  },
+  footerSection: {
+    padding: "16px 14px",
+    borderTop: "1px solid #f1f5f9",
+  },
+  logoutBtn: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "10px",
+    width: "100%",
+    padding: "12px",
+    color: "#e11d48",
+    background: "#fff1f2",
+    border: "1px solid #fecdd3",
+    borderRadius: "14px",
+    cursor: "pointer",
+    fontSize: "14px",
+    fontWeight: "600",
+    fontFamily: "'Kanit', sans-serif",
+    transition: "all 0.2s ease",
   },
   content: {
     flex: 1,
     display: "flex",
     flexDirection: "column",
-    minWidth: 0
+    minWidth: 0,
+    marginLeft: 0,
   },
   topbar: {
-    height: 64,
-    background: "rgba(255, 255, 255, 0.78)",
+    height: 68,
+    background: "rgba(255, 255, 255, 0.85)",
     backdropFilter: "blur(12px)",
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: "0 32px",
-    borderBottom: "1px solid rgba(186, 230, 253, 0.7)",
+    padding: "0 24px",
+    borderBottom: "1px solid rgba(224, 242, 254, 0.8)",
     position: "sticky",
     top: 0,
-    zIndex: 10
+    zIndex: 30,
+  },
+  topbarLeft: {
+    display: "flex",
+    alignItems: "center",
+    gap: "12px",
+  },
+  hamburgerBtn: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    background: "#f0f9ff",
+    border: "1px solid #bae6fd",
+    borderRadius: "10px",
+    padding: "8px",
+    cursor: "pointer",
+  },
+  welcomeContainer: {
+    display: "flex",
+    alignItems: "center",
   },
   welcomeText: {
-    fontSize: "12px",
-    color: "#4b7188",
-    fontWeight: "500"
+    fontSize: "14px",
+    color: "#0369a1",
+    fontWeight: "600",
   },
   profileBadge: {
     display: "flex",
     alignItems: "center",
-    gap: "12px",
+    gap: "10px",
     background: "#ffffff",
-    padding: "6px 16px",
+    padding: "6px 16px 6px 12px",
     borderRadius: "9999px",
-    border: "1px solid rgba(186, 230, 253, 0.9)",
-    boxShadow: "0 8px 22px rgba(14, 165, 233, 0.12)"
+    border: "1px solid #e0f2fe",
+    boxShadow: "0 2px 8px rgba(14, 165, 233, 0.08)",
+  },
+  statusDotWrapper: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
   },
   statusDot: {
     width: "8px",
     height: "8px",
     background: "#10b981",
     borderRadius: "50%",
+    boxShadow: "0 0 0 3px rgba(16, 185, 129, 0.2)",
   },
   username: {
     fontSize: "13px",
     fontWeight: "600",
-    color: "#12324a"
+    color: "#1e293b",
   },
   main: {
-    padding: "28px",
+    padding: "24px",
     flex: 1,
-    overflowY: "auto"
+    maxWidth: "1400px",
+    width: "100%",
+    margin: "0 auto",
+    boxSizing: "border-box"
   },
 };
+
+if (typeof document !== "undefined") {
+  const styleSheet = document.createElement("style");
+  styleSheet.innerText = `
+    @media (min-width: 1024px) {
+      .app-sidebar + div {
+        margin-left: 270px !important;
+      }
+      button[aria-label="Open Menu"], button[aria-label="Close Menu"] {
+        display: none !important;
+      }
+    }
+  `;
+  document.head.appendChild(styleSheet);
+}
 
 export default Navbar;

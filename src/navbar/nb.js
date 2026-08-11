@@ -1,27 +1,37 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-// Import ตราสัญลักษณ์โรงเรียนเข้ามาจากโฟลเดอร์ src หลัก
+import {
+  LayoutDashboard,
+  User,
+  GraduationCap,
+  ScrollText,
+  Megaphone,
+  BellRing,
+  CalendarDays,
+  Users2,
+  TrendingUp,
+  LogOut,
+  Menu,
+  X,
+  Sparkles
+} from "lucide-react";
+
+// 🌟 Import ตราสัญลักษณ์โรงเรียน
 import logoSchool from "../logo_school.png";
 
 function Navbar({ children }) {
   const location = useLocation();
-  // 🌟 เพิ่ม State สำหรับเก็บชื่อผู้ใช้งานที่ดึงมาจากระบบ
   const [userName, setUserName] = useState("ผู้ใช้งานระบบ");
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   useEffect(() => {
-    // 🌟 ดึงข้อมูล user จาก localStorage ตอนเริ่มต้นโหลดคอมโพเนนต์
     const savedUser = localStorage.getItem("user");
     if (savedUser) {
       try {
         const userObj = JSON.parse(savedUser);
-
-        // 1. ดึงค่าชื่อ (เช็คเผื่อไว้ทั้งตัวพิมพ์ใหญ่/พิมพ์เล็ก)
         const firstname = userObj.Firstname || userObj.firstname || userObj.Name || userObj.name || "";
-
-        // 2. ดึงค่านามสกุล (เช็คเผื่อไว้ทั้งตัวพิมพ์ใหญ่/พิมพ์เล็ก)
         const lastname = userObj.Lastname || userObj.lastname || userObj.Surname || userObj.surname || "";
 
-        // 3. นำชื่อและนามสกุลมาต่อกัน ถ้ามีข้อมูลครบถ้วน
         if (firstname || lastname) {
           setUserName(`${firstname} ${lastname}`.trim());
         } else {
@@ -33,206 +43,364 @@ function Navbar({ children }) {
     }
   }, []);
 
-  // 🚪 ฟังก์ชันเมื่อกดปุ่มออกจากระบบ
+  // ปิด Sidebar บนมือถือเมื่อเปลี่ยนหน้า
+  useEffect(() => {
+    setIsMobileOpen(false);
+  }, [location.pathname]);
+
   const handleLogout = () => {
     if (window.confirm("คุณต้องการออกจากระบบใช่หรือไม่?")) {
-      localStorage.removeItem("user"); // ลบความจำการล็อกอินออกทั้งหมด
-      window.location.href = "/login"; // ดีดตัวกลับไปหน้าล็อกอินด้านนอกสุด
+      localStorage.removeItem("user");
+      window.location.href = "/login";
     }
   };
 
-  const menu = (path) => ({
-    ...styles.menu,
-    // 🌟 เปลี่ยนสีเมนูไฮไลต์แบบนุ่มละมุนเมื่อคลิกเลือกหน้านั้นๆ เหมือนหน้าผู้ปกครอง
-    backgroundColor: location.pathname === path ? "#e0f2fe" : "transparent",
-    color: location.pathname === path ? "#0369a1" : "#426277",
-    fontWeight: location.pathname === path ? "600" : "500",
-    boxShadow: location.pathname === path ? "0 10px 24px rgba(14, 165, 233, 0.12)" : "none",
-  });
-
-
-
+  // 📌 รายการเมนูพร้อม Lucide Icons (ปรับใช้ LayoutDashboard เป็นมาตรฐานเดียวกับทุกบทบาท)
+  const menuItems = [
+    { path: "/home", label: "หน้าหลัก", icon: LayoutDashboard },
+    { path: "/personal", label: "ข้อมูลส่วนตัว", icon: User },
+    { path: "/students", label: "ข้อมูลนักเรียน", icon: GraduationCap },
+    { path: "/activity", label: "กิจกรรมนักเรียน", icon: ScrollText },
+    { path: "/publicrelations", label: "ข่าวประชาสัมพันธ์", icon: Megaphone },
+    { path: "/notification", label: "แจ้งเตือนการบ้าน", icon: BellRing },
+    { path: "/event", label: "ปฏิทินกิจกรรม", icon: CalendarDays },
+    { path: "/participating", label: "การเข้าร่วมกิจกรรม", icon: Users2 },
+    { path: "/development", label: "พัฒนาการนักเรียน", icon: TrendingUp },
+  ];
 
   return (
     <div style={styles.layout}>
+      {/* 📱 Overlay สำหรับปิด Sidebar บนมือถือ */}
+      {isMobileOpen && (
+        <div
+          style={styles.mobileOverlay}
+          onClick={() => setIsMobileOpen(false)}
+        />
+      )}
 
-      {/* 🧭 SIDEBAR: ล็อคให้อยู่กับที่ ไม่ขยับตามการ Scroll เป็นธีมขาวคลีนเรียบร้อย */}
-      <div style={styles.sidebar}>
-
-        {/* โลโก้โรงเรียน จัดวางสวยงาม */}
+      {/* 🧭 SIDEBAR */}
+      <aside
+        style={{
+          ...styles.sidebar,
+          transform: isMobileOpen ? "translateX(0)" : "translateX(-100%)",
+        }}
+        className="app-sidebar"
+      >
+        {/* ส่วนแสดงโลโก้โรงเรียน */}
         <div style={styles.logoSection}>
-          <img
-            src={logoSchool}
-            alt="ตราสัญลักษณ์โรงเรียน"
-            style={styles.logoImage}
-          />
+          <div style={styles.logoWrapper}>
+            <img
+              src={logoSchool}
+              alt="ตราสัญลักษณ์โรงเรียน"
+              style={styles.logoImage}
+            />
+          </div>
+          {/* ปุ่มปิดบนมือถือ */}
+          <button
+            style={styles.closeBtn}
+            onClick={() => setIsMobileOpen(false)}
+            aria-label="Close Menu"
+          >
+            <X size={20} color="#64748b" />
+          </button>
         </div>
 
-        {/* รายการเมนูลิงก์ภายในแอป (ปรับไอคอนให้เป็นทางการขึ้น) */}
-        <div style={styles.menuList} className="sidebar-menu-list">
-          <Link to="/home" style={menu("/home")}>🏢 หน้าหลัก</Link>
-          <Link to="/personal" style={menu("/personal")}>📋 ข้อมูลส่วนตัว</Link>
-          <Link to="/students" style={menu("/students")}>🎓 ข้อมูลนักเรียน</Link>
-          <Link to="/activity" style={menu("/activity")}>📜 กิจกรรม</Link>
-          <Link to="/publicrelations" style={menu("/publicrelations")}>📢 ประชาสัมพันธ์</Link>
-          <Link to="/notification" style={menu("/notification")}>📝 แจ้งเตือนการบ้าน</Link>
-          <Link to="/event" style={menu("/event")}>📅 ปฏิทินกิจกรรม</Link>
-          <Link to="/participating" style={menu("/participating")}>🤝 เข้าร่วมกิจกรรม</Link>
-          <Link to="/development" style={menu("/development")}>📊 พัฒนาการนักเรียน</Link>
+        {/* รายการเมนูหลัก */}
+        <nav style={styles.menuList}>
+          {menuItems.map((item) => {
+            const IconComponent = item.icon;
+            const isActive = location.pathname === item.path;
+
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                style={{
+                  ...styles.menuItem,
+                  ...(isActive ? styles.menuItemActive : {}),
+                }}
+              >
+                <IconComponent
+                  size={18}
+                  style={{
+                    color: isActive ? "#0284c7" : "#64748b",
+                    transition: "color 0.2s ease"
+                  }}
+                />
+                <span>{item.label}</span>
+              </Link>
+            );
+          })}
+        </nav>
+
+        {/* ปุ่มออกจากระบบด้านล่างสุด */}
+        <div style={styles.footerSection}>
+          <button onClick={handleLogout} style={styles.logoutBtn}>
+            <LogOut size={18} />
+            <span>ออกจากระบบ</span>
+          </button>
         </div>
+      </aside>
 
-        {/* 🚪 ปุ่มออกจากระบบ: จัดไว้ที่ด้านล่างสุด */}
-        <button onClick={handleLogout} style={styles.logoutBtn}>
-          🔒 ออกจากระบบ
-        </button>
-      </div>
-
-      {/* 🖥️ CONTENT AREA: ฝั่งขวาซึ่งเป็นหน้าจอหลัก เลื่อน Scroll ได้ตามใจชอบ */}
+      {/* 🖥️ CONTENT AREA */}
       <div style={styles.content}>
-
-        {/* 🔝 TOP NAVBAR: เปลี่ยนจากสีฟ้าทึบเดิม เป็นสีขาวโปร่งแสง Backdrop blur ซ่อนเนียนตา */}
-        <div style={styles.topbar}>
-          {/* ส่วนแสดงความต้อนรับด้านซ้าย */}
-          <div style={styles.welcomeText}>
-            ยินดีต้อนรับกลับสู่ระบบ
+        {/* 🔝 TOP NAVBAR */}
+        <header style={styles.topbar}>
+          <div style={styles.topbarLeft}>
+            <button
+              style={styles.hamburgerBtn}
+              onClick={() => setIsMobileOpen(true)}
+              aria-label="Open Menu"
+            >
+              <Menu size={22} color="#0369a1" />
+            </button>
+            <div style={styles.welcomeContainer}>
+              <Sparkles size={16} color="#0ea5e9" style={{ marginRight: 6 }} />
+              <span style={styles.welcomeText}>ระบบบันทึกกิจกรรมนักเรียนอนุบาล</span>
+            </div>
           </div>
 
-          {/* ปุ่มโปรไฟล์ผู้ใช้งานด้านขวา สไตล์แคปซูลโค้งมน (นำ 🔔 ออกเพื่อไม่ให้กวนสายตา) */}
+          {/* โปรไฟล์ผู้ใช้ */}
           <div style={styles.profileBadge}>
-            <span style={styles.statusDot}></span>
+            <div style={styles.statusDotWrapper}>
+              <span style={styles.statusDot}></span>
+            </div>
             <span style={styles.username}>{userName}</span>
           </div>
-        </div>
+        </header>
 
-        {/* ส่วนแสดงคอมโพเนนต์ย่อยด้านใน */}
-        <div style={styles.main}>
+        {/* ส่วนเนื้อหาหลัก */}
+        <main style={styles.main}>
           {children}
-        </div>
+        </main>
       </div>
+
+      {/* 🛠️ CSS Injection สำหรับ Custom Scrollbar & Animations */}
+      <style>{`
+        @media (min-width: 1024px) {
+          .app-sidebar {
+            transform: translateX(0) !important;
+          }
+        }
+        nav::-webkit-scrollbar {
+          display: none;
+        }
+      `}</style>
     </div>
   );
 }
 
-// 🎨 โครงสร้างเดิมทั้งหมด แก้ไขแค่ลบแถบเลื่อน (Scrollbar) ออกถาวร
+// 🎨 Styling ในรูปแบบ Inline Styles
 const styles = {
   layout: {
     display: "flex",
     minHeight: "100vh",
-    background: "linear-gradient(135deg, #f6fbff 0%, #dff3ff 48%, #eef9ff 100%)",
-    fontFamily: "'Kanit', 'Segoe UI', sans-serif",
-    WebkitFontSmoothing: "antialiased"
+    background: "linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 50%, #f0fdf4 100%)",
+    fontFamily: "'Kanit', 'Prompt', 'Segoe UI', sans-serif",
+    WebkitFontSmoothing: "antialiased",
+    position: "relative",
+    overflowX: "hidden"
+  },
+  mobileOverlay: {
+    position: "fixed",
+    inset: 0,
+    backgroundColor: "rgba(15, 23, 42, 0.35)",
+    backdropFilter: "blur(4px)",
+    zIndex: 40,
+    transition: "opacity 0.3s ease"
   },
   sidebar: {
-    width: 256,
-    background: "rgba(255, 255, 255, 0.88)",
+    width: 270,
+    background: "rgba(255, 255, 255, 0.92)",
+    backdropFilter: "blur(16px)",
     display: "flex",
     flexDirection: "column",
-    borderRight: "1px solid rgba(186, 230, 253, 0.85)",
-    boxShadow: "8px 0 30px rgba(2, 132, 199, 0.08)",
-    position: "sticky",
+    borderRight: "1px solid rgba(224, 242, 254, 0.8)",
+    boxShadow: "4px 0 25px rgba(14, 165, 233, 0.05)",
+    position: "fixed",
     top: 0,
-    height: "100vh",
-    flexShrink: 0
+    bottom: 0,
+    left: 0,
+    zIndex: 50,
+    transition: "transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
   },
   logoSection: {
     display: "flex",
-    justifyContent: "center",
+    justifyContent: "space-between",
     alignItems: "center",
-    padding: "24px",
-    borderBottom: "1px solid #d8eefb",
-    marginBottom: "16px",
+    padding: "20px 24px",
+    borderBottom: "1px solid #f1f5f9",
+  },
+  logoWrapper: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: "100%",
   },
   logoImage: {
-    width: "160px",      // 💡 ปรับเพิ่มขนาดความกว้างตรงนี้ได้ตามใจชอบ (เดิมคือ 110px)
-    height: "auto",      // ปล่อยให้ความสูงคำนวณอัตโนมัติเพื่อไม่ให้รูปเบี้ยว
+    maxHeight: "60px",
+    maxWidth: "180px",
     objectFit: "contain",
+  },
+  closeBtn: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    background: "#f1f5f9",
+    border: "none",
+    borderRadius: "50%",
+    width: "32px",
+    height: "32px",
+    cursor: "pointer",
+    padding: 0,
   },
   menuList: {
     flex: 1,
     display: "flex",
     flexDirection: "column",
-    gap: "4px",
-    overflowY: "auto", // 🌟 [แนะนำปรับเป็น auto] เพื่อรองรับหน้าจอที่เตี้ย แต่จะซ่อนแถบเลื่อนด้วย CSS แทนเพื่อความเนียนตา
-    msOverflowStyle: "none",  /* IE and Edge */
-    scrollbarWidth: "none",  /* Firefox */
+    gap: "6px",
+    padding: "16px 14px",
+    overflowY: "auto",
+    msOverflowStyle: "none",
+    scrollbarWidth: "none",
   },
-  menu: {
-    display: "block",
-    padding: "12px 20px",
-    margin: "0 12px",
-    borderRadius: "12px",
+  menuItem: {
+    display: "flex",
+    alignItems: "center",
+    gap: "12px",
+    padding: "11px 16px",
+    borderRadius: "14px",
     textDecoration: "none",
-    cursor: "pointer",
-    fontSize: "14px",
-    transition: "all 0.2s ease",
-  },
-  logoutBtn: {
-    display: "block",
-    width: "calc(100% - 24px)",
-    padding: "12px 20px",
-    margin: "12px",
-    color: "#be123c",
-    background: "#fff5f7",
-    border: "1px solid #fecdd3",
-    borderRadius: "12px",
-    textAlign: "left",
-    cursor: "pointer",
     fontSize: "14px",
     fontWeight: "500",
-    borderTop: "1px solid #d8eefb",
-    fontFamily: "'Kanit', 'Segoe UI', sans-serif",
-    transition: "background-color 0.2s",
+    color: "#475569",
+    transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+  },
+  menuItemActive: {
+    backgroundColor: "#e0f2fe",
+    color: "#0369a1",
+    fontWeight: "600",
+    boxShadow: "0 4px 12px rgba(14, 165, 233, 0.12)",
+  },
+  footerSection: {
+    padding: "16px 14px",
+    borderTop: "1px solid #f1f5f9",
+  },
+  logoutBtn: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "10px",
+    width: "100%",
+    padding: "12px",
+    color: "#e11d48",
+    background: "#fff1f2",
+    border: "1px solid #fecdd3",
+    borderRadius: "14px",
+    cursor: "pointer",
+    fontSize: "14px",
+    fontWeight: "600",
+    fontFamily: "'Kanit', sans-serif",
+    transition: "all 0.2s ease",
   },
   content: {
     flex: 1,
     display: "flex",
     flexDirection: "column",
-    minWidth: 0
+    minWidth: 0,
+    marginLeft: 0,
   },
   topbar: {
-    height: 64,
-    background: "rgba(255, 255, 255, 0.78)",
+    height: 68,
+    background: "rgba(255, 255, 255, 0.85)",
     backdropFilter: "blur(12px)",
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: "0 32px",
-    borderBottom: "1px solid rgba(186, 230, 253, 0.7)",
+    padding: "0 24px",
+    borderBottom: "1px solid rgba(224, 242, 254, 0.8)",
     position: "sticky",
     top: 0,
-    zIndex: 10
+    zIndex: 30,
+  },
+  topbarLeft: {
+    display: "flex",
+    alignItems: "center",
+    gap: "12px",
+  },
+  hamburgerBtn: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    background: "#f0f9ff",
+    border: "1px solid #bae6fd",
+    borderRadius: "10px",
+    padding: "8px",
+    cursor: "pointer",
+  },
+  welcomeContainer: {
+    display: "flex",
+    alignItems: "center",
   },
   welcomeText: {
-    fontSize: "12px",
-    color: "#4b7188",
-    fontWeight: "500"
+    fontSize: "14px",
+    color: "#0369a1",
+    fontWeight: "600",
   },
   profileBadge: {
     display: "flex",
     alignItems: "center",
-    gap: "12px",
+    gap: "10px",
     background: "#ffffff",
-    padding: "6px 16px",
+    padding: "6px 16px 6px 12px",
     borderRadius: "9999px",
-    border: "1px solid rgba(186, 230, 253, 0.9)",
-    boxShadow: "0 8px 22px rgba(14, 165, 233, 0.12)"
+    border: "1px solid #e0f2fe",
+    boxShadow: "0 2px 8px rgba(14, 165, 233, 0.08)",
+  },
+  statusDotWrapper: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
   },
   statusDot: {
     width: "8px",
     height: "8px",
     background: "#10b981",
     borderRadius: "50%",
+    boxShadow: "0 0 0 3px rgba(16, 185, 129, 0.2)",
   },
   username: {
     fontSize: "13px",
     fontWeight: "600",
-    color: "#12324a"
+    color: "#1e293b",
   },
   main: {
-    padding: "28px",
+    padding: "24px",
     flex: 1,
-    overflowY: "auto"
+    maxWidth: "1400px",
+    width: "100%",
+    margin: "0 auto",
+    boxSizing: "border-box"
   },
 };
+
+// CSS Injection สไตล์เฉพาะเพื่อดัน Margin ฝั่งขวาเฉพาะเมื่ออยู่หน้าจอคอมพิวเตอร์
+if (typeof document !== "undefined") {
+  const styleSheet = document.createElement("style");
+  styleSheet.innerText = `
+    @media (min-width: 1024px) {
+      .app-sidebar + div {
+        margin-left: 270px !important;
+      }
+      button[aria-label="Open Menu"] {
+        display: none !important;
+      }
+      button[aria-label="Close Menu"] {
+        display: none !important;
+      }
+    }
+  `;
+  document.head.appendChild(styleSheet);
+}
 
 export default Navbar;
