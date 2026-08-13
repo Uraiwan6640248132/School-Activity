@@ -15,6 +15,8 @@ function Navbar({ children }) {
       try {
         const userObj = JSON.parse(savedUser);
 
+
+        
         // 1. ดึงค่าชื่อ (เช็คเผื่อไว้ทั้งตัวพิมพ์ใหญ่/พิมพ์เล็ก)
         const firstname = userObj.Firstname || userObj.firstname || userObj.Name || userObj.name || "";
 
