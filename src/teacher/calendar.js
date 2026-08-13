@@ -261,6 +261,14 @@ function CalendarActivity() {
     if (num > maxVal) num = maxVal;
     setter(String(num).padStart(2, '0'));
   };
+  // ตัวอย่างการ map ข้อมูลกิจกรรมลง FullCalendar
+  const events = calendarList.map(item => ({
+    id: item.Calendar_id,
+    title: item.Name,
+    // 🌟 บังคับใส่ T00:00:00 เพื่อไม่ให้ FullCalendar ดึงเวลาไป UTC
+    start: item.Date ? `${item.Date.split('T')[0]}T00:00:00` : '',
+    allDay: true
+  }));
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', width: '100%', padding: '20px', boxSizing: 'border-box', backgroundColor: '#dff3ff 48%' }}>

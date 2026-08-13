@@ -2,20 +2,20 @@ import React, { useState, useEffect, useRef } from 'react';
 
 function StudentManagement() {
   const [students, setStudents] = useState([]);
+  const [parentsList, setParentsList] = useState([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
 
-  // 📝 สเตตสำหรับระบบค้นหาชื่อผู้ปกครองอัตโนมัติ (Autocomplete)
-  const [parentSearch, setParentSearch] = useState('');          // ข้อความที่พิมพ์ในช่อง
-  const [suggestions, setSuggestions] = useState([]);            // รายชื่อที่ค้นหาเจอจาก API
-  const [showSuggestions, setShowSuggestions] = useState(false);  // เปิด/ปิด กล่องรายชื่อแนะนำ
-  const [isSelecting, setIsSelecting] = useState(false);          // สเตตป้องกันการดึงข้อมูลซ้ำซ้อนเมื่อเลือกแล้ว
+  // 📝 สเตตสำหรับระบบค้นหาชื่อผู้ปกครอง
+  const [parentSearch, setParentSearch] = useState('');
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const suggestionRef = useRef(null);
 
-  // 🔐 1. ดึงข้อมูลครูจาก localStorage
-  const [teacherData, setTeacherData] = useState(() => {
+  // 🔐 ดึงข้อมูลครูจาก localStorage
+  const [teacherData] = useState(() => {
     const savedUser = localStorage.getItem('user');
     if (savedUser) {
       try {
@@ -25,14 +25,12 @@ function StudentManagement() {
           userId: userObj.User_id || userObj.user_id || userObj.id || 1
         };
       } catch (e) {
-        console.error("Error parsing user data:", e);
         return { classLevel: null, userId: 1 };
       }
     }
     return { classLevel: null, userId: 1 };
   });
 
-  // 🎯 บังคับเลือกห้องเรียนของตัวเองทันทีตั้งแต่แรก
   const [selectedClass, setSelectedClass] = useState(() => {
     const savedUser = localStorage.getItem('user');
     if (savedUser) {
@@ -46,9 +44,6 @@ function StudentManagement() {
     return 'อนุบาล1 ห้องปกติ';
   });
 
-  const currentUser = JSON.parse(localStorage.getItem("user"));
-  const isTeacher = currentUser?.Role === "ครูผู้สอน" || currentUser?.role === "ครูผู้สอน";
-
   useEffect(() => {
     if (teacherData.classLevel) {
       setSelectedClass(teacherData.classLevel);
@@ -61,7 +56,7 @@ function StudentManagement() {
     "อนุบาล3 ห้องปกติ", "อนุบาล3 ห้อง 3 ภาษา"
   ];
 
-  // 🔐 ตั้งค่าฟอร์มเริ่มต้น
+  // ฟอร์มเริ่มต้น
   const [formData, setFormData] = useState({
     Student_id: '',
     Name: '',
@@ -69,50 +64,99 @@ function StudentManagement() {
     Gender: 'ชาย',
     Class_level: selectedClass,
     Blood_group: '',
-    User_id: teacherData.userId,
+    User_id: null,
     Image: ''
   });
 
-  useEffect(() => {
-    setFormData(prev => ({
-      ...prev,
-      Class_level: selectedClass
-    }));
-  }, [selectedClass]);
+  const [selectedStudentId, setSelectedStudentId] = useState(null);
+  const [viewingStudent, setViewingStudent] = useState(null);
+  const [viewingParentName, setViewingParentName] = useState('');
 
-  // 🔍 ค้นหารายชื่อผู้ปกครองมากรองหน้าบ้าน
+  // 🔄 ล้างค่าฟอร์มทั้งหมด
+  const resetForm = () => {
+    setFormData({
+      Student_id: '',
+      Name: '',
+      Birthday: '',
+      Gender: 'ชาย',
+      Class_level: selectedClass,
+      Blood_group: '',
+      User_id: null,
+      Image: ''
+    });
+    setParentSearch('');
+    setSuggestions([]);
+    setShowSuggestions(false);
+  };
+
+  // 🔄 ดึงข้อมูลนักเรียน
+  const fetchStudents = () => {
+    fetch('http://localhost:3001/api/students')
+      .then(res => res.json())
+      .then(data => { if (Array.isArray(data)) setStudents(data); })
+      .catch(err => console.error("Error fetching students:", err));
+  };
+
+
+
   useEffect(() => {
-    // ถ้าอยู่ระหว่างดึงข้อมูลแรกเข้า หรือเพิ่งกดเลือกผู้ปกครอง จะไม่ดึง API ซ้ำ
-    if (isSelecting || parentSearch.includes('กำลังโหลด')) {
+    fetchStudents();
+    fetchParents();
+  }, []);
+
+  // 🔄 ดึงรายชื่อผู้ปกครองทั้งหมด (เพิ่ม Console log ตรวจสอบ)
+  const fetchParents = () => {
+    fetch('http://localhost:3001/api/parents')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          setParentsList(data);
+          console.log("ดึงข้อมูลผู้ปกครองสำเร็จ:", data);
+        }
+      })
+      .catch(err => console.error("Error fetching parents:", err));
+  };
+
+  // 🔍 พิมพ์ค้นหาผู้ปกครอง (ปรับให้พิมพ์แค่ 1 ตัวอักษรขึ้นไปก็ค้นเจอ)
+  const handleParentSearchChange = (e) => {
+    const query = e.target.value;
+    setParentSearch(query);
+
+    if (!query.trim()) {
+      setFormData(prev => ({ ...prev, User_id: null }));
+      setSuggestions([]);
+      setShowSuggestions(false);
       return;
     }
 
-    if (parentSearch.trim().length >= 2) {
-      fetch(`http://localhost:3001/users`)
-        .then(res => {
-          if (!res.ok) throw new Error("ดึงข้อมูลไม่สำเร็จ");
-          return res.json();
-        })
-        .then(allUsers => {
-          if (Array.isArray(allUsers)) {
-            const filtered = allUsers.filter(user => {
-              // 🛠️ จุดแก้ไขสำคัญ: รองรับทั้ง .Name และ .name ของ Object หลังบ้าน
-              const userName = user.Name || user.name || '';
-              return userName.toLowerCase().includes(parentSearch.toLowerCase());
-            });
-            setSuggestions(filtered);
-          }
-        })
-        .catch(err => {
-          console.error("Error searching parents:", err);
-          setSuggestions([]);
-        });
+    // พิมพ์ 1 ตัวอักษรขึ้นไปให้ค้นหาทันที
+    if (query.trim().length >= 1) {
+      const searchTerm = query.toLowerCase().replace(/\s+/g, ''); // ตัดช่องว่างออกเพื่อให้ค้นหาง่ายขึ้น
+
+      const filtered = parentsList.filter(p => {
+        const parentName = (p.Name || p.name || '').toLowerCase().replace(/\s+/g, '');
+        return parentName.includes(searchTerm);
+      });
+
+      setSuggestions(filtered);
+      setShowSuggestions(true);
     } else {
       setSuggestions([]);
+      setShowSuggestions(false);
     }
-  }, [parentSearch, isSelecting]);
+  };
 
-  // คลิกปิดกล่องรายชื่อแนะนำเมื่อกดพื้นที่อื่นนอกเหนือจากตัวเลือก
+  // เลือกผู้ปกครองจากรายการ
+  const handleSelectParent = (parent) => {
+    const parentId = parent.User_id || parent.id || parent.user_id;
+    const parentName = parent.Name || parent.name || parent.fullname || parent.Firstname || '';
+
+    setParentSearch(parentName);
+    setFormData(prev => ({ ...prev, User_id: parentId }));
+    setShowSuggestions(false);
+  };
+
+  // คลิกข้างนอกเพื่อปิดดร็อปดาวน์
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (suggestionRef.current && !suggestionRef.current.contains(event.target)) {
@@ -123,62 +167,26 @@ function StudentManagement() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const [selectedStudentId, setSelectedStudentId] = useState(null);
-  const [viewingStudent, setViewingStudent] = useState(null);
-  const [viewingParentName, setViewingParentName] = useState('');
-
-  const resetForm = () => {
-    setFormData({
-      Student_id: '',
-      Name: '',
-      Birthday: '',
-      Gender: 'ชาย',
-      Class_level: selectedClass,
-      Blood_group: '',
-      User_id: '',
-      Image: ''
-    });
-    setParentSearch('');
-    setSuggestions([]);
-    setIsSelecting(false);
-  };
-
+  // เปิด Modal เพิ่ม
   const handleOpenAddModal = () => {
     resetForm();
     setIsAddModalOpen(true);
   };
 
-  const fetchStudents = () => {
-    fetch('http://localhost:3001/api/students')
-      .then(res => {
-        if (!res.ok) throw new Error("Server response not ok");
-        return res.json();
-      })
-      .then(data => {
-        if (Array.isArray(data)) setStudents(data);
-      })
-      .catch(err => console.error("Error fetching data:", err));
-  };
-
-  useEffect(() => {
-    fetchStudents();
-  }, []);
-
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
       if (file.size > 2 * 1024 * 1024) {
-        alert("ขนาดไฟล์ภาพใหญ่เกินไป กรุณาเลือกภาพที่มีขนาดไม่เกิน 2MB");
+        alert("ขนาดไฟล์ภาพใหญ่เกินไป กรุณาเลือกภาพไม่เกิน 2MB");
         return;
       }
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormData((prev) => ({ ...prev, Image: reader.result }));
-      };
+      reader.onloadend = () => setFormData(prev => ({ ...prev, Image: reader.result }));
       reader.readAsDataURL(file);
     }
   };
 
+  // ➕ บันทึกเพิ่มนักเรียน
   const handleAddSubmit = (e) => {
     e.preventDefault();
     const genderValue = formData.Gender === "หญิง" ? 2 : 1;
@@ -188,7 +196,7 @@ function StudentManagement() {
       Birthday: formData.Birthday,
       Class_level: selectedClass,
       Blood_group: formData.Blood_group || '',
-      User_id: formData.User_id,
+      User_id: formData.User_id ? parseInt(formData.User_id, 10) : null,
       Image: formData.Image || '',
       Gender: genderValue
     };
@@ -206,6 +214,7 @@ function StudentManagement() {
         fetchStudents();
         setIsAddModalOpen(false);
         resetForm();
+        alert("เพิ่มข้อมูลนักเรียนสำเร็จ");
       })
       .catch(err => {
         console.error(err);
@@ -213,45 +222,50 @@ function StudentManagement() {
       });
   };
 
+  // ✏️ เปิด Modal แก้ไข
   const handleOpenEditModal = (e, student) => {
     e.stopPropagation();
-    setIsSelecting(true); // ล็อคชั่วคราวไม่ให้ useEffect ทำงานตอนโหลดชื่อแรกเข้า
+    const studentId = student.Student_id || student.student_id;
+    const parentId = student.User_id || student.user_id || null;
+
     const formattedBirthday = student.Birthday ? student.Birthday.split('T')[0] : '';
     const displayGender = (student.Gender === 2 || student.Gender === "2" || student.Gender === "หญิง") ? "หญิง" : "ชาย";
 
     setFormData({
-      ...student,
+      Student_id: studentId,
+      Name: student.Name || '',
       Birthday: formattedBirthday,
       Gender: displayGender,
       Class_level: selectedClass || student.Class_level,
       Image: student.Image || '',
       Blood_group: student.Blood_group || '',
-      User_id: student.User_id
+      User_id: parentId
     });
 
-    setParentSearch('กำลังโหลดชื่อผู้ปกครอง...');
-    fetch(`http://localhost:3001/users/${student.User_id}`)
-      .then(res => {
-        if (!res.ok) throw new Error("ไม่พบข้อมูล");
-        return res.json();
-      })
-      .then(data => {
-        setParentSearch(data.Name || data.name || '');
-        setIsSelecting(false); // ปลดล็อคเพื่อให้ผู้ใช้พิมพ์แก้ไขค้นหาได้ต่อ
-      })
-      .catch(() => {
-        setParentSearch('');
-        setIsSelecting(false);
-      });
+    if (parentId) {
+      const parentObj = parentsList.find(p => String(p.User_id || p.id || p.user_id) === String(parentId));
+      if (parentObj) {
+        setParentSearch(parentObj.Name || parentObj.name || parentObj.fullname || parentObj.Firstname || '');
+      } else {
+        fetch(`http://localhost:3001/users/${parentId}`)
+          .then(res => res.json())
+          .then(data => setParentSearch(data.Name || data.name || data.fullname || ''))
+          .catch(() => setParentSearch(''));
+      }
+    } else {
+      setParentSearch('');
+    }
 
     setIsEditModalOpen(true);
   };
 
+  // ✏️ บันทึกแก้ไขนักเรียน
   const handleEditSubmit = (e) => {
     e.preventDefault();
+    const studentId = formData.Student_id;
 
-    if (!formData.User_id) {
-      alert("กรุณาเลือกผู้ปกครองจากรายการค้นหาให้ถูกต้อง");
+    if (!studentId) {
+      alert("ไม่พบรหัสนักเรียน กรุณาลองใหม่อีกครั้ง");
       return;
     }
 
@@ -261,12 +275,12 @@ function StudentManagement() {
       Birthday: formData.Birthday,
       Class_level: selectedClass,
       Blood_group: formData.Blood_group || '',
-      User_id: formData.User_id,
+      User_id: formData.User_id ? parseInt(formData.User_id, 10) : null,
       Image: formData.Image || '',
       Gender: genderValue
     };
 
-    fetch(`http://localhost:3001/api/students/${formData.Student_id}`, {
+    fetch(`http://localhost:3001/api/students/${studentId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
@@ -294,9 +308,7 @@ function StudentManagement() {
   };
 
   const handleDeleteConfirm = () => {
-    fetch(`http://localhost:3001/api/students/${selectedStudentId}`, {
-      method: 'DELETE'
-    })
+    fetch(`http://localhost:3001/api/students/${selectedStudentId}`, { method: 'DELETE' })
       .then(res => res.json())
       .then(() => {
         fetchStudents();
@@ -305,25 +317,25 @@ function StudentManagement() {
       .catch(err => console.error(err));
   };
 
+  // 👁️ ดูรายละเอียด
   const handleOpenViewModal = (student) => {
     setViewingStudent(student);
-    setViewingParentName('กำลังโหลดชื่อผู้ปกครอง...');
     setIsViewModalOpen(true);
 
-    fetch(`http://localhost:3001/users/${student.User_id}`)
-      .then(res => {
-        if (!res.ok) throw new Error("ไม่พบข้อมูลผู้ปกครอง");
-        return res.json();
-      })
-      .then(parentData => {
-        if (parentData) {
-          setViewingParentName(parentData.Name || parentData.name || '-');
-        }
-      })
-      .catch((err) => {
-        console.error("Error:", err);
-        setViewingParentName(`รหัสผู้ปกครอง: ${student.User_id}`);
-      });
+    const parentId = student.User_id || student.user_id;
+    if (parentId) {
+      const parentObj = parentsList.find(p => String(p.User_id || p.id || p.user_id) === String(parentId));
+      if (parentObj) {
+        setViewingParentName(parentObj.Name || parentObj.name || parentObj.fullname || '-');
+      } else {
+        fetch(`http://localhost:3001/users/${parentId}`)
+          .then(res => res.json())
+          .then(pData => setViewingParentName(pData.Name || pData.name || '-'))
+          .catch(() => setViewingParentName('ไม่ได้ระบุผู้ปกครอง'));
+      }
+    } else {
+      setViewingParentName('ไม่ได้ระบุผู้ปกครอง');
+    }
   };
 
   const formatThaiDate = (dateString) => {
@@ -336,43 +348,22 @@ function StudentManagement() {
     }
   };
 
-  const handleSelectParent = (parent) => {
-    setIsSelecting(true); // ล็อคเพื่อแจ้งว่าเป็นการเลือก ไม่ใช่การพิมพ์ค้นหาใหม่
-    const parentId = parent.User_id || parent.id || parent.user_id;
-    const parentName = parent.Name || parent.name;
-
-    setParentSearch(parentName);
-    setFormData(prev => ({ ...prev, User_id: parentId }));
-    setShowSuggestions(false);
-
-    // ตั้งหน่วงเวลาเล็กน้อยเพื่อให้ UI อัปเดตเสร็จก่อนปลดล็อคพิมพ์ค้นหาใหม่
-    setTimeout(() => {
-      setIsSelecting(false);
-    }, 200);
-  };
-
-  const filteredStudents = students.filter(
-    s => s.Class_level === selectedClass
-  );
+  const filteredStudents = students.filter(s => s.Class_level === selectedClass);
 
   return (
     <div style={styles.studentContainer}>
       <div style={styles.studentHeader}>
         <div style={styles.titleSection}>
-          <h2 style={styles.headerTitle}>
-            <h2 style={{ margin: 10, color: '#0369a1' }}>ข้อมูลนักเรียน : {selectedClass} </h2>
-
-          </h2>
+          <h2 style={{ margin: 10, color: '#0369a1' }}>ข้อมูลนักเรียน : {selectedClass} </h2>
         </div>
-
-        <div style={{ display: 'flex', gap: '10px' }}>
+        <div>
           <button style={styles.btnValueAdd} onClick={handleOpenAddModal}>+ เพิ่มนักเรียนในห้องนี้</button>
         </div>
       </div>
 
       <div style={styles.studentGrid}>
         {filteredStudents.map((student) => (
-          <div style={styles.studentCard} key={student.Student_id} onClick={() => handleOpenViewModal(student)}>
+          <div style={styles.studentCard} key={student.Student_id || student.student_id} onClick={() => handleOpenViewModal(student)}>
             <div style={styles.cardInfo}>
               {student.Image ? (
                 <img src={student.Image} alt="student" style={styles.avatarImg} />
@@ -386,18 +377,18 @@ function StudentManagement() {
             </div>
             <div style={styles.cardActions}>
               <button style={styles.btnEdit} onClick={(e) => handleOpenEditModal(e, student)}>แก้ไข</button>
-              <button style={styles.btnDelete} onClick={(e) => handleOpenDeleteModal(e, student.Student_id)}>ลบ</button>
+              <button style={styles.btnDelete} onClick={(e) => handleOpenDeleteModal(e, student.Student_id || student.student_id)}>ลบ</button>
             </div>
           </div>
         ))}
         {filteredStudents.length === 0 && (
           <p style={{ color: '#999', gridColumn: '1/-1', textAlign: 'center', padding: '40px' }}>
-            ยังไม่มีข้อมูลนักเรียนในห้องเรียนนี้ คุณครูสามารถกดปุ่ม "+ เพิ่มนักเรียนในห้องนี้" ได้เลยครับ
+            ยังไม่มีข้อมูลนักเรียนในห้องเรียนนี้
           </p>
         )}
       </div>
 
-      {/* MODAL: แสดงข้อมูลรายละเอียด */}
+      {/* MODAL: รายละเอียด */}
       {isViewModalOpen && viewingStudent && (
         <div style={styles.modalOverlay} onClick={() => setIsViewModalOpen(false)}>
           <div style={styles.modalContent} onClick={(e) => e.stopPropagation()}>
@@ -443,11 +434,11 @@ function StudentManagement() {
         </div>
       )}
 
-      {/* MODAL: เพิ่มนักเรียนใหม่ */}
+      {/* MODAL: เพิ่มนักเรียน */}
       {isAddModalOpen && (
         <div style={styles.modalOverlay}>
           <div style={styles.modalContent}>
-            <button style={styles.closeX} onClick={() => setIsAddModalOpen(false)}>X</button>
+            <button style={styles.closeX} onClick={() => { setIsAddModalOpen(false); resetForm(); }}>X</button>
             <h3 style={styles.modalHeading}>เพิ่มนักเรียน</h3>
             <form onSubmit={handleAddSubmit}>
               <div style={styles.avatarUploadZone}>
@@ -474,13 +465,7 @@ function StudentManagement() {
               <div style={styles.formRow}>
                 <div style={{ ...styles.formGroup, flex: 1 }}>
                   <label style={styles.formLabel}>ระดับชั้น</label>
-                  <select
-                    style={{ ...styles.formSelect, backgroundColor: '#f0f0f0', cursor: 'not-allowed' }}
-                    disabled={true}
-                    required
-                    value={formData.Class_level}
-                    onChange={(e) => setFormData({ ...formData, Class_level: e.target.value })}
-                  >
+                  <select style={{ ...styles.formSelect, backgroundColor: '#f0f0f0', cursor: 'not-allowed' }} disabled required value={formData.Class_level}>
                     {classList.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
@@ -503,32 +488,36 @@ function StudentManagement() {
                 </select>
               </div>
 
+              {/* ค้นหาผู้ปกครอง */}
               <div style={{ ...styles.formGroup, position: 'relative' }} ref={suggestionRef}>
-                <label style={styles.formLabel}>ชื่อผู้ปกครอง (พิมพ์ค้นหาอย่างน้อย 2 ตัวอักษร)</label>
+                <label style={styles.formLabel}>ผู้ปกครอง</label>
                 <input
                   type="text"
-                  required
-                  placeholder="ค้นหาชื่อผู้ปกครอง..."
+                  placeholder="พิมพ์ค้นหาชื่อผู้ปกครอง..."
                   style={styles.formInput}
                   value={parentSearch}
-                  onChange={(e) => {
-                    setParentSearch(e.target.value);
-                    setShowSuggestions(true);
-                  }}
-                  onFocus={() => setShowSuggestions(true)}
+                  onChange={handleParentSearchChange}
+                  onFocus={() => { if (parentSearch.trim().length >= 1) setShowSuggestions(true); }}
                 />
 
-                {showSuggestions && suggestions.length > 0 && (
+                {showSuggestions && (
                   <ul style={styles.suggestionList}>
-                    {suggestions.map((p) => (
-                      <li
-                        key={p.User_id || p.id}
-                        style={styles.suggestionItem}
-                        onClick={() => handleSelectParent(p)}
-                      >
-                        {p.Name || p.name} <span style={{ fontSize: '11px', color: '#999' }}>(ID: {p.User_id || p.id})</span>
+                    {suggestions.length > 0 ? (
+                      suggestions.map((p, index) => {
+                        const pName = p.Name || p.name || p.fullname || p.Firstname || 'ไม่ทราบชื่อ';
+                        const pId = p.User_id || p.id || p.user_id;
+                        return (
+                          <li key={pId || index} style={styles.suggestionItem} onClick={() => handleSelectParent(p)}>
+                            <span><b>{pName}</b></span>
+                            {pId && <small style={{ color: '#0284c7' }}> ID: {pId}</small>}
+                          </li>
+                        );
+                      })
+                    ) : (
+                      <li style={{ padding: '10px', color: '#888', textAlign: 'center', fontSize: '13px' }}>
+                        ไม่พบรายชื่อผู้ปกครองที่ค้นหา
                       </li>
-                    ))}
+                    )}
                   </ul>
                 )}
               </div>
@@ -539,12 +528,12 @@ function StudentManagement() {
         </div>
       )}
 
-      {/* MODAL: แก้ไขข้อมูล */}
+      {/* MODAL: แก้ไขนักเรียน */}
       {isEditModalOpen && (
         <div style={styles.modalOverlay}>
           <div style={styles.modalContent}>
             <button style={styles.closeX} onClick={() => { setIsEditModalOpen(false); resetForm(); }}>X</button>
-            <h3 style={styles.modalHeading}>แก้ไขนักเรียน</h3>
+            <h3 style={styles.modalHeading}>แก้ไขข้อมูลนักเรียน</h3>
             <form onSubmit={handleEditSubmit}>
               <div style={styles.avatarUploadZone}>
                 <label style={{ cursor: 'pointer', display: 'inline-block' }}>
@@ -570,13 +559,7 @@ function StudentManagement() {
               <div style={styles.formRow}>
                 <div style={{ ...styles.formGroup, flex: 1 }}>
                   <label style={styles.formLabel}>ระดับชั้น</label>
-                  <select
-                    style={{ ...styles.formSelect, backgroundColor: '#f0f0f0', cursor: 'not-allowed' }}
-                    disabled={true}
-                    required
-                    value={formData.Class_level}
-                    onChange={(e) => setFormData({ ...formData, Class_level: e.target.value })}
-                  >
+                  <select style={{ ...styles.formSelect, backgroundColor: '#f0f0f0', cursor: 'not-allowed' }} disabled required value={formData.Class_level}>
                     {classList.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
@@ -591,6 +574,7 @@ function StudentManagement() {
               <div style={styles.formGroup}>
                 <label style={styles.formLabel}>กรุ๊ปเลือด</label>
                 <select style={styles.formSelect} value={formData.Blood_group} onChange={(e) => setFormData({ ...formData, Blood_group: e.target.value })}>
+                  <option value="">เลือกกรุ๊ปเลือด</option>
                   <option value="A">A</option>
                   <option value="B">B</option>
                   <option value="O">O</option>
@@ -598,43 +582,47 @@ function StudentManagement() {
                 </select>
               </div>
 
+              {/* ค้นหาผู้ปกครอง (แก้ไข) */}
               <div style={{ ...styles.formGroup, position: 'relative' }} ref={suggestionRef}>
-                <label style={styles.formLabel}>ชื่อผู้ปกครอง (พิมพ์ค้นหาเพื่อเปลี่ยนคนใหม่)</label>
+                <label style={styles.formLabel}>ผู้ปกครอง</label>
                 <input
                   type="text"
-                  required
-                  placeholder="พิมพ์เพื่อค้นหาชื่อผู้ปกครองใหม่..."
+                  placeholder="พิมพ์ค้นหาชื่อผู้ปกครอง (3 ตัวอักษรขึ้นไป)..."
                   style={styles.formInput}
                   value={parentSearch}
-                  onChange={(e) => {
-                    setParentSearch(e.target.value);
-                    setShowSuggestions(true);
-                  }}
-                  onFocus={() => setShowSuggestions(true)}
+                  onChange={handleParentSearchChange}
+                  onFocus={() => { if (parentSearch.trim().length >= 3) setShowSuggestions(true); }}
                 />
 
-                {showSuggestions && suggestions.length > 0 && (
+                {showSuggestions && (
                   <ul style={styles.suggestionList}>
-                    {suggestions.map((p) => (
-                      <li
-                        key={p.User_id || p.id || p.user_id}
-                        style={styles.suggestionItem}
-                        onClick={() => handleSelectParent(p)}
-                      >
-                        {p.Name || p.name} <span style={{ fontSize: '11px', color: '#999' }}>(ID: {p.User_id || p.id || p.user_id})</span>
+                    {suggestions.length > 0 ? (
+                      suggestions.map((p, index) => {
+                        const pName = p.Name || p.name || p.fullname || p.Firstname || 'ไม่ทราบชื่อ';
+                        const pId = p.User_id || p.id || p.user_id;
+                        return (
+                          <li key={pId || index} style={styles.suggestionItem} onClick={() => handleSelectParent(p)}>
+                            <span><b>{pName}</b></span>
+                            {pId && <small style={{ color: '#0284c7' }}> ID: {pId}</small>}
+                          </li>
+                        );
+                      })
+                    ) : (
+                      <li style={{ padding: '10px', color: '#888', textAlign: 'center', fontSize: '13px' }}>
+                        ไม่พบรายชื่อผู้ปกครองที่ค้นหา
                       </li>
-                    ))}
+                    )}
                   </ul>
                 )}
               </div>
 
-              <button type="submit" style={styles.btnSubmitSave}>บันทึก</button>
+              <button type="submit" style={styles.btnSubmitSave}>บันทึกการแก้ไข</button>
             </form>
           </div>
         </div>
       )}
 
-      {/* MODAL: ยืนยันลบ */}
+      {/* MODAL: ลบ */}
       {isDeleteModalOpen && (
         <div style={styles.modalOverlay}>
           <div style={styles.modalDeleteContent}>
@@ -653,13 +641,12 @@ function StudentManagement() {
 }
 
 const styles = {
-  studentContainer: { padding: '30px', fontFamily: 'system-ui, -apple-system, sans-serif', backgroundColor: '#dff3ff 48%', minHeight: '100vh' },
-  studentHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '30px' },
+  studentContainer: { padding: '30px', fontFamily: 'system-ui, -apple-system, sans-serif', backgroundColor: '#dff3ff', minHeight: '100vh' },
+  studentHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' },
   titleSection: { display: 'flex', flexDirection: 'column' },
-  headerTitle: { marginTop: '15px', fontSize: '15px', color: '#000000', fontWeight: '600' },
-  btnValueAdd: { background: 'linear-gradient(135deg, #0ea5e9, #0369a1)', color: '#ffffff', border: '1px solid #0284c7', padding: '9px 16px', borderRadius: '8px', fontWeight: '700', cursor: 'pointer', fontSize: '13px', boxShadow: '0 10px 22px rgba(14,165,233,0.22)' },
-  studentGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' },
-  studentCard: { border: '1px solid #cccccc', borderRadius: '14px', padding: '15px', background: '#ffffff', boxShadow: '0 2px 6px rgba(0,0,0,0.04)', cursor: 'pointer', transition: 'transform 0.2s' },
+  btnValueAdd: { background: 'linear-gradient(135deg, #0ea5e9, #0369a1)', color: '#ffffff', border: 'none', padding: '10px 18px', borderRadius: '8px', fontWeight: '700', cursor: 'pointer', fontSize: '13px', boxShadow: '0 4px 12px rgba(14,165,233,0.3)' },
+  studentGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' },
+  studentCard: { border: '1px solid #e0e0e0', borderRadius: '14px', padding: '15px', background: '#ffffff', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', cursor: 'pointer' },
   cardInfo: { display: 'flex', gap: '15px', alignItems: 'center', marginBottom: '15px' },
   avatarPlaceholder: { border: '1px solid #cccccc', width: '52px', height: '52px', borderRadius: '8px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', color: '#555555', background: '#fcfcfc' },
   avatarImg: { width: '52px', height: '52px', borderRadius: '8px', objectFit: 'cover', border: '1px solid #cccccc' },
@@ -668,32 +655,32 @@ const styles = {
   studentNameText: { margin: '0 0 4px 0', fontSize: '15px', fontWeight: '600' },
   studentLevelText: { margin: '0', color: '#666666', fontSize: '13px' },
   cardActions: { display: 'flex', gap: '10px' },
-  btnEdit: { flex: '1', padding: '8px 12px', border: '1px solid #bae6fd', background: '#eff8ff', color: '#0369a1', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: '700' },
-  btnDelete: { flex: '1', padding: '8px 12px', border: '1px solid #fecdd3', background: '#fff1f2', color: '#be123c', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: '700' },
-  modalOverlay: { position: 'fixed', top: '0', left: '0', width: '100%', height: '100%', background: 'rgba(0, 0, 0, 0.35)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: '999' },
-  modalContent: { background: '#ffffff', padding: '20px 25px', borderRadius: '16px', width: '320px', position: 'relative', boxShadow: '0 10px 25px rgba(0,0,0,0.15)', boxSizing: 'border-box' },
+  btnEdit: { flex: '1', padding: '8px', border: '1px solid #bae6fd', background: '#eff8ff', color: '#0369a1', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: '700' },
+  btnDelete: { flex: '1', padding: '8px', border: '1px solid #fecdd3', background: '#fff1f2', color: '#be123c', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: '700' },
+  modalOverlay: { position: 'fixed', top: '0', left: '0', width: '100%', height: '100%', background: 'rgba(0, 0, 0, 0.4)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: '9999' },
+  modalContent: { background: '#ffffff', padding: '20px 25px', borderRadius: '16px', width: '340px', position: 'relative', boxShadow: '0 10px 25px rgba(0,0,0,0.2)', boxSizing: 'border-box', overflow: 'visible' },
   modalHeading: { margin: '0 0 15px 0', fontSize: '16px', fontWeight: '600' },
-  closeX: { position: 'absolute', top: '15px', right: '15px', background: 'none', border: 'none', fontSize: '15px', cursor: 'pointer', color: '#999999' },
+  closeX: { position: 'absolute', top: '15px', right: '15px', background: 'none', border: 'none', fontSize: '16px', cursor: 'pointer', color: '#999999' },
   avatarUploadZone: { textAlign: 'center', marginBottom: '15px' },
-  formGroup: { marginBottom: '10px', display: 'flex', flexDirection: 'column', width: '100%' },
-  formLabel: { fontSize: '12px', color: '#555555', marginBottom: '4px', fontWeight: '500' },
-  formInput: { padding: '6px 10px', border: '1px solid #cccccc', borderRadius: '6px', fontSize: '13px', outline: 'none', boxSizing: 'border-box', width: '100%' },
-  formSelect: { padding: '6px 10px', border: '1px solid #cccccc', borderRadius: '6px', fontSize: '13px', outline: 'none', background: '#ffffff', boxSizing: 'border-box', width: '100%' },
+  formGroup: { marginBottom: '12px', display: 'flex', flexDirection: 'column', width: '100%' },
+  formLabel: { fontSize: '12px', color: '#555555', marginBottom: '4px', fontWeight: '600' },
+  formInput: { padding: '8px 10px', border: '1px solid #cccccc', borderRadius: '6px', fontSize: '13px', outline: 'none', boxSizing: 'border-box', width: '100%' },
+  formSelect: { padding: '8px 10px', border: '1px solid #cccccc', borderRadius: '6px', fontSize: '13px', outline: 'none', background: '#ffffff', boxSizing: 'border-box', width: '100%' },
   formRow: { display: 'flex', gap: '10px', width: '100%' },
-  btnSubmitSave: { width: '100%', padding: '10px', background: 'linear-gradient(135deg, #0ea5e9, #0369a1)', color: '#ffffff', border: '1px solid #0284c7', borderRadius: '8px', fontWeight: '700', marginTop: '10px', cursor: 'pointer', fontSize: '13px', boxSizing: 'border-box', boxShadow: '0 10px 22px rgba(14,165,233,0.22)' },
+  btnSubmitSave: { width: '100%', padding: '10px', background: 'linear-gradient(135deg, #0ea5e9, #0369a1)', color: '#ffffff', border: 'none', borderRadius: '8px', fontWeight: '700', marginTop: '10px', cursor: 'pointer', fontSize: '13px', boxShadow: '0 4px 12px rgba(14,165,233,0.3)' },
   modalDeleteContent: { background: '#ffffff', padding: '30px', borderRadius: '16px', width: '300px', textAlign: 'center', boxShadow: '0 10px 25px rgba(0,0,0,0.15)' },
   modalDeleteActions: { display: 'flex', gap: '15px' },
   btnCancel: { flex: '1', padding: '8px 12px', border: '1px solid #cfe8f7', background: '#ffffff', color: '#31556b', borderRadius: '8px', cursor: 'pointer', fontWeight: '700' },
   btnConfirmDelete: { flex: '1', padding: '8px 12px', border: '1px solid #fecdd3', background: '#fff1f2', color: '#be123c', fontWeight: '700', borderRadius: '8px', cursor: 'pointer' },
-  infoDisplayBox: { padding: '6px 10px', border: '1px solid #e5e5e5', borderRadius: '6px', fontSize: '13px', background: '#f9f9f9', color: '#333333', height: '32px', boxSizing: 'border-box', width: '100%', display: 'flex', alignItems: 'center' },
-
+  infoDisplayBox: { padding: '8px 10px', border: '1px solid #e5e5e5', borderRadius: '6px', fontSize: '13px', background: '#f9f9f9', color: '#333333', minHeight: '34px', boxSizing: 'border-box', width: '100%', display: 'flex', alignItems: 'center' },
   suggestionList: {
-    position: 'absolute', top: '100%', left: 0, right: 0, padding: 0, margin: '4px 0 0 0',
-    background: '#ffffff', border: '1px solid #cccccc', borderRadius: '6px', listStyle: 'none',
-    maxHeight: '120px', overflowY: 'auto', zIndex: 10, boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+    position: 'absolute', top: '100%', left: 0, right: 0, padding: '4px 0', margin: '4px 0 0 0',
+    background: '#ffffff', border: '1px solid #0284c7', borderRadius: '8px', listStyle: 'none',
+    maxHeight: '160px', overflowY: 'auto', zIndex: 99999, boxShadow: '0 8px 18px rgba(0,0,0,0.2)'
   },
   suggestionItem: {
-    padding: '8px 10px', fontSize: '13px', cursor: 'pointer', borderBottom: '1px solid #f0f0f0'
+    padding: '10px 12px', fontSize: '13px', cursor: 'pointer', borderBottom: '1px solid #f0f0f0',
+    display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#ffffff', color: '#333333'
   }
 };
 

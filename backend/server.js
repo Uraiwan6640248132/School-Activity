@@ -43,60 +43,34 @@ const fileFilter = (req, file, cb) => {
 const upload = multer({ storage: storage, fileFilter: fileFilter, limits: { fileSize: 5 * 1024 * 1024 } });
 
 // ฟังก์ชันช่วยตรวจสอบและแปลงฟอร์แมตวันที่จากหน้าบ้านให้เป็น YYYY-MM-DD ก่อนบันทึกลงฐานข้อมูล
+// ฟังก์ชันแปลงวันที่สำหรับ MySQL (ตัดปัญหา Timezone เคลื่อน)
 function parseDateForMySQL(dateStr) {
-  if (!dateStr || dateStr === "") return null;
-  if (dateStr.includes("/")) {
-    const parts = dateStr.split("/");
-    if (parts.length === 3) {
-      if (parts[2].length === 4) {
-        return `${parts[2]}-${parts[0].padStart(2, '0')}-${parts[1].padStart(2, '0')}`;
-      } else if (parts[0].length === 4) {
-        return `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
-      }
+  if (!dateStr) return null;
+
+  // ถ้าส่งมาเป็น ISO string หรือสตริง เช่น "2026-08-30T00:00:00.000Z" หรือ "2026-08-30"
+  // ให้ใช้ Regex ดึงเฉพาะ YYYY-MM-DD ออกมาตรงๆ
+  if (typeof dateStr === 'string') {
+    const match = dateStr.match(/^\d{4}-\d{2}-\d{2}/);
+    if (match) {
+      return match[0]; // จะได้ "2026-08-30" พอดี ไม่โดนบวก/ลบเวลา
     }
   }
-  return dateStr;
+
+  // ป้องกันกรณีส่งมาเป็น Date Object
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return null;
+
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
 }
 
 // ==========================================
-// 👤 ระบบ API จัดการข้อมูลผู้ใช้งาน (USERS) - แก้ไขแล้ว
+// 👤 ระบบ API จัดการข้อมูลผู้ใช้งาน (USERS)
 // ==========================================
 
-// ✅ แก้ไขยกบล็อก app.put("/users/:id") เป็นแบบนี้:
-app.put("/users/:id", (req, res) => {
-  const Name = req.body.Name || req.body.name;
-  const Phone = req.body.Phone || req.body.phone;
-  const Email = req.body.Email || req.body.email || null; // 🆕 รับค่า Email เพิ่มตรงนี้
-  const UserName = req.body.UserName || req.body.Username || req.body.username;
-  const Role = req.body.Role || req.body.role;
-  const Class_level = req.body.Class_level || req.body.class_level;
-  const Status = req.body.Status || req.body.status || 'ใช้งาน';
-  const Password = req.body.Password || req.body.password;
-
-  let sql = "";
-  let params = [];
-
-  // ตรวจสอบว่ามีการเปลี่ยนรหัสผ่านใหม่มาด้วยหรือไม่
-  if (Password && Password.trim() !== "") {
-    // 🆕 เพิ่ม Email=? และส่งตัวแปร Email ไปใน array params
-    sql = `UPDATE users SET Name=?, Phone=?, Email=?, UserName=?, Role=?, Class_level=?, Status=?, Password=? WHERE User_id=?`;
-    params = [Name, Phone, Email, UserName, Role, Class_level, Status, Password, req.params.id];
-  } else {
-    // 🆕 เพิ่ม Email=? และส่งตัวแปร Email ไปใน array params
-    sql = `UPDATE users SET Name=?, Phone=?, Email=?, UserName=?, Role=?, Class_level=?, Status=? WHERE User_id=?`;
-    params = [Name, Phone, Email, UserName, Role, Class_level, Status, req.params.id];
-  }
-
-  db.query(sql, params, (err, result) => {
-    if (err) {
-      console.error("Backend Error updating user:", err);
-      return res.status(500).json(err);
-    }
-    res.json({ success: true, message: "อัปเดตผู้ใช้งานสำเร็จ" });
-  });
-});
-
-// 🟢 เพิ่มเส้นทาง /users (ดึงรายชื่อผู้ใช้ทั้งหมด) ที่ทำหายไปกลับคืนมา
 app.get("/users", (req, res) => {
   const sql = "SELECT User_id, Name, Phone, Email, Password, UserName, Role, Class_level, Status FROM users";
   db.query(sql, (err, result) => {
@@ -116,12 +90,10 @@ app.get("/users/:id", (req, res) => {
   });
 });
 
-// 🟢 แก้ไขฟังก์ชันอัปเดต: เพิ่ม Class_level และดักจับตัวแปรจากหน้าบ้านให้ถูกต้อง
-// ✅ แก้ไขยกบล็อก app.put("/users/:id") เป็นแบบนี้:
 app.put("/users/:id", (req, res) => {
   const Name = req.body.Name || req.body.name;
   const Phone = req.body.Phone || req.body.phone;
-  const Email = req.body.Email || req.body.email || null; // 🆕 รับค่า Email เพิ่มตรงนี้
+  const Email = req.body.Email || req.body.email || null;
   const UserName = req.body.UserName || req.body.Username || req.body.username;
   const Role = req.body.Role || req.body.role;
   const Class_level = req.body.Class_level || req.body.class_level;
@@ -131,13 +103,10 @@ app.put("/users/:id", (req, res) => {
   let sql = "";
   let params = [];
 
-  // ตรวจสอบว่ามีการเปลี่ยนรหัสผ่านใหม่มาด้วยหรือไม่
   if (Password && Password.trim() !== "") {
-    // 🆕 เพิ่ม Email=? และส่งตัวแปร Email ไปใน array params
     sql = `UPDATE users SET Name=?, Phone=?, Email=?, UserName=?, Role=?, Class_level=?, Status=?, Password=? WHERE User_id=?`;
     params = [Name, Phone, Email, UserName, Role, Class_level, Status, Password, req.params.id];
   } else {
-    // 🆕 เพิ่ม Email=? และส่งตัวแปร Email ไปใน array params
     sql = `UPDATE users SET Name=?, Phone=?, Email=?, UserName=?, Role=?, Class_level=?, Status=? WHERE User_id=?`;
     params = [Name, Phone, Email, UserName, Role, Class_level, Status, req.params.id];
   }
@@ -159,7 +128,7 @@ app.delete('/users/:id', (req, res) => {
 });
 
 // ==========================================
-// 🏃‍♂️ ระบบ API จัดการกิจกรรม (ACTIVITY) - แก้ไขบั๊กเพื่อรองรับหลายรูปภาพ (JSON String)
+// 🏃‍♂️ ระบบ API จัดการกิจกรรม (ACTIVITY)
 // ==========================================
 app.get("/activities", (req, res) => {
   const sql = `SELECT a.*, u.Name AS Photographer FROM activity a LEFT JOIN users u ON a.User_id = u.User_id ORDER BY a.Activity_date DESC, a.Activity_id DESC`;
@@ -169,14 +138,11 @@ app.get("/activities", (req, res) => {
   });
 });
 
-// แก้ไข POST สำหรับเก็บข้อมูลหลายรูปภาพที่ถูกห่อหุ้มมาเป็น String
 app.post("/activities", (req, res) => {
   const body = req.body || {};
   const Name_activity = body.Name_activity || body.name_activity || body.Name || body.title || null;
   const Activity_date = parseDateForMySQL(body.Activity_date || body.activity_date);
   const User_id = parseInt(body.User_id || body.user_id, 10) || 2;
-
-  // ตรวจจับตัวแปร Image หรือ Images ที่หน้าบ้านส่งมา
   const finalImage = body.Image || body.image || body.Images || body.images || null;
 
   if (!Name_activity) return res.status(400).json({ error: "กรุณาระบุชื่อกิจกรรม" });
@@ -188,14 +154,11 @@ app.post("/activities", (req, res) => {
   });
 });
 
-// แก้ไข PUT สำหรับอัปเดตกิจกรรมเมื่อมีการบันทึกรูปภาพใหม่หลายรูปภาพ
 app.put("/activities/:id", (req, res) => {
   const body = req.body || {};
   const Name_activity = body.Name_activity || body.name_activity || body.title || body.Name || null;
   const Activity_date = parseDateForMySQL(body.Activity_date || body.activity_date);
   const User_id = parseInt(body.User_id || body.user_id, 10) || 2;
-
-  // ตรวจจับตัวแปร Image หรือ Images สำหรับขั้นตอนการแก้ไข
   const finalImage = body.Image || body.image || body.Images || body.images || null;
 
   if (!Name_activity) return res.status(400).json({ error: "กรุณาระบุชื่อกิจกรรม" });
@@ -215,25 +178,31 @@ app.delete("/activities/:id", (req, res) => {
 });
 
 // ==========================================
-// 🚀 ระบบ API จัดการข้อมูลนักเรียน (STUDENTS CRUD)
+// 🚀 เพิ่ม API สำหรับดึงรายชื่อผู้ปกครองไปใช้ทำ Autocomplete
+// ==========================================
+// 🔄 API ดึงรายชื่อผู้ปกครองเฉพาะที่มี Role เป็น 'ผู้ปกครอง'
+app.get('/api/parents', (req, res) => {
+  const sql = "SELECT User_id, Name, Role FROM users WHERE Role = 'ผู้ปกครอง'";
+  db.query(sql, (err, results) => {
+    if (err) {
+      console.error("Error fetching parents:", err);
+      return res.status(500).json(err);
+    }
+    res.json(results);
+  });
+});
+
+// ==========================================
+// 🚀 ระบบ API จัดการข้อมูลนักเรียน (STUDENTS CRUD) 
 // ==========================================
 app.get("/api/students", (req, res) => {
   const userId = req.query.id || req.query.userId;
-
-  console.log("== [BACKEND API] ได้รับค่าขอรหัสผู้ใช้ ID == :", userId);
-
-  // 👑 ปรับปรุง: ถ้าค่าเป็น "all" หรือหน้าหลักลืมส่งค่ามา (undefined / null) 
-  // ให้ดึงข้อมูลนักเรียนทุกคนทันที หน้าจอหลักจะได้ไม่ขึ้น 0 คน
   if (userId === "all" || !userId || userId === "undefined" || userId === "null") {
-    console.log("-> ระบบทำการดึงข้อมูลนักเรียนทั้งหมด (สิทธิ์คุณครู/ค่าเริ่มต้น)");
     db.query("SELECT * FROM student ORDER BY Student_id DESC", (err, result) => {
       if (err) return res.status(500).json(err);
       res.json(result);
     });
-  }
-  // 👨‍👩‍👦 ถ้ามี ID ส่งเข้ามาปกติ และไม่ใช่ค่าว่าง (สิทธิ์ผู้ปกครอง) ให้กรองเฉพาะลูกตัวเอง
-  else {
-    console.log(`-> ระบบทำการกรองข้อมูลนักเรียนเฉพาะ User_id: ${userId}`);
+  } else {
     const sql = "SELECT * FROM student WHERE User_id = ? ORDER BY Student_id DESC";
     db.query(sql, [userId], (err, result) => {
       if (err) return res.status(500).json(err);
@@ -242,33 +211,43 @@ app.get("/api/students", (req, res) => {
   }
 });
 
+// ➕ เพิ่มนักเรียนใหม่ (ป้องกันการเซฟค่า default ค้าง)
 app.post("/api/students", (req, res) => {
   const body = req.body || {};
   const { Name, Class_level, Blood_group, Image } = body;
   const Birthday = parseDateForMySQL(body.Birthday || body.birthday);
   const Gender = body.Gender || body.gender || null;
-  const User_id = parseInt(body.User_id || body.user_id, 10) || 2;
+
+  // แปลงค่า User_id ให้เป็น integer หรือ null อย่างเด็ดขาด
+  const rawUserId = body.User_id !== undefined ? body.User_id : body.user_id;
+  const User_id = (rawUserId && rawUserId !== 'null' && rawUserId !== 'undefined') ? parseInt(rawUserId, 10) : null;
 
   const sql = `INSERT INTO student (Name, Birthday, Gender, Class_level, User_id, Blood_group, Image) VALUES (?, ?, ?, ?, ?, ?, ?)`;
   db.query(sql, [Name, Birthday, Gender, Class_level, User_id, Blood_group, Image || null], (err, result) => {
     if (err) {
-      console.error(err);
+      console.error("Insert Error:", err);
       return res.status(500).json({ error: "เกิดข้อผิดพลาดในการเพิ่มข้อมูลนักเรียน", details: err.message });
     }
     res.json({ message: "เพิ่มข้อมูลนักเรียนสำเร็จ", Student_id: result.insertId });
   });
 });
 
+// ✏️ แก้ไขข้อมูลนักเรียน
 app.put("/api/students/:id", (req, res) => {
+  const studentId = req.params.id;
   const body = req.body || {};
   const { Name, Class_level, Blood_group, Image } = body;
   const Birthday = parseDateForMySQL(body.Birthday || body.birthday);
   const Gender = body.Gender || body.gender || null;
 
-  const sql = `UPDATE student SET Name=?, Birthday=?, Gender=?, Class_level=?, Blood_group=?, Image=? WHERE Student_id=?`;
-  db.query(sql, [Name, Birthday, Gender, Class_level, Blood_group, Image || null, req.params.id], (err, result) => {
+  // แปลงค่า User_id ให้เป็น integer หรือ null อย่างเด็ดขาด
+  const rawUserId = body.User_id !== undefined ? body.User_id : body.user_id;
+  const User_id = (rawUserId && rawUserId !== 'null' && rawUserId !== 'undefined') ? parseInt(rawUserId, 10) : null;
+
+  const sql = `UPDATE student SET Name=?, Birthday=?, Gender=?, Class_level=?, User_id=?, Blood_group=?, Image=? WHERE Student_id=?`;
+  db.query(sql, [Name, Birthday, Gender, Class_level, User_id, Blood_group, Image || null, studentId], (err, result) => {
     if (err) {
-      console.error(err);
+      console.error("Update Error:", err);
       return res.status(500).json({ error: "เกิดข้อผิดพลาดในการแก้ไขข้อมูลนักเรียน", details: err.message });
     }
     res.json({ message: "แก้ไขข้อมูลนักเรียนสำเร็จ" });
@@ -281,6 +260,7 @@ app.delete("/api/students/:id", (req, res) => {
     res.json({ message: "ลบข้อมูลนักเรียนสำเร็จ" });
   });
 });
+
 // ==========================================
 // 📌 1. เพิ่มข้อมูลการบ้านใหม่ + ส่งอีเมล (POST)
 // ==========================================
@@ -292,24 +272,17 @@ app.post("/notifications", (req, res) => {
   const User_id = parseInt(body.User_id || body.user_id, 10) || 2;
 
   const sql = "INSERT INTO notification (User_id, Class_level, Subject, Deadline, `Date`, Details) VALUES (?, ?, ?, ?, ?, ?)";
-  
+
   db.query(sql, [User_id, Class_level, Subject, cleanDeadline, cleanDate, Details || null], (err, result) => {
-    if (err) { 
-      console.error(err); 
-      return res.status(500).json({ error: "ล้มเหลว ตรวจสอบคีย์เชื่อมโยง", details: err.message }); 
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ error: "ล้มเหลว ตรวจสอบคีย์เชื่อมโยง", details: err.message });
     }
-    
-    // ตอบกลับหน้าบ้าน React ทันทีเมื่อบันทึกการบ้านสำเร็จ
+
     res.status(201).json({ message: "เพิ่มข้อมูลแจ้งเตือนสำเร็จ", id: result.insertId });
 
-    // =============================================================
-    // ✉️ ระบบส่งแจ้งเตือนทางอีเมล (เวอร์ชันดึงอีเมลผู้ปกครองทุกคนในห้อง)
-    // =============================================================
-    
-    // ทำความสะอาด Class_level ที่รับมาจากหน้าบ้าน (ลบเว้นวรรค และแปลงเป็นตัวพิมพ์เล็ก)
     const targetClassClean = String(Class_level || "").replace(/\s+/g, "").toLowerCase();
 
-    // ค้นหาอีเมลผู้ปกครอง โดยสั่ง REPLACE ลบเว้นวรรคที่ระดับฐานข้อมูล
     const findEmailsSql = `
       SELECT Email 
       FROM users 
@@ -318,7 +291,7 @@ app.post("/notifications", (req, res) => {
         AND Email != '' 
         AND LOWER(REPLACE(Class_level, ' ', '')) = ?
     `;
-    
+
     db.query(findEmailsSql, [targetClassClean], (emailErr, parentRows) => {
       if (emailErr) {
         console.error("เกิดข้อผิดพลาดในการดึงอีเมลผู้ปกครอง:", emailErr);
@@ -326,7 +299,6 @@ app.post("/notifications", (req, res) => {
       }
 
       if (parentRows && parentRows.length > 0) {
-        // ดึงอีเมล ตัดเว้นวรรคส่วนเกิน และกรองเอาเฉพาะอีเมลที่ไม่ซ้ำกัน
         const rawEmails = parentRows.map(row => String(row.Email).trim());
         const uniqueEmails = [...new Set(rawEmails)];
         const emailList = uniqueEmails.join(",");
@@ -336,15 +308,15 @@ app.post("/notifications", (req, res) => {
         const transporter = nodemailer.createTransport({
           service: 'gmail',
           auth: {
-            user: 'anchanaarthan@gmail.com',  
-            pass: 'liaknnlnlogqazqj'          
+            user: 'anchanaarthan@gmail.com',
+            pass: 'liaknnlnlogqazqj'
           }
         });
 
         const mailOptions = {
           from: '"ระบบแจ้งเตือนการบ้าน โรงเรียนสาธิตฯ" <anchanaarthan@gmail.com>',
-          to: 'anchanaarthan@gmail.com', // อีเมลผู้ส่ง/แอดมิน เพื่อเป็นผู้รับหลัก
-          bcc: emailList, // ส่งแบบซ่อนผู้รับ ให้ผู้ปกครองทุกคนได้รับโดยไม่เห็นอีเมลคนอื่น
+          to: 'anchanaarthan@gmail.com',
+          bcc: emailList,
           subject: `🔔 แจ้งเตือนการบ้านใหม่วิชา ${Subject} (${Class_level})`,
           html: `
             <div style="font-family: 'Kanit', sans-serif; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px; max-width: 600px; margin: 0 auto;">
@@ -376,12 +348,8 @@ app.post("/notifications", (req, res) => {
   });
 });
 
-// ==========================================
-// 🔔 2. ดึงข้อมูลการบ้านทั้งหมดไปแสดงในตาราง (GET)
-// ==========================================
 app.get("/notifications", (req, res) => {
   const sql = "SELECT * FROM notification ORDER BY Notification_id DESC";
-  
   db.query(sql, (err, result) => {
     if (err) {
       console.error("เกิดข้อผิดพลาดในการดึงข้อมูล:", err);
@@ -391,9 +359,6 @@ app.get("/notifications", (req, res) => {
   });
 });
 
-// ==========================================
-// ✏️ 3. แก้ไขข้อมูลการบ้าน (PUT)
-// ==========================================
 app.put("/notifications/:id", (req, res) => {
   const body = req.body || {};
   const { Class_level, Subject, Details } = body;
@@ -403,17 +368,14 @@ app.put("/notifications/:id", (req, res) => {
 
   const sql = "UPDATE notification SET User_id = ?, Class_level = ?, Subject = ?, Deadline = ?, `Date` = ?, Details = ? WHERE Notification_id = ?";
   db.query(sql, [User_id, Class_level, Subject, cleanDeadline, cleanDate, Details || null, req.params.id], (err, result) => {
-    if (err) { 
-      console.error(err); 
-      return res.status(500).json({ error: err.message }); 
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ error: err.message });
     }
     res.json({ message: "แก้ไขข้อมูลแจ้งเตือนสำเร็จ" });
   });
 });
 
-// ==========================================
-// ❌ 4. ลบข้อมูลการบ้าน (DELETE)
-// ==========================================
 app.delete("/notifications/:id", (req, res) => {
   const sql = "DELETE FROM notification WHERE Notification_id = ?";
   db.query(sql, [req.params.id], (err, result) => {
@@ -486,17 +448,30 @@ app.delete('/api/publicrelations/:id', (req, res) => {
     res.json({ message: "ลบข้อมูลประชาสัมพันธ์เรียบร้อยแล้ว" });
   });
 });
-
-// ==========================================
-// 📅 ระบบ API จัดการปฏิทินกิจกรรม (CALENDAR)
-// ==========================================
-app.get("/api/calendar", (req, res) => {
-  db.query(`SELECT Calendar_id, Name, DATE_FORMAT(Date, '%Y-%m-%d') AS Date, Time, Location, User_id FROM calendar ORDER BY Date ASC`, (err, result) => {
+app.get("/api/publicrelations", (req, res) => {
+  const sql = `SELECT PublicRelation_id, Name_activity, DATE_FORMAT(Date, '%Y-%m-%d') AS Date, Location, Detail, User_id, Image FROM publicrelations ORDER BY PublicRelation_id DESC`;
+  db.query(sql, (err, result) => {
     if (err) return res.status(500).json(err);
     res.json(result);
   });
 });
 
+// ==========================================
+// 📅 ระบบ API จัดการปฏิทินกิจกรรม (CALENDAR)
+// ==========================================
+
+// 1. ดึงข้อมูลปฏิทินทั้งหมด
+app.get("/api/calendar", (req, res) => {
+  db.query(
+    `SELECT Calendar_id, PublicRelation_id, Name, DATE_FORMAT(Date, '%Y-%m-%d') AS Date, Time, Location, User_id FROM calendar ORDER BY Date ASC`,
+    (err, result) => {
+      if (err) return res.status(500).json(err);
+      res.json(result);
+    }
+  );
+});
+
+// 2. เพิ่มกิจกรรมใหม่ลงปฏิทิน
 app.post("/api/calendar", (req, res) => {
   const body = req.body || {};
   const Name = body.Name || body.name || null;
@@ -504,14 +479,22 @@ app.post("/api/calendar", (req, res) => {
   const Time = body.Time || body.time || null;
   const Location = body.Location || body.location || null;
   const finalUserId = parseInt(body.User_id || body.user_id, 10) || 2;
+  const prId = body.PublicRelation_id || body.prId || null;
 
-  db.query("INSERT INTO calendar (Name, Date, Time, Location, User_id) VALUES (?, ?, ?, ?, ?)",
-    [Name, cleanDate, Time, Location, finalUserId], (err, result) => {
-      if (err) { console.error("❌ ล้มเหลวในการเพิ่มปฏิทิน:", err.message); return res.status(500).json(err); }
+  db.query(
+    "INSERT INTO calendar (Name, Date, Time, Location, User_id, PublicRelation_id) VALUES (?, ?, ?, ?, ?, ?)",
+    [Name, cleanDate, Time, Location, finalUserId, prId],
+    (err, result) => {
+      if (err) {
+        console.error("❌ ล้มเหลวในการเพิ่มปฏิทิน:", err.message);
+        return res.status(500).json(err);
+      }
       res.json({ message: "เพิ่มกิจกรรมลงปฏิทินสำเร็จ", Calendar_id: result.insertId });
-    });
+    }
+  );
 });
 
+// 3. แก้ไขกิจกรรมด้วย Calendar_id
 app.put("/api/calendar/:id", (req, res) => {
   const body = req.body || {};
   const Name = body.Name || body.name || null;
@@ -520,16 +503,81 @@ app.put("/api/calendar/:id", (req, res) => {
   const Location = body.Location || body.location || null;
   const finalUserId = parseInt(body.User_id || body.user_id, 10) || 2;
 
-  db.query("UPDATE calendar SET Name=?, Date=?, Time=?, Location=?, User_id=? WHERE Calendar_id=?",
-    [Name, cleanDate, Time, Location, finalUserId, req.params.id], (err, result) => {
-      if (err) { console.error("❌ ล้มเหลวในการแก้ไขปฏิทิน:", err.message); return res.status(500).json({ error: err.message }); }
+  db.query(
+    "UPDATE calendar SET Name=?, Date=?, Time=?, Location=?, User_id=? WHERE Calendar_id=?",
+    [Name, cleanDate, Time, Location, finalUserId, req.params.id],
+    (err, result) => {
+      if (err) {
+        console.error("❌ ล้มเหลวในการแก้ไขปฏิทิน:", err.message);
+        return res.status(500).json({ error: err.message });
+      }
       res.json({ message: "แก้ไขข้อมูลปฏิทินสำเร็จ" });
-    });
+    }
+  );
 });
 
+// 4. แก้ไขกิจกรรมในปฏิทินอ้างอิงจาก PublicRelation_id
+app.put("/api/calendar/pr/:prId", (req, res) => {
+  const { prId } = req.params;
+  const body = req.body || {};
+  const Name = body.Name || body.name || null;
+  const cleanDate = parseDateForMySQL(body.Date || body.date);
+  const Location = body.Location || body.location || null;
+
+  const sql = `UPDATE calendar SET Name = ?, Date = ?, Location = ? WHERE PublicRelation_id = ?`;
+
+  db.query(sql, [Name, cleanDate, Location, prId], (err, result) => {
+    if (err) {
+      console.error("❌ ล้มเหลวในการอัปเดตปฏิทินจาก PR:", err.message);
+      return res.status(500).json({ error: err.message });
+    }
+    res.json({ message: "อัปเดตข้อมูลปฏิทินเรียบร้อยแล้ว", affectedRows: result.affectedRows });
+  });
+});
+
+// 5. ลบกิจกรรมในปฏิทินอ้างอิงจาก PublicRelation_id
+app.delete("/api/calendar/pr/:prId", (req, res) => {
+  const { prId } = req.params;
+  const sql = `DELETE FROM calendar WHERE PublicRelation_id = ?`;
+
+  db.query(sql, [prId], (err, result) => {
+    if (err) {
+      console.error("❌ ล้มเหลวในการลบปฏิทินจาก PR:", err.message);
+      return res.status(500).json({ error: err.message });
+    }
+    res.json({ message: "ลบกิจกรรมในปฏิทินเรียบร้อยแล้ว" });
+  });
+});
 // ==========================================
 // 📝 ระบบ API เช็คชื่อการเข้าร่วมกิจกรรม
 // ==========================================
+// ตัวอย่าง SQL query ใน Backend สำหรับดึงนักเรียน
+// ให้ WHERE ชัดเจนว่า class_id ต้องตรงกับที่ส่งมาเท่านั้น
+app.get("/attendance/students", (req, res) => {
+  const { activity, class: classId } = req.query;
+
+  // เปลี่ยนจาก s.class_id เป็น s.User_id (หรือ s.Class_level ตามโครงสร้างที่เก็บจริง)
+  const sql = `
+    SELECT 
+      s.Student_id AS id, 
+      s.Name AS name, 
+      s.User_id AS class_id, 
+      CASE WHEN pa.Student_id IS NOT NULL THEN 1 ELSE 0 END AS attended
+    FROM student s
+    LEFT JOIN participating_activities pa 
+      ON s.Student_id = pa.Student_id AND pa.Activity_id = ?
+    WHERE s.User_id = ?
+  `;
+
+  db.query(sql, [activity, classId], (err, results) => {
+    if (err) {
+      console.error("SQL Error:", err);
+      return res.status(500).json({ error: err.message });
+    }
+    res.json(results);
+  });
+});
+
 app.get("/attendance/activities", (req, res) => {
   db.query("SELECT Activity_id AS id, Name_activity AS name FROM activity ORDER BY Activity_id DESC", (err, result) => {
     if (err) return res.status(500).json(err);
@@ -575,19 +623,14 @@ app.post("/attendance/save", (req, res) => {
   });
 });
 
-
-
 // ==========================================
-// 🧑‍🎓 1. [GET] ดึงรายชื่อนักเรียนเฉพาะห้องเรียนของครู
+// 🧑‍🎓 API พัฒนาการ
 // ==========================================
 app.get('/api/student', (req, res) => {
   const { class_level } = req.query;
-
   if (!class_level) {
     return res.status(400).json({ message: "กรุณาระบุ class_level ของคุณครู" });
   }
-
-  // 🛠️ จุดที่ 1: เปลี่ยนจาก students เป็น student
   const sql = "SELECT * FROM student WHERE class_level = ?";
   db.query(sql, [class_level], (err, results) => {
     if (err) return res.status(500).json({ error: err.message });
@@ -595,17 +638,11 @@ app.get('/api/student', (req, res) => {
   });
 });
 
-// ==========================================
-// 📊 2. [GET] ดึงประวัติพัฒนาการทั้งหมดเฉพาะห้องเรียนของครู
-// ==========================================
 app.get('/api/development', (req, res) => {
   const { class_level } = req.query;
-
   if (!class_level) {
     return res.status(400).json({ message: "กรุณาระบุ class_level ของคุณครู" });
   }
-
-  // 🛠️ จุดที่ 2: เปลี่ยนตรง JOIN จาก students s เป็น student s
   const sql = `
     SELECT d.*, s.Name as Student_name, s.class_level,
            DATE_FORMAT(d.date, '%Y-%m-%d') as date_clean
@@ -614,30 +651,19 @@ app.get('/api/development', (req, res) => {
     WHERE s.class_level = ?
     ORDER BY d.date DESC, d.Development_id DESC
   `;
-
   db.query(sql, [class_level], (err, results) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json(results);
   });
 });
 
-// ==========================================
-// ➕ 3. [POST] บันทึกข้อมูลพัฒนาการใหม่
-// ==========================================
-// 🌟 เพิ่มโค้ดชุดนี้ในฝั่ง Backend เพื่อรองรับการดึงข้อมูลพัฒนาการรายบุคคล
-// ==========================================
-// 🔍 1. [GET] ดึงข้อมูลพัฒนาการรายบุคคล (ฝั่งผู้ปกครอง)
-// ==========================================
 app.get('/api/development/student', (req, res) => {
   console.log("👉 Query ที่ได้รับ:", req.query);
   const studentId = req.query.student_id || req.query.studentId || req.query.Student_id;
-
   if (!studentId) {
     return res.status(400).json({ error: "กรุณาระบุรหัสนักเรียน (student_id)" });
   }
-
   const sql = `SELECT * FROM development WHERE Student_id = ? ORDER BY Year DESC, Term DESC`;
-
   db.query(sql, [studentId], (err, results) => {
     if (err) {
       console.error("Database error:", err);
@@ -647,9 +673,6 @@ app.get('/api/development/student', (req, res) => {
   });
 });
 
-// ==========================================
-// 📝 2. [PUT] อัปเดต/แก้ไขข้อมูลพัฒนาการ (บล็อกข้ามห้องเรียน)
-// ==========================================
 app.put('/api/development/:id', (req, res) => {
   const devId = req.params.id;
   const {
@@ -659,14 +682,11 @@ app.put('/api/development/:id', (req, res) => {
     Problem_solving, Communication, Remembering
   } = req.body;
 
-  // ดักรับค่าระดับชั้นเผื่อไว้จากทุกทาง (กันเหนียว)
   const currentClassLevel = class_level || req.body.Class_level || req.query.class_level;
-
   if (!currentClassLevel) {
     return res.status(400).json({ message: "ไม่พบข้อมูลระดับชั้นเรียน (class_level) ในคำขอ" });
   }
 
-  // ตรวจสอบสิทธิ์ว่าข้อมูลชิ้นนี้เป็นของนักเรียนในห้องเรียนที่ครูคนนี้สอนจริงไหม
   const verifySql = `
     SELECT d.Development_id FROM development d
     JOIN student s ON d.Student_id = s.Student_id
@@ -702,9 +722,6 @@ app.put('/api/development/:id', (req, res) => {
   });
 });
 
-// ==========================================
-// 🗑️ 3. [DELETE] ลบข้อมูลพัฒนาการ (บล็อกข้ามห้องเรียน)
-// ==========================================
 app.delete('/api/development/:id', (req, res) => {
   const devId = req.params.id;
   const { class_level } = req.query;
@@ -731,11 +748,8 @@ app.delete('/api/development/:id', (req, res) => {
       res.json({ message: "ลบข้อมูลการประเมินพัฒนาการเรียบร้อย" });
     });
   });
-}); // 👈 ปิดฟังก์ชันลบตรงนี้ให้เรียบร้อย!
+});
 
-// ==========================================
-// ➕ 4. [POST] บันทึก/เพิ่มข้อมูลพัฒนาการใหม่
-// ==========================================
 app.post('/api/development', (req, res) => {
   const {
     Student_id, Year, Term, date, Physical, Weight, Height,
@@ -774,7 +788,7 @@ app.post('/api/development', (req, res) => {
 });
 
 // ==========================================
-// 🔐 ระบบตรวจสอบการเข้าสู่ระบบ (LOGIN API)
+// 🔐 ระบบตรวจสอบการเข้าสู่ระบบ (LOGIN / REGISTER API)
 // ==========================================
 app.post("/login", (req, res) => {
   const username = req.body.UserName || req.body.username;
@@ -809,22 +823,15 @@ app.post("/login", (req, res) => {
       const currentStatus = String(user.Status || "").trim();
       const currentRole = String(user.Role || "").trim();
 
-      // ==========================================
-      // แก้ข้อมูลเก่าที่เคยบันทึก Role ผิดช่อง
-      // ==========================================
       if (currentRole === "ถูกระงับสิทธิ์" && currentStatus === "ใช้งาน") {
         db.query(
           "UPDATE users SET Role = 'ผู้ใช้งานเก่า (รอระบุสิทธิ์)', Status = 'ถูกระงับสิทธิ์' WHERE User_id = ?",
           [user.User_id]
         );
-
         user.Role = "ผู้ใช้งานเก่า (รอระบุสิทธิ์)";
         user.Status = "ถูกระงับสิทธิ์";
       }
 
-      // ==========================================
-      // เช็กสถานะระงับ
-      // ==========================================
       if (
         user.Status === "ระงับ" ||
         user.Status === "ถูกระงับ" ||
@@ -839,44 +846,33 @@ app.post("/login", (req, res) => {
         });
       }
 
-      // ==========================================
-      // Login สำเร็จ
-      // ==========================================
       return res.json({
-  success: true,
-  message: "สำเร็จ",
-  user: {
-    id: user.User_id,
-    User_id: user.User_id,
-    username: user.UserName,
-    UserName: user.UserName,
-    name: user.Name,
-    Name: user.Name,
-    email: user.Email, // 🆕 เพิ่ม email เล็ก
-    Email: user.Email, // 🆕 เพิ่ม Email ใหญ่
-    role: user.Role,
-    Role: user.Role,
-    status: user.Status,
-    Status: user.Status,
-    Class_level: user.Class_level,
-  }
-});
+        success: true,
+        message: "สำเร็จ",
+        user: {
+          id: user.User_id,
+          User_id: user.User_id,
+          username: user.UserName,
+          UserName: user.UserName,
+          name: user.Name,
+          Name: user.Name,
+          email: user.Email,
+          Email: user.Email,
+          role: user.Role,
+          Role: user.Role,
+          status: user.Status,
+          Status: user.Status,
+          Class_level: user.Class_level,
+        }
+      });
     }
   );
 });
 
-
-// ========================================================
-// 2. API สำหรับรับข้อมูลลงทะเบียน (เวอร์ชันหักดิบ บังคับค่าแก้ปัญหาหน้าบ้านส่งผิด)
-// ========================================================
 app.post('/api/register', (req, res) => {
-  // 1. แยกรับแยกดักจับค่า เพื่อความชัวร์ 100%
   const Name = req.body.Name || req.body.name;
   const Phone = req.body.Phone || req.body.phone;
-  
-  // 🆕 ดักจับทั้ง Email (E ใหญ่) และ email (e เล็ก) เผื่อหน้าบ้านส่งมาแบบไหนก็รับได้
-  const Email = req.body.Email || req.body.email || null; 
-  
+  const Email = req.body.Email || req.body.email || null;
   const UserName = req.body.UserName || req.body.Username || req.body.username;
   const Role = req.body.Role || req.body.role;
   const Class_level = req.body.Class_level || req.body.class_level;
@@ -896,7 +892,6 @@ app.post('/api/register', (req, res) => {
     }
 
     const insertQuery = 'INSERT INTO users (Name, Phone, Email, Password, UserName, Role, Class_level, Status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
-
     db.query(
       insertQuery,
       [Name, Phone, Email, Password, UserName, Role, Class_level, "ใช้งาน"],

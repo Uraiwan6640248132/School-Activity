@@ -3,11 +3,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 export default function PublicRelations() {
   const [prList, setPrList] = useState([]);
   const [loading, setLoading] = useState(false);
-
-  // สำหรับเก็บรายชื่อผู้ใช้ทั้งหมดในระบบ เอาไว้ดึงชื่อจริงมาแสดงผล
   const [users, setUsers] = useState([]);
 
-  // State สำหรับเก็บข้อมูลผู้ล็อกอินปัจจุบัน
   const [currentUser, setCurrentUser] = useState({
     id: 1,
     name: 'เจ้าหน้าที่ระบบ'
@@ -29,8 +26,19 @@ export default function PublicRelations() {
 
   const API_URL = 'http://localhost:3001/api/publicrelations';
   const USERS_API_URL = 'http://localhost:3001/users';
+  const CALENDAR_API_URL = 'http://localhost:3001/api/calendar';
 
-  // ฟังก์ชันจับคู่หาชื่อผู้ใช้งานด้วย User_id (ส่งกลับเฉพาะชื่อเพียวๆ)
+  // Helper ฟังก์ชันแปลงวันที่แสดงผลแบบป้องกัน Timezone คลาดเคลื่อน
+  const displayFormattedDate = (dateStr) => {
+    if (!dateStr) return '-';
+    const cleanStr = String(dateStr).split('T')[0];
+    const parts = cleanStr.split('-');
+    if (parts.length === 3) {
+      return `${parts[2]}/${parts[1]}/${parts[0]}`; // แสดงแบบ DD/MM/YYYY
+    }
+    return dateStr;
+  };
+
   const getUserNameById = useCallback((userId) => {
     if (!userId) return "ไม่ระบุชื่อ";
     const found = users.find(u => Number(u.User_id || u.id || u.user_id) === Number(userId));
@@ -40,7 +48,6 @@ export default function PublicRelations() {
     return `ผู้ใช้งานรหัส ${userId}`;
   }, [users]);
 
-  // ดึงรายชื่อผู้ใช้งานทั้งหมดมาเก็บในระบบหน้าบ้าน
   const fetchUsersData = async () => {
     try {
       const res = await fetch(USERS_API_URL);
@@ -103,10 +110,12 @@ export default function PublicRelations() {
     }
   };
 
+  // 1. เพิ่มประชาสัมพันธ์ + เพิ่มลงปฏิทิน
   const handleAddSubmit = async (e) => {
     e.preventDefault();
     const activeUser = checkAuthUser();
-    const dataToSend = { ...formData, User_id: activeUser.id };
+    const cleanDate = formData.date ? formData.date.split('T')[0] : '';
+    const dataToSend = { ...formData, date: cleanDate, User_id: activeUser.id };
 
     try {
       const res = await fetch(API_URL, {
@@ -114,46 +123,105 @@ export default function PublicRelations() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(dataToSend)
       });
+
       if (res.ok) {
-        alert("เพิ่มข่าวประชาสัมพันธ์สำเร็จ!");
+        const addedPR = await res.json();
+        const newPRId = addedPR.PublicRelation_id || addedPR.insertId || addedPR.id;
+
+        if (newPRId) {
+          const calendarData = {
+            Name: formData.Name,
+            Date: cleanDate,
+            Time: '09:00 - 12:00',
+            Location: formData.Location,
+            User_id: activeUser.id,
+            PublicRelation_id: newPRId
+          };
+
+          await fetch(CALENDAR_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(calendarData)
+          });
+        }
+
+        alert("เพิ่มข่าวประชาสัมพันธ์และบันทึกลงปฏิทินสำเร็จ!");
         setIsAddOpen(false);
         clearForm();
         fetchPRData();
       }
     } catch (err) {
-      alert("เกิดข้อผิดพลาด");
+      alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล");
     }
   };
 
+  // 2. แก้ไขประชาสัมพันธ์ + อัปเดตในปฏิทิน
   const handleEditSubmit = async (e) => {
     e.preventDefault();
+
+    if (!selectedId) {
+      alert("ไม่พบรหัสข่าวประชาสัมพันธ์ กรุณาลองใหม่อีกครั้ง");
+      return;
+    }
+
+    const cleanDate = formData.date ? formData.date.split('T')[0] : '';
+    const payload = { ...formData, date: cleanDate };
+
     try {
       const res = await fetch(`${API_URL}/${selectedId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(payload)
       });
+
       if (res.ok) {
-        alert("แก้ไขข้อมูลสำเร็จ!");
+        try {
+          const calendarData = {
+            Name: formData.Name,
+            Date: cleanDate,
+            Location: formData.Location,
+            User_id: formData.User_id
+          };
+
+          await fetch(`${CALENDAR_API_URL}/pr/${selectedId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(calendarData)
+          });
+        } catch (calErr) {
+          console.warn("ไม่สามารถอัปเดตปฏิทินได้:", calErr);
+        }
+
+        alert("แก้ไขข้อมูลประชาสัมพันธ์สำเร็จ!");
         setIsEditOpen(false);
         clearForm();
         fetchPRData();
+      } else {
+        alert(`แก้ไขไม่สำเร็จ รหัสตอบกลับ: ${res.status}`);
       }
     } catch (err) {
-      alert("เกิดข้อผิดพลาด");
+      console.error("Edit submit error:", err);
+      alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล");
     }
   };
 
+  // 3. ลบประชาสัมพันธ์ + ลบออกจากปฏิทิน
   const handleDeleteSubmit = async () => {
     try {
       const res = await fetch(`${API_URL}/${selectedId}`, { method: 'DELETE' });
       if (res.ok) {
+        try {
+          await fetch(`${CALENDAR_API_URL}/pr/${selectedId}`, { method: 'DELETE' });
+        } catch (calErr) {
+          console.warn("ไม่สามารถลบปฏิทินได้:", calErr);
+        }
+
         alert("ลบข้อมูลสำเร็จ!");
         setIsDeleteOpen(false);
         fetchPRData();
       }
     } catch (err) {
-      alert("เกิดข้อผิดพลาด");
+      alert("เกิดข้อผิดพลาดในการลบข้อมูล");
     }
   };
 
@@ -171,10 +239,18 @@ export default function PublicRelations() {
   };
 
   const openEditModal = (item) => {
-    setSelectedId(item.PublicRelation_id);
+    const prId = item.PublicRelation_id || item.publicrelation_id || item.id;
+    setSelectedId(prId);
+
+    // ดึงเฉพาะ YYYY-MM-DD แบบตรงๆ ป้องกัน Timezone ถอยหลัง
+    let rawDate = '';
+    if (item.Date) {
+      rawDate = String(item.Date).split('T')[0];
+    }
+
     setFormData({
-      Name: item.Name_activity || '',
-      date: item.Date ? item.Date.substring(0, 10) : '',
+      Name: item.Name_activity || item.Name || '',
+      date: rawDate,
       Location: item.Location || '',
       Detail: item.Detail || '',
       User_id: item.User_id || currentUser.id,
@@ -194,14 +270,13 @@ export default function PublicRelations() {
         <h2 style={{ margin: 10, color: '#0369a1' }}>ประชาสัมพันธ์</h2>
 
         <button style={styles.btnAdd} onClick={() => { clearForm(); setIsAddOpen(true); }}>
-
           + เพิ่มประชาสัมพันธ์
         </button>
       </div>
 
       <div style={styles.cardContainer}>
         {prList.map((item) => (
-          <div key={item.PublicRelation_id} style={styles.card}>
+          <div key={item.PublicRelation_id || item.id} style={styles.card}>
             <div style={styles.cardLeft}>
               {item.Image ? (
                 <img src={item.Image} alt="public relations" style={styles.cardImg} />
@@ -209,8 +284,8 @@ export default function PublicRelations() {
                 <div style={styles.cardImgPlaceholder}>ไม่มีรูปภาพ</div>
               )}
               <div style={styles.cardInfo}>
-                <strong>ชื่อเรื่อง:</strong> {item.Name_activity} <br />
-                <strong>วัน/เดือน/ปี:</strong> {item.Date ? item.Date.substring(0, 10) : '-'} <br />
+                <strong>ชื่อเรื่อง:</strong> {item.Name_activity || item.Name} <br />
+                <strong>วัน/เดือน/ปี:</strong> {displayFormattedDate(item.Date)} <br />
                 <strong>สถานที่:</strong> {item.Location} <br />
                 <strong>รายละเอียด:</strong> {item.Detail || '-'} <br />
 
@@ -222,8 +297,7 @@ export default function PublicRelations() {
             </div>
             <div style={styles.cardAction}>
               <button style={{ ...styles.iconBtn, ...styles.iconBtnEdit }} onClick={() => openEditModal(item)}>แก้ไข</button>
-              <button style={{ ...styles.iconBtn, ...styles.iconBtnDelete }} onClick={() => openDeleteModal(item.PublicRelation_id)}>ลบ</button>
-
+              <button style={{ ...styles.iconBtn, ...styles.iconBtnDelete }} onClick={() => openDeleteModal(item.PublicRelation_id || item.id)}>ลบ</button>
             </div>
           </div>
         ))}
@@ -263,7 +337,6 @@ export default function PublicRelations() {
               <textarea style={styles.textarea} value={formData.Detail} onChange={(e) => setFormData({ ...formData, Detail: e.target.value })} rows={3} />
 
               <label style={styles.label}>ประชาสัมพันธ์โดย</label>
-              {/* 🌟 แสดงเฉพาะชื่อผู้ใช้ปัจจุบันที่ Login เท่านั้น */}
               <div style={styles.loginUserBox}>
                 {currentUser.name}
               </div>
@@ -307,7 +380,6 @@ export default function PublicRelations() {
               <textarea style={styles.textarea} value={formData.Detail} onChange={(e) => setFormData({ ...formData, Detail: e.target.value })} rows={3} />
 
               <label style={styles.label}>ประชาสัมพันธ์โดย</label>
-              {/* 🌟 ปรับปรุงจุดนี้: แสดงเฉพาะชื่อจริงของผู้สร้างข่าวเท่านั้น ไม่มีข้อความและรหัสอื่นๆ นำหน้า */}
               <div style={styles.loginUserBox}>
                 {getUserNameById(formData.User_id)}
               </div>
@@ -329,7 +401,6 @@ export default function PublicRelations() {
             <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
               <button style={styles.btnConfirmDelete} onClick={handleDeleteSubmit}>ลบ</button>
               <button style={styles.btnCancel} onClick={() => { setIsDeleteOpen(false); clearForm(); }}>ยกเลิก</button>
-
             </div>
           </div>
         </div>
