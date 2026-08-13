@@ -2,17 +2,16 @@ import React, { useState, useEffect } from 'react';
 import './App.css';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 
+import PromoteClass from './pages/PromoteClass';
 
 // Navbar
 import NavbarTeacher from './navbar/nb';
 import NavbarAdmin from './navbar/nba';
 import NavbarParent from './navbar/nbp';
 
-
 // Login
 import Login from './login/login';
 import Register from './login/register';
-
 
 // Teacher
 import Home from './teacher/home';
@@ -24,7 +23,6 @@ import CalendarActivity from './teacher/calendar';
 import PersonalData from './teacher/personal_data';
 import Development from './teacher/development';
 import ParticipatingActivities from './teacher/participating_activities';
-
 
 // Admin
 import HomeAdmin from './admin/homeadmin';
@@ -41,32 +39,15 @@ import Notificationp from './parent/notificationp';
 import PublicRelationsp from './parent/publicrelationp';
 import ActivityP from "./parent/activityp";
 
-
-
 function App() {
-
-
   const [userRole, setUserRole] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
-
-
   const updateRoleAccess = () => {
-
-
     const user = localStorage.getItem("user");
-
-
     if (user) {
-
-
       try {
-
-
         const userData = JSON.parse(user);
-
-
-
         const rawRole =
           userData.role ||
           userData.Role ||
@@ -74,476 +55,129 @@ function App() {
           userData.Status ||
           "";
 
-
-
         const role = String(rawRole)
           .toLowerCase()
           .replace(/\s+/g, "")
           .trim();
 
-
-
         console.log("Role =", role);
-
-
-
         setUserRole(role);
-
-
-
       } catch (error) {
-
-
         console.log(error);
-
         setUserRole(null);
-
       }
-
-
-
     } else {
-
-
       setUserRole(null);
-
-
     }
-
-
-
     setIsLoading(false);
-
   };
 
-
-
-
   useEffect(() => {
-
-
     updateRoleAccess();
-
-
   }, []);
 
-
-
-
-
   if (isLoading) {
-
-
     return (
-
-      <div style={{
-        padding: 40,
-        textAlign: "center"
-      }}>
-
+      <div style={{ padding: 40, textAlign: "center" }}>
         <h2>กำลังโหลด...</h2>
-
-
       </div>
-
     );
-
   }
-
-
-
-
 
   // ==========================
   // ยังไม่ Login
   // ==========================
-
   if (!userRole) {
-
-
     return (
-
       <Routes>
-
-
-        <Route
-          path="/login"
-          element={
-            <Login
-              onLoginSuccess={updateRoleAccess}
-            />
-          }
-        />
-
-
-
-        <Route
-          path="/register"
-          element={
-            <Register
-              onRegisterSuccess={updateRoleAccess}
-            />
-          }
-        />
-
-
-
-        <Route
-          path="*"
-          element={
-            <Navigate to="/login" />
-          }
-        />
-
-
+        <Route path="/login" element={<Login onLoginSuccess={updateRoleAccess} />} />
+        <Route path="/register" element={<Register onRegisterSuccess={updateRoleAccess} />} />
+        <Route path="*" element={<Navigate to="/login" />} />
       </Routes>
-
     );
-
   }
-
-
-
-
-
 
   // ==========================
   // ADMIN
   // ==========================
-
-  if (
-
-    userRole === "admin" ||
-    userRole === "1" ||
-    userRole === "แอดมิน"
-
-  ) {
-
-
+  if (userRole === "admin" || userRole === "1" || userRole === "แอดมิน") {
     return (
-
       <NavbarAdmin>
-
         <Routes>
-
-
-          <Route
-            path="/"
-            element={
-              <Navigate to="/homeadmin" />
-            }
-          />
-
-
-          <Route
-            path="/homeadmin"
-            element={<HomeAdmin />}
-          />
-
-
-          <Route
-            path="/user_information"
-            element={<UserInformation />}
-          />
-
-
-          <Route
-            path="/personal_dataad"
-            element={<PersonalDataAd />}
-          />
-
-
-          <Route
-            path="*"
-            element={
-              <Navigate to="/homeadmin" />
-            }
-          />
-
-
-
+          <Route path="/" element={<Navigate to="/homeadmin" />} />
+          <Route path="/homeadmin" element={<HomeAdmin />} />
+          <Route path="/user_information" element={<UserInformation />} />
+          <Route path="/personal_dataad" element={<PersonalDataAd />} />
+          <Route path="*" element={<Navigate to="/homeadmin" />} />
         </Routes>
-
-
       </NavbarAdmin>
-
     );
-
   }
-
-
-
-
-
 
   // ==========================
   // TEACHER
   // ==========================
-
-  if (
-
-    userRole === "teacher" ||
-    userRole === "2" ||
-    userRole.includes("ครู")
-
-  ) {
-
-
+  if (userRole === "teacher" || userRole === "2" || userRole.includes("ครู")) {
     return (
-
       <NavbarTeacher>
-
-
         <Routes>
+          <Route path="/" element={<Navigate to="/home" />} />
+          <Route path="/home" element={<Home />} />
+          <Route path="/students" element={<StudentManagement />} />
+          <Route path="/activity" element={<Activity />} />
+          <Route path="/participating" element={<ParticipatingActivities />} />
+          <Route path="/notification" element={<Notification />} />
+          <Route path="/event" element={<CalendarActivity />} />
+          <Route path="/publicrelations" element={<PublicRelations />} />
+          <Route path="/personal" element={<PersonalData />} />
+          <Route path="/development" element={<Development />} />
+          
+          {/* 🟢 ใส่ Route อัปเดตชั้นเรียนในส่วนของคุณครูตรงนี้ */}
+          <Route path="/promote-class" element={<PromoteClass />} />
 
-
-
-          <Route
-            path="/"
-            element={
-              <Navigate to="/home" />
-            }
-          />
-
-
-
-          <Route
-            path="/home"
-            element={<Home />}
-          />
-
-
-
-          <Route
-            path="/students"
-            element={<StudentManagement />}
-          />
-
-
-          <Route
-            path="/activity"
-            element={<Activity />}
-          />
-
-
-
-          <Route
-            path="/participating"
-            element={<ParticipatingActivities />}
-          />
-
-
-
-          <Route
-            path="/notification"
-            element={<Notification />}
-          />
-
-
-
-          <Route
-            path="/event"
-            element={<CalendarActivity />}
-          />
-
-
-
-          <Route
-            path="/publicrelations"
-            element={<PublicRelations />}
-          />
-
-
-
-          <Route
-            path="/personal"
-            element={<PersonalData />}
-          />
-
-
-
-          <Route
-            path="/development"
-            element={<Development />}
-          />
-
-
-
-          <Route
-            path="*"
-            element={
-              <Navigate to="/home" />
-            }
-          />
-
-
-
+          <Route path="*" element={<Navigate to="/home" />} />
         </Routes>
-
-
       </NavbarTeacher>
-
     );
-
-
   }
-
-
-
-
-
-
 
   // ==========================
   // PARENT
   // ==========================
-
-
-  if (
-
-    userRole === "parent" ||
-    userRole === "3" ||
-    userRole === "ผู้ปกครอง"
-
-  ) {
-
-
-
+  if (userRole === "parent" || userRole === "3" || userRole === "ผู้ปกครอง") {
     return (
-
       <NavbarParent>
-
-
-
         <Routes>
-
-
-          <Route
-            path="/"
-            element={
-              <Navigate to="/homeparent" />
-            }
-          />
-
-
-
-          <Route
-            path="/homeparent"
-            element={<HomeParent />}
-          />
-
-
-          <Route
-            path="/personal_dataparent"
-            element={<PersonalDataParent />}
-          />
-
-
-          <Route
-            path="/student_data"
-            element={<StudentData />}
-          />
-
-
-          <Route
-            path="/developmentp"
-            element={<Developmentp />}
-          />
-
-
-          <Route
-            path="/calendarp"
-            element={<Calendarp />}
-          />
-
-
-          <Route
-            path="/notificationp"
-            element={<Notificationp />}
-          />
-
-
-          <Route
-            path="/publicrelationp"
-            element={<PublicRelationsp />}
-          />
-
-
-          <Route
-            path="/activityp"
-            element={<ActivityP />}
-          />
-
-
-
-          <Route
-            path="*"
-            element={
-              <Navigate to="/homeparent" />
-            }
-          />
-
-
+          <Route path="/" element={<Navigate to="/homeparent" />} />
+          <Route path="/homeparent" element={<HomeParent />} />
+          <Route path="/personal_dataparent" element={<PersonalDataParent />} />
+          <Route path="/student_data" element={<StudentData />} />
+          <Route path="/developmentp" element={<Developmentp />} />
+          <Route path="/calendarp" element={<Calendarp />} />
+          <Route path="/notificationp" element={<Notificationp />} />
+          <Route path="/publicrelationp" element={<PublicRelationsp />} />
+          <Route path="/activityp" element={<ActivityP />} />
+          <Route path="*" element={<Navigate to="/homeparent" />} />
         </Routes>
-
-
-
       </NavbarParent>
-
     );
-
   }
-
-
-
-
 
   // ==========================
   // ROLE ผิด
   // ==========================
-
-
   const logout = () => {
-
     localStorage.removeItem("user");
-
     setUserRole(null);
-
   };
 
-
-
   return (
-
-    <div style={{
-      padding: 40
-    }}>
-
-
-      <h2>
-        ไม่พบสิทธิ์ผู้ใช้งาน
-      </h2>
-
-
-      <p>
-        Role ที่ได้รับ: {userRole}
-      </p>
-
-
-
-      <button onClick={logout}>
-
-        กลับไปหน้า Login
-
-      </button>
-
-
+    <div style={{ padding: 40 }}>
+      <h2>ไม่พบสิทธิ์ผู้ใช้งาน</h2>
+      <p>Role ที่ได้รับ: {userRole}</p>
+      <button onClick={logout}>กลับไปหน้า Login</button>
     </div>
-
   );
-
 }
-
-
 
 export default App;
