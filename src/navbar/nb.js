@@ -238,8 +238,8 @@ const styles = {
     width: "100%",
   },
   logoImage: {
-    maxHeight: "60px",
-    maxWidth: "180px",
+    maxHeight: "210px",
+    maxWidth: "200px",
     objectFit: "contain",
   },
   closeBtn: {

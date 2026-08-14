@@ -902,5 +902,51 @@ app.post('/api/register', (req, res) => {
     );
   });
 });
+// ==========================================
+// 🎓 1. API ระบบปีการศึกษา (Academic Years)
+// ==========================================
+// สำหรับดึงรายการปีการศึกษาทั้งหมดไปแสดงใน Dropdown ให้ครูเลือก
+app.get("/api/academic-years", (req, res) => {
+  const sql = "SELECT * FROM academic_years ORDER BY year_name DESC";
+  db.query(sql, (err, result) => {
+    if (err) {
+      console.error("เกิดข้อผิดพลาดในการดึงข้อมูลปีการศึกษา:", err);
+      return res.status(500).json(err);
+    }
+    res.json(result);
+  });
+});
+
+// ==========================================
+// 📈 2. API อัปเดตชั้นเรียนและบันทึกประวัติ (Promote Class)
+// ==========================================
+app.post("/api/students/promote", (req, res) => {
+  // รับค่ามาจากหน้าบ้าน (React)
+  const { Student_id, year_id, new_class_level } = req.body;
+
+  if (!Student_id || !year_id || !new_class_level) {
+    return res.status(400).json({ error: "ข้อมูลไม่ครบถ้วน กรุณาส่ง Student_id, year_id และ new_class_level" });
+  }
+
+  // Step 1: อัปเดตชั้นเรียนปัจจุบันในตาราง student หลัก
+  const updateSql = "UPDATE student SET Class_level = ? WHERE Student_id = ?";
+  db.query(updateSql, [new_class_level, Student_id], (err, updateResult) => {
+    if (err) {
+      console.error("Error updating student class:", err);
+      return res.status(500).json({ error: "อัปเดตตารางนักเรียนล้มเหลว", details: err.message });
+    }
+
+    // Step 2: บันทึกประวัติลงตาราง student_class_history ที่เราเพิ่งสร้าง
+    const historySql = "INSERT INTO student_class_history (Student_id, year_id, class_level) VALUES (?, ?, ?)";
+    db.query(historySql, [Student_id, year_id, new_class_level], (err, historyResult) => {
+      if (err) {
+        console.error("Error inserting student history:", err);
+        return res.status(500).json({ error: "บันทึกประวัติล้มเหลว", details: err.message });
+      }
+      
+      res.status(200).json({ success: true, message: "อัปเดตชั้นเรียนและบันทึกประวัติเรียบร้อยแล้ว!" });
+    });
+  });
+});
 
 app.listen(3001, () => { console.log("🚀 Server running on port 3001"); });
