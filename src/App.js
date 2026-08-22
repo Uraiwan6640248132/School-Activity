@@ -12,6 +12,7 @@ import NavbarParent from './navbar/nbp';
 // Login
 import Login from './login/login';
 import Register from './login/register';
+import HomePage from "./login/HomePage";
 
 // Teacher
 import Home from './teacher/home';
@@ -40,6 +41,7 @@ import PublicRelationsp from './parent/publicrelationp';
 import ActivityP from "./parent/activityp";
 
 function App() {
+  const navigate = useNavigate();
   const [userRole, setUserRole] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -90,9 +92,18 @@ function App() {
   if (!userRole) {
     return (
       <Routes>
+        <Route
+          path="/"
+          element={
+            <HomePage
+              onLogin={() => navigate("/login")}
+              onRegister={() => navigate("/register")}
+            />
+          }
+        />
         <Route path="/login" element={<Login onLoginSuccess={updateRoleAccess} />} />
         <Route path="/register" element={<Register onRegisterSuccess={updateRoleAccess} />} />
-        <Route path="*" element={<Navigate to="/login" />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     );
   }
@@ -131,7 +142,7 @@ function App() {
           <Route path="/publicrelations" element={<PublicRelations />} />
           <Route path="/personal" element={<PersonalData />} />
           <Route path="/development" element={<Development />} />
-          
+
           {/* 🟢 ใส่ Route อัปเดตชั้นเรียนในส่วนของคุณครูตรงนี้ */}
           <Route path="/promote-class" element={<PromoteClass />} />
 
