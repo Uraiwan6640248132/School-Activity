@@ -10,13 +10,35 @@ function ParticipatingActivities() {
   const [filterStatus, setFilterStatus] = useState("all");
 
   const loggedInClassId = localStorage.getItem("teacher_class_id") || "1";
-  const loggedInClassName = localStorage.getItem("teacher_class_name") || "ชั้นเรียนของคุณ";
+  
+  // 🟢 ตั้งค่าเริ่มต้นสำหรับแสดงชื่อชั้นเรียน
+  const [className, setClassName] = useState(
+    localStorage.getItem("teacher_class_name") || "อนุบาล1 ห้องปกติ"
+  );
 
   const API_URL = "http://localhost:3001";
 
   useEffect(() => {
     fetchActivitiesData();
+    fetchClassName();
   }, []);
+
+  // 🟢 ดึงข้อมูลชื่อชั้นเรียนตาม ID
+  const fetchClassName = async () => {
+    try {
+      const res = await axios.get(`${API_URL}/attendance/class/${loggedInClassId}`);
+      if (res.data && (res.data.name || res.data.Class_level)) {
+        const name = res.data.name || res.data.Class_level;
+        setClassName(name);
+        localStorage.setItem("teacher_class_name", name);
+      }
+    } catch (err) {
+      // หากหา API ไม่พบจะใช้ค่า fallback เป็น "อนุบาล1 ห้องปกติ"
+      if (!localStorage.getItem("teacher_class_name")) {
+        setClassName("อนุบาล1 ห้องปกติ");
+      }
+    }
+  };
 
   const fetchActivitiesData = async () => {
     try {
@@ -113,16 +135,15 @@ function ParticipatingActivities() {
     }
   };
 
-  // 📊 ส่งออกเป็น CSV (เปิดใน Excel ได้ทันทีโดยไม่ต้องลง package เพิ่ม)
+  // 📊 ส่งออกเป็น CSV (เปิดใน Excel ได้ทันที)
   const exportToCSV = () => {
     if (students.length === 0) return alert("ไม่มีข้อมูลสำหรับส่งออก");
 
     const currentActivityName = activities.find(a => String(a.id) === String(selectedActivity))?.name || "กิจกรรม";
 
-    // Header และ Content สำหรับ CSV (ใส่ BOM \uFEFF เพื่อให้ Excel อ่านภาษาไทยไม่เป็นต่างดาว)
     let csvContent = "\uFEFF";
     csvContent += `รายงานการเข้าร่วมกิจกรรม,${currentActivityName}\n`;
-    csvContent += `ห้องเรียน,${loggedInClassName}\n\n`;
+    csvContent += `ห้องเรียน,${className}\n\n`;
     csvContent += `สรุปสถิติ\n`;
     csvContent += `นักเรียนทั้งหมด,${totalStudents},คน\n`;
     csvContent += `เข้าร่วม,${attendedCount},คน (${attendedPercentage}%)\n`;
@@ -137,7 +158,7 @@ function ParticipatingActivities() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.setAttribute("download", `รายงาน_${loggedInClassName}_${currentActivityName}.csv`);
+    link.setAttribute("download", `รายงาน_${className}_${currentActivityName}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -147,11 +168,12 @@ function ParticipatingActivities() {
     <div style={styles.container}>
       <div style={styles.wrapper}>
 
-        {/* Banner สลับโหมด */}
+        {/* Banner แสดงห้องเรียนและโหมด */}
         <div style={styles.topBanner}>
           <div style={styles.classInfo}>
             <span style={styles.classBadge}>ห้องเรียน</span>
-            <span style={styles.className}>{loggedInClassName} (ID: {loggedInClassId})</span>
+            {/* 🟢 แสดงชื่อชั้นเรียนที่ได้รับการแก้ไขแล้ว */}
+            <span style={styles.className}>{className} (ID: {loggedInClassId})</span>
           </div>
           <div style={styles.modeTabs}>
             <button

@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from "react";
 
 export default function HomePage({
-    schoolName = "โรงเรียนสาธิตมหาวิทยาลัยราชภัฏเลย",
+    schoolName = "ระบบบันทึกกิจกรรม โรงเรียนสาธิตมหาวิทยาลัยราชภัฏเลย",
     onLogin = () => { },
     onRegister = () => { },
 }) {
     const [menuOpen, setMenuOpen] = useState(false);
     const [news, setNews] = useState([]);
 
-    const heroImageUrl = "https://via.placeholder.com/600x400";
+    const heroImageUrl = "https://satit.lru.ac.th/th/wp-content/uploads/2022/04/HEAND-BANNER.jpg";
     const API_URL = 'http://localhost:3001/api/publicrelations';
 
     useEffect(() => {
@@ -242,8 +242,20 @@ const styles = {
     loginButton: { padding: "9px 17px", border: "1px solid #1a83d8", color: "#096cbd", background: "white", borderRadius: 9, cursor: "pointer" }, registerButton: { padding: "10px 17px", border: "1px solid #1178ca", color: "white", background: "#1178ca", borderRadius: 9, cursor: "pointer" },
     hero: { minHeight: 540, padding: "70px clamp(20px, 8vw, 120px)", display: "flex", alignItems: "center", gap: 35, position: "relative", background: "linear-gradient(125deg,#eef9ff 0%,#d7efff 54%,#c5e6ff 100%)" }, heroContent: { maxWidth: 620, position: "relative", zIndex: 1 }, kicker: { letterSpacing: 2, fontSize: 12, color: "#1680ce", fontWeight: 800, margin: "0 0 12px" }, heroTitle: { fontSize: "clamp(38px,5vw,64px)", lineHeight: 1.24, margin: 0, letterSpacing: "-.8px", color: "#123a67" }, heroText: { fontSize: 18, color: "#497092", maxWidth: 540, margin: "21px 0 30px" }, heroActions: { display: "flex", gap: 12, flexWrap: "wrap" }, primaryButton: { background: "#087bce", color: "#fff", border: 0, borderRadius: 10, padding: "14px 21px", fontWeight: 700, fontSize: 16, cursor: "pointer", boxShadow: "0 8px 18px #1283cf48" }, secondaryButton: { background: "#fff", color: "#096fbe", border: "1px solid #b7daf3", borderRadius: 10, padding: "13px 20px", fontWeight: 700, fontSize: 16, cursor: "pointer" },
 
-    heroArtImageWrapper: { flex: 1, minWidth: 320, height: 360, borderRadius: 20, overflow: "hidden", boxShadow: "0 12px 30px rgba(18, 58, 103, 0.15)", background: "#fff" },
-    heroImage: { width: "100%", height: "100%", objectFit: "cover" },
+    heroArtImageWrapper: { 
+    flex: 1, 
+    minWidth: 320, 
+    borderRadius: 20, 
+    overflow: "hidden", 
+    boxShadow: "0 12px 30px rgba(18, 58, 103, 0.15)", 
+    background: "#fff",
+    display: "flex" // ป้องกันช่องว่างจีบขอบด้านล่างของ img
+},
+heroImage: { 
+    width: "100%", 
+    height: "auto", // ปรับความสูงตามอัตราส่วนจริงของรูปภาพ
+    display: "block" 
+},
 
     about: { padding: "72px clamp(20px, 8vw, 120px)", display: "grid", gridTemplateColumns: "1.2fr 1fr", alignItems: "start", gap: 50 },
     eyebrow: { letterSpacing: 1.8, color: "#1680ce", fontSize: 12, fontWeight: 800, margin: "0 0 10px" },

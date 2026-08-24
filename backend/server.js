@@ -551,33 +551,46 @@ app.delete("/api/calendar/pr/:prId", (req, res) => {
 // ==========================================
 // 📝 ระบบ API เช็คชื่อการเข้าร่วมกิจกรรม
 // ==========================================
-// ตัวอย่าง SQL query ใน Backend สำหรับดึงนักเรียน
-// ให้ WHERE ชัดเจนว่า class_id ต้องตรงกับที่ส่งมาเท่านั้น
+
+// 🟢 ดึงรายชื่อนักเรียนสำหรับเช็คชื่อ (แก้ไขการซ้ำซ้อนและรองรับการค้นหาผ่าน ID / Class_level)
 app.get("/attendance/students", (req, res) => {
   const { activity, class: classId } = req.query;
 
-  // เปลี่ยนจาก s.class_id เป็น s.User_id (หรือ s.Class_level ตามโครงสร้างที่เก็บจริง)
+  // 🟢 SQL แก้ไขพิเศษ: ใช้ REPLACE() ลบช่องว่างออกทั้งหมด ป้องกันปัญหาคำว่า "อนุบาล1 ห้องปกติ" กับ "อนุบาล1ห้องปกติ"
   const sql = `
     SELECT 
       s.Student_id AS id, 
       s.Name AS name, 
-      s.User_id AS class_id, 
-      CASE WHEN pa.Student_id IS NOT NULL THEN 1 ELSE 0 END AS attended
+      IF(pa.Student_id IS NOT NULL, 1, 0) AS attended
     FROM student s
     LEFT JOIN participating_activities pa 
       ON s.Student_id = pa.Student_id AND pa.Activity_id = ?
-    WHERE s.User_id = ?
+    WHERE 
+      LOWER(REPLACE(s.Class_level, ' ', '')) = LOWER(REPLACE(?, ' ', ''))
+      OR LOWER(REPLACE(s.Class_level, ' ', '')) = (
+        SELECT LOWER(REPLACE(Class_level, ' ', '')) FROM users WHERE User_id = ?
+      )
+      OR s.User_id = ?
+    ORDER BY s.Student_id ASC
   `;
 
-  db.query(sql, [activity, classId], (err, results) => {
+  db.query(sql, [activity, classId, classId, classId], (err, result) => {
     if (err) {
-      console.error("SQL Error:", err);
-      return res.status(500).json({ error: err.message });
+      console.error("SQL Attendance Error:", err);
+      return res.status(500).json(err);
     }
-    res.json(results);
+
+    const formattedResult = result.map(row => ({
+      id: row.id,
+      name: row.name,
+      attended: row.attended === 1
+    }));
+
+    res.json(formattedResult);
   });
 });
 
+// 🟢 ดึงรายการกิจกรรมทั้งหมด
 app.get("/attendance/activities", (req, res) => {
   db.query("SELECT Activity_id AS id, Name_activity AS name FROM activity ORDER BY Activity_id DESC", (err, result) => {
     if (err) return res.status(500).json(err);
@@ -585,6 +598,7 @@ app.get("/attendance/activities", (req, res) => {
   });
 });
 
+// 🟢 ดึงรายการระดับชั้นเรียนทั้งหมด
 app.get("/attendance/classes", (req, res) => {
   db.query("SELECT DISTINCT Class_level AS id, Class_level AS name FROM student WHERE Class_level IS NOT NULL AND Class_level != '' ORDER BY Class_level ASC", (err, result) => {
     if (err) return res.status(500).json(err);
@@ -592,26 +606,19 @@ app.get("/attendance/classes", (req, res) => {
   });
 });
 
-app.get("/attendance/students", (req, res) => {
-  const { activity, class: classLevel } = req.query;
-  const sql = `
-        SELECT s.Student_id AS id, s.Name AS name, IF(p.Student_id IS NOT NULL, 1, 0) AS attended
-        FROM student s LEFT JOIN participating_activities p ON s.Student_id = p.Student_id AND p.Activity_id = ?
-        WHERE s.Class_level = ? ORDER BY s.Student_id ASC`;
-  db.query(sql, [activity, classLevel], (err, result) => {
-    if (err) return res.status(500).json(err);
-    res.json(result.map(row => ({ id: row.id, name: row.name, attended: row.attended === 1 })));
-  });
-});
-
+// 🟢 บันทึกข้อมูลการเข้าร่วมกิจกรรม
 app.post("/attendance/save", (req, res) => {
   const { activity_id, attendance_list } = req.body;
-  if (!activity_id || !attendance_list || !Array.isArray(attendance_list)) return res.status(400).json({ error: "ข้อมูลไม่ครบถ้วน" });
+  if (!activity_id || !attendance_list || !Array.isArray(attendance_list)) {
+    return res.status(400).json({ error: "ข้อมูลไม่ครบถ้วน" });
+  }
+
   const studentIds = attendance_list.map(s => s.student_id);
   if (studentIds.length === 0) return res.json({ message: "ไม่มีข้อมูลนักเรียน" });
 
   db.query("DELETE FROM participating_activities WHERE Activity_id = ? AND Student_id IN (?)", [activity_id, studentIds], (err, deleteResult) => {
     if (err) return res.status(500).json(err);
+
     const attendingStudents = attendance_list.filter(s => s.attended === true);
     if (attendingStudents.length === 0) return res.json({ message: "บันทึกข้อมูลเรียบร้อยแล้ว" });
 
@@ -831,6 +838,13 @@ app.post("/login", (req, res) => {
         user.Role = "ผู้ใช้งานเก่า (รอระบุสิทธิ์)";
         user.Status = "ถูกระงับสิทธิ์";
       }
+      if (user.Status === "รออนุมัติ") {
+  return res.json({
+    success: false,
+    blocked: true,
+    error: "บัญชีของคุณกำลังอยู่ระหว่างรอแอดมินอนุมัติสิทธิ์"
+  });
+}
 
       if (
         user.Status === "ระงับ" ||
@@ -892,12 +906,14 @@ app.post('/api/register', (req, res) => {
     }
 
     const insertQuery = 'INSERT INTO users (Name, Phone, Email, Password, UserName, Role, Class_level, Status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
+    
+    // 🟢 เปลี่ยนค่าสุดท้ายจาก "ใช้งาน" เป็น "รออนุมัติ"
     db.query(
       insertQuery,
-      [Name, Phone, Email, Password, UserName, Role, Class_level, "ใช้งาน"],
+      [Name, Phone, Email, Password, UserName, Role, Class_level, "รออนุมัติ"],
       (err, result) => {
         if (err) return res.status(500).json({ error: err.message });
-        return res.status(200).json({ message: 'ลงทะเบียนเรียบร้อยแล้ว!' });
+        return res.status(200).json({ message: 'ลงทะเบียนเรียบร้อยแล้ว รอการอนุมัติสิทธิ์จากผู้ดูแลระบบ' });
       }
     );
   });
