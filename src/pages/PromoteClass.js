@@ -154,6 +154,8 @@ function PromoteClass() {
       </table>
     </div>
   );
+
+  
 }
 
 export default PromoteClass;
