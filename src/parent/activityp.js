@@ -10,7 +10,11 @@ import {
   X,
   Grid3x3,
   List,
-  Sparkles
+  Loader2,
+  FolderOpen,
+  Sparkles,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 
 // 🌟 คอมโพเนนต์ไอคอนดาวน์โหลด
@@ -21,11 +25,16 @@ const DownloadIcon = ({ size = 16, color = "currentColor" }) => (
 function ActivityP() {
   const [activities, setActivities] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [showModal, setShowModal] = useState(false);
-  const [selectedActivity, setSelectedActivity] = useState(null);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState("grid");
-  const [hoveredCard, setHoveredCard] = useState(null);
+
+  // State สำหรับ Modal แสดงรูปภาพในอัลบั้ม (Gallery)
+  const [galleryTitle, setGalleryTitle] = useState("");
+  const [activeGalleryImages, setActiveGalleryImages] = useState(null);
+
+  // State สำหรับ LightBox แสดงรูปขนาดใหญ่
+  const [lightBoxImage, setLightBoxImage] = useState(null);
+  const [currentLightBoxIndex, setCurrentLightBoxIndex] = useState(0);
 
   const API_URL = "http://127.0.0.1:3001/activities";
 
@@ -41,22 +50,28 @@ function ActivityP() {
       });
       setActivities(res.data);
     } catch (err) {
-      console.error("ดึงข้อมูลกิจกรรมมาแสดงฝั่งผู้ปกครองไม่สำเร็จ:", err);
+      console.error("ดึงข้อมูลกิจกรรมฝั่งผู้ปกครองไม่สำเร็จ:", err);
     } finally {
       setLoading(false);
     }
   };
 
-  const parseActivityImages = (imageStr) => {
-    try {
-      const parsed = JSON.parse(imageStr);
-      return Array.isArray(parsed) ? parsed : (imageStr ? [imageStr] : []);
-    } catch (e) {
-      return imageStr ? [imageStr] : [];
+  const getImageArray = (item) => {
+    let itemImages = [];
+    const targetField = item.Image || item.Images;
+
+    if (targetField) {
+      if (typeof targetField === "string") {
+        if (targetField.startsWith("[")) {
+          try { itemImages = JSON.parse(targetField); } catch (e) { itemImages = [targetField]; }
+        } else { itemImages = [targetField]; }
+      } else if (Array.isArray(targetField)) { itemImages = targetField; }
     }
+    return itemImages;
   };
 
-  const downloadSingleImage = (base64Data, index, activityName) => {
+  const downloadSingleImage = (e, base64Data, index, activityName) => {
+    e?.stopPropagation();
     if (!base64Data) return alert("ไม่พบข้อมูลรูปภาพ");
     const link = document.createElement("a");
     link.href = base64Data;
@@ -67,13 +82,13 @@ function ActivityP() {
   };
 
   const downloadAllImages = (e, imagesArray, activityName) => {
-    e.stopPropagation();
-    if (imagesArray.length === 0) return alert("ไม่มีรูปภาพให้ดาวน์โหลด");
+    e?.stopPropagation();
+    if (!imagesArray || imagesArray.length === 0) return alert("ไม่มีรูปภาพให้ดาวน์โหลด");
 
     if (window.confirm(`คุณต้องการดาวน์โหลดรูปภาพทั้งหมดจำนวน ${imagesArray.length} รูปใช่หรือไม่?`)) {
       imagesArray.forEach((imgData, idx) => {
         setTimeout(() => {
-          downloadSingleImage(imgData, idx, activityName);
+          downloadSingleImage(null, imgData, idx, activityName);
         }, idx * 250);
       });
     }
@@ -90,853 +105,882 @@ function ActivityP() {
   const formatDate = (dateStr) => {
     if (!dateStr) return "ไม่ระบุวันเวลา";
     const date = new Date(dateStr);
-    return date.toLocaleDateString('th-TH', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric'
-    });
+    return date.toLocaleDateString('th-TH', { day: '2-digit', month: '2-digit', year: 'numeric' });
   };
 
-  const totalActivities = activities.length;
-  const totalImages = activities.reduce((sum, act) => sum + parseActivityImages(act.Image).length, 0);
-
-  // 🌟 การ์ดแบบ Grid
-  const ActivityGridCard = ({ item }) => {
-    const imgList = parseActivityImages(item.Image);
-    const previewImg = imgList.length > 0 ? imgList[0] : null;
-    const isHovered = hoveredCard === item.Activity_id;
-
+  if (loading) {
     return (
-      <div
-        key={item.Activity_id}
-        style={{
-          ...page.card,
-          transform: isHovered ? 'translateY(-6px)' : 'translateY(0)',
-          boxShadow: isHovered
-            ? '0 12px 40px rgba(99, 102, 241, 0.12), 0 4px 12px rgba(0,0,0,0.05)'
-            : '0 2px 8px rgba(0,0,0,0.04)',
-          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-          border: isHovered ? '2px solid #818cf8' : '1px solid #e2e8f0',
-        }}
-        onMouseEnter={() => setHoveredCard(item.Activity_id)}
-        onMouseLeave={() => setHoveredCard(null)}
-        onClick={() => { setSelectedActivity(item); setShowModal(true); }}
-      >
-        <div style={page.imageBadge}>
-          <Image size={12} color="#fff" />
-          <span style={{ marginLeft: '4px', fontSize: '11px', fontWeight: '600', color: '#fff' }}>
-            {imgList.length}
-          </span>
-        </div>
-
-        <div style={page.cardImageContainer}>
-          {previewImg ? (
-            <img src={previewImg} alt={item.Name_activity} style={page.cardImage} />
-          ) : (
-            <div style={page.cardImagePlaceholder}>
-              <Image size={32} color="#cbd5e1" />
-              <span style={{ fontSize: '13px', color: '#94a3b8', marginTop: '8px' }}>
-                ไม่มีรูปภาพ
-              </span>
-            </div>
-          )}
-        </div>
-
-        <div style={page.cardContent}>
-          <h3 style={page.cardTitle}>{item.Name_activity || "ชื่อกิจกรรม"}</h3>
-
-          <div style={page.infoList}>
-            <div style={page.infoItem}>
-              <Calendar size={14} color="#64748b" />
-              <span style={page.infoText}>{formatDate(item.Activity_date)}</span>
-            </div>
-            <div style={page.infoItem}>
-              <MapPin size={14} color="#64748b" />
-              <span style={page.infoText}>{item.Location || "โรงเรียน"}</span>
-            </div>
-            <div style={page.infoItem}>
-              <Camera size={14} color="#64748b" />
-              <span style={page.infoText}>{item.Photographer || "คุณครู"}</span>
-            </div>
-          </div>
-        </div>
-
-        <div style={page.actionsRow}>
-          <button
-            onClick={(e) => downloadAllImages(e, imgList, item.Name_activity)}
-            style={{
-              ...page.downloadAllBtn,
-              background: isHovered ? '#818cf8' : '#ffffff',
-              color: isHovered ? '#ffffff' : '#1e293b',
-              border: isHovered ? 'none' : '1px solid #cbd5e1',
-              transition: 'all 0.2s ease',
-            }}
-          >
-            <DownloadIcon size={14} color={isHovered ? '#fff' : '#1e293b'} />
-            <span style={{ marginLeft: "6px" }}>ดาวน์โหลดทั้งหมด</span>
-          </button>
-        </div>
+      <div style={styles.loadingContainer}>
+        <Loader2 size={48} style={styles.spinner} />
+        <p style={styles.loadingText}>กำลังโหลดข้อมูลกิจกรรม...</p>
       </div>
     );
-  };
-
-  // 🌟 การ์ดแบบ List
-  const ActivityListCard = ({ item }) => {
-    const imgList = parseActivityImages(item.Image);
-    const previewImg = imgList.length > 0 ? imgList[0] : null;
-
-    return (
-      <div
-        key={item.Activity_id}
-        style={page.listCard}
-        onClick={() => { setSelectedActivity(item); setShowModal(true); }}
-      >
-        <div style={page.listImageContainer}>
-          {previewImg ? (
-            <img src={previewImg} alt={item.Name_activity} style={page.listImage} />
-          ) : (
-            <div style={page.listImagePlaceholder}>
-              <Image size={24} color="#94a3b8" />
-            </div>
-          )}
-        </div>
-        <div style={page.listContent}>
-          <h3 style={page.listTitle}>{item.Name_activity}</h3>
-          <div style={page.listInfo}>
-            <span style={page.listInfoItem}>
-              <Calendar size={14} color="#64748b" />
-              {formatDate(item.Activity_date)}
-            </span>
-            <span style={page.listInfoItem}>
-              <MapPin size={14} color="#64748b" />
-              {item.Location || "โรงเรียน"}
-            </span>
-            <span style={page.listInfoItem}>
-              <Camera size={14} color="#64748b" />
-              {item.Photographer || "คุณครู"}
-            </span>
-            <span style={page.listImageCount}>
-              <Image size={14} color="#64748b" />
-              {imgList.length} รูป
-            </span>
-          </div>
-        </div>
-        <button
-          onClick={(e) => downloadAllImages(e, imgList, item.Name_activity)}
-          style={page.listDownloadBtn}
-        >
-          <DownloadIcon size={16} color="#818cf8" />
-        </button>
-      </div>
-    );
-  };
+  }
 
   return (
-    <div style={page.container}>
-      <div style={page.wrapper}>
-        {/* 🌟 ส่วนหัว */}
-        <div style={page.headerSection}>
-          <div style={page.headerLeft}>
-            <div style={page.headerIconWrapper}>
-              <Sparkles size={28} color="#818cf8" />
+    <div style={styles.container}>
+      <div style={styles.wrapper}>
+        {/* Header */}
+        <div style={styles.header}>
+          <div style={styles.headerLeft}>
+            <div style={styles.headerIcon}>
+              <Sparkles size={24} color="#FFFFFF" />
             </div>
             <div>
-              <h1 style={page.mainTitle}>
-                กิจกรรมของหนู ๆ
-                <span style={page.mainTitleSub}>👶</span>
-              </h1>
-              <p style={page.subTitle}>
-                รวมกิจกรรมสนุก ๆ ที่เด็ก ๆ ได้ทำร่วมกัน
+              <h1 style={styles.mainTitle}>กิจกรรมของหนู ๆ 👶</h1>
+              <p style={styles.subTitle}>
+                รวมกิจกรรมสนุก ๆ ที่เด็ก ๆ ได้ทำร่วมกัน (ทั้งหมด <span style={styles.activityCount}>{activities.length}</span> กิจกรรม)
               </p>
             </div>
           </div>
-          <div style={page.statsContainer}>
-            <div style={page.statItem}>
-              <span style={page.statNumber}>{totalActivities}</span>
-              <span style={page.statLabel}>กิจกรรม</span>
-            </div>
-            <div style={page.statDivider} />
-            <div style={page.statItem}>
-              <span style={page.statNumber}>{totalImages}</span>
-              <span style={page.statLabel}>รูปภาพ</span>
-            </div>
-          </div>
-        </div>
-
-        {/* 🌟 ค้นหาและมุมมอง */}
-        <div style={page.controlsSection}>
-          <div style={page.searchContainer}>
-            <Search size={18} color="#94a3b8" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }} />
-            <input
-              type="text"
-              placeholder="ค้นหากิจกรรม สถานที่ หรือผู้บันทึกภาพ..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              style={page.searchInput}
-            />
-            {searchTerm && (
+          <div style={styles.headerActions}>
+            <div style={styles.viewToggle}>
               <button
-                onClick={() => setSearchTerm('')}
-                style={page.clearSearchBtn}
+                onClick={() => setViewMode("grid")}
+                style={{
+                  ...styles.viewBtn,
+                  backgroundColor: viewMode === "grid" ? "#4A90D9" : "transparent",
+                  color: viewMode === "grid" ? "#FFFFFF" : "#64748B"
+                }}
               >
-                <X size={16} color="#94a3b8" />
+                <Grid3x3 size={16} />
               </button>
-            )}
-          </div>
-          <div style={page.viewToggle}>
-            <button
-              onClick={() => setViewMode('grid')}
-              style={{
-                ...page.viewBtn,
-                background: viewMode === 'grid' ? '#818cf8' : 'transparent',
-                color: viewMode === 'grid' ? '#fff' : '#64748b',
-                border: viewMode === 'grid' ? 'none' : '1px solid #e2e8f0',
-              }}
-            >
-              <Grid3x3 size={16} />
-            </button>
-            <button
-              onClick={() => setViewMode('list')}
-              style={{
-                ...page.viewBtn,
-                background: viewMode === 'list' ? '#818cf8' : 'transparent',
-                color: viewMode === 'list' ? '#fff' : '#64748b',
-                border: viewMode === 'list' ? 'none' : '1px solid #e2e8f0',
-              }}
-            >
-              <List size={16} />
-            </button>
+              <button
+                onClick={() => setViewMode("list")}
+                style={{
+                  ...styles.viewBtn,
+                  backgroundColor: viewMode === "list" ? "#4A90D9" : "transparent",
+                  color: viewMode === "list" ? "#FFFFFF" : "#64748B"
+                }}
+              >
+                <List size={16} />
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* 🌟 แสดงผล */}
-        {loading ? (
-          <div style={page.loadingContainer}>
-            <div style={page.loadingSpinner} />
-            <p style={page.loadingText}>กำลังโหลดกิจกรรม...</p>
-          </div>
-        ) : filteredActivities.length === 0 ? (
-          <div style={page.emptyContainer}>
-            <div style={page.emptyIcon}>📭</div>
-            <p style={page.emptyText}>ไม่มีข้อมูลกิจกรรมประชาสัมพันธ์ในขณะนี้</p>
-            <p style={page.emptySubText}>ลองปรับคำค้นหาหรือรอการอัปเดตจากคุณครู</p>
-          </div>
-        ) : (
-          <div style={viewMode === 'grid' ? page.grid : page.listGrid}>
-            {filteredActivities.map((item) => (
-              viewMode === 'grid'
-                ? <ActivityGridCard key={item.Activity_id} item={item} />
-                : <ActivityListCard key={item.Activity_id} item={item} />
-            ))}
-          </div>
-        )}
+        {/* Search Bar */}
+        <div style={styles.searchWrapper}>
+          <Search size={18} color="#94A3B8" style={styles.searchIcon} />
+          <input
+            type="text"
+            placeholder="ค้นหากิจกรรม ชื่อสถานที่ หรือผู้บันทึกภาพ..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={styles.searchInput}
+          />
+          {searchTerm && (
+            <button onClick={() => setSearchTerm('')} style={styles.clearSearchBtn}>
+              <X size={16} />
+            </button>
+          )}
+        </div>
 
-        {/* 🌟 Modal */}
-        {showModal && selectedActivity && (
-          <div style={modal.overlay} onClick={() => setShowModal(false)}>
-            <div style={modal.box} onClick={(e) => e.stopPropagation()}>
-              <div style={modal.header}>
-                <div>
-                  <h2 style={modal.mainTitle}>{selectedActivity.Name_activity}</h2>
-                  <div style={modal.modalSubInfo}>
-                    <span style={modal.modalInfoItem}>
-                      <Calendar size={14} color="#94a3b8" />
-                      {formatDate(selectedActivity.Activity_date)}
-                    </span>
-                    <span style={modal.modalInfoItem}>
-                      <MapPin size={14} color="#94a3b8" />
-                      {selectedActivity.Location || "โรงเรียน"}
-                    </span>
+        {/* Activity Grid / List */}
+        <div style={{
+          ...styles.activityContainer,
+          gridTemplateColumns: viewMode === "grid" ? 'repeat(auto-fill, minmax(280px, 1fr))' : '1fr'
+        }}>
+          {filteredActivities.length === 0 ? (
+            <div style={styles.noDataBox}>
+              <FolderOpen size={56} color="#CBD5E1" />
+              <p style={styles.noDataText}>ไม่พบข้อมูลกิจกรรม</p>
+              <p style={styles.noDataSub}>ลองเปลี่ยนคำค้นหาหรือรอการอัปเดตกิจกรรมใหม่</p>
+            </div>
+          ) : (
+            filteredActivities.map((item) => {
+              const itemImages = getImageArray(item);
+              const displayDate = formatDate(item.Activity_date);
+
+              if (viewMode === "list") {
+                return (
+                  <div key={item.Activity_id} style={styles.listCard}>
+                    <div style={styles.listImage}>
+                      {itemImages.length > 0 ? (
+                        <img src={itemImages[0]} alt={item.Name_activity} style={styles.coverImg} />
+                      ) : (
+                        <div style={styles.listNoImage}>
+                          <Image size={24} color="#CBD5E1" />
+                        </div>
+                      )}
+                    </div>
+                    <div style={styles.listContent}>
+                      <div>
+                        <h3 style={styles.listTitle}>{item.Name_activity}</h3>
+                        <div style={styles.listMeta}>
+                          <span style={styles.listMetaItem}>
+                            <Camera size={14} />
+                            {item.Photographer || "ไม่ระบุ"}
+                          </span>
+                          <span style={styles.listMetaItem}>
+                            <Calendar size={14} />
+                            {displayDate}
+                          </span>
+                          <span style={styles.listMetaItem}>
+                            <MapPin size={14} />
+                            {item.Location || "ไม่ระบุ"}
+                          </span>
+                          {itemImages.length > 0 && (
+                            <span style={styles.listMetaItem}>
+                              <Image size={14} />
+                              {itemImages.length} รูป
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div style={styles.listActions}>
+                        {itemImages.length > 0 && (
+                          <button
+                            onClick={(e) => downloadAllImages(e, itemImages, item.Name_activity)}
+                            style={styles.downloadBtn}
+                          >
+                            <DownloadIcon size={14} color="#4A90D9" />
+                            ดาวน์โหลด ({itemImages.length})
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+
+              return (
+                <div key={item.Activity_id} style={styles.activityCard}>
+                  <div
+                    style={{
+                      ...styles.cardImageZone,
+                      cursor: itemImages.length > 0 ? "pointer" : "default"
+                    }}
+                    onClick={() => {
+                      if (itemImages.length > 0) {
+                        setGalleryTitle(item.Name_activity || "คลังรูปภาพกิจกรรม");
+                        setActiveGalleryImages(itemImages);
+                      }
+                    }}
+                  >
+                    {itemImages.length > 0 && itemImages[0] ? (
+                      <div style={styles.cardImageWrapper}>
+                        <img src={itemImages[0]} alt={item.Name_activity} style={styles.coverImg} />
+                        {itemImages.length > 1 && (
+                          <div style={styles.imageBadge}>
+                            <Image size={12} />
+                            +{itemImages.length - 1}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div style={styles.noImageZone}>
+                        <Image size={32} color="#CBD5E1" />
+                        <span style={styles.noImageText}>ไม่มีรูปภาพ</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div style={styles.cardBody}>
+                    <h3 style={styles.cardTitle}>{item.Name_activity || "ไม่มีชื่อกิจกรรม"}</h3>
+                    <div style={styles.cardDetails}>
+                      <div style={styles.cardDetailItem}>
+                        <Camera size={14} color="#94A3B8" />
+                        <span>{item.Photographer || "ไม่ระบุ"}</span>
+                      </div>
+                      <div style={styles.cardDetailItem}>
+                        <Calendar size={14} color="#94A3B8" />
+                        <span>{displayDate}</span>
+                      </div>
+                      <div style={styles.cardDetailItem}>
+                        <MapPin size={14} color="#94A3B8" />
+                        <span>{item.Location || "ไม่ระบุ"}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={styles.cardActions}>
+                    <button
+                      onClick={(e) => downloadAllImages(e, itemImages, item.Name_activity)}
+                      style={styles.downloadBtnFull}
+                    >
+                      <DownloadIcon size={14} color="#4A90D9" />
+                      ดาวน์โหลดรูปทั้งหมด ({itemImages.length})
+                    </button>
                   </div>
                 </div>
-                <button onClick={() => setShowModal(false)} style={modal.closeBtn}>
-                  <X size={20} />
-                </button>
+              );
+            })
+          )}
+        </div>
+
+        {/* Gallery Modal */}
+        {activeGalleryImages && activeGalleryImages.length > 0 && (
+          <div style={styles.modalOverlay} onClick={() => setActiveGalleryImages(null)}>
+            <div style={styles.galleryContainer} onClick={(e) => e.stopPropagation()}>
+              <div style={styles.galleryHeader}>
+                <div>
+                  <h2 style={styles.galleryTitle}>{galleryTitle}</h2>
+                  <span style={styles.gallerySub}>
+                    <Image size={14} />
+                    {activeGalleryImages.length} รูปภาพ
+                  </span>
+                </div>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <button
+                    onClick={(e) => downloadAllImages(e, activeGalleryImages, galleryTitle)}
+                    style={styles.downloadBtn}
+                  >
+                    <DownloadIcon size={14} color="#4A90D9" />
+                    ดาวน์โหลดทั้งหมด
+                  </button>
+                  <button onClick={() => setActiveGalleryImages(null)} style={styles.closeBtn}>
+                    <X size={18} />
+                  </button>
+                </div>
               </div>
 
-              <div style={modal.galleryGrid}>
-                {parseActivityImages(selectedActivity.Image).map((imgUrl, idx) => (
-                  <div key={idx} style={modal.galleryItem}>
-                    <img src={imgUrl} alt={`sub-img-${idx}`} style={modal.galleryImage} />
+              <div style={styles.galleryGrid}>
+                {activeGalleryImages.map((imgSrc, idx) => (
+                  <div
+                    key={idx}
+                    style={styles.galleryItemBox}
+                    onClick={() => {
+                      setLightBoxImage(imgSrc);
+                      setCurrentLightBoxIndex(idx);
+                    }}
+                  >
+                    <img src={imgSrc} alt={`gallery-${idx}`} style={styles.coverImg} />
                     <button
-                      onClick={() => downloadSingleImage(imgUrl, idx, selectedActivity.Name_activity)}
-                      style={modal.singleDownloadBtn}
+                      onClick={(e) => downloadSingleImage(e, imgSrc, idx, galleryTitle)}
+                      style={styles.singleDownloadBtn}
                       title="ดาวน์โหลดรูปภาพนี้"
                     >
-                      <DownloadIcon size={14} color="#475569" />
+                      <DownloadIcon size={12} color="#1E293B" />
                     </button>
                   </div>
                 ))}
-                {parseActivityImages(selectedActivity.Image).length === 0 && (
-                  <div style={modal.emptyGallery}>
-                    <Image size={40} color="#cbd5e1" />
-                    <p style={{ color: '#94a3b8', marginTop: '8px' }}>ไม่มีรูปภาพในอัลบั้มนี้</p>
-                  </div>
-                )}
               </div>
-
-              {parseActivityImages(selectedActivity.Image).length > 0 && (
-                <button
-                  onClick={(e) => downloadAllImages(
-                    e,
-                    parseActivityImages(selectedActivity.Image),
-                    selectedActivity.Name_activity
-                  )}
-                  style={modal.downloadAllModalBtn}
-                >
-                  <DownloadIcon size={16} color="#fff" />
-                  <span style={{ marginLeft: '8px' }}>
-                    ดาวน์โหลดทั้งหมด {parseActivityImages(selectedActivity.Image).length} รูป
-                  </span>
-                </button>
-              )}
             </div>
           </div>
         )}
 
-        <style>{`
-          @media (max-width: 1100px) {
-            .parent-responsive-grid { grid-template-columns: repeat(3, 1fr) !important; }
-          }
-          @media (max-width: 768px) {
-            .parent-responsive-grid { grid-template-columns: repeat(2, 1fr) !important; }
-            .parent-responsive-list { grid-template-columns: 1fr !important; }
-          }
-          @media (max-width: 480px) {
-            .parent-responsive-grid { grid-template-columns: 1fr !important; }
-          }
-          @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-          }
-          @keyframes modalIn {
-            0% { transform: scale(0.95) translateY(10px); opacity: 0; }
-            100% { transform: scale(1) translateY(0); opacity: 1; }
-          }
-        `}</style>
+        {/* LightBox Modal */}
+        {lightBoxImage && (
+          <div style={styles.lightboxOverlay} onClick={() => setLightBoxImage(null)}>
+            <div style={styles.lightboxContent} onClick={(e) => e.stopPropagation()}>
+              <div style={styles.lightboxHeaderActions}>
+                <button
+                  onClick={(e) => downloadSingleImage(e, lightBoxImage, currentLightBoxIndex, galleryTitle)}
+                  style={styles.lightboxDownloadBtn}
+                >
+                  <DownloadIcon size={16} color="#FFFFFF" />
+                  ดาวน์โหลดรูปนี้
+                </button>
+                <button onClick={() => setLightBoxImage(null)} style={styles.lightboxCloseBtn}>
+                  <X size={24} />
+                </button>
+              </div>
+
+              <div style={styles.lightboxMainRow}>
+                {currentLightBoxIndex > 0 && (
+                  <button
+                    onClick={() => {
+                      const nextIndex = currentLightBoxIndex - 1;
+                      setCurrentLightBoxIndex(nextIndex);
+                      setLightBoxImage(activeGalleryImages[nextIndex]);
+                    }}
+                    style={styles.arrowBtn}
+                  >
+                    <ChevronLeft size={24} />
+                  </button>
+                )}
+                {currentLightBoxIndex === 0 && <div style={{ width: "48px" }} />}
+
+                <div style={styles.lightboxImgContainer}>
+                  <img src={lightBoxImage} alt="ขยายใหญ่" style={styles.lightboxImg} />
+                </div>
+
+                {currentLightBoxIndex < activeGalleryImages.length - 1 ? (
+                  <button
+                    onClick={() => {
+                      const nextIndex = currentLightBoxIndex + 1;
+                      setCurrentLightBoxIndex(nextIndex);
+                      setLightBoxImage(activeGalleryImages[nextIndex]);
+                    }}
+                    style={styles.arrowBtn}
+                  >
+                    <ChevronRight size={24} />
+                  </button>
+                ) : (
+                  <div style={{ width: "48px" }} />
+                )}
+              </div>
+
+              <div style={styles.lightboxCounter}>
+                {currentLightBoxIndex + 1} / {activeGalleryImages.length}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
 // ============================================================
-// 🌟 STYLES - ใช้สีพื้นหลังเดียวกันทั้งหมด
+// STYLES (ธีม สไตล์ เดียวกับฝั่งครูทุกประการ)
 // ============================================================
 
-const page = {
-  // 🌟 พื้นหลังสีเดียว: ฟ้าอ่อนพาสเทล
+const styles = {
   container: {
-   
-    minHeight: "100vh",
-    padding: "2rem 1.5rem",
-    display: "flex",
-    justifyContent: "center",
-    color: "#334155",
-    fontFamily: "'Inter', 'Kanit', 'Sukhumvit Set', sans-serif",
+    padding: '20px',
+    minHeight: '100vh',
+    backgroundColor: '#F8FAFC',
+    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
   },
   wrapper: {
-    width: "100%",
-    maxWidth: "1280px",
+    maxWidth: '1400px',
+    margin: '0 auto',
+    width: '100%',
   },
 
-  // 🌟 Header Section - พื้นหลังขาวโปร่งแสง
-  headerSection: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    flexWrap: "wrap",
-    gap: "16px",
-    marginBottom: "2rem",
-    padding: "24px 28px",
-    background: "rgba(255, 255, 255, 0.85)",
-    backdropFilter: "blur(12px)",
-    borderRadius: "16px",
-    border: "1px solid rgba(255, 255, 255, 0.9)",
-    boxShadow: "0 4px 16px rgba(0, 0, 0, 0.04)",
+  // Loading
+  loadingContainer: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: '100vh',
+    gap: '16px',
+  },
+  spinner: {
+    animation: 'spin 1s linear infinite',
+    color: '#4A90D9',
+  },
+  loadingText: {
+    color: '#94A3B8',
+    fontSize: '16px',
+  },
+
+  // Header
+  header: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '20px',
+    flexWrap: 'wrap',
+    gap: '12px',
   },
   headerLeft: {
-    display: "flex",
-    alignItems: "center",
-    gap: "16px",
+    display: 'flex',
+    alignItems: 'center',
+    gap: '14px',
   },
-  headerIconWrapper: {
-    width: "48px",
-    height: "48px",
-    borderRadius: "12px",
-    background: "linear-gradient(135deg, #818cf8, #6366f1)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    boxShadow: "0 4px 12px rgba(99, 102, 241, 0.25)",
+  headerIcon: {
+    width: '48px',
+    height: '48px',
+    borderRadius: '12px',
+    backgroundColor: '#4A90D9',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    boxShadow: '0 4px 12px rgba(74, 144, 217, 0.25)',
   },
   mainTitle: {
-    fontSize: "24px",
-    fontWeight: "700",
+    fontSize: '24px',
+    fontWeight: '700',
+    color: '#1A202C',
     margin: 0,
-    color: "#1e293b",
-    display: "flex",
-    alignItems: "center",
-    gap: "8px",
-  },
-  mainTitleSub: {
-    fontSize: "22px",
   },
   subTitle: {
-    fontSize: "14px",
-    color: "#64748b",
-    margin: "4px 0 0 0",
+    fontSize: '14px',
+    color: '#718096',
+    margin: '2px 0 0 0',
   },
-
-  // 🌟 Stats
-  statsContainer: {
-    display: "flex",
-    alignItems: "center",
-    gap: "16px",
-    background: "rgba(248, 250, 252, 0.8)",
-    borderRadius: "12px",
-    padding: "8px 16px",
-    border: "1px solid #e2e8f0",
+  activityCount: {
+    fontWeight: '700',
+    color: '#4A90D9',
   },
-  statItem: {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    padding: "4px 8px",
-  },
-  statNumber: {
-    fontSize: "20px",
-    fontWeight: "700",
-    color: "#1e293b",
-    lineHeight: 1.2,
-  },
-  statLabel: {
-    fontSize: "11px",
-    color: "#94a3b8",
-    fontWeight: "500",
-  },
-  statDivider: {
-    width: "1px",
-    height: "30px",
-    background: "#e2e8f0",
-  },
-
-  // 🌟 Controls
-  controlsSection: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: "16px",
-    marginBottom: "1.8rem",
-    flexWrap: "wrap",
-  },
-  searchContainer: {
-    flex: 1,
-    position: "relative",
-    minWidth: "200px",
-  },
-  searchInput: {
-    width: "100%",
-    padding: "12px 40px 12px 44px",
-    borderRadius: "12px",
-    border: "1px solid #e2e8f0",
-    fontSize: "14px",
-    outline: "none",
-    background: "#ffffff",
-    transition: "all 0.2s ease",
-    boxSizing: "border-box",
-    boxShadow: "0 2px 4px rgba(0,0,0,0.02)",
-  },
-  clearSearchBtn: {
-    position: "absolute",
-    right: "12px",
-    top: "50%",
-    transform: "translateY(-50%)",
-    background: "none",
-    border: "none",
-    cursor: "pointer",
-    padding: "4px",
-    borderRadius: "50%",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
+  headerActions: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
   },
   viewToggle: {
-    display: "flex",
-    gap: "6px",
-    background: "#ffffff",
-    padding: "4px",
-    borderRadius: "10px",
-    border: "1px solid #e2e8f0",
+    display: 'flex',
+    backgroundColor: '#F1F5F9',
+    borderRadius: '10px',
+    padding: '4px',
+    gap: '2px',
   },
   viewBtn: {
-    padding: "8px 12px",
-    borderRadius: "8px",
-    border: "none",
-    background: "transparent",
-    cursor: "pointer",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    transition: "all 0.2s ease",
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '8px 10px',
+    borderRadius: '8px',
+    border: 'none',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
   },
 
-  // 🌟 Grid
-  grid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(4, 1fr)",
-    gap: "20px",
+  // Search
+  searchWrapper: {
+    position: 'relative',
+    display: 'flex',
+    alignItems: 'center',
+    marginBottom: '24px',
   },
-  listGrid: {
-    display: "grid",
-    gridTemplateColumns: "1fr",
-    gap: "12px",
+  searchIcon: {
+    position: 'absolute',
+    left: '14px',
+  },
+  searchInput: {
+    width: '100%',
+    padding: '12px 44px 12px 44px',
+    borderRadius: '12px',
+    border: '1px solid #E2E8F0',
+    fontSize: '14px',
+    backgroundColor: '#FFFFFF',
+    outline: 'none',
+    transition: 'all 0.2s ease',
+    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
+  },
+  clearSearchBtn: {
+    position: 'absolute',
+    right: '14px',
+    background: 'none',
+    border: 'none',
+    color: '#94A3B8',
+    cursor: 'pointer',
+    padding: '4px',
   },
 
-  // 🌟 Card (Grid)
-  card: {
-    background: "#ffffff",
-    borderRadius: "14px",
-    display: "flex",
-    flexDirection: "column",
-    overflow: "hidden",
-    cursor: "pointer",
-    position: "relative",
-    transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+  // Activity Container
+  activityContainer: {
+    display: 'grid',
+    gap: '20px',
+  },
+
+  // Activity Card (Grid)
+  activityCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: '16px',
+    border: '1px solid #E2E8F0',
+    overflow: 'hidden',
+    transition: 'all 0.2s ease',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+  },
+  cardImageZone: {
+    width: '100%',
+    height: '200px',
+    backgroundColor: '#F8FAFC',
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  cardImageWrapper: {
+    width: '100%',
+    height: '100%',
+    position: 'relative',
+  },
+  coverImg: {
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover',
   },
   imageBadge: {
-    position: "absolute",
-    top: "12px",
-    right: "12px",
-    background: "rgba(30, 41, 59, 0.75)",
-    backdropFilter: "blur(8px)",
-    padding: "4px 10px",
-    borderRadius: "20px",
-    display: "flex",
-    alignItems: "center",
-    zIndex: 2,
+    position: 'absolute',
+    bottom: '8px',
+    right: '8px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '4px',
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    color: '#FFFFFF',
+    padding: '4px 10px',
+    borderRadius: '8px',
+    fontSize: '12px',
+    fontWeight: '500',
   },
-  cardImageContainer: {
-    width: "100%",
-    height: "170px",
-    backgroundColor: "#f1f5f9",
-    overflow: "hidden",
+  noImageZone: {
+    width: '100%',
+    height: '100%',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '6px',
   },
-  cardImage: {
-    width: "100%",
-    height: "100%",
-    objectFit: "cover",
-    transition: "transform 0.4s ease",
+  noImageText: {
+    fontSize: '12px',
+    color: '#94A3B8',
   },
-  cardImagePlaceholder: {
-    width: "100%",
-    height: "100%",
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: "4px",
-  },
-  cardContent: {
-    padding: "14px 16px 12px 16px",
-    flex: 1,
+  cardBody: {
+    padding: '16px 18px',
   },
   cardTitle: {
-    fontSize: "15px",
-    fontWeight: "600",
-    margin: "0 0 8px 0",
-    color: "#1e293b",
-    overflow: "hidden",
-    textOverflow: "ellipsis",
-    display: "-webkit-box",
-    WebkitLineClamp: 2,
-    WebkitBoxOrient: "vertical",
-    lineHeight: 1.4,
+    fontSize: '16px',
+    fontWeight: '600',
+    color: '#1A202C',
+    margin: '0 0 10px 0',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
   },
-  infoList: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "5px",
+  cardDetails: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '6px',
   },
-  infoItem: {
-    display: "flex",
-    alignItems: "center",
-    gap: "8px",
+  cardDetailItem: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    fontSize: '13px',
+    color: '#64748B',
   },
-  infoText: {
-    color: "#64748b",
-    fontSize: "12px",
-    margin: 0,
-  },
-  actionsRow: {
-    display: "flex",
-    justifyContent: "flex-end",
-    padding: "0 16px 14px 16px",
-    marginTop: "auto",
-  },
-  downloadAllBtn: {
-    padding: "6px 14px",
-    borderRadius: "8px",
-    fontSize: "12px",
-    fontWeight: "500",
-    cursor: "pointer",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    transition: "all 0.2s ease",
-    background: "#ffffff",
-    border: "1px solid #cbd5e1",
-    color: "#1e293b",
+  cardActions: {
+    display: 'flex',
+    padding: '12px 18px 18px',
+    gap: '10px',
   },
 
-  // 🌟 List Card
-  listCard: {
-    background: "#ffffff",
-    borderRadius: "12px",
-    display: "flex",
-    alignItems: "center",
-    gap: "16px",
-    padding: "12px 16px",
-    cursor: "pointer",
-    transition: "all 0.2s ease",
-    border: "1px solid #e2e8f0",
+  // ปุ่มดาวน์โหลดสำหรับฝั่งผู้ปกครอง
+  downloadBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    padding: '6px 12px',
+    backgroundColor: '#EBF3FB',
+    color: '#4A90D9',
+    border: 'none',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    fontSize: '13px',
+    fontWeight: '500',
+    transition: 'all 0.2s ease',
+    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
   },
-  listImageContainer: {
-    width: "80px",
-    height: "80px",
-    borderRadius: "10px",
-    overflow: "hidden",
-    flexShrink: 0,
-    background: "#f1f5f9",
+  downloadBtnFull: {
+    flex: 1,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '6px',
+    padding: '8px',
+    backgroundColor: '#EBF3FB',
+    color: '#4A90D9',
+    border: 'none',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    fontSize: '13px',
+    fontWeight: '500',
+    transition: 'all 0.2s ease',
+    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
+  },
+
+  // List View
+  listCard: {
+    display: 'flex',
+    backgroundColor: '#FFFFFF',
+    borderRadius: '12px',
+    border: '1px solid #E2E8F0',
+    overflow: 'hidden',
+    transition: 'all 0.2s ease',
   },
   listImage: {
-    width: "100%",
-    height: "100%",
-    objectFit: "cover",
+    width: '160px',
+    minHeight: '120px',
+    backgroundColor: '#F8FAFC',
+    flexShrink: 0,
+    overflow: 'hidden',
   },
-  listImagePlaceholder: {
-    width: "100%",
-    height: "100%",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
+  listNoImage: {
+    width: '100%',
+    height: '100%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   listContent: {
     flex: 1,
-    minWidth: 0,
+    padding: '16px 20px',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: '12px',
   },
   listTitle: {
-    fontSize: "15px",
-    fontWeight: "600",
-    margin: "0 0 6px 0",
-    color: "#1e293b",
+    fontSize: '16px',
+    fontWeight: '600',
+    color: '#1A202C',
+    margin: '0 0 6px 0',
   },
-  listInfo: {
-    display: "flex",
-    flexWrap: "wrap",
-    gap: "12px",
-    alignItems: "center",
+  listMeta: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: '12px',
   },
-  listInfoItem: {
-    display: "flex",
-    alignItems: "center",
-    gap: "4px",
-    fontSize: "12px",
-    color: "#64748b",
+  listMetaItem: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '4px',
+    fontSize: '13px',
+    color: '#64748B',
   },
-  listImageCount: {
-    display: "flex",
-    alignItems: "center",
-    gap: "4px",
-    fontSize: "12px",
-    color: "#64748b",
-    background: "#f1f5f9",
-    padding: "2px 10px",
-    borderRadius: "12px",
-  },
-  listDownloadBtn: {
-    background: "none",
-    border: "none",
-    cursor: "pointer",
-    padding: "8px",
-    borderRadius: "8px",
-    transition: "all 0.2s ease",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
+  listActions: {
+    display: 'flex',
+    gap: '8px',
   },
 
-  // 🌟 Loading & Empty
-  loadingContainer: {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: "4rem 0",
-    gap: "16px",
+  // No Data
+  noDataBox: {
+    gridColumn: '1 / -1',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '60px 20px',
+    backgroundColor: '#FFFFFF',
+    borderRadius: '16px',
+    border: '1px solid #E2E8F0',
   },
-  loadingSpinner: {
-    width: "40px",
-    height: "40px",
-    border: "3px solid #e2e8f0",
-    borderTop: "3px solid #818cf8",
-    borderRadius: "50%",
-    animation: "spin 0.8s linear infinite",
+  noDataText: {
+    fontSize: '18px',
+    fontWeight: '600',
+    color: '#475569',
+    margin: '16px 0 4px 0',
   },
-  loadingText: {
-    color: "#94a3b8",
-    fontSize: "14px",
-  },
-  emptyContainer: {
-    textAlign: "center",
-    padding: "4rem 0",
-  },
-  emptyIcon: {
-    fontSize: "48px",
-    marginBottom: "16px",
-  },
-  emptyText: {
-    fontSize: "16px",
-    fontWeight: "500",
-    color: "#64748b",
+  noDataSub: {
+    fontSize: '14px',
+    color: '#94A3B8',
     margin: 0,
   },
-  emptySubText: {
-    fontSize: "13px",
-    color: "#94a3b8",
-    margin: "4px 0 0 0",
-  },
-};
 
-const modal = {
-  overlay: {
-    position: "fixed",
-    inset: 0,
-    backgroundColor: "rgba(15, 23, 42, 0.5)",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 999,
-    backdropFilter: "blur(8px)",
-    padding: "20px",
-  },
-  box: {
-    background: "#ffffff",
-    padding: "28px",
-    borderRadius: "20px",
-    width: "560px",
-    maxWidth: "100%",
-    maxHeight: "85vh",
-    overflowY: "auto",
-    display: "flex",
-    flexDirection: "column",
-    boxSizing: "border-box",
-    boxShadow: "0 24px 48px rgba(0,0,0,0.15)",
-    animation: "modalIn 0.3s ease",
-  },
-  header: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: "16px",
-    borderBottom: "1px solid #f1f5f9",
-    paddingBottom: "14px",
-  },
-  mainTitle: {
-    fontSize: "18px",
-    fontWeight: "600",
-    margin: 0,
-    color: "#1e293b",
-  },
-  modalSubInfo: {
-    display: "flex",
-    gap: "16px",
-    marginTop: "6px",
-    flexWrap: "wrap",
-  },
-  modalInfoItem: {
-    display: "flex",
-    alignItems: "center",
-    gap: "4px",
-    fontSize: "12px",
-    color: "#94a3b8",
-  },
+  // Modal Header Close Btn
   closeBtn: {
-    background: "none",
-    border: "none",
-    cursor: "pointer",
-    padding: "4px",
-    borderRadius: "8px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    color: "#94a3b8",
-    transition: "all 0.2s ease",
+    background: 'none',
+    border: 'none',
+    color: '#94A3B8',
+    cursor: 'pointer',
+    padding: '4px',
+    borderRadius: '8px',
+    transition: 'background 0.2s ease',
   },
-  galleryGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(4, 1fr)",
-    gap: "12px",
-    marginTop: "4px",
-  },
-  galleryItem: {
-    position: "relative",
-    width: "100%",
-    paddingBottom: "100%",
-    height: 0,
-    borderRadius: "10px",
-    overflow: "hidden",
-    border: "1px solid #e2e8f0",
-    backgroundColor: "#f8fafc",
-  },
-  galleryImage: {
-    position: "absolute",
+
+  // Gallery
+  modalOverlay: {
+    position: 'fixed',
     top: 0,
     left: 0,
-    width: "100%",
-    height: "100%",
-    objectFit: "cover",
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(15, 23, 42, 0.5)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 9999,
+    padding: '16px',
+    backdropFilter: 'blur(4px)',
+  },
+  galleryContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: '16px',
+    width: '100%',
+    maxWidth: '640px',
+    padding: '24px',
+    boxShadow: '0 25px 50px rgba(0,0,0,0.2)',
+    maxHeight: '85vh',
+    display: 'flex',
+    flexDirection: 'column',
+    boxSizing: 'border-box',
+  },
+  galleryHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: '16px',
+    paddingBottom: '12px',
+    borderBottom: '1px solid #F1F5F9',
+  },
+  galleryTitle: {
+    fontSize: '18px',
+    fontWeight: '600',
+    color: '#1A202C',
+    margin: 0,
+  },
+  gallerySub: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    fontSize: '13px',
+    color: '#94A3B8',
+    marginTop: '2px',
+  },
+  galleryGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(4, 1fr)',
+    gap: '12px',
+    overflowY: 'auto',
+    paddingRight: '4px',
+  },
+  galleryItemBox: {
+    position: 'relative',
+    width: '100%',
+    aspectRatio: '1/1',
+    borderRadius: '10px',
+    overflow: 'hidden',
+    backgroundColor: '#F8FAFC',
+    cursor: 'pointer',
+    border: '1px solid #E2E8F0',
+    transition: 'all 0.2s ease',
   },
   singleDownloadBtn: {
-    position: "absolute",
-    bottom: "6px",
-    right: "6px",
-    backgroundColor: "rgba(255, 255, 255, 0.95)",
-    border: "1px solid #e2e8f0",
-    borderRadius: "50%",
-    width: "30px",
-    height: "30px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    cursor: "pointer",
-    boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-    transition: "all 0.2s ease",
+    position: 'absolute',
+    bottom: '6px',
+    right: '6px',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    border: '1px solid #E2E8F0',
+    borderRadius: '50%',
+    width: '26px',
+    height: '26px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer',
+    boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
   },
-  emptyGallery: {
-    gridColumn: "span 4",
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: "32px 0",
-    color: "#94a3b8",
+
+  // Lightbox
+  lightboxOverlay: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(2, 6, 23, 0.92)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 11000,
+    padding: '16px',
   },
-  downloadAllModalBtn: {
-    marginTop: "16px",
-    padding: "10px 20px",
-    borderRadius: "10px",
-    background: "linear-gradient(135deg, #818cf8, #6366f1)",
-    color: "#ffffff",
-    border: "none",
-    fontSize: "14px",
-    fontWeight: "500",
-    cursor: "pointer",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    transition: "all 0.2s ease",
-    boxShadow: "0 4px 12px rgba(99, 102, 241, 0.3)",
+  lightboxContent: {
+    width: '100%',
+    maxWidth: '900px',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  lightboxHeaderActions: {
+    position: 'absolute',
+    top: '-56px',
+    right: 0,
+    display: 'flex',
+    gap: '12px',
+    alignItems: 'center',
+  },
+  lightboxDownloadBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    padding: '8px 16px',
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    border: '1px solid rgba(255,255,255,0.2)',
+    borderRadius: '20px',
+    color: '#FFFFFF',
+    fontSize: '13px',
+    cursor: 'pointer',
+    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
+  },
+  lightboxCloseBtn: {
+    background: 'rgba(255,255,255,0.1)',
+    border: 'none',
+    color: '#FFFFFF',
+    width: '44px',
+    height: '44px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: '50%',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+  },
+  lightboxMainRow: {
+    display: 'flex',
+    width: '100%',
+    alignItems: 'center',
+    gap: '16px',
+  },
+  arrowBtn: {
+    width: '48px',
+    height: '48px',
+    borderRadius: '50%',
+    border: '1px solid rgba(255,255,255,0.2)',
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    color: '#FFFFFF',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+    flexShrink: 0,
+  },
+  lightboxImgContainer: {
+    flex: 1,
+    height: '70vh',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  lightboxImg: {
+    maxWidth: '100%',
+    maxHeight: '100%',
+    objectFit: 'contain',
+    borderRadius: '8px',
+    boxShadow: '0 25px 50px rgba(0,0,0,0.5)',
+  },
+  lightboxCounter: {
+    marginTop: '20px',
+    padding: '6px 18px',
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: '20px',
+    fontSize: '14px',
+    color: 'rgba(255,255,255,0.8)',
   },
 };
+
+// Global CSS animations
+const styleSheet = document.createElement("style");
+styleSheet.textContent = `
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+  
+  @media (max-width: 768px) {
+    .list-image {
+      width: 100px !important;
+      min-height: 80px !important;
+    }
+    .list-content {
+      flex-direction: column !important;
+      align-items: stretch !important;
+    }
+    .list-actions {
+      justify-content: flex-start !important;
+    }
+    .gallery-grid {
+      grid-template-columns: repeat(3, 1fr) !important;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .gallery-grid {
+      grid-template-columns: repeat(2, 1fr) !important;
+    }
+  }
+`;
+document.head.appendChild(styleSheet);
 
 export default ActivityP;

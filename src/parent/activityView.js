@@ -1,5 +1,21 @@
 import React, { useEffect, useState, useMemo } from "react";
 import axios from "axios";
+import {
+  Users,
+  UserCheck,
+  UserX,
+  CalendarDays,
+  Search,
+  FileSpreadsheet,
+  CheckCircle,
+  XCircle,
+  Activity,
+  Eye,
+  User,
+  MapPin,
+  Sparkles,
+  Loader2,
+} from "lucide-react";
 
 function ActivityView() {
   const [activities, setActivities] = useState([]);
@@ -133,38 +149,59 @@ function ActivityView() {
   return (
     <div style={styles.container}>
       <div style={styles.wrapper}>
-
         {/* Top Banner */}
         <div style={styles.topBanner}>
           <div style={styles.classInfo}>
-            <span style={styles.classBadge}>ผู้ปกครอง</span>
-            <span style={styles.className}>
-              {studentName ? `${studentName} (${classLevel || "นักเรียน"})` : "ติดตามประวัติการเข้าร่วมกิจกรรม"}
-            </span>
+            <div style={styles.classIconWrapper}>
+              <User size={18} color="#FFFFFF" />
+            </div>
+            <div>
+              <span style={styles.classLabel}>ผู้ปกครอง</span>
+              <span style={styles.className}>
+                {studentName ? `${studentName}` : "ติดตามประวัติการเข้าร่วม"}
+              </span>
+              <span style={styles.classId}>ชั้น: {classLevel || "ไม่ระบุ"}</span>
+            </div>
           </div>
-          <div style={styles.readOnlyTag}>
-            👁️ โหมดดูข้อมูล (Read-Only)
+          <div style={styles.modeTabs}>
+            <div
+              style={{
+                ...styles.tabBtn,
+                ...styles.tabBtnActive,
+                cursor: 'default'
+              }}
+            >
+              <Eye size={14} />
+              โหมดดูข้อมูล (Read-Only)
+            </div>
           </div>
         </div>
 
-        {/* Card หลัก */}
+        {/* Main Card */}
         <div style={styles.mainCard}>
+          {/* Header */}
           <div style={styles.cardHeader}>
             <div>
               <h1 style={styles.title}>ประวัติการเข้าร่วมกิจกรรม</h1>
-              <p style={styles.subtitle}>ตรวจสอบรายละเอียดการเข้าร่วมกิจกรรมของนักเรียน</p>
+              <p style={styles.subtitle}>
+                <Sparkles size={14} color="#4A90D9" />
+                ตรวจสอบรายละเอียดการเข้าร่วมกิจกรรมของนักเรียน
+              </p>
             </div>
-
             {selectedActivity && activityData.length > 0 && (
               <button type="button" onClick={exportToCSV} style={styles.exportBtn}>
-                📥 ส่งออก CSV (Excel)
+                <FileSpreadsheet size={16} />
+                ส่งออก CSV
               </button>
             )}
           </div>
 
-          {/* เลือกกิจกรรม */}
+          {/* Select Activity */}
           <div style={styles.selectSection}>
-            <label style={styles.inputLabel}>เลือกกิจกรรม</label>
+            <label style={styles.inputLabel}>
+              <CalendarDays size={16} style={styles.labelIcon} />
+              เลือกกิจกรรม
+            </label>
             <select
               value={selectedActivity}
               onChange={(e) => setSelectedActivity(e.target.value)}
@@ -179,108 +216,167 @@ function ActivityView() {
             </select>
           </div>
 
-          {/* สรุปสถิติ */}
+          {/* Statistics */}
           {selectedActivity !== "" && (
             <div style={styles.summaryGrid}>
-              <div style={{ ...styles.statCard, borderColor: '#e2e8f0' }}>
-                <span style={styles.statTitle}>กิจกรรมทั้งหมด</span>
-                <div style={styles.statValue}>{totalItems} <span style={styles.statUnit}>ครั้ง</span></div>
-              </div>
-
-              <div style={{ ...styles.statCard, borderColor: '#bbf7d0', backgroundColor: '#f0fdf4' }}>
-                <span style={{ ...styles.statTitle, color: '#166534' }}>เข้าร่วม</span>
-                <div style={{ ...styles.statValue, color: '#15803d' }}>
-                  {attendedCount} <span style={styles.statUnit}>ครั้ง ({attendedPercentage}%)</span>
+              <div style={styles.statCard}>
+                <div style={styles.statIconWrapperBlue}>
+                  <Activity size={18} color="#4A90D9" />
+                </div>
+                <div style={styles.statContent}>
+                  <span style={styles.statLabel}>กิจกรรมทั้งหมด</span>
+                  <span style={styles.statValue}>{totalItems} <span style={styles.statUnit}>ครั้ง</span></span>
                 </div>
               </div>
 
-              <div style={{ ...styles.statCard, borderColor: '#fecaca', backgroundColor: '#fef2f2' }}>
-                <span style={{ ...styles.statTitle, color: '#991b1b' }}>ไม่เข้าร่วม</span>
-                <div style={{ ...styles.statValue, color: '#dc2626' }}>
-                  {absentCount} <span style={styles.statUnit}>ครั้ง ({absentPercentage}%)</span>
+              <div style={{ ...styles.statCard, backgroundColor: '#F0FDF4' }}>
+                <div style={{ ...styles.statIconWrapperBlue, backgroundColor: '#D1FAE5' }}>
+                  <UserCheck size={18} color="#16A34A" />
+                </div>
+                <div style={styles.statContent}>
+                  <span style={{ ...styles.statLabel, color: '#166534' }}>เข้าร่วม</span>
+                  <span style={{ ...styles.statValue, color: '#15803D' }}>
+                    {attendedCount} <span style={styles.statUnit}>ครั้ง ({attendedPercentage}%)</span>
+                  </span>
+                </div>
+              </div>
+
+              <div style={{ ...styles.statCard, backgroundColor: '#FEF2F2' }}>
+                <div style={{ ...styles.statIconWrapperBlue, backgroundColor: '#FEE2E2' }}>
+                  <UserX size={18} color="#DC2626" />
+                </div>
+                <div style={styles.statContent}>
+                  <span style={{ ...styles.statLabel, color: '#991B1B' }}>ไม่เข้าร่วม</span>
+                  <span style={{ ...styles.statValue, color: '#DC2626' }}>
+                    {absentCount} <span style={styles.statUnit}>ครั้ง ({absentPercentage}%)</span>
+                  </span>
                 </div>
               </div>
             </div>
           )}
 
-          {/* Toolbar: ค้นหา & ตัวกรองสถานะ */}
+          {/* Toolbar */}
           {selectedActivity && activityData.length > 0 && (
             <div style={styles.toolbar}>
-              <input
-                type="text"
-                placeholder="🔍 ค้นหากิจกรรม..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                style={styles.searchInput}
-              />
+              <div style={styles.searchWrapper}>
+                <Search size={16} color="#94A3B8" style={styles.searchIcon} />
+                <input
+                  type="text"
+                  placeholder="ค้นหาชื่อกิจกรรม..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  style={styles.searchInput}
+                />
+                {searchTerm && (
+                  <button
+                    onClick={() => setSearchTerm('')}
+                    style={styles.clearSearchBtn}
+                  >
+                    <XCircle size={14} />
+                  </button>
+                )}
+              </div>
 
               <div style={styles.filterGroup}>
                 <button
                   type="button"
                   onClick={() => setFilterStatus("all")}
-                  style={{ ...styles.filterChip, ...(filterStatus === "all" ? styles.filterChipActive : {}) }}
+                  style={{
+                    ...styles.filterChip,
+                    ...(filterStatus === "all" ? styles.filterChipActive : {})
+                  }}
                 >
                   ทั้งหมด
                 </button>
                 <button
                   type="button"
                   onClick={() => setFilterStatus("attended")}
-                  style={{ ...styles.filterChip, ...(filterStatus === "attended" ? styles.filterChipActive : {}) }}
+                  style={{
+                    ...styles.filterChip,
+                    ...(filterStatus === "attended" ? styles.filterChipActive : {})
+                  }}
                 >
+                  <CheckCircle size={12} />
                   เข้าร่วม
                 </button>
                 <button
                   type="button"
                   onClick={() => setFilterStatus("absent")}
-                  style={{ ...styles.filterChip, ...(filterStatus === "absent" ? styles.filterChipActive : {}) }}
+                  style={{
+                    ...styles.filterChip,
+                    ...(filterStatus === "absent" ? styles.filterChipActive : {})
+                  }}
                 >
+                  <XCircle size={12} />
                   ไม่เข้าร่วม
                 </button>
               </div>
             </div>
           )}
 
-          {/* ตารางแสดงข้อมูล */}
+          {/* Table */}
           <div style={styles.tableContainer}>
-            <div style={styles.tableHeaderRow}>
-              <div style={{ flex: 0.5, textAlign: 'center' }}>#</div>
-              <div style={{ flex: 3 }}>ชื่อกิจกรรม / รายละเอียด</div>
-              <div style={{ flex: 2, textAlign: 'center' }}>สถานะการเข้าร่วม</div>
+            <div style={styles.tableHeader}>
+              <div style={{ ...styles.tableHeaderCell, width: '40px', textAlign: 'center' }}>#</div>
+              <div style={{ ...styles.tableHeaderCell, flex: 1 }}>รายละเอียดกิจกรรม</div>
+              <div style={{ ...styles.tableHeaderCell, width: '150px', textAlign: 'center' }}>สถานะ</div>
             </div>
 
             <div style={styles.tableBody}>
               {loading ? (
-                <div style={styles.emptyState}>⏳ กำลังดึงข้อมูลการเข้าร่วมกิจกรรม...</div>
+                <div style={styles.emptyState}>
+                  <Loader2 size={40} style={styles.spinner} />
+                  <p>กำลังดึงข้อมูลการเข้าร่วมกิจกรรม...</p>
+                </div>
               ) : !selectedActivity ? (
-                <div style={styles.emptyState}>📌 กรุณาเลือกกิจกรรมเพื่อแสดงข้อมูล</div>
+                <div style={styles.emptyState}>
+                  <Activity size={40} color="#CBD5E1" />
+                  <p>📌 กรุณาเลือกกิจกรรมเพื่อแสดงข้อมูล</p>
+                </div>
               ) : filteredData.length === 0 ? (
-                <div style={styles.emptyState}>ไม่พบประวัติกิจกรรมที่ตรงกับคำค้นหา</div>
+                <div style={styles.emptyState}>
+                  <Search size={40} color="#CBD5E1" />
+                  <p>ไม่พบประวัติกิจกรรมที่ตรงกับคำค้นหา</p>
+                </div>
               ) : (
                 filteredData.map((item, index) => {
                   const isAttended = item.attended === 1 || item.attended === true || item.status === "attended" || item.status === "present";
+                  const actName = item.Name_activity || item.activity_name || item.name || "กิจกรรมโรงเรียน";
                   return (
                     <div key={item.Activity_id || item.id || index} style={styles.tableRow}>
-                      <div style={{ flex: 0.5, textAlign: 'center', color: '#94a3b8', fontSize: '13px' }}>
+                      <div style={{ ...styles.tableCell, width: '40px', textAlign: 'center', color: '#94A3B8', fontSize: '13px' }}>
                         {index + 1}
                       </div>
-                      <div style={{ flex: 3 }}>
-                        <div style={{ fontWeight: '500', color: '#1e293b' }}>
-                          {item.Name_activity || item.activity_name || item.name || "กิจกรรมโรงเรียน"}
+                      
+                      <div style={{ ...styles.tableCell, flex: 1 }}>
+                        <div style={styles.studentAvatar}>
+                          {actName.charAt(0) || 'A'}
                         </div>
-                        <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
-                          📅 {item.Activity_date || item.date || "ไม่ระบุวันที่"} {(item.Location || item.location) ? `| 📍 ${item.Location || item.location}` : ""}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                          <span style={{ fontWeight: '600', color: '#1E293B' }}>{actName}</span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#64748B' }}>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <CalendarDays size={12} /> {item.Activity_date || item.date || "ไม่ระบุวันที่"}
+                            </span>
+                            {(item.Location || item.location) && (
+                              <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                | <MapPin size={12} /> {item.Location || item.location}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
-                      <div style={{ flex: 2, display: 'flex', justifyContent: 'center' }}>
+
+                      <div style={{ ...styles.tableCell, width: '150px', display: 'flex', justifyContent: 'center' }}>
                         <span
                           style={{
                             ...styles.statusBadge,
-                            backgroundColor: isAttended ? "#dcfce7" : "#fee2e2",
-                            color: isAttended ? "#15803d" : "#dc2626",
-                            borderColor: isAttended ? "#bbf7d0" : "#fecaca",
+                            backgroundColor: isAttended ? '#DCFCE7' : '#FEE2E2',
+                            color: isAttended ? '#15803D' : '#DC2626',
                           }}
                         >
-                          {isAttended ? "✓ เข้าร่วม" : "✕ ไม่เข้าร่วม"}
+                          {isAttended ? <CheckCircle size={14} /> : <XCircle size={14} />}
+                          {isAttended ? "เข้าร่วม" : "ไม่เข้าร่วม"}
                         </span>
                       </div>
                     </div>
@@ -289,45 +385,447 @@ function ActivityView() {
               )}
             </div>
           </div>
-
         </div>
       </div>
     </div>
   );
 }
 
+// ชุด Style และ Animation เดียวกับหน้าคุณครู
 const styles = {
-  container: { backgroundColor: "#f8fafc", minHeight: "100vh", padding: "2rem 1rem", fontFamily: "'Kanit', 'Sarabun', sans-serif", color: "#334155" },
-  wrapper: { maxWidth: "780px", margin: "0 auto" },
-  topBanner: { display: "flex", justifyContent: "space-between", alignItems: "center", backgroundColor: "#ffffff", padding: "12px 20px", borderRadius: "12px", marginBottom: "1.5rem", border: "1px solid #e2e8f0" },
-  classInfo: { display: "flex", alignItems: "center", gap: "10px" },
-  classBadge: { backgroundColor: "#eff6ff", color: "#2563eb", fontSize: "12px", fontWeight: "600", padding: "4px 10px", borderRadius: "6px" },
-  className: { fontSize: "14px", fontWeight: "600", color: "#1e293b" },
-  readOnlyTag: { fontSize: "12px", fontWeight: "600", color: "#64748b", backgroundColor: "#f1f5f9", padding: "6px 12px", borderRadius: "8px" },
-  mainCard: { backgroundColor: "#ffffff", borderRadius: "16px", padding: "24px", boxShadow: "0 4px 20px rgba(0,0,0,0.03)", border: "1px solid #e2e8f0" },
-  cardHeader: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" },
-  title: { fontSize: "18px", fontWeight: "700", color: "#0f172a", margin: 0 },
-  subtitle: { fontSize: "13px", color: "#64748b", marginTop: "2px", margin: 0 },
-  exportBtn: { backgroundColor: "#10b981", color: "#ffffff", border: "none", padding: "8px 16px", borderRadius: "8px", fontSize: "13px", fontWeight: "600", cursor: "pointer" },
-  selectSection: { marginBottom: "20px" },
-  inputLabel: { display: "block", fontSize: "13px", fontWeight: "600", color: "#475569", marginBottom: "6px" },
-  selectInput: { width: "100%", padding: "10px 14px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "14px", color: "#1e293b", outline: "none", backgroundColor: "#f8fafc" },
-  summaryGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "12px", marginBottom: "20px" },
-  statCard: { border: "1px solid", borderRadius: "10px", padding: "14px", backgroundColor: "#ffffff" },
-  statTitle: { fontSize: "12px", fontWeight: "600", color: "#64748b" },
-  statValue: { fontSize: "20px", fontWeight: "700", color: "#0f172a", marginTop: "4px" },
-  statUnit: { fontSize: "13px", fontWeight: "normal", color: "#64748b" },
-  toolbar: { display: "flex", flexWrap: "wrap", gap: "10px", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", padding: "10px", backgroundColor: "#f8fafc", borderRadius: "10px" },
-  searchInput: { border: "1px solid #cbd5e1", borderRadius: "6px", padding: "6px 12px", fontSize: "13px", outline: "none", width: "180px" },
-  filterGroup: { display: "flex", gap: "4px" },
-  filterChip: { border: "none", backgroundColor: "transparent", padding: "4px 8px", borderRadius: "6px", fontSize: "12px", color: "#64748b", cursor: "pointer" },
-  filterChipActive: { backgroundColor: "#2563eb", color: "#ffffff", fontWeight: "600" },
-  tableContainer: { border: "1px solid #e2e8f0", borderRadius: "10px", overflow: "hidden" },
-  tableHeaderRow: { display: "flex", backgroundColor: "#f1f5f9", padding: "10px 16px", fontSize: "13px", fontWeight: "600", color: "#475569" },
-  tableBody: { display: "flex", flexDirection: "column" },
-  tableRow: { display: "flex", alignItems: "center", padding: "10px 16px", borderBottom: "1px solid #f1f5f9" },
-  emptyState: { textAlign: "center", padding: "2rem", color: "#94a3b8", fontSize: "13px" },
-  statusBadge: { display: "inline-block", fontSize: "12px", fontWeight: "600", padding: "3px 10px", borderRadius: "12px", border: "1px solid" }
+  container: {
+    padding: '20px',
+    minHeight: '100vh',
+    backgroundColor: '#F8FAFC',
+    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
+  },
+  wrapper: {
+    maxWidth: '960px',
+    margin: '0 auto',
+    width: '100%',
+  },
+  spinner: {
+    animation: 'spin 1s linear infinite',
+    color: '#4A90D9',
+  },
+  topBanner: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    padding: '14px 20px',
+    borderRadius: '16px',
+    marginBottom: '20px',
+    border: '1px solid #E2E8F0',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+    flexWrap: 'wrap',
+    gap: '12px',
+  },
+  classInfo: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+  },
+  classIconWrapper: {
+    width: '36px',
+    height: '36px',
+    borderRadius: '10px',
+    backgroundColor: '#4A90D9',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  classLabel: {
+    fontSize: '11px',
+    fontWeight: '500',
+    color: '#94A3B8',
+    display: 'block',
+  },
+  className: {
+    fontSize: '15px',
+    fontWeight: '600',
+    color: '#1A202C',
+    marginRight: '8px',
+  },
+  classId: {
+    fontSize: '12px',
+    color: '#94A3B8',
+    backgroundColor: '#F1F5F9',
+    padding: '2px 8px',
+    borderRadius: '4px',
+  },
+  modeTabs: {
+    display: 'flex',
+    gap: '4px',
+    backgroundColor: '#F1F5F9',
+    padding: '4px',
+    borderRadius: '10px',
+  },
+  tabBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    border: 'none',
+    padding: '7px 16px',
+    borderRadius: '8px',
+    fontSize: '13px',
+    fontWeight: '500',
+    color: '#64748B',
+    backgroundColor: 'transparent',
+    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
+  },
+  tabBtnActive: {
+    backgroundColor: '#FFFFFF',
+    color: '#4A90D9',
+    fontWeight: '600',
+    boxShadow: '0 2px 4px rgba(0,0,0,0.06)',
+  },
+
+  mainCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: '16px',
+    padding: '28px',
+    border: '1px solid #E2E8F0',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+  },
+  cardHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: '24px',
+    flexWrap: 'wrap',
+    gap: '12px',
+  },
+  title: {
+    fontSize: '20px',
+    fontWeight: '700',
+    color: '#1A202C',
+    margin: 0,
+  },
+  subtitle: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    fontSize: '14px',
+    color: '#718096',
+    margin: '4px 0 0 0',
+  },
+  exportBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    padding: '8px 18px',
+    backgroundColor: '#27AE60',
+    color: '#FFFFFF',
+    border: 'none',
+    borderRadius: '10px',
+    cursor: 'pointer',
+    fontSize: '13px',
+    fontWeight: '600',
+    transition: 'all 0.2s ease',
+    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
+    boxShadow: '0 4px 12px rgba(39, 174, 96, 0.2)',
+  },
+
+  selectSection: {
+    marginBottom: '24px',
+  },
+  inputLabel: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    fontSize: '14px',
+    fontWeight: '500',
+    color: '#334155',
+    marginBottom: '8px',
+  },
+  labelIcon: {
+    color: '#4A90D9',
+  },
+  selectInput: {
+    width: '100%',
+    padding: '10px 14px',
+    borderRadius: '10px',
+    border: '1px solid #E2E8F0',
+    fontSize: '14px',
+    color: '#1A202C',
+    outline: 'none',
+    backgroundColor: '#FAFBFC',
+    transition: 'all 0.2s ease',
+    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
+    appearance: 'auto',
+  },
+
+  summaryGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+    gap: '12px',
+    marginBottom: '24px',
+  },
+  statCard: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    border: '1px solid #E2E8F0',
+    borderRadius: '12px',
+    padding: '14px 18px',
+    backgroundColor: '#FFFFFF',
+  },
+  statIconWrapperBlue: {
+    width: '40px',
+    height: '40px',
+    borderRadius: '10px',
+    backgroundColor: '#EBF3FB',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  statContent: {
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  statLabel: {
+    fontSize: '12px',
+    fontWeight: '500',
+    color: '#94A3B8',
+  },
+  statValue: {
+    fontSize: '20px',
+    fontWeight: '700',
+    color: '#1A202C',
+  },
+  statUnit: {
+    fontSize: '13px',
+    fontWeight: '400',
+    color: '#94A3B8',
+  },
+
+  toolbar: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: '10px',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '16px',
+    padding: '12px 16px',
+    backgroundColor: '#F8FAFC',
+    borderRadius: '12px',
+    border: '1px solid #E2E8F0',
+  },
+  searchWrapper: {
+    position: 'relative',
+    display: 'flex',
+    alignItems: 'center',
+    flex: 1,
+    minWidth: '180px',
+  },
+  searchIcon: {
+    position: 'absolute',
+    left: '12px',
+  },
+  searchInput: {
+    width: '100%',
+    padding: '8px 36px 8px 38px',
+    borderRadius: '8px',
+    border: '1px solid #E2E8F0',
+    fontSize: '13px',
+    outline: 'none',
+    backgroundColor: '#FFFFFF',
+    transition: 'all 0.2s ease',
+    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
+  },
+  clearSearchBtn: {
+    position: 'absolute',
+    right: '10px',
+    background: 'none',
+    border: 'none',
+    color: '#94A3B8',
+    cursor: 'pointer',
+    padding: '4px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  filterGroup: {
+    display: 'flex',
+    gap: '4px',
+  },
+  filterChip: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '4px',
+    border: 'none',
+    padding: '5px 12px',
+    borderRadius: '8px',
+    fontSize: '12px',
+    fontWeight: '500',
+    color: '#64748B',
+    backgroundColor: 'transparent',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
+  },
+  filterChipActive: {
+    backgroundColor: '#4A90D9',
+    color: '#FFFFFF',
+    fontWeight: '600',
+  },
+
+  tableContainer: {
+    border: '1px solid #E2E8F0',
+    borderRadius: '12px',
+    overflow: 'hidden',
+  },
+  tableHeader: {
+    display: 'flex',
+    backgroundColor: '#F8FAFC',
+    padding: '10px 16px',
+    borderBottom: '1px solid #E2E8F0',
+  },
+  tableHeaderCell: {
+    fontSize: '12px',
+    fontWeight: '600',
+    color: '#475569',
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px',
+  },
+  tableBody: {
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  tableRow: {
+    display: 'flex',
+    alignItems: 'center',
+    padding: '10px 16px',
+    borderBottom: '1px solid #F1F5F9',
+    transition: 'background 0.15s ease',
+  },
+  tableCell: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    fontSize: '14px',
+    color: '#334155',
+  },
+  studentAvatar: {
+    width: '32px',
+    height: '32px',
+    borderRadius: '50%',
+    backgroundColor: '#EBF3FB',
+    color: '#4A90D9',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: '13px',
+    fontWeight: '600',
+    flexShrink: 0,
+  },
+  statusBadge: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '6px',
+    fontSize: '12px',
+    fontWeight: '600',
+    padding: '5px 14px',
+    borderRadius: '12px',
+  },
+
+  emptyState: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '40px 20px',
+    color: '#94A3B8',
+    fontSize: '14px',
+    gap: '12px',
+  },
 };
+
+// Global CSS animations (เหมือนหน้าคุณครู)
+const styleSheet = document.createElement("style");
+styleSheet.textContent = `
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+  
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .stat-card {
+    animation: fadeInUp 0.3s ease forwards;
+  }
+  .stat-card:nth-child(1) { animation-delay: 0.05s; }
+  .stat-card:nth-child(2) { animation-delay: 0.1s; }
+  .stat-card:nth-child(3) { animation-delay: 0.15s; }
+  
+  .table-row:hover {
+    background-color: #F8FAFC;
+  }
+  
+  .filter-chip:hover:not(.filter-chip-active) {
+    background-color: #E2E8F0;
+  }
+  
+  @media (max-width: 768px) {
+    .top-banner {
+      flex-direction: column !important;
+      align-items: stretch !important;
+    }
+    .mode-tabs {
+      justify-content: center !important;
+    }
+    .summary-grid {
+      grid-template-columns: 1fr !important;
+    }
+    .toolbar {
+      flex-direction: column !important;
+      align-items: stretch !important;
+    }
+    .filter-group {
+      justify-content: center !important;
+    }
+    .card-header {
+      flex-direction: column !important;
+      align-items: flex-start !important;
+    }
+    .export-btn {
+      width: 100% !important;
+      justify-content: center !important;
+    }
+    .table-row {
+      flex-wrap: wrap !important;
+      gap: 8px !important;
+    }
+    .table-row > div:last-child {
+      width: 100% !important;
+      justify-content: flex-start !important;
+      padding-left: 44px !important;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .main-card {
+      padding: 16px !important;
+    }
+    .class-info {
+      flex-wrap: wrap !important;
+    }
+    .search-wrapper {
+      min-width: 100% !important;
+    }
+  }
+`;
+document.head.appendChild(styleSheet);
 
 export default ActivityView;

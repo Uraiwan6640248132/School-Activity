@@ -1,166 +1,341 @@
+import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { useEffect, useState } from "react";
+import {
+  Bell,
+  BookOpen,
+  Calendar,
+  Clock,
+  Loader2,
+  Users,
+  FileText
+} from "lucide-react";
 
 const BASE_URL = "http://localhost:3001";
 
-function Notification() {
+function NotificationParent() {
   const [list, setList] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // ดึงระดับชั้นของผู้ปกครองจาก localStorage
+  const getParentClass = () => {
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      try {
+        const userData = JSON.parse(storedUser);
+        return userData.Class_level || userData.class_level || "อนุบาล 1 ห้องปกติ";
+      } catch (e) {
+        console.error("Error parsing user data:", e);
+        return "อนุบาล 1 ห้องปกติ";
+      }
+    }
+    return "อนุบาล 1 ห้องปกติ";
+  };
+
+  const parentClass = getParentClass();
 
   useEffect(() => {
     getData();
   }, []);
 
   const getData = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
       const res = await axios.get(`${BASE_URL}/notifications`);
       setList(res.data);
     } catch (err) {
-      console.log("Error fetching notifications:", err);
+      console.error("เกิดข้อผิดพลาดในการดึงข้อมูลการแจ้งเตือน:", err);
     } finally {
       setLoading(false);
     }
   };
 
+  // กรองเฉพาะการบ้านที่เป็นของระดับชั้นของบุตรหลาน
+  const filteredList = list.filter((item) => {
+    const currentClass = item.Class_level || item.class_level;
+    if (!currentClass || !parentClass) return false;
+
+    const dbClass = currentClass.toString().replace(/\s+/g, "");
+    const myClass = parentClass.toString().replace(/\s+/g, "");
+
+    return dbClass.includes(myClass) || myClass.includes(dbClass);
+  });
+
+  if (loading) {
+    return (
+      <div style={styles.loadingContainer}>
+        <Loader2 size={48} style={styles.spinner} />
+        <p style={styles.loadingText}>กำลังโหลดข้อมูลการแจ้งเตือน...</p>
+      </div>
+    );
+  }
+
   return (
-    <div style={page.container}>
-      <div style={page.header}>
-        <h2 style={{ margin: 0, color: '#0369a1' }}>แจ้งเตือนการบ้าน</h2>
-        {loading && <span style={page.loadingText}>กำลังอัปเดตข้อมูล...</span>}
-      </div>
+    <div style={styles.container}>
+      <div style={styles.wrapper}>
+        {/* Header */}
+        <div style={styles.header}>
+          <div style={styles.headerLeft}>
+            <div style={styles.headerIcon}>
+              <Bell size={24} color="#FFFFFF" />
+            </div>
+            <div>
+              <h1 style={styles.mainTitle}>การแจ้งเตือนการบ้าน</h1>
+              <p style={styles.subTitle}>
+                <span style={styles.countBadge}>{filteredList.length}</span> รายการการบ้าน
+                <span style={styles.classLabel}> | ชั้น {parentClass}</span>
+              </p>
+            </div>
+          </div>
+        </div>
 
-      <div style={page.grid}>
-        {list
-          // 🟢 1. ใส่ filter ดักไว้ตรงนี้เพื่อล็อกเอาเฉพาะห้องเรียนของลูกเรา
-          .filter((item) => {
-            const currentClass = item.Class_level || item.class_level;
-            return currentClass === "อนุบาล 1 ห้องปกติ";
-          })
-          // 2. นำข้อมูลเฉพาะห้องที่กรองแล้วมาวาดการ์ดแสดงผลต่อ
-          .map((item) => {
-            // ตรวจสอบว่าเป็นห้อง 3 ภาษาเพื่อปรับแต่งธีมขอบการ์ดให้เด่นขึ้น (ถ้าต้องการ)
-            const isSpecialClass = (item.Class_level || item.class_level)?.includes("3 ภาษา");
+        {/* Notification Grid */}
+        {filteredList.length === 0 ? (
+          <div style={styles.emptyState}>
+            <Bell size={56} color="#CBD5E1" />
+            <p style={styles.emptyText}>ไม่มีรายการแจ้งเตือนการบ้าน</p>
+            <p style={styles.emptySubText}>
+              ยังไม่มีการมอบหมายการบ้านใหม่สำหรับชั้นเรียนนี้ในขณะนี้
+            </p>
+          </div>
+        ) : (
+          <div style={styles.grid}>
+            {filteredList.map((item, index) => {
+              const deadlineStr = (item.Deadline || item.deadline)?.split("T")[0];
+              const dateStr = (item.Date || item.date)?.split("T")[0];
 
-            return (
-              <div
-                key={item.Notification_id || item.notification_id}
-                style={{
-                  ...page.card,
-                  borderTop: isSpecialClass ? "5px solid #e67e22" : "5px solid #3498db"
-                }}
-              >
-                <span style={{
-                  ...page.badge,
-                  background: isSpecialClass ? "#edf2f7" : "#ebf8ff",
-                  color: isSpecialClass ? "#b7791f" : "#2b6cb0"
-                }}>
-                  {item.Class_level || item.class_level}
-                </span>
+              return (
+                <div
+                  key={item.Notification_id || item.notification_id || index}
+                  style={styles.card}
+                >
+                  <div style={styles.cardHeader}>
+                    <div style={styles.cardSubject}>
+                      <BookOpen size={16} color="#4A90D9" />
+                      <span style={styles.subjectText}>
+                        {item.Subject || item.subject || "ไม่ระบุวิชา"}
+                      </span>
+                    </div>
+                    <div style={styles.cardBadge}>
+                      <Users size={12} color="#4A90D9" />
+                      {item.Class_level || item.class_level || parentClass}
+                    </div>
+                  </div>
 
-                <h3 style={page.subjectText}>
-                  <b>วิชา:</b> {item.Subject || item.subject}
-                </h3>
+                  <div style={styles.cardBody}>
+                    <div style={styles.detailsContainer}>
+                      <FileText size={14} color="#94A3B8" style={{ marginTop: '3px', flexShrink: 0 }} />
+                      <p style={styles.cardDetails}>
+                        {item.Details || item.details || "ไม่มีรายละเอียดเพิ่มเติม"}
+                      </p>
+                    </div>
+                  </div>
 
-                <p style={page.detailsText}>
-                  {item.Details || item.details || "— ไม่มีรายละเอียดเพิ่มเติม —"}
-                </p>
-
-                <hr style={page.divider} />
-
-                <div style={page.dateInfo}>
-                  <p style={page.dateText}>
-                    📅 <b>ส่งงานภายใน:</b> {(item.Deadline || item.deadline) ? (item.Deadline || item.deadline).split("T")[0] : "-"}
-                  </p>
-                  <p style={page.dateNotifyText}>
-                    🔔 <b>วันที่แจ้งงาน:</b> {(item.Date || item.date) ? (item.Date || item.date).split("T")[0] : "-"}
-                  </p>
+                  <div style={styles.cardFooter}>
+                    <div style={styles.cardDates}>
+                      <div style={styles.dateItemHighlight}>
+                        <Calendar size={14} color="#E74C3C" />
+                        <span>
+                          กำหนดส่ง: <strong style={{ color: '#E74C3C' }}>{deadlineStr || "-"}</strong>
+                        </span>
+                      </div>
+                      <div style={styles.dateItem}>
+                        <Clock size={14} color="#94A3B8" />
+                        <span>วันที่สั่งงาน: {dateStr || "-"}</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
+        )}
       </div>
-
-      {!loading && list.length === 0 && (
-        <div style={page.emptyState}>ไม่มีรายการแจ้งเตือนการบ้านในขณะนี้</div>
-      )}
     </div>
   );
 }
 
-const page = {
+const styles = {
   container: {
-    padding: "20px",
-    fontFamily: "inherit"
+    padding: '20px',
+    minHeight: '100vh',
+    backgroundColor: '#F8FAFC',
+    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
   },
-  header: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 25,
-    borderBottom: "2px solid #edf2f7",
-    paddingBottom: "10px"
+  wrapper: {
+    maxWidth: '1200px',
+    margin: '0 auto',
+    width: '100%',
+  },
+
+  loadingContainer: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: '100vh',
+    gap: '16px',
+    backgroundColor: '#F8FAFC',
+    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
+  },
+  spinner: {
+    animation: 'spin 1s linear infinite',
+    color: '#4A90D9',
   },
   loadingText: {
-    fontSize: "14px",
-    color: "#4a5568"
+    color: '#94A3B8',
+    fontSize: '16px',
   },
+
+  header: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '28px',
+    flexWrap: 'wrap',
+    gap: '12px',
+  },
+  headerLeft: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '14px',
+  },
+  headerIcon: {
+    width: '48px',
+    height: '48px',
+    borderRadius: '12px',
+    backgroundColor: '#4A90D9',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    boxShadow: '0 4px 12px rgba(74, 144, 217, 0.25)',
+  },
+  mainTitle: {
+    fontSize: '24px',
+    fontWeight: '700',
+    color: '#1A202C',
+    margin: 0,
+  },
+  subTitle: {
+    fontSize: '14px',
+    color: '#718096',
+    margin: '2px 0 0 0',
+  },
+  countBadge: {
+    fontWeight: '700',
+    color: '#4A90D9',
+  },
+  classLabel: {
+    color: '#94A3B8',
+  },
+
   grid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
-    gap: 20,
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))',
+    gap: '20px',
   },
+
   card: {
-    background: "#fff",
-    borderRadius: "12px",
-    padding: "20px",
-    boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "space-between"
+    backgroundColor: '#FFFFFF',
+    borderRadius: '16px',
+    border: '1px solid #E2E8F0',
+    overflow: 'hidden',
+    transition: 'all 0.2s ease',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'space-between',
   },
-  badge: {
-    alignSelf: "flex-start",
-    padding: "4px 10px",
-    borderRadius: "20px",
-    fontSize: "12px",
-    fontWeight: "bold",
-    marginBottom: "12px"
+  cardHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '16px 18px 12px',
+    borderBottom: '1px solid #F1F5F9',
+  },
+  cardSubject: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
   },
   subjectText: {
-    margin: "0 0 10px 0",
-    fontSize: "16px",
-    color: "#2d3748"
+    fontSize: '15px',
+    fontWeight: '600',
+    color: '#1A202C',
   },
-  detailsText: {
-    margin: "0 0 15px 0",
-    color: "#718096",
-    fontSize: "14px",
-    lineHeight: "1.5",
-    whiteSpace: "pre-line" // รองรับการขึ้นบรรทัดใหม่จากข้อความดั้งเดิม
+  cardBadge: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '4px',
+    fontSize: '11px',
+    fontWeight: '500',
+    color: '#4A90D9',
+    backgroundColor: '#EBF3FB',
+    padding: '3px 10px',
+    borderRadius: '6px',
+    whiteSpace: 'nowrap',
   },
-  divider: {
-    border: "0",
-    borderTop: "1px solid #edf2f7",
-    margin: "10px 0"
+  cardBody: {
+    padding: '14px 18px',
+    flex: 1,
   },
-  dateInfo: {
-    fontSize: "13px"
+  detailsContainer: {
+    display: 'flex',
+    gap: '8px',
+    alignItems: 'flex-start',
   },
-  dateText: {
-    margin: "4px 0",
-    color: "#e53e3e" // เน้นสีแดงที่วันส่งงานเพื่อความชัดเจน
+  cardDetails: {
+    fontSize: '14px',
+    color: '#475569',
+    margin: 0,
+    lineHeight: '1.6',
+    whiteSpace: 'pre-line',
   },
-  dateNotifyText: {
-    margin: "4px 0",
-    color: "#4a5568"
+  cardFooter: {
+    padding: '12px 18px 16px',
+    borderTop: '1px solid #F1F5F9',
+    backgroundColor: '#FAFBFC',
   },
+  cardDates: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '6px',
+  },
+  dateItem: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    fontSize: '12px',
+    color: '#94A3B8',
+  },
+  dateItemHighlight: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    fontSize: '13px',
+    color: '#475569',
+  },
+
   emptyState: {
-    textAlign: "center",
-    padding: "4px 0",
-    color: "#a0aec0",
-    marginTop: "4px"
-  }
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '80px 20px',
+    backgroundColor: '#FFFFFF',
+    borderRadius: '16px',
+    border: '1px solid #E2E8F0',
+  },
+  emptyText: {
+    fontSize: '18px',
+    fontWeight: '600',
+    color: '#475569',
+    margin: '16px 0 4px 0',
+  },
+  emptySubText: {
+    fontSize: '14px',
+    color: '#94A3B8',
+    margin: 0,
+  },
 };
 
-export default Notification;
+export default NotificationParent;
