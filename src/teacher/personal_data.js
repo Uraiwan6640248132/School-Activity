@@ -16,9 +16,8 @@ import {
   EyeOff,
   Edit3,
   UserCheck,
-  Sparkles,
-  Mail,
-  BadgeCheck
+  Sparkles
+  
 } from "lucide-react";
 
 const PersonalData = () => {

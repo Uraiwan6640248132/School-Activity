@@ -6,22 +6,13 @@ import {
   Trash2,
   Eye,
   X,
-  Search,
-  User,
-  Calendar,
-  MapPin,
-  Heart,
   Droplet,
   School,
-  Image as ImageIcon,
   Upload,
   Loader2,
   CheckCircle,
-  AlertCircle,
-  Sparkles,
-  UserCheck,
-  Phone,
-  Mail
+  UserCheck
+  
 } from 'lucide-react';
 
 function StudentManagement() {

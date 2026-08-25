@@ -12,11 +12,9 @@ import {
   User,
   Loader2,
   CheckCircle,
-  AlertCircle,
   Send,
   Sparkles,
   Eye,
-  Clock,
   ImagePlus,
   Users
 } from 'lucide-react';

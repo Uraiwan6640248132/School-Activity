@@ -6,25 +6,17 @@ import {
   UserX,
   CalendarDays,
   Search,
-  Filter,
-  Download,
   Save,
   Edit3,
   Eye,
-  EyeOff,
   CheckCircle,
   XCircle,
-  AlertCircle,
   Loader2,
-  ChevronDown,
-  ChevronUp,
   Activity,
   School,
   FileSpreadsheet,
-  RefreshCw,
-  Sparkles,
-  ArrowLeft,
-  ArrowRight
+  Sparkles
+  
 } from "lucide-react";
 
 function ParticipatingActivities() {
