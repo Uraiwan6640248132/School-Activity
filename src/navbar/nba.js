@@ -57,7 +57,7 @@ function Navbar({ children }) {
   const handleLogout = () => {
     if (window.confirm("คุณต้องการออกจากระบบใช่หรือไม่?")) {
       localStorage.removeItem("user"); // ลบเซสชันการเข้าสู่ระบบ
-      window.location.href = "/login"; // เคลียร์สเตทและนำกลับไปหน้าล็อกอิน
+      window.location.href = "/HomePage"; // เคลียร์สเตทและนำกลับไปหน้าล็อกอิน
     }
   };
 
