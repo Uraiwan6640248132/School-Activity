@@ -145,6 +145,8 @@ function ParticipatingActivities() {
       })),
     };
 
+
+    
     setSaving(true);
     try {
       await axios.post(`${API_URL}/attendance/save`, payload);
