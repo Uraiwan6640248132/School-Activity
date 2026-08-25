@@ -1,4 +1,42 @@
 import React, { useState, useEffect } from "react";
+import {
+    School,
+    Calendar,
+    MapPin,
+    Phone,
+    Mail,
+    Globe,
+    Award,
+    Users,
+    BookOpen,
+    Sparkles,
+    Menu,
+    X,
+    Clock,
+    Home,
+    Info,
+    Newspaper,
+    Activity,
+    MessageCircle,
+    UserPlus,
+    LogIn,
+    ArrowRight,
+    Star,
+    Heart,
+    ThumbsUp,
+    ExternalLink,
+    ChevronRight,
+    Play,
+    Quote,
+    Sun,
+    Cloud,
+    Flower,
+    Book,
+    Music,
+    Paintbrush,
+    Leaf,
+    Smile
+} from "lucide-react";
 
 export default function HomePage({
     schoolName = "ระบบบันทึกกิจกรรม โรงเรียนสาธิตมหาวิทยาลัยราชภัฏเลย",
@@ -7,6 +45,8 @@ export default function HomePage({
 }) {
     const [menuOpen, setMenuOpen] = useState(false);
     const [news, setNews] = useState([]);
+    const [scrolled, setScrolled] = useState(false);
+    const [activeTestimonial, setActiveTestimonial] = useState(0);
 
     const heroImageUrl = "https://satit.lru.ac.th/th/wp-content/uploads/2022/04/HEAND-BANNER.jpg";
     const API_URL = 'http://localhost:3001/api/publicrelations';
@@ -26,6 +66,21 @@ export default function HomePage({
         fetchPRData();
     }, []);
 
+    useEffect(() => {
+        const handleScroll = () => {
+            setScrolled(window.scrollY > 50);
+        };
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setActiveTestimonial((prev) => (prev + 1) % testimonials.length);
+        }, 5000);
+        return () => clearInterval(interval);
+    }, []);
+
     const displayFormattedDate = (dateStr) => {
         if (!dateStr) return '-';
         const cleanStr = String(dateStr).split('T')[0];
@@ -34,9 +89,33 @@ export default function HomePage({
     };
 
     const activities = [
-        { icon: "🔬", title: "สัปดาห์วิทยาศาสตร์", text: "เรียนรู้ผ่านการทดลองและนิทรรศการสร้างสรรค์" },
-        { icon: "⚽", title: "กีฬาสีสัมพันธ์", text: "เติมพลังทีมเวิร์ก สุขภาพ และมิตรภาพ" },
-        { icon: "🎨", title: "เวทีแสดงความสามารถ", text: "พื้นที่ให้ทุกความสามารถได้เปล่งประกาย" },
+        { icon: "🔬", title: "สัปดาห์วิทยาศาสตร์", text: "เรียนรู้ผ่านการทดลองและนิทรรศการสร้างสรรค์", color: "#E3F2FD", emoji: "🧪" },
+        { icon: "⚽", title: "กีฬาสี", text: "เติมพลังทีมเวิร์ก สุขภาพ และมิตรภาพ", color: "#E8F5E9", emoji: "🏅" },
+        { icon: "🎨", title: "เวทีแสดงความสามารถ", text: "พื้นที่ให้ทุกความสามารถได้เปล่งประกาย", color: "#FFF3E0", emoji: "🎭" },
+        { icon: "🌱", title: "ปลูกผักสวนครัว", text: "เรียนรู้ธรรมชาติและความรับผิดชอบ", color: "#F1F8E9", emoji: "🌿" },
+        { icon: "🎵", title: "ดนตรีสร้างสุข", text: "ฝึกสมาธิและจังหวะผ่านเสียงเพลง", color: "#F3E5F5", emoji: "🎶" },
+        { icon: "📖", title: "นิทานสร้างเสริมคุณธรรม", text: "ปลูกฝังจริยธรรมผ่านเรื่องราวสนุกสนาน", color: "#E8EAF6", emoji: "📚" },
+    ];
+
+    const testimonials = [
+        {
+            name: "คุณแม่น้องแพรว",
+            role: "ผู้ปกครองชั้นอนุบาล 3",
+            text: "ลูกสาวชอบมาโรงเรียนมาก ครูใจดีและเอาใจใส่ดีมากค่ะ เห็นพัฒนาการของลูกชัดเจน",
+            avatar: "👩",
+        },
+        {
+            name: "คุณพ่อตะวัน",
+            role: "ผู้ปกครองชั้นอนุบาล 2",
+            text: "โรงเรียนมีกิจกรรมหลากหลาย ลูกได้เรียนรู้ทั้งวิชาการและชีวิตจริง ภูมิใจมากครับ",
+            avatar: "👨",
+        },
+        {
+            name: "คุณครูแอน",
+            role: "ครูผู้สอนชั้นอนุบาล",
+            text: "การสอนที่นี่คือความสุข เราได้เห็นรอยยิ้มและความสนุกของเด็กทุกวัน",
+            avatar: "👩‍🏫",
+        },
     ];
 
     const scrollTo = (id) => {
@@ -50,254 +129,1182 @@ export default function HomePage({
     return (
         <div style={styles.page}>
             <style>{responsiveCss}</style>
-            <header style={styles.header}>
-                <button type="button" style={styles.brand} onClick={() => scrollTo("home")} aria-label="กลับสู่หน้าแรก">
-                    <span style={styles.logo}>🎓</span>
-                    <span>{schoolName}</span>
+
+            {/* 🌟 Header */}
+            <header style={{
+                ...styles.header,
+                boxShadow: scrolled ? '0 4px 30px rgba(74, 144, 217, 0.08)' : 'none',
+                background: scrolled ? 'rgba(255,255,255,0.98)' : 'rgba(255,255,255,0.92)',
+            }}>
+                <button type="button" style={styles.brand} onClick={() => scrollTo("home")}>
+                    <div style={styles.logoWrapper}>
+                        <School size={28} color="#4A90D9" />
+                    </div>
+                    <span style={styles.brandText}>{schoolName}</span>
                 </button>
-                <button type="button" className="menu-toggle" style={styles.menuToggle} onClick={() => setMenuOpen(!menuOpen)} aria-expanded={menuOpen}>
-                    ☰
+
+                <button className="menu-toggle" style={styles.menuToggle} onClick={() => setMenuOpen(!menuOpen)}>
+                    {menuOpen ? <X size={24} /> : <Menu size={24} />}
                 </button>
+
                 <nav className={menuOpen ? "nav nav-open" : "nav"} style={styles.nav}>
-                    <button type="button" onClick={() => scrollTo("about")}>เกี่ยวกับโรงเรียน</button>
-                    <button type="button" onClick={() => scrollTo("news")}>ข่าวประชาสัมพันธ์</button>
-                    <button type="button" onClick={() => scrollTo("activities")}>กิจกรรม</button>
-                    <button type="button" onClick={() => scrollTo("contact")}>ติดต่อสอบถาม</button>
-                    <button type="button" style={styles.loginButton} onClick={handleLogin}>เข้าสู่ระบบ</button>
-                    <button type="button" style={styles.registerButton} onClick={handleRegister}>ลงทะเบียน</button>
+                    <button onClick={() => scrollTo("home")}><Home size={16} /> หน้าแรก</button>
+                    <button onClick={() => scrollTo("about")}><Info size={16} /> เกี่ยวกับ</button>
+                    <button onClick={() => scrollTo("news")}><Newspaper size={16} /> ข่าวสาร</button>
+                    <button onClick={() => scrollTo("activities")}><Activity size={16} /> กิจกรรม</button>
+                    <button onClick={() => scrollTo("contact")}><MessageCircle size={16} /> ติดต่อ</button>
+                    <button style={styles.loginButton} onClick={handleLogin}>
+                        <LogIn size={16} /> เข้าสู่ระบบ
+                    </button>
+                    <button style={styles.registerButton} onClick={handleRegister}>
+                        <UserPlus size={16} /> ลงทะเบียน
+                    </button>
                 </nav>
             </header>
 
             <main>
+                {/* 🌟 Hero Section - ปรับปรุงใหม่ */}
                 <section id="home" style={styles.hero}>
                     <div style={styles.heroContent}>
-                        <p style={styles.kicker}>WELCOME TO OUR SCHOOL</p>
-                        <h1 style={styles.heroTitle}>เรียนรู้ เติบโต<br /><span>ก้าวไกลไปด้วยกัน</span></h1>
-                        <p style={styles.heroText}>พื้นที่แห่งการเรียนรู้ที่อบอุ่น ปลอดภัย และพร้อมสนับสนุนให้นักเรียนทุกคนค้นพบศักยภาพของตนเอง</p>
-                        <div style={styles.heroActions}>
-                            <button type="button" style={styles.primaryButton} onClick={handleRegister}>ลงทะเบียน <span>→</span></button>
-                            <button type="button" style={styles.secondaryButton} onClick={() => scrollTo("about")}>รู้จักโรงเรียน</button>
+                        <div style={styles.heroBadge}>
+                            <Sparkles size={16} color="#4A90D9" />
+                            <span>ยินดีต้อนรับ</span>
                         </div>
-                    </div>
+                        <h1 style={styles.heroTitle}>
+                            โรงเรียน<br />
+                            <span style={styles.heroHighlight}>สาธิตมหาวิทยาลัยราชภัฏเลย</span>
+                        </h1>
+                        <p style={styles.heroText}>
 
-                    <div style={styles.heroArtImageWrapper}>
-                        <img
-                            src={heroImageUrl}
-                            alt="โรงเรียนสาธิตมหาวิทยาลัยราชภัฏเลย"
-                            style={styles.heroImage}
-                        />
-                    </div>
-                </section>
 
-                {/* ส่วนเกี่ยวกับเรา (ประวัติโรงเรียน) */}
-                <section id="about" style={styles.about}>
-                    <div style={styles.sectionIntro}>
-                        <p style={styles.eyebrow}>ABOUT US</p>
-                        <h2 style={styles.sectionTitle}>เกี่ยวกับโรงเรียนสาธิต<br />มหาวิทยาลัยราชภัฏเลย</h2>
-                        <p style={styles.sectionText}>
-                            จัดตั้งขึ้นเมื่อปี พ.ศ. 2528 เพื่อเป็นโรงเรียนต้นแบบด้านการศึกษา วิจัย และพัฒนาการเรียนรู้
-                            เปิดสอนตั้งแต่ระดับบริบาล อนุบาล ถึงประถมศึกษาปีที่ 6 มุ่งเน้นการเรียนรู้ตามพัฒนาการ เสริมสร้างความคิดสร้างสรรค์ และทักษะชีวิต
-                            ภายใต้การดูแลของคณาจารย์และผู้เชี่ยวชาญ เพื่อสร้างนักเรียนให้เป็น <strong>"คนดี คนเก่ง และมีความสุข"</strong>
                         </p>
-                    </div>
+                        <div style={styles.heroActions}>
+                            <button type="button" style={styles.primaryButton} onClick={handleRegister}>
+                                ลงทะเบียน <ArrowRight size={18} />
+                            </button>
+                            <button type="button" style={styles.secondaryButton} onClick={() => scrollTo("about")}>
+                                รู้จักโรงเรียน
+                            </button>
+                        </div>
 
-                    <div style={styles.statGrid}>
-                        <Stat number="2528" label="ปีที่ก่อตั้ง (พ.ศ.)" />
-                        <Stat number="10" label="ผู้อำนวยการ (คนที่ 10)" />
-                        <Stat number="ดีมาก" label="มาตรฐาน สมศ. (2557)" />
-                        <Stat number="บริบาล - ป.6" label="ระดับชั้นที่เปิดสอน" />
+                    </div>
+                    <div style={styles.heroImageWrapper}>
+                        <img src={heroImageUrl} alt="โรงเรียนสาธิตมหาวิทยาลัยราชภัฏเลย" style={styles.heroImage} />
+
                     </div>
                 </section>
 
-                <section id="news" style={styles.newsSection}>
-                    <div style={styles.sectionHeading}>
-                        <div>
-                            <p style={styles.eyebrow}>NEWS & ANNOUNCEMENTS</p>
-                            <h2 style={styles.sectionTitle}>ข่าวประชาสัมพันธ์</h2>
+                {/* 🌟 About Section - ปรับปรุงใหม่ */}
+                <section id="about" style={styles.about}>
+                    <div style={styles.sectionContainer}>
+                        <div style={styles.aboutGrid}>
+                            <div style={styles.aboutContent}>
+                                <div style={styles.sectionLabel}>
+                                    <Award size={18} color="#4A90D9" />
+                                    <span>เกี่ยวกับเรา</span>
+                                </div>
+                                <h2 style={styles.sectionTitle}>
+                                    โรงเรียนสาธิต<br />
+                                    <span style={styles.sectionHighlight}>มหาวิทยาลัยราชภัฏเลย</span>
+                                </h2>
+                                <p style={styles.sectionText}>
+                                    จัดตั้งขึ้นเมื่อปี พ.ศ. 2528 เพื่อเป็นโรงเรียนต้นแบบด้านการศึกษา วิจัย และพัฒนาการเรียนรู้
+                                    เปิดสอนตั้งแต่ระดับบริบาล อนุบาล ถึงประถมศึกษาปีที่ 6 มุ่งเน้นการเรียนรู้ตามพัฒนาการ
+                                    เสริมสร้างความคิดสร้างสรรค์ และทักษะชีวิต ภายใต้การดูแลของคณาจารย์และผู้เชี่ยวชาญ
+                                    เพื่อสร้างนักเรียนให้เป็น <strong style={{ color: '#4A90D9' }}>"คนดี คนเก่ง และมีความสุข"</strong>
+                                </p>
+
+                            </div>
+
+                            <div style={styles.statGrid}>
+                                <div style={styles.statCard}>
+                                    <div style={styles.statIcon}><Calendar size={24} color="#4A90D9" /></div>
+                                    <div style={styles.statNumber}>2528</div>
+                                    <div style={styles.statLabel}>ปีที่ก่อตั้ง</div>
+                                </div>
+                                <div style={styles.statCard}>
+                                    <div style={styles.statIcon}><Users size={24} color="#4A90D9" /></div>
+                                    <div style={styles.statNumber}>10</div>
+                                    <div style={styles.statLabel}>ผู้อำนวยการ</div>
+                                </div>
+                                <div style={styles.statCard}>
+                                    <div style={styles.statIcon}><Award size={24} color="#4A90D9" /></div>
+                                    <div style={styles.statNumber}>ดีมาก</div>
+                                    <div style={styles.statLabel}>ผลประเมิน สมศ.</div>
+                                </div>
+                                <div style={styles.statCard}>
+                                    <div style={styles.statIcon}><BookOpen size={24} color="#4A90D9" /></div>
+                                    <div style={styles.statNumber}>บริบาล - ป.6</div>
+                                    <div style={styles.statLabel}>ระดับชั้นที่เปิด</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
+                </section>
 
-                    {news.length === 0 ? (
-                        <p style={{ textAlign: "center", color: "#66809b", padding: "40px 0" }}>ไม่มีข้อมูลข่าวประชาสัมพันธ์ในขณะนี้</p>
-                    ) : (
-                        <div style={styles.newsGrid}>
-                            {news.map((item, index) => (
-                                <article key={item.PublicRelation_id || item.id || index} style={styles.newsCard}>
-                                    <div style={styles.newsImage}>
-                                        {item.Image ? (
-                                            <img src={item.Image} alt={item.Name_activity || item.Name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                        ) : (
-                                            <div style={{ ...styles.newsImagePlaceholder, background: ["#c8e8ff", "#d8f3ec", "#e5e1ff"][index % 3] }}>
-                                                {["📚", "🏆", "📅"][index % 3]}
+                {/* 🌟 News Section - ปรับปรุงใหม่ */}
+                <section id="news" style={styles.newsSection}>
+                    <div style={styles.sectionContainer}>
+                        <div style={styles.sectionHeader}>
+                            <div>
+                                <div style={styles.sectionLabel}>
+                                    <Newspaper size={18} color="#4A90D9" />
+                                    <span>ข่าวประชาสัมพันธ์</span>
+                                </div>
+                                <h2 style={styles.sectionTitle}>กิจกรรมล่าสุด</h2>
+                                <p style={styles.sectionSubtext}>ติดตามข่าวสารและกิจกรรมต่างๆ ของโรงเรียน</p>
+                            </div>
+                            <button style={styles.viewAllBtn}>
+                                ดูทั้งหมด <ChevronRight size={16} />
+                            </button>
+                        </div>
+
+                        {news.length === 0 ? (
+                            <div style={styles.emptyState}>
+                                <div style={styles.emptyIcon}>📭</div>
+                                <p style={styles.emptyText}>ไม่มีข้อมูลข่าวประชาสัมพันธ์ในขณะนี้</p>
+                            </div>
+                        ) : (
+                            <div style={styles.newsGrid}>
+                                {news.slice(0, 6).map((item, index) => (
+                                    <article key={item.PublicRelation_id || item.id || index} style={styles.newsCard}>
+                                        <div style={styles.newsImageWrapper}>
+                                            {item.Image ? (
+                                                <img src={item.Image} alt={item.Name_activity} style={styles.newsImage} />
+                                            ) : (
+                                                <div style={{ ...styles.newsImagePlaceholder, background: ['#E3F2FD', '#E8F5E9', '#FFF3E0', '#F3E5F5', '#E8EAF6', '#FBE9E7'][index % 6] }}>
+                                                    {['📚', '🏆', '📅', '🎨', '🎵', '🌱'][index % 6]}
+                                                </div>
+                                            )}
+                                            <div style={styles.newsBadge}>ประชาสัมพันธ์</div>
+                                        </div>
+                                        <div style={styles.newsBody}>
+                                            <div style={styles.newsMeta}>
+                                                <Clock size={14} color="#94A3B8" />
+                                                <span>{displayFormattedDate(item.Date)}</span>
                                             </div>
-                                        )}
-                                    </div>
-                                    <div style={styles.cardBody}>
-                                        <span style={styles.badge}>ประชาสัมพันธ์</span>
-                                        <p style={styles.date}>{displayFormattedDate(item.Date)}</p>
-                                        <h3 style={styles.cardTitle}>{item.Name_activity || item.Name}</h3>
-                                        <p style={styles.detailText}>{item.Detail || "-"}</p>
-                                        <p style={styles.locationText}>📍 {item.Location || "ไม่ระบุสถานที่"}</p>
-                                    </div>
-                                </article>
+                                            <h3 style={styles.newsTitle}>{item.Name_activity || item.Name}</h3>
+                                            <p style={styles.newsDescription}>{item.Detail || "-"}</p>
+                                            <div style={styles.newsLocation}>
+                                                <MapPin size={14} color="#4A90D9" />
+                                                <span>{item.Location || "ไม่ระบุสถานที่"}</span>
+                                            </div>
+                                        </div>
+                                    </article>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </section>
+
+                {/* 🌟 Activities Section - ปรับปรุงใหม่ */}
+                <section id="activities" style={styles.activitiesSection}>
+                    <div style={styles.sectionContainer}>
+                        <div style={styles.sectionHeader}>
+                            <div>
+
+                                <h2 style={styles.sectionTitle}>
+
+                                    <span style={styles.sectionHighlight}> กิจกรรมภายในโรงเรียน</span>
+                                </h2>
+                                <p style={styles.sectionSubtext}>
+
+                                </p>
+                            </div>
+                        </div>
+
+                        <div style={styles.activityGrid}>
+                            {activities.map((activity, index) => (
+                                <div key={index} style={{ ...styles.activityCard, background: activity.color }}>
+                                    <div style={styles.activityIcon}>{activity.icon}</div>
+                                    <h3 style={styles.activityTitle}>{activity.title}</h3>
+                                    <p style={styles.activityText}>{activity.text}</p>
+                                </div>
                             ))}
                         </div>
-                    )}
-                </section>
-
-                <section id="activities" style={styles.activitiesSection}>
-                    <div style={styles.sectionIntro}>
-                        <p style={styles.eyebrow}>STUDENT LIFE</p>
-                        <h2 style={styles.sectionTitle}>ชีวิตที่มากกว่าห้องเรียน</h2>
-                        <p style={styles.sectionText}>เราเชื่อว่าประสบการณ์นอกห้องเรียนช่วยสร้างทั้งความสุข ทักษะ และความมั่นใจให้กับนักเรียน</p>
-                    </div>
-                    <div style={styles.activityGrid}>
-                        {activities.map((activity) => (
-                            <article key={activity.title} style={styles.activityCard}>
-                                <div style={styles.activityIcon}>{activity.icon}</div>
-                                <h3 style={styles.activityTitle}>{activity.title}</h3>
-                                <p style={styles.activityText}>{activity.text}</p>
-                            </article>
-                        ))}
                     </div>
                 </section>
 
-                <section style={styles.cta}>
-                    <div><p style={styles.ctaKicker}>JOIN OUR COMMUNITY</p><h2 style={styles.ctaTitle}>เริ่มต้นเส้นทางการเรียนรู้<br />ไปกับเราในวันนี้</h2></div>
-                    <button type="button" style={styles.ctaButton} onClick={handleRegister}>ลงทะเบียน <span>→</span></button>
-                </section>
+
+
             </main>
 
-            {/* Footer สไตล์ W3Schools Mega Footer */}
-            <footer id="contact" style={styles.w3Footer}>
-                <div style={styles.footerTopRow}>
-                    <div style={styles.footerLogoSection}>
-                        <span style={{ fontSize: 28 }}>🎓</span>
-                        <span style={styles.footerBrandText}>{schoolName}</span>
-                    </div>
-                    <div style={styles.footerTopNav}>
-                        <button type="button" onClick={() => scrollTo("home")}>หน้าแรก</button>
-                        <button type="button" onClick={() => scrollTo("about")}>เกี่ยวกับโรงเรียน</button>
-                        <button type="button" onClick={() => scrollTo("news")}>ข่าวสาร</button>
-                        <button type="button" onClick={() => scrollTo("activities")}>กิจกรรม</button>
-                    </div>
-                </div>
-
-                <div style={styles.footerColumns}>
-                    <div style={styles.footerCol}>
-                        <h4 style={styles.colTitle}>เกี่ยวกับโรงเรียน</h4>
-                        <ul style={styles.colList}>
-                            <li><a href="#about" onClick={() => scrollTo("about")}>ประวัติความเป็นมา</a></li>
-                            <li><a href="#about" onClick={() => scrollTo("about")}>วิสัยทัศน์ & พันธกิจ</a></li>
-                            <li><a href="#about" onClick={() => scrollTo("about")}>คณะผู้บริหาร</a></li>
-                            <li><a href="#about" onClick={() => scrollTo("about")}>ผลการประเมิน สมศ.</a></li>
-                        </ul>
+            {/* 🌟 Footer - ปรับปรุงใหม่ */}
+            <footer id="contact" style={styles.footer}>
+                <div style={styles.footerContainer}>
+                    <div style={styles.footerTop}>
+                        <div style={styles.footerBrand}>
+                            <div style={styles.footerLogo}>
+                                <School size={32} color="#4A90D9" />
+                            </div>
+                            <div>
+                                <h3 style={styles.footerBrandName}>{schoolName}</h3>
+                                <p style={styles.footerBrandDesc}>โรงเรียนต้นแบบด้านการศึกษา</p>
+                            </div>
+                        </div>
+                        <div style={styles.footerSocial}>
+                            <a href="#" style={styles.socialLink}>FB</a>
+                            <a href="#" style={styles.socialLink}>IG</a>
+                            <a href="#" style={styles.socialLink}>YT</a>
+                            <a href="#" style={styles.socialLink}>LINE</a>
+                        </div>
                     </div>
 
-                    <div style={styles.footerCol}>
-                        <h4 style={styles.colTitle}>หลักสูตรการศึกษา</h4>
-                        <ul style={styles.colList}>
-                            <li><a href="#about">ระดับเตรียมบริบาล</a></li>
-                            <li><a href="#about">ระดับอนุบาล (ปฐมวัย 2560)</a></li>
-                            <li><a href="#about">ระดับประถมศึกษา (ขั้นพื้นฐาน 2551)</a></li>
-                            <li><a href="#activities">กิจกรรมพัฒนาผู้เรียน</a></li>
-                        </ul>
+                    <div style={styles.footerColumns}>
+                        <div style={styles.footerCol}>
+                            <h4 style={styles.footerColTitle}>เกี่ยวกับโรงเรียน</h4>
+                            <ul style={styles.footerColList}>
+                                <li><a href="#about" onClick={() => scrollTo("about")}>ประวัติความเป็นมา</a></li>
+                                <li><a href="#about" onClick={() => scrollTo("about")}>วิสัยทัศน์ & พันธกิจ</a></li>
+                                <li><a href="#about" onClick={() => scrollTo("about")}>คณะผู้บริหาร</a></li>
+                                <li><a href="#about" onClick={() => scrollTo("about")}>ผลการประเมิน สมศ.</a></li>
+                            </ul>
+                        </div>
+
+                        <div style={styles.footerCol}>
+                            <h4 style={styles.footerColTitle}>หลักสูตร</h4>
+                            <ul style={styles.footerColList}>
+                                <li>ระดับเตรียมบริบาล</li>
+                                <li>ระดับอนุบาล (ปฐมวัย 2560)</li>
+                                <li>ระดับประถมศึกษา (ขั้นพื้นฐาน 2551)</li>
+                                <li>กิจกรรมพัฒนาผู้เรียน</li>
+                            </ul>
+                        </div>
+
+                        <div style={styles.footerCol}>
+                            <h4 style={styles.footerColTitle}>ติดต่อสอบถาม</h4>
+                            <ul style={styles.footerColList}>
+                                <li><MapPin size={14} /> 234 หมู่ 11 ถ.เลย-เชียงคาน อ.เมือง จ.เลย 42000</li>
+                                <li><Phone size={14} /> <a href="tel:042845009">042-845009</a></li>
+                                <li><Mail size={14} /> <a href="mailto:satit@lru.ac.th">satit@lru.ac.th</a></li>
+                                <li><Globe size={14} /> <a href="https://satit.lru.ac.th/" target="_blank" rel="noopener noreferrer">satit.lru.ac.th <ExternalLink size={12} /></a></li>
+                            </ul>
+                        </div>
+
+                        <div style={styles.footerCol}>
+                            <h4 style={styles.footerColTitle}>บริการ</h4>
+                            <ul style={styles.footerColList}>
+                                <li><button style={styles.footerLinkBtn} onClick={handleLogin}>เข้าสู่ระบบ</button></li>
+                                <li><button style={styles.footerLinkBtn} onClick={handleRegister}>ลงทะเบียน</button></li>
+                            </ul>
+                        </div>
                     </div>
 
-                    <div style={styles.footerCol}>
-                        <h4 style={styles.colTitle}>ติดต่อสอบถาม</h4>
-                        <ul style={styles.colList}>
-                            <li>📍 234 หมู่ 11 ถ.เลย-เชียงคาน ต.เมือง อ.เมืองเลย จ.เลย 42000</li>
-                            <li>📞 โทรศัพท์: <a href="tel:042845009" style={{ color: "#fff" }}>042-845009</a></li>
-                            <li>🌐 เว็บไซต์: <a href="https://satit.lru.ac.th/" target="_blank" rel="noopener noreferrer" style={{ color: "#4eb5ff" }}>satit.lru.ac.th ↗</a></li>
-                        </ul>
+                    <div style={styles.footerBottom}>
+                        <p style={styles.copyright}>
+                            Copyright © 2569 {schoolName}. All Rights Reserved.
+                        </p>
+                        <div style={styles.footerBottomLinks}>
+                            <span>นโยบายความเป็นส่วนตัว</span>
+                            <span>|</span>
+                            <span>ข้อกำหนดการใช้งาน</span>
+                        </div>
                     </div>
-
-                    <div style={styles.footerCol}>
-                        <h4 style={styles.colTitle}>เข้าสู่ระบบ / ลงทะเบียน</h4>
-                        <ul style={styles.colList}>
-                            <li><button type="button" style={styles.footerLinkBtn} onClick={handleLogin}>เข้าสู่ระบบ</button></li>
-                            <li><button type="button" style={styles.footerLinkBtn} onClick={handleRegister}> ลงทะเบียน</button></li>
-                        </ul>
-                    </div>
-                </div>
-
-                <div style={styles.footerBottomBar}>
-                    <p style={styles.copyrightText}>
-                        Copyright © 2569 {schoolName}. All Rights Reserved.
-                    </p>
                 </div>
             </footer>
         </div>
     );
 }
 
-function Stat({ number, label }) { return <div style={styles.stat}><strong>{number}</strong><span>{label}</span></div>; }
-
 const styles = {
-    page: { fontFamily: "'Noto Sans Thai', 'Segoe UI', sans-serif", color: "#163a5f", background: "#fff", lineHeight: 1.55, overflow: "hidden" },
-    header: { height: 76, padding: "0 clamp(20px, 6vw, 88px)", display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, zIndex: 10, background: "rgba(255,255,255,.94)", backdropFilter: "blur(10px)", borderBottom: "1px solid #e8f0f8" },
-    brand: { display: "flex", alignItems: "center", gap: 10, border: 0, background: "transparent", color: "#0d5fa8", fontWeight: 800, fontSize: 18, cursor: "pointer" }, logo: { fontSize: 26 },
-    nav: { display: "flex", alignItems: "center", gap: 20 }, menuToggle: { display: "none", border: 0, background: "transparent", color: "#075fae", fontSize: 25, cursor: "pointer" },
-    loginButton: { padding: "9px 17px", border: "1px solid #1a83d8", color: "#096cbd", background: "white", borderRadius: 9, cursor: "pointer" }, registerButton: { padding: "10px 17px", border: "1px solid #1178ca", color: "white", background: "#1178ca", borderRadius: 9, cursor: "pointer" },
-    hero: { minHeight: 540, padding: "70px clamp(20px, 8vw, 120px)", display: "flex", alignItems: "center", gap: 35, position: "relative", background: "linear-gradient(125deg,#eef9ff 0%,#d7efff 54%,#c5e6ff 100%)" }, heroContent: { maxWidth: 620, position: "relative", zIndex: 1 }, kicker: { letterSpacing: 2, fontSize: 12, color: "#1680ce", fontWeight: 800, margin: "0 0 12px" }, heroTitle: { fontSize: "clamp(38px,5vw,64px)", lineHeight: 1.24, margin: 0, letterSpacing: "-.8px", color: "#123a67" }, heroText: { fontSize: 18, color: "#497092", maxWidth: 540, margin: "21px 0 30px" }, heroActions: { display: "flex", gap: 12, flexWrap: "wrap" }, primaryButton: { background: "#087bce", color: "#fff", border: 0, borderRadius: 10, padding: "14px 21px", fontWeight: 700, fontSize: 16, cursor: "pointer", boxShadow: "0 8px 18px #1283cf48" }, secondaryButton: { background: "#fff", color: "#096fbe", border: "1px solid #b7daf3", borderRadius: 10, padding: "13px 20px", fontWeight: 700, fontSize: 16, cursor: "pointer" },
+    page: {
+        fontFamily: "'Inter', 'Kanit', 'Sarabun', system-ui, sans-serif",
+        color: "#1A202C",
+        background: "#F8FAFC",
+        lineHeight: 1.6,
+    },
 
-    heroArtImageWrapper: { 
-    flex: 1, 
-    minWidth: 320, 
-    borderRadius: 20, 
-    overflow: "hidden", 
-    boxShadow: "0 12px 30px rgba(18, 58, 103, 0.15)", 
-    background: "#fff",
-    display: "flex" // ป้องกันช่องว่างจีบขอบด้านล่างของ img
-},
-heroImage: { 
-    width: "100%", 
-    height: "auto", // ปรับความสูงตามอัตราส่วนจริงของรูปภาพ
-    display: "block" 
-},
+    // 🌟 Header
+    header: {
+        height: 72,
+        padding: "0 clamp(16px, 5vw, 80px)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        position: "sticky",
+        top: 0,
+        zIndex: 100,
+        background: "rgba(255,255,255,0.92)",
+        backdropFilter: "blur(16px)",
+        borderBottom: "1px solid rgba(226, 232, 240, 0.6)",
+        transition: "all 0.3s ease",
+    },
+    brand: {
+        display: "flex",
+        alignItems: "center",
+        gap: 12,
+        border: 0,
+        background: "transparent",
+        cursor: "pointer",
+        padding: 0,
+    },
+    logoWrapper: {
+        width: 42,
+        height: 42,
+        borderRadius: 12,
+        background: "#EBF3FB",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    brandText: {
+        fontWeight: 700,
+        fontSize: "clamp(14px, 1.2vw, 18px)",
+        color: "#1A202C",
+        whiteSpace: "nowrap",
+    },
+    menuToggle: {
+        display: "none",
+        border: 0,
+        background: "transparent",
+        color: "#1A202C",
+        cursor: "pointer",
+        padding: 8,
+        borderRadius: 8,
+    },
+    nav: {
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+    },
+    loginButton: {
+        display: "flex",
+        alignItems: "center",
+        gap: 6,
+        padding: "8px 16px",
+        border: "1px solid #4A90D9",
+        color: "#4A90D9",
+        background: "transparent",
+        borderRadius: 8,
+        cursor: "pointer",
+        fontSize: 14,
+        fontWeight: 500,
+        transition: "all 0.2s ease",
+    },
+    registerButton: {
+        display: "flex",
+        alignItems: "center",
+        gap: 6,
+        padding: "8px 16px",
+        border: "none",
+        color: "#fff",
+        background: "linear-gradient(135deg, #4A90D9, #357ABD)",
+        borderRadius: 8,
+        cursor: "pointer",
+        fontSize: 14,
+        fontWeight: 500,
+        transition: "all 0.2s ease",
+        boxShadow: "0 4px 12px rgba(74, 144, 217, 0.25)",
+    },
 
-    about: { padding: "72px clamp(20px, 8vw, 120px)", display: "grid", gridTemplateColumns: "1.2fr 1fr", alignItems: "start", gap: 50 },
-    eyebrow: { letterSpacing: 1.8, color: "#1680ce", fontSize: 12, fontWeight: 800, margin: "0 0 10px" },
-    sectionTitle: { fontSize: "clamp(28px,3.2vw,42px)", lineHeight: 1.34, margin: "0 0 10px 0", color: "#153b62" },
-    sectionText: { margin: "0 0 12px 0", color: "#506982", fontSize: 15, lineHeight: 1.6 },
-    aboutList: { margin: "0 0 16px 0", paddingLeft: 20, color: "#506982", fontSize: 15, lineHeight: 1.6 },
-    statGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, alignSelf: "center" },
-    stat: { padding: "23px", borderRadius: 14, background: "#f4faff", border: "1px solid #e2f1fc", display: "flex", flexDirection: "column" },
+    // 🌟 Hero
+    hero: {
+        minHeight: "90vh",
+        display: "grid",
+        gridTemplateColumns: "1fr 1fr",
+        position: "relative",
+        background: "linear-gradient(135deg, #E8F4FD 0%, #D4E8F5 100%)",
+        overflow: "hidden",
+        padding: "clamp(40px, 6vw, 80px) clamp(20px, 5vw, 60px)",
+        gap: 40,
+    },
+    heroContent: {
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center",
+        position: "relative",
+        zIndex: 2,
+    },
+    heroBadge: {
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 8,
+        background: "rgba(255,255,255,0.8)",
+        padding: "6px 16px",
+        borderRadius: 20,
+        fontSize: 13,
+        fontWeight: 600,
+        color: "#4A90D9",
+        marginBottom: 20,
+        backdropFilter: "blur(8px)",
+        width: "fit-content",
+    },
+    heroTitle: {
+        fontSize: "clamp(36px, 5vw, 56px)",
+        fontWeight: 800,
+        lineHeight: 1.2,
+        color: "#1A202C",
+        margin: 0,
+    },
+    heroHighlight: {
+        color: "#4A90D9",
+        position: "relative",
+    },
+    heroText: {
+        fontSize: "clamp(15px, 1.1vw, 18px)",
+        color: "#4A5568",
+        margin: "20px 0 32px",
+        lineHeight: 1.7,
+    },
+    heroActions: {
+        display: "flex",
+        gap: 12,
+        flexWrap: "wrap",
+        marginBottom: 40,
+    },
+    primaryButton: {
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+        padding: "14px 28px",
+        background: "linear-gradient(135deg, #4A90D9, #357ABD)",
+        color: "#fff",
+        border: "none",
+        borderRadius: 12,
+        fontSize: 16,
+        fontWeight: 600,
+        cursor: "pointer",
+        boxShadow: "0 8px 24px rgba(74, 144, 217, 0.3)",
+        transition: "all 0.3s ease",
+    },
+    secondaryButton: {
+        padding: "14px 28px",
+        background: "rgba(255,255,255,0.9)",
+        color: "#4A90D9",
+        border: "1px solid rgba(74, 144, 217, 0.3)",
+        borderRadius: 12,
+        fontSize: 16,
+        fontWeight: 600,
+        cursor: "pointer",
+        transition: "all 0.3s ease",
+        backdropFilter: "blur(4px)",
+    },
+    heroStats: {
+        display: "flex",
+        alignItems: "center",
+        gap: 16,
+        paddingTop: 20,
+        borderTop: "1px solid rgba(74, 144, 217, 0.15)",
+    },
+    heroStat: {
+        display: "flex",
+        flexDirection: "column",
+    },
+    heroStatNumber: {
+        fontSize: "clamp(20px, 2vw, 28px)",
+        fontWeight: 700,
+        color: "#1A202C",
+    },
+    heroStatLabel: {
+        fontSize: 13,
+        color: "#64748B",
+    },
+    heroStatDivider: {
+        width: 1,
+        height: 32,
+        background: "#E2E8F0",
+    },
+    heroImageWrapper: {
+        position: "relative",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    heroImage: {
+        width: "100%",
+        maxWidth: 500,
+        height: "auto",
+        borderRadius: 20,
+        boxShadow: "0 20px 60px rgba(0,0,0,0.12)",
+        objectFit: "cover",
+    },
+    heroImageBadge: {
+        position: "absolute",
+        bottom: 24,
+        left: 24,
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+        padding: "10px 18px",
+        borderRadius: 12,
+        background: "rgba(0,0,0,0.6)",
+        backdropFilter: "blur(8px)",
+        color: "#fff",
+        fontSize: 14,
+        fontWeight: 500,
+        cursor: "pointer",
+    },
 
-    newsSection: { padding: "70px clamp(20px, 8vw, 120px)", background: "#f5faff" }, sectionHeading: { display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 20, marginBottom: 29 },
-    newsGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 22 },
-    newsCard: { background: "#fff", borderRadius: 15, overflow: "hidden", boxShadow: "0 7px 24px #4680aa14", border: "1px solid #e6f0f7", display: "flex", flexDirection: "column" },
-    newsImage: { height: 180, width: "100%", overflow: "hidden" }, newsImagePlaceholder: { width: "100%", height: "100%", display: "grid", placeItems: "center", fontSize: 62 },
-    cardBody: { padding: "19px 20px 20px", display: "flex", flexDirection: "column", flexGrow: 1 }, badge: { display: "inline-block", width: "fit-content", padding: "3px 10px", color: "#0c75bf", fontSize: 12, fontWeight: 700, borderRadius: 20, background: "#e8f5ff" }, date: { color: "#7f98af", fontSize: 13, margin: "11px 0 5px" }, cardTitle: { fontSize: 18, lineHeight: 1.48, margin: "0 0 8px 0", color: "#24496b", fontWeight: "bold" },
-    detailText: { fontSize: 14, color: "#64809d", margin: "0 0 10px 0", flexGrow: 1, overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical" },
-    locationText: { fontSize: 13, color: "#0875c5", margin: 0, fontWeight: "500" },
+    // 🌟 Section Common
+    sectionContainer: {
+        maxWidth: 1280,
+        margin: "0 auto",
+        padding: "clamp(40px, 6vw, 80px) clamp(16px, 4vw, 40px)",
+    },
+    sectionLabel: {
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 8,
+        fontSize: 13,
+        fontWeight: 600,
+        color: "#4A90D9",
+        textTransform: "uppercase",
+        letterSpacing: 1,
+        marginBottom: 8,
+    },
+    sectionTitle: {
+        fontSize: "clamp(28px, 3.2vw, 40px)",
+        fontWeight: 700,
+        color: "#1A202C",
+        margin: "0 0 8px 0",
+        lineHeight: 1.3,
+    },
+    sectionHighlight: {
+        color: "#4A90D9",
+    },
+    sectionSubtext: {
+        fontSize: 16,
+        color: "#64748B",
+        marginTop: 8,
+    },
+    sectionHeader: {
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "flex-end",
+        marginBottom: 32,
+        gap: 20,
+        flexWrap: "wrap",
+    },
+    viewAllBtn: {
+        display: "flex",
+        alignItems: "center",
+        gap: 4,
+        padding: "8px 16px",
+        background: "transparent",
+        border: "none",
+        color: "#4A90D9",
+        fontSize: 14,
+        fontWeight: 500,
+        cursor: "pointer",
+        transition: "all 0.2s ease",
+    },
 
-    activitiesSection: { padding: "75px clamp(20px, 8vw, 120px)", display: "grid", gridTemplateColumns: ".9fr 1.4fr", gap: 50, alignItems: "center" }, activityGrid: { display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14 }, activityCard: { background: "linear-gradient(145deg,#f1faff,#e7f5ff)", padding: "24px 18px", borderRadius: 15, border: "1px solid #dceefa" }, activityIcon: { fontSize: 39 }, activityTitle: { margin: "12px 0 6px", fontSize: 17, color: "#20486e" }, activityText: { margin: 0, color: "#64809d", fontSize: 14 },
+    // 🌟 About
+    about: {
+        background: "#FFFFFF",
+    },
+    aboutGrid: {
+        display: "grid",
+        gridTemplateColumns: "1.2fr 1fr",
+        gap: 50,
+        alignItems: "center",
+    },
+    aboutContent: {},
+    sectionText: {
+        fontSize: 15,
+        color: "#4A5568",
+        lineHeight: 1.8,
+        margin: "0 0 24px 0",
+    },
+    aboutFeatures: {
+        display: "flex",
+        flexDirection: "column",
+        gap: 16,
+    },
+    featureItem: {
+        display: "flex",
+        alignItems: "center",
+        gap: 14,
+    },
+    featureIcon: {
+        width: 40,
+        height: 40,
+        borderRadius: "50%",
+        background: "#EBF3FB",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        flexShrink: 0,
+    },
+    featureTitle: {
+        display: "block",
+        fontSize: 14,
+        fontWeight: 600,
+        color: "#1A202C",
+    },
+    featureDesc: {
+        display: "block",
+        fontSize: 13,
+        color: "#64748B",
+    },
+    statGrid: {
+        display: "grid",
+        gridTemplateColumns: "1fr 1fr",
+        gap: 16,
+    },
+    statCard: {
+        padding: "24px 20px",
+        borderRadius: 16,
+        background: "#F8FAFC",
+        border: "1px solid #E2E8F0",
+        textAlign: "center",
+        transition: "all 0.3s ease",
+    },
+    statIcon: {
+        marginBottom: 8,
+    },
+    statNumber: {
+        fontSize: "clamp(20px, 2vw, 28px)",
+        fontWeight: 700,
+        color: "#1A202C",
+    },
+    statLabel: {
+        fontSize: 13,
+        color: "#64748B",
+        marginTop: 4,
+    },
 
-    cta: { margin: "0 clamp(20px, 8vw, 120px) 70px", padding: "clamp(32px,5vw,58px)", borderRadius: 20, background: "linear-gradient(115deg,#0c76c5,#15a4e2)", color: "white", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 24 }, ctaKicker: { fontSize: 12, fontWeight: 800, letterSpacing: 1.8, margin: "0 0 10px", opacity: .8 }, ctaTitle: { margin: 0, fontSize: "clamp(27px,3vw,40px)", lineHeight: 1.3 }, ctaButton: { border: 0, background: "#fff", color: "#0974c2", padding: "14px 20px", borderRadius: 9, fontWeight: 800, fontSize: 16, cursor: "pointer", whiteSpace: "nowrap" },
+    // 🌟 News
+    newsSection: {
+        background: "#F8FAFC",
+    },
+    newsGrid: {
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+        gap: 24,
+    },
+    newsCard: {
+        background: "#FFFFFF",
+        borderRadius: 16,
+        overflow: "hidden",
+        boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+        border: "1px solid #E2E8F0",
+        transition: "all 0.3s ease",
+    },
+    newsImageWrapper: {
+        position: "relative",
+        height: 200,
+        overflow: "hidden",
+    },
+    newsImage: {
+        width: "100%",
+        height: "100%",
+        objectFit: "cover",
+    },
+    newsImagePlaceholder: {
+        width: "100%",
+        height: "100%",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontSize: 56,
+    },
+    newsBadge: {
+        position: "absolute",
+        top: 12,
+        left: 12,
+        padding: "4px 12px",
+        borderRadius: 12,
+        background: "rgba(74, 144, 217, 0.9)",
+        color: "#fff",
+        fontSize: 11,
+        fontWeight: 600,
+        letterSpacing: 0.5,
+    },
+    newsBody: {
+        padding: "16px 20px 20px",
+    },
+    newsMeta: {
+        display: "flex",
+        alignItems: "center",
+        gap: 6,
+        fontSize: 13,
+        color: "#94A3B8",
+        marginBottom: 8,
+    },
+    newsTitle: {
+        fontSize: 17,
+        fontWeight: 600,
+        color: "#1A202C",
+        margin: "0 0 8px 0",
+        lineHeight: 1.4,
+    },
+    newsDescription: {
+        fontSize: 14,
+        color: "#64748B",
+        margin: "0 0 12px 0",
+        display: "-webkit-box",
+        WebkitLineClamp: 3,
+        WebkitBoxOrient: "vertical",
+        overflow: "hidden",
+    },
+    newsLocation: {
+        display: "flex",
+        alignItems: "center",
+        gap: 6,
+        fontSize: 13,
+        color: "#4A90D9",
+        fontWeight: 500,
+    },
 
-    // W3Schools Style Footer
-    w3Footer: { background: "#1d2a3a", color: "#ddd", padding: "60px clamp(20px, 8vw, 120px) 30px" },
-    footerTopRow: { display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #2e3e52", paddingBottom: 25, marginBottom: 40, flexWrap: "wrap", gap: 20 },
-    footerLogoSection: { display: "flex", alignItems: "center", gap: 12 },
-    footerBrandText: { color: "#fff", fontWeight: 800, fontSize: 18 },
-    footerTopNav: { display: "flex", gap: 24 },
-    footerColumns: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 35, marginBottom: 50 },
-    footerCol: { display: "flex", flexDirection: "column" },
-    colTitle: { color: "#fff", fontSize: 16, fontWeight: 700, marginBottom: 16, margin: "0 0 16px 0" },
-    colList: { listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 10, fontSize: 14, color: "#a0b0c0" },
-    footerLinkBtn: { border: 0, background: "transparent", color: "#a0b0c0", padding: 0, fontSize: 14, textAlign: "left", cursor: "pointer" },
-    footerBottomBar: { borderTop: "1px solid #2e3e52", paddingTop: 25, textAlign: "center" },
-    copyrightText: { fontSize: 13, color: "#8a9bb0", margin: 0 },
+    // 🌟 Activities
+    activitiesSection: {
+        background: "#FFFFFF",
+    },
+    activityGrid: {
+        display: "grid",
+        gridTemplateColumns: "repeat(3, 1fr)",
+        gap: 20,
+    },
+    activityCard: {
+        padding: "28px 24px",
+        borderRadius: 16,
+        border: "1px solid #E2E8F0",
+        transition: "all 0.3s ease",
+        cursor: "default",
+    },
+    activityIcon: {
+        fontSize: 40,
+        marginBottom: 12,
+    },
+    activityTitle: {
+        fontSize: 17,
+        fontWeight: 600,
+        color: "#1A202C",
+        margin: "0 0 6px 0",
+    },
+    activityText: {
+        fontSize: 14,
+        color: "#64748B",
+        margin: 0,
+        lineHeight: 1.6,
+    },
+
+    // 🌟 Testimonials
+    testimonialsSection: {
+        background: "#FFFFFF",
+    },
+    testimonialContainer: {
+        maxWidth: 640,
+        margin: "0 auto",
+        textAlign: "center",
+    },
+    testimonialCard: {
+        padding: "40px 32px",
+        background: "#F8FAFC",
+        borderRadius: 20,
+        border: "1px solid #E2E8F0",
+        transition: "all 0.3s ease",
+    },
+    testimonialAvatar: {
+        fontSize: 56,
+        marginBottom: 16,
+    },
+    testimonialText: {
+        fontSize: "clamp(18px, 1.4vw, 22px)",
+        fontStyle: "italic",
+        color: "#1A202C",
+        lineHeight: 1.7,
+        margin: "0 0 20px 0",
+    },
+    testimonialAuthor: {
+        display: "flex",
+        flexDirection: "column",
+        gap: 2,
+    },
+    testimonialDots: {
+        display: "flex",
+        justifyContent: "center",
+        gap: 8,
+        marginTop: 20,
+    },
+    testimonialDot: {
+        width: 10,
+        height: 10,
+        borderRadius: "50%",
+        border: "none",
+        cursor: "pointer",
+        transition: "all 0.3s ease",
+        padding: 0,
+    },
+
+    // 🌟 CTA
+    ctaSection: {
+        padding: "clamp(40px, 6vw, 80px) clamp(16px, 4vw, 40px)",
+        background: "linear-gradient(135deg, #4A90D9, #2C6B9E)",
+    },
+    ctaContent: {
+        maxWidth: 1280,
+        margin: "0 auto",
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        gap: 32,
+        flexWrap: "wrap",
+    },
+    ctaBadge: {
+        display: "inline-block",
+        padding: "4px 14px",
+        borderRadius: 12,
+        background: "rgba(255,255,255,0.15)",
+        color: "#fff",
+        fontSize: 12,
+        fontWeight: 700,
+        letterSpacing: 1,
+        marginBottom: 12,
+    },
+    ctaTitle: {
+        fontSize: "clamp(28px, 3.2vw, 40px)",
+        fontWeight: 700,
+        color: "#fff",
+        margin: 0,
+        lineHeight: 1.3,
+    },
+    ctaHighlight: {
+        color: "#B3D9FF",
+    },
+    ctaText: {
+        fontSize: 16,
+        color: "rgba(255,255,255,0.85)",
+        marginTop: 12,
+        lineHeight: 1.7,
+    },
+    ctaButton: {
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+        padding: "16px 32px",
+        borderRadius: 12,
+        background: "#FFFFFF",
+        color: "#4A90D9",
+        border: "none",
+        fontSize: 18,
+        fontWeight: 700,
+        cursor: "pointer",
+        transition: "all 0.3s ease",
+        boxShadow: "0 8px 24px rgba(0,0,0,0.15)",
+        flexShrink: 0,
+    },
+
+    // 🌟 Footer
+    footer: {
+        background: "#1A202C",
+        color: "#CBD5E1",
+        padding: "clamp(40px, 6vw, 60px) clamp(16px, 4vw, 40px)",
+    },
+    footerContainer: {
+        maxWidth: 1280,
+        margin: "0 auto",
+    },
+    footerTop: {
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        borderBottom: "1px solid #2D3748",
+        paddingBottom: 24,
+        marginBottom: 32,
+        flexWrap: "wrap",
+        gap: 16,
+    },
+    footerBrand: {
+        display: "flex",
+        alignItems: "center",
+        gap: 14,
+    },
+    footerLogo: {
+        width: 48,
+        height: 48,
+        borderRadius: 12,
+        background: "rgba(74, 144, 217, 0.15)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    footerBrandName: {
+        color: "#fff",
+        fontSize: 18,
+        fontWeight: 700,
+        margin: 0,
+    },
+    footerBrandDesc: {
+        fontSize: 13,
+        color: "#94A3B8",
+        margin: 0,
+    },
+    footerSocial: {
+        display: "flex",
+        gap: 12,
+    },
+    socialLink: {
+        width: 40,
+        height: 40,
+        borderRadius: "50%",
+        background: "rgba(255,255,255,0.05)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        color: "#94A3B8",
+        fontSize: 13,
+        fontWeight: 600,
+        transition: "all 0.2s ease",
+    },
+    footerColumns: {
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+        gap: 32,
+        marginBottom: 32,
+    },
+    footerCol: {
+        display: "flex",
+        flexDirection: "column",
+    },
+    footerColTitle: {
+        color: "#fff",
+        fontSize: 15,
+        fontWeight: 600,
+        margin: "0 0 16px 0",
+    },
+    footerColList: {
+        listStyle: "none",
+        padding: 0,
+        margin: 0,
+        display: "flex",
+        flexDirection: "column",
+        gap: 8,
+        fontSize: 14,
+        color: "#94A3B8",
+    },
+    footerLinkBtn: {
+        border: 0,
+        background: "transparent",
+        color: "#94A3B8",
+        padding: 0,
+        fontSize: 14,
+        cursor: "pointer",
+        textAlign: "left",
+        transition: "color 0.2s ease",
+    },
+    footerBottom: {
+        borderTop: "1px solid #2D3748",
+        paddingTop: 20,
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        flexWrap: "wrap",
+        gap: 12,
+        fontSize: 13,
+        color: "#94A3B8",
+    },
+    copyright: {
+        margin: 0,
+    },
+    footerBottomLinks: {
+        display: "flex",
+        gap: 12,
+        alignItems: "center",
+    },
+
+    emptyState: {
+        textAlign: "center",
+        padding: "60px 20px",
+    },
+    emptyIcon: {
+        fontSize: 48,
+        marginBottom: 16,
+    },
+    emptyText: {
+        fontSize: 16,
+        color: "#94A3B8",
+        margin: 0,
+    },
 };
 
 const responsiveCss = `
-  * { box-sizing: border-box; } button { font-family: inherit; } nav button { border:0; background:transparent; color:#315779; font-size:14px; cursor:pointer; white-space:nowrap; } a { color:inherit; text-decoration:none; } .stat strong { color:#0876c7; font-size:28px; line-height:1.2; } .stat span { color:#66809b; margin-top:5px; font-size:13px; }
-  .footerTopNav button { border:0; background:transparent; color:#fff; font-weight:700; font-size:14px; cursor:pointer; text-transform:uppercase; letter-spacing:0.5px; }
-  .footerTopNav button:hover { color:#4eb5ff; }
-  .colList a:hover { color:#fff !important; text-decoration:underline; }
-  .footerLinkBtn:hover { color:#fff !important; text-decoration:underline; }
-  @media (max-width: 860px) { .menu-toggle { display:block !important; } .nav { display:none !important; } .nav-open { display:flex !important; position:absolute; top:76px; right:20px; left:20px; flex-direction:column; align-items:stretch !important; gap:5px !important; padding:15px; border-radius:12px; background:#fff; box-shadow:0 12px 25px #1c51732b; } .nav-open button { padding:11px; text-align:left; } .hero { flex-direction:column; text-align:center; padding-top:55px !important; } .heroContent { display:flex; flex-direction:column; align-items:center; } .about, .activitiesSection { grid-template-columns:1fr !important; } .activityGrid { grid-template-columns:repeat(3,1fr) !important; } }
-  @media (max-width: 520px) { .statGrid { grid-template-columns:1fr 1fr; } .activityGrid { grid-template-columns:1fr !important; } }
+  * { box-sizing: border-box; }
+  
+  button { font-family: inherit; }
+  
+  nav button {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border: 0;
+    background: transparent;
+    color: #4A5568;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+  }
+  
+  nav button:hover {
+    background: #F1F5F9;
+    color: #1A202C;
+  }
+  
+  a { color: inherit; text-decoration: none; }
+  a:hover { color: #4A90D9; }
+  
+  .footerColList li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .footerColList li a:hover {
+    color: #4A90D9;
+  }
+  
+  .footerLinkBtn:hover {
+    color: #4A90D9 !important;
+  }
+  
+  .socialLink:hover {
+    background: rgba(74, 144, 217, 0.2);
+    color: #4A90D9;
+  }
+  
+  .statCard:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+  }
+  
+  .newsCard:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 12px 40px rgba(74, 144, 217, 0.10);
+  }
+  
+  .activityCard:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+  }
+  
+  .primaryButton:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 32px rgba(74, 144, 217, 0.35);
+  }
+  
+  .secondaryButton:hover {
+    background: #FFFFFF;
+    border-color: #4A90D9;
+    transform: translateY(-2px);
+  }
+  
+  .ctaButton:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 32px rgba(0,0,0,0.2);
+  }
+  
+  .registerButton:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(74, 144, 217, 0.35);
+  }
+  
+  .loginButton:hover {
+    background: #4A90D9;
+    color: #fff;
+  }
+  
+  .viewAllBtn:hover {
+    background: #EBF3FB;
+    border-radius: 8px;
+  }
+
+  @media (max-width: 1024px) {
+    .aboutGrid { grid-template-columns: 1fr; gap: 32px; }
+    .statGrid { grid-template-columns: repeat(2, 1fr); }
+    .activityGrid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  @media (max-width: 860px) {
+    .menu-toggle { display: flex !important; }
+    
+    .nav {
+      display: none !important;
+      position: absolute;
+      top: 72px;
+      left: 16px;
+      right: 16px;
+      flex-direction: column;
+      align-items: stretch !important;
+      gap: 4px !important;
+      padding: 12px;
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 16px 48px rgba(0,0,0,0.12);
+      border: 1px solid #E2E8F0;
+    }
+    
+    .nav-open {
+      display: flex !important;
+    }
+    
+    .nav-open button {
+      padding: 12px 16px;
+      justify-content: flex-start;
+    }
+    
+    .hero {
+      grid-template-columns: 1fr !important;
+      min-height: auto !important;
+      padding-top: 40px !important;
+      gap: 24px !important;
+    }
+    
+    .heroImageWrapper {
+      padding: 0 !important;
+    }
+    
+    .heroImage {
+      max-width: 100% !important;
+    }
+    
+    .heroStats {
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    
+    .footerTop {
+      flex-direction: column;
+      align-items: flex-start !important;
+    }
+    
+    .footerSocial {
+      width: 100%;
+      justify-content: flex-start;
+    }
+    
+    .ctaContent {
+      flex-direction: column;
+      text-align: center;
+    }
+  }
+
+  @media (max-width: 600px) {
+    .statGrid { grid-template-columns: 1fr 1fr; }
+    .activityGrid { grid-template-columns: 1fr !important; }
+    .newsGrid { grid-template-columns: 1fr; }
+    .footerColumns { grid-template-columns: 1fr 1fr; }
+    .footerBottom { flex-direction: column; text-align: center; }
+    
+    .heroActions {
+      flex-direction: column;
+      width: 100%;
+    }
+    
+    .heroActions button {
+      width: 100%;
+      justify-content: center;
+    }
+    
+    .aboutFeatures {
+      flex-direction: column;
+    }
+    
+    .testimonialCard {
+      padding: 24px !important;
+    }
+  }
 `;
