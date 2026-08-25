@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-// 🛠️ ดึงไฟล์รูปภาพจากโฟลเดอร์ตามโครงสร้างเดิมของพี่ครับ
 import schoolImg from '../school-building.jpg.JPG';
-import bgImg from '../bg-pattern.jpg'; // 🆕 นำเข้าไฟล์รูปภาพพื้นหลังเดียวกับหน้า Login
+import bgImg from '../bg-pattern.jpg';
 
 function Register() {
     const [formData, setFormData] = useState({
+        Prefix: '', // 🆕 เพิ่มคำนำหน้า
         Name: '',
         Phone: '',
         Email: '',
@@ -17,8 +17,7 @@ function Register() {
     });
 
     const [message, setMessage] = useState({ text: '', type: '' });
-
-    const navigate = useNavigate(); // ประกาศตัวแปรเพื่อใช้งานระบบนำทาง
+    const navigate = useNavigate();
 
     const handleChange = (e) => {
         setFormData({
@@ -48,9 +47,8 @@ function Register() {
 
             if (response.ok) {
                 setMessage({ text: data.message || 'ลงทะเบียนสำเร็จ!', type: 'success' });
-                setFormData({ Name: '', Phone: '', Email: '', UserName: '', Role: '', Class_level: '', Password: '', ConfirmPassword: '' });
+                setFormData({ Prefix: '', Name: '', Phone: '', Email: '', UserName: '', Role: '', Class_level: '', Password: '', ConfirmPassword: '' });
 
-                // ลงทะเบียนสำเร็จ 2 วินาที เด้งกลับหน้าล็อกอินให้อัตโนมัติ
                 setTimeout(() => {
                     navigate('/login');
                 }, 2000);
@@ -62,7 +60,6 @@ function Register() {
         }
     };
 
-    // สั่งย้ายหน้ากลับไปที่ Path "/login"
     const handleBackToLogin = () => {
         navigate('/login');
     };
@@ -71,30 +68,37 @@ function Register() {
         <div style={styles.container}>
             <div style={styles.card}>
 
-                {/* 🎨 ฝั่งซ้าย: พื้นหลังรูปตึกโรงเรียน + ข้อความระบบ */}
                 <div style={{ ...styles.leftPanel, backgroundImage: `url(${schoolImg})` }}>
                     <div style={styles.logoArea}>
                         <h2 style={styles.logoText}>ระบบบันทึกกิจกรรมนักเรียนระดับปฐมวัย</h2>
                     </div>
                 </div>
 
-                {/* 📝 ฝั่งขวา: ฟอร์มลงทะเบียนแบบกระจกใส */}
                 <div style={styles.rightPanel}>
                     <div style={styles.formScrollContainer}>
                         <form onSubmit={handleSubmit} style={styles.formContent} autoComplete="off">
                             <h2 style={styles.title}>ลงทะเบียนเข้าใช้งาน</h2>
 
-                            {/* แสดงข้อความแจ้งเตือนสถานะ */}
                             {message.text && (
                                 <div style={message.type === 'danger' ? styles.alertDanger : styles.alertSuccess}>
                                     {message.text}
                                 </div>
                             )}
 
-                            {/* ชื่อ-นามสกุล */}
+                            {/* 🆕 คำนำหน้า + ชื่อ-นามสกุล */}
                             <div style={styles.field}>
-                                <div style={styles.inputContainer}>
-                                    <input type="text" name="Name" placeholder="ชื่อ-นามสกุล" value={formData.Name} onChange={handleChange} style={styles.input} required />
+                                <div style={{ display: 'flex', gap: '8px' }}>
+                                    <div style={{ ...styles.inputContainer, width: '35%' }}>
+                                        <select name="Prefix" value={formData.Prefix} onChange={handleChange} style={styles.selectInput} required>
+                                            <option value="">คำนำหน้า</option>
+                                            <option value="นาย">นาย</option>
+                                            <option value="นาง">นาง</option>
+                                            <option value="นางสาว">นางสาว</option>
+                                        </select>
+                                    </div>
+                                    <div style={{ ...styles.inputContainer, width: '65%' }}>
+                                        <input type="text" name="Name" placeholder="ชื่อ-นามสกุล" value={formData.Name} onChange={handleChange} style={styles.input} required />
+                                    </div>
                                 </div>
                             </div>
 
@@ -105,21 +109,21 @@ function Register() {
                                 </div>
                             </div>
 
-                            {/* 🆕 แทรกกล่องรับอีเมลใหม่ตรงนี้เลยครับ */}
+                            {/* อีเมล */}
                             <div style={styles.field}>
                                 <div style={styles.inputContainer}>
                                     <input type="email" name="Email" placeholder="อีเมล" value={formData.Email} onChange={handleChange} style={styles.input} required />
                                 </div>
                             </div>
 
-                            {/* ชื่อผู้ใช้ (ของเดิมจะอยู่ตรงนี้ต่อ) */}
+                            {/* ชื่อผู้ใช้ */}
                             <div style={styles.field}>
                                 <div style={styles.inputContainer}>
                                     <input type="text" name="UserName" placeholder="ชื่อผู้ใช้ (Username)" value={formData.UserName} onChange={handleChange} style={styles.input} required />
                                 </div>
                             </div>
 
-                            {/* 🛠️ สถานะ/ตำแหน่ง (เหลือเฉพาะครูผู้สอนและผู้ปกครอง) */}
+                            {/* สถานะ/ตำแหน่ง */}
                             <div style={styles.field}>
                                 <div style={styles.inputContainer}>
                                     <select name="Role" value={formData.Role} onChange={handleChange} style={styles.selectInput} required>
@@ -130,21 +134,22 @@ function Register() {
                                 </div>
                             </div>
 
+                            {/* ห้องเรียน */}
                             <div style={styles.field}>
-    <div style={styles.inputContainer}>
-        <select name="Class_level" value={formData.Class_level} onChange={handleChange} style={styles.selectInput} required>
-            <option value="">เลือกห้องเรียนประจำชั้น</option>
-            {/* 🔽 ต้องแก้ในช่อง value="..." ให้เป็นคำเต็มแบบนี้ครับ */}
-            <option value="อนุบาล1 ห้องปกติ">อนุบาล 1 ห้องปกติ</option>
-            <option value="อนุบาล1 ห้อง 3 ภาษา">อนุบาล 1 ห้อง 3 ภาษา</option>
-            <option value="อนุบาล2 ห้องปกติ">อนุบาล 2 ห้องปกติ</option>
-            <option value="อนุบาล2 ห้อง 3 ภาษา">อนุบาล 2 ห้อง 3 ภาษา</option>
-            <option value="อนุบาล3 ห้องปกติ">อนุบาล 3 ห้องปกติ</option>
-            <option value="อนุบาล3 ห้อง 3 ภาษา">อนุบาล 3 ห้อง 3 ภาษา</option>
-            <option value="ไม่มี">ไม่มี (สำหรับผู้ปกครอง)</option>
-        </select>
-    </div>
-</div>
+                                <div style={styles.inputContainer}>
+                                    <select name="Class_level" value={formData.Class_level} onChange={handleChange} style={styles.selectInput} required>
+                                        <option value="">เลือกห้องเรียนประจำชั้น</option>
+                                        <option value="อนุบาล1 ห้องปกติ">อนุบาล 1 ห้องปกติ</option>
+                                        <option value="อนุบาล1 ห้อง 3 ภาษา">อนุบาล 1 ห้อง 3 ภาษา</option>
+                                        <option value="อนุบาล2 ห้องปกติ">อนุบาล 2 ห้องปกติ</option>
+                                        <option value="อนุบาล2 ห้อง 3 ภาษา">อนุบาล 2 ห้อง 3 ภาษา</option>
+                                        <option value="อนุบาล3 ห้องปกติ">อนุบาล 3 ห้องปกติ</option>
+                                        <option value="อนุบาล3 ห้อง 3 ภาษา">อนุบาล 3 ห้อง 3 ภาษา</option>
+                                        <option value="ไม่มี">ไม่มี (สำหรับผู้ปกครอง)</option>
+                                    </select>
+                                </div>
+                            </div>
+
                             {/* รหัสผ่าน */}
                             <div style={styles.field}>
                                 <div style={styles.inputContainer}>
@@ -164,7 +169,6 @@ function Register() {
                                 ยืนยันการลงทะเบียน
                             </button>
 
-                            {/* ปุ่มลิงก์กลับไปหน้า Login */}
                             <div style={styles.loginLinkContainer}>
                                 <span style={styles.loginLinkText}>มีบัญชีผู้ใช้งานแล้ว?</span>
                                 <button type="button" onClick={handleBackToLogin} style={styles.loginLinkButton}>
@@ -187,7 +191,7 @@ const styles = {
         alignItems: "center",
         minHeight: "100vh",
         width: "100vw",
-        backgroundImage: `url(${bgImg})`,     // 🆕 เปลี่ยนมาใช้รูปภาพพื้นหลังเดียวกับหน้า Login
+        backgroundImage: `url(${bgImg})`,
         backgroundSize: "cover",
         backgroundPosition: "center",
         backgroundRepeat: "no-repeat",
@@ -200,10 +204,10 @@ const styles = {
     card: {
         display: "grid",
         gridTemplateColumns: "1fr 1fr",
-        backgroundColor: "transparent",    // 🆕 เปลี่ยนเป็นโปร่งใส เพื่อให้ฉากหลังโชว์ดีไซน์กระจกแก้ว
+        backgroundColor: "transparent",
         borderRadius: "20px",
         width: "900px",
-        height: "650px", 
+        height: "650px",
         boxShadow: "0 28px 60px rgba(2, 132, 199, 0.18)",
         overflow: "hidden",
     },
@@ -235,11 +239,11 @@ const styles = {
         textShadow: "0 1px 4px rgba(255, 255, 255, 0.6)"
     },
     rightPanel: {
-        padding: "25px 45px", 
+        padding: "25px 45px",
         display: "flex",
         flexDirection: "column",
-        backgroundColor: "rgba(255, 255, 255, 0)", // 🆕 เปลี่ยนให้ใสเคลียร์ 100%
-        backdropFilter: "blur(6px)",                 // 🆕 ทำเอฟเฟกต์เบลอกระจกฝ้าแบบหน้า Login
+        backgroundColor: "rgba(255, 255, 255, 0)",
+        backdropFilter: "blur(6px)",
         WebkitBackdropFilter: "blur(6px)",
         borderLeft: "1px solid rgba(255, 255, 255, 0.3)",
         overflow: "hidden"
@@ -249,8 +253,8 @@ const styles = {
         height: "100%",
         display: "flex",
         flexDirection: "column",
-        overflowY: "auto", 
-        paddingRight: "5px" 
+        overflowY: "auto",
+        paddingRight: "5px"
     },
     formContent: {
         display: "flex",
@@ -271,10 +275,10 @@ const styles = {
     },
     inputContainer: {
         display: "flex",
-        border: "1px solid rgba(255, 255, 255, 0.5)",     // 🆕 ปรับขอบให้กลืนไปกับสไตล์กระจกใส
+        border: "1px solid rgba(255, 255, 255, 0.5)",
         borderRadius: "8px",
         overflow: "hidden",
-        backgroundColor: "rgba(255, 255, 255, 0.35)",  // 🆕 ปรับสีกล่องให้มีความโปร่งใส ให้อ่านตัวหนังสือได้ชัดเจนขึ้น
+        backgroundColor: "rgba(255, 255, 255, 0.35)",
     },
     input: {
         width: "100%",
