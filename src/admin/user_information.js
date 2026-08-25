@@ -222,7 +222,7 @@ function UserInformation() {
             <Search size={16} color="#94A3B8" style={styles.searchIcon} />
             <input
               type="text"
-              placeholder="ค้นหาชื่อ, เบอร์โทร, ชื่อผู้ใช้..."
+              placeholder="ค้นหาชื่อ, ระดับชั้น..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               style={styles.searchInput}
@@ -242,18 +242,16 @@ function UserInformation() {
               <tr style={styles.thRow}>
                 <th style={{ ...styles.th, width: '50px' }}>#</th>
                 <th style={styles.th}>ชื่อ-นามสกุล</th>
-                <th style={styles.th}>เบอร์โทร</th>
-                <th style={styles.th}>ชื่อผู้ใช้</th>
                 <th style={styles.th}>บทบาท</th>
                 <th style={styles.th}>ระดับชั้น</th>
                 <th style={styles.th}>สถานะ</th>
-                <th style={{ ...styles.th, textAlign: 'center', width: '160px' }}>จัดการ</th>
+                <th style={{ ...styles.th, textAlign: 'center', width: '140px' }}>จัดการ</th>
               </tr>
             </thead>
             <tbody>
               {filteredUsers.length === 0 ? (
                 <tr>
-                  <td colSpan="8" style={styles.emptyState}>
+                  <td colSpan="6" style={styles.emptyState}>
                     <Users size={48} color="#CBD5E1" />
                     <p>ไม่พบข้อมูลผู้ใช้งานที่ตรงกับเงื่อนไข</p>
                   </td>
@@ -286,18 +284,6 @@ function UserInformation() {
                               {user.Name?.charAt(0) || 'U'}
                             </div>
                             {user.Name || '-'}
-                          </div>
-                        </td>
-                        <td style={styles.td}>
-                          <div style={styles.phoneCell}>
-                            <Phone size={14} color="#94A3B8" />
-                            {user.Phone || '-'}
-                          </div>
-                        </td>
-                        <td style={styles.td}>
-                          <div style={styles.usernameCell}>
-                            <User size={14} color="#94A3B8" />
-                            {user.UserName || user.username || '-'}
                           </div>
                         </td>
                         <td style={styles.td}>
@@ -348,37 +334,38 @@ function UserInformation() {
                           )}
                         </td>
                       </tr>
-                      {/* Expanded Row for Mobile */}
+                      {/* Expanded Row - แสดงข้อมูลเพิ่มเติม (เบอร์โทร, ชื่อผู้ใช้, รหัสผ่าน) */}
                       {expandedRow === index && (
                         <tr style={styles.expandedRow}>
-                          <td colSpan="8">
+                          <td colSpan="6">
                             <div style={styles.expandedContent}>
                               <div style={styles.expandedItem}>
-                                <span style={styles.expandedLabel}>เบอร์โทร</span>
+                                <span style={styles.expandedLabel}>
+                                  <Phone size={14} color="#94A3B8" />
+                                  เบอร์โทร
+                                </span>
                                 <span>{user.Phone || '-'}</span>
                               </div>
                               <div style={styles.expandedItem}>
-                                <span style={styles.expandedLabel}>ชื่อผู้ใช้</span>
+                                <span style={styles.expandedLabel}>
+                                  <User size={14} color="#94A3B8" />
+                                  ชื่อผู้ใช้
+                                </span>
                                 <span>{user.UserName || user.username || '-'}</span>
                               </div>
                               <div style={styles.expandedItem}>
-                                <span style={styles.expandedLabel}>รหัสผ่าน</span>
+                                <span style={styles.expandedLabel}>
+                                  <Key size={14} color="#94A3B8" />
+                                  รหัสผ่าน
+                                </span>
                                 <span>{user.Password ? '••••••••' : '-'}</span>
                               </div>
                               <div style={styles.expandedItem}>
-                                <span style={styles.expandedLabel}>บทบาท</span>
-                                <span>{user.Role || '-'}</span>
-                              </div>
-                              <div style={styles.expandedItem}>
-                                <span style={styles.expandedLabel}>ระดับชั้น</span>
-                                <span>{user.Class_level || '-'}</span>
-                              </div>
-                              <div style={styles.expandedItem}>
-                                <span style={styles.expandedLabel}>สถานะ</span>
-                                <span style={{ ...styles.statusBadge, backgroundColor: statusBadge.bg, color: statusBadge.color }}>
-                                  <StatusIcon size={14} />
-                                  {statusBadge.label}
+                                <span style={styles.expandedLabel}>
+                                  <Mail size={14} color="#94A3B8" />
+                                  อีเมล
                                 </span>
+                                <span>{user.Email || '-'}</span>
                               </div>
                             </div>
                           </td>
@@ -391,6 +378,18 @@ function UserInformation() {
             </tbody>
           </table>
         </div>
+
+        {/* แสดงจำนวนรายการ */}
+        <div style={styles.footerInfo}>
+          <span>
+            พบทั้งหมด {filteredUsers.length} รายการ
+            {searchTerm && ` (จาก {users.length} รายการ)`}
+          </span>
+          <span style={styles.expandHint}>
+            <ChevronDown size={14} />
+            คลิกที่แถวเพื่อดูข้อมูลเพิ่มเติม
+          </span>
+        </div>
       </div>
     </div>
   );
@@ -399,7 +398,7 @@ function UserInformation() {
 const styles = {
   container: {
     padding: '24px',
-    maxWidth: '1400px',
+    maxWidth: '1200px',
     margin: '0 auto',
     minHeight: '100vh',
     backgroundColor: '#F8FAFC',
@@ -586,7 +585,7 @@ const styles = {
     fontSize: '14px',
     fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
     outline: 'none',
-    width: '260px',
+    width: '240px',
     transition: 'all 0.2s ease',
     backgroundColor: '#FAFBFC',
   },
@@ -651,16 +650,6 @@ const styles = {
     fontSize: '13px',
     fontWeight: '600',
     flexShrink: 0,
-  },
-  phoneCell: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '6px',
-  },
-  usernameCell: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '6px',
   },
 
   roleBadge: {
@@ -769,6 +758,26 @@ const styles = {
     color: '#94A3B8',
     textTransform: 'uppercase',
     letterSpacing: '0.5px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '4px',
+  },
+
+  footerInfo: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '12px 20px',
+    borderTop: '1px solid #F1F5F9',
+    fontSize: '13px',
+    color: '#94A3B8',
+  },
+  expandHint: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '4px',
+    color: '#94A3B8',
+    fontSize: '12px',
   },
 };
 
@@ -791,7 +800,7 @@ styleSheet.textContent = `
       grid-template-columns: 1fr !important;
     }
     .search-input {
-      width: 180px !important;
+      width: 160px !important;
     }
   }
 `;
