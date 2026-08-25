@@ -51,7 +51,7 @@ function Navbar({ children }) {
   const handleLogout = () => {
     if (window.confirm("คุณต้องการออกจากระบบใช่หรือไม่?")) {
       localStorage.removeItem("user");
-      window.location.href = "/login";
+      window.location.href = "/HomePage";
     }
   };
 
