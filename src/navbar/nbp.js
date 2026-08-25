@@ -8,6 +8,7 @@ import {
   Megaphone,
   BellRing,
   CalendarDays,
+  Users2, // 🟢 เพิ่ม Users2 Icon ให้ตรงตามของครู
   TrendingUp,
   LogOut,
   Menu,
@@ -58,10 +59,11 @@ function Navbar({ children }) {
   const handleLogout = () => {
     if (window.confirm("คุณต้องการออกจากระบบใช่หรือไม่?")) {
       localStorage.removeItem("user");
-      window.location.href = "/HomePage"; // ❌ เดิม
+      window.location.href = "/HomePage";
     }
   };
-  // 📌 รายการเมนูสำหรับผู้ปกครอง (ใช้ Lucide Icons)
+
+  // 📌 รายการเมนูสำหรับผู้ปกครอง (เพิ่มเมนู 'การเข้าร่วมกิจกรรม' ให้เหมือนฝั่งครู)
   const menuItems = [
     { path: "/homeparent", label: "หน้าหลัก", icon: LayoutDashboard },
     { path: "/personal_dataparent", label: "ข้อมูลส่วนตัว", icon: User },
@@ -70,6 +72,7 @@ function Navbar({ children }) {
     { path: "/publicrelationp", label: "ประชาสัมพันธ์", icon: Megaphone },
     { path: "/notificationp", label: "แจ้งเตือนการบ้าน", icon: BellRing },
     { path: "/calendarp", label: "ปฏิทินกิจกรรม", icon: CalendarDays },
+    { path: "/participatingp", label: "การเข้าร่วมกิจกรรม", icon: Users2 }, // 🟢 เพิ่มปุ่มดูการเข้าร่วม
     { path: "/developmentp", label: "พัฒนาการนักเรียน", icon: TrendingUp },
   ];
 

@@ -40,6 +40,9 @@ import Notificationp from './parent/notificationp';
 import PublicRelationsp from './parent/publicrelationp';
 import ActivityP from "./parent/activityp";
 
+// 🟢 แก้ไข path นำเข้าจากโฟลเดอร์ parent
+import ActivityView from './parent/activityView';
+
 function App() {
   const navigate = useNavigate();
   const [userRole, setUserRole] = useState(null);
@@ -142,8 +145,6 @@ function App() {
           <Route path="/publicrelations" element={<PublicRelations />} />
           <Route path="/personal" element={<PersonalData />} />
           <Route path="/development" element={<Development />} />
-
-          {/* 🟢 ใส่ Route อัปเดตชั้นเรียนในส่วนของคุณครูตรงนี้ */}
           <Route path="/promote-class" element={<PromoteClass />} />
 
           <Route path="*" element={<Navigate to="/home" />} />
@@ -168,6 +169,10 @@ function App() {
           <Route path="/notificationp" element={<Notificationp />} />
           <Route path="/publicrelationp" element={<PublicRelationsp />} />
           <Route path="/activityp" element={<ActivityP />} />
+          
+          {/* 🟢 Route เมนูการเข้าร่วมกิจกรรมของผู้ปกครอง */}
+          <Route path="/participatingp" element={<ActivityView />} />
+
           <Route path="*" element={<Navigate to="/homeparent" />} />
         </Routes>
       </NavbarParent>
