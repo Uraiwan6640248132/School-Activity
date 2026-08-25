@@ -15,7 +15,8 @@ import {
   Eye,
   EyeOff,
   Edit3,
-  UserCheck
+  UserCheck,
+  Sparkles
 } from 'lucide-react';
 
 // ฟังก์ชันส่วนกลางสำหรับแกะเอา User_id จาก LocalStorage
@@ -53,14 +54,13 @@ function EditProfile() {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [errors, setErrors] = useState({});
 
-  // ใช้ useCallback ครอบฟังก์ชันที่ถูกเรียกใช้ใน useEffect
   const fetchProfileData = useCallback(async (id) => {
     try {
       const res = await axios.get(`http://127.0.0.1:3001/users/${id}`);
       const data = res.data;
 
       const foundUsername = data.UserName || data.Username || data.username || '';
-      const foundRole = data.Role || data.role || data.Status || data.status || 'ผู้ใช้งาน';
+      const foundRole = data.Role || data.role || data.Status || data.status || 'แอดมิน';
 
       setFormData({
         Name: data.Name || '',
@@ -89,13 +89,11 @@ function EditProfile() {
     }
 
     fetchProfileData(userId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchProfileData]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-    // Clear error for this field when user types
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
@@ -108,12 +106,8 @@ function EditProfile() {
       newErrors.Name = 'กรุณากรอกชื่อ-นามสกุลให้ถูกต้อง';
     }
     
-    if (!formData.Phone || !/^[0-9]{10}$/.test(formData.Phone.replace(/[-\s]/g, ''))) {
+    if (formData.Phone && !/^[0-9]{10}$/.test(formData.Phone.replace(/[-\s]/g, ''))) {
       newErrors.Phone = 'กรุณากรอกเบอร์โทรศัพท์ 10 หลัก';
-    }
-    
-    if (!formData.Username || formData.Username.trim().length < 3) {
-      newErrors.Username = 'ชื่อผู้ใช้ต้องมีความยาวอย่างน้อย 3 ตัวอักษร';
     }
 
     if (formData.NewPassword && formData.NewPassword.length < 6) {
@@ -190,16 +184,6 @@ function EditProfile() {
     return colors[role] || '#6A1B9A';
   };
 
-  const getRoleBgColor = (role) => {
-    const colors = {
-      'แอดมิน': '#FCE4EC',
-      'ครูผู้สอน': '#E3F2FD',
-      'ผู้ปกครอง': '#E8F5E9',
-      'ถูกระงับสิทธิ์': '#F5F5F5'
-    };
-    return colors[role] || '#F3E5F5';
-  };
-
   if (loading) {
     return (
       <div style={styles.loadingContainer}>
@@ -211,45 +195,60 @@ function EditProfile() {
 
   return (
     <div style={styles.container}>
-      {/* Back Button */}
-      <button 
-        onClick={() => window.history.back()} 
-        style={styles.backButton}
-        onMouseEnter={(e) => e.currentTarget.style.transform = 'translateX(-4px)'}
-        onMouseLeave={(e) => e.currentTarget.style.transform = 'translateX(0)'}
-      >
-        <ArrowLeft size={18} />
-        กลับ
-      </button>
-
-      {/* Header */}
-      <div style={styles.headerArea}>
-        <div style={styles.avatarWrapper}>
-          <div style={styles.avatar}>
-            {formData.Name?.charAt(0) || 'U'}
+      <div style={styles.wrapper}>
+        {/* Header */}
+        <div style={styles.header}>
+          <div style={styles.headerLeft}>
+            <div style={styles.headerIcon}>
+              <User size={24} color="#FFFFFF" />
+            </div>
+            <div>
+              <h1 style={styles.mainTitle}>ข้อมูลส่วนตัว</h1>
+              <p style={styles.subTitle}>
+                <Sparkles size={14} color="#4A90D9" />
+                จัดการข้อมูลส่วนตัวของคุณ
+              </p>
+            </div>
           </div>
-          <div style={styles.avatarBadge}>
-            <Edit3 size={14} color="#FFFFFF" />
+          <button 
+            onClick={() => window.history.back()} 
+            style={styles.backButton}
+          >
+            <ArrowLeft size={16} />
+            กลับ
+          </button>
+        </div>
+
+        {/* Success Message */}
+        {saveSuccess && (
+          <div style={styles.successMessage}>
+            <CheckCircle size={20} color="#27AE60" />
+            <span>บันทึกข้อมูลสำเร็จ! 🎉</span>
           </div>
-        </div>
-        <div style={styles.headerText}>
-          <h1 style={styles.mainTitle}>แก้ไขข้อมูลส่วนตัว</h1>
-          <p style={styles.subTitle}>ปรับปรุงข้อมูลของคุณให้เป็นปัจจุบัน</p>
-        </div>
-      </div>
+        )}
 
-      {/* Success Message */}
-      {saveSuccess && (
-        <div style={styles.successMessage}>
-          <CheckCircle size={20} color="#27AE60" />
-          <span>บันทึกข้อมูลสำเร็จ! 🎉</span>
-        </div>
-      )}
+        {/* Profile Card */}
+        <form onSubmit={handleSubmit} style={styles.profileCard}>
+          {/* Avatar Section */}
+          <div style={styles.avatarSection}>
+            <div style={styles.avatarWrapper}>
+              <div style={styles.avatar}>
+                {formData.Name?.charAt(0) || 'U'}
+              </div>
+              <div style={styles.avatarBadge}>
+                <Edit3 size={14} color="#FFFFFF" />
+              </div>
+            </div>
+            <h3 style={styles.userName}>{formData.Name || "ผู้ดูแลระบบ"}</h3>
+            <div style={styles.roleBadge}>
+              <UserCheck size={14} />
+              <span style={{ ...styles.roleText, color: getRoleColor(formData.Role) }}>
+                {formData.Role || 'แอดมิน'}
+              </span>
+            </div>
+          </div>
 
-      {/* Form Card */}
-      <div style={styles.formCard}>
-        <form onSubmit={handleSubmit}>
-          {/* Name */}
+          {/* Name Field */}
           <div style={styles.formGroup}>
             <label style={styles.label}>
               <User size={16} color="#4A90D9" style={styles.labelIcon} />
@@ -258,11 +257,11 @@ function EditProfile() {
             <input
               type="text"
               name="Name"
-              style={{ ...styles.input, borderColor: errors.Name ? '#E74C3C' : '#E2E8F0' }}
               value={formData.Name}
               onChange={handleChange}
-              placeholder="กรุณากรอกชื่อ-นามสกุล"
               required
+              style={{ ...styles.input, borderColor: errors.Name ? '#E74C3C' : '#E2E8F0' }}
+              placeholder="กรุณากรอกชื่อ-นามสกุล"
             />
             {errors.Name && (
               <div style={styles.errorText}>
@@ -272,20 +271,19 @@ function EditProfile() {
             )}
           </div>
 
-          {/* Phone */}
+          {/* Phone Field */}
           <div style={styles.formGroup}>
             <label style={styles.label}>
               <Phone size={16} color="#27AE60" style={styles.labelIcon} />
-              เบอร์โทรศัพท์ <span style={styles.required}>*</span>
+              เบอร์โทรศัพท์
             </label>
             <input
               type="tel"
               name="Phone"
-              style={{ ...styles.input, borderColor: errors.Phone ? '#E74C3C' : '#E2E8F0' }}
               value={formData.Phone}
               onChange={handleChange}
+              style={{ ...styles.input, borderColor: errors.Phone ? '#E74C3C' : '#E2E8F0' }}
               placeholder="0XX-XXX-XXXX"
-              required
             />
             {errors.Phone && (
               <div style={styles.errorText}>
@@ -295,62 +293,51 @@ function EditProfile() {
             )}
           </div>
 
-          {/* Username */}
+          {/* Username Field (Readonly/Disabled) */}
           <div style={styles.formGroup}>
             <label style={styles.label}>
               <UserCircle size={16} color="#E67E22" style={styles.labelIcon} />
-              ชื่อผู้ใช้ <span style={styles.required}>*</span>
+              ชื่อผู้ใช้
             </label>
             <input
               type="text"
               name="Username"
-              style={{ ...styles.input, borderColor: errors.Username ? '#E74C3C' : '#E2E8F0' }}
               value={formData.Username}
-              onChange={handleChange}
-              placeholder="กรุณากรอกชื่อผู้ใช้"
-              required
+              disabled
+              style={styles.inputDisabled}
             />
-            {errors.Username && (
-              <div style={styles.errorText}>
-                <AlertCircle size={14} />
-                {errors.Username}
-              </div>
-            )}
           </div>
 
-          {/* Role (Read-only) */}
+          {/* Role Field (Readonly/Disabled) */}
           <div style={styles.formGroup}>
             <label style={styles.label}>
               <Shield size={16} color="#8E44AD" style={styles.labelIcon} />
               สถานะ
             </label>
-            <div style={styles.roleDisplay}>
-              <div style={{ 
-                ...styles.roleBadge, 
-                backgroundColor: getRoleBgColor(formData.Role),
-                color: getRoleColor(formData.Role)
-              }}>
-                <UserCheck size={14} />
-                {formData.Role || 'ผู้ใช้งาน'}
-              </div>
-              <span style={styles.readOnlyHint}>ไม่สามารถเปลี่ยนแปลงได้</span>
-            </div>
+            <input
+              type="text"
+              name="Role"
+              value={formData.Role || 'ผู้ใช้งาน'}
+              disabled
+              style={styles.inputDisabled}
+            />
           </div>
 
-          {/* New Password */}
+          {/* New Password Field */}
           <div style={styles.formGroup}>
             <label style={styles.label}>
               <Lock size={16} color="#E74C3C" style={styles.labelIcon} />
               รหัสผ่านใหม่
+              <span style={styles.hintText}>(ปล่อยว่างหากไม่เปลี่ยน)</span>
             </label>
             <div style={styles.passwordWrapper}>
               <input
                 type={showPassword ? "text" : "password"}
                 name="NewPassword"
-                style={{ ...styles.input, borderColor: errors.NewPassword ? '#E74C3C' : '#E2E8F0', paddingRight: '44px' }}
+                placeholder="กรอกรหัสผ่านใหม่"
                 value={formData.NewPassword}
                 onChange={handleChange}
-                placeholder="เว้นว่างไว้หากไม่ต้องการเปลี่ยน"
+                style={{ ...styles.input, borderColor: errors.NewPassword ? '#E74C3C' : '#E2E8F0', paddingRight: '44px' }}
               />
               <button
                 type="button"
@@ -366,13 +353,13 @@ function EditProfile() {
                 {errors.NewPassword}
               </div>
             )}
-            <div style={styles.hintText}>
+            <div style={styles.hintTextSmall}>
               <Key size={12} color="#94A3B8" />
               ต้องมีความยาวอย่างน้อย 6 ตัวอักษร
             </div>
           </div>
 
-          {/* Confirm Password */}
+          {/* Confirm Password Field */}
           <div style={styles.formGroup}>
             <label style={styles.label}>
               <Key size={16} color="#E67E22" style={styles.labelIcon} />
@@ -382,10 +369,10 @@ function EditProfile() {
               <input
                 type={showConfirmPassword ? "text" : "password"}
                 name="ConfirmPassword"
-                style={{ ...styles.input, borderColor: errors.ConfirmPassword ? '#E74C3C' : '#E2E8F0', paddingRight: '44px' }}
+                placeholder="กรอกยืนยันรหัสผ่านใหม่อีกครั้ง"
                 value={formData.ConfirmPassword}
                 onChange={handleChange}
-                placeholder="กรอกรหัสผ่านใหม่อีกครั้ง"
+                style={{ ...styles.input, borderColor: errors.ConfirmPassword ? '#E74C3C' : '#E2E8F0', paddingRight: '44px' }}
               />
               <button
                 type="button"
@@ -403,11 +390,8 @@ function EditProfile() {
             )}
           </div>
 
-          <button 
-            type="submit" 
-            style={{ ...styles.submitButton, opacity: saving ? 0.7 : 1 }}
-            disabled={saving}
-          >
+          {/* Submit Button */}
+          <button type="submit" style={styles.btnSave} disabled={saving}>
             {saving ? (
               <>
                 <Loader2 size={18} style={styles.spinnerSmall} />
@@ -428,13 +412,15 @@ function EditProfile() {
 
 const styles = {
   container: {
-    padding: '24px',
-    maxWidth: '600px',
-    margin: '0 auto',
+    padding: '20px',
     minHeight: '100vh',
     backgroundColor: '#F8FAFC',
     fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
-    boxSizing: 'border-box',
+  },
+  wrapper: {
+    maxWidth: '560px',
+    margin: '0 auto',
+    width: '100%',
   },
 
   loadingContainer: {
@@ -443,7 +429,6 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: '100vh',
-    backgroundColor: '#F8FAFC',
     gap: '16px',
   },
   spinner: {
@@ -456,73 +441,59 @@ const styles = {
   loadingText: {
     color: '#94A3B8',
     fontSize: '16px',
-    margin: 0,
   },
 
-  backButton: {
-    display: 'inline-flex',
+  header: {
+    display: 'flex',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    gap: '6px',
-    background: 'none',
-    border: 'none',
-    color: '#4A90D9',
-    fontSize: '14px',
-    fontWeight: '500',
-    cursor: 'pointer',
-    padding: '8px 0',
-    transition: 'all 0.2s ease',
-    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
+    marginBottom: '24px',
+    flexWrap: 'wrap',
+    gap: '12px',
   },
-
-  headerArea: {
+  headerLeft: {
     display: 'flex',
     alignItems: 'center',
-    gap: '20px',
-    marginTop: '8px',
-    marginBottom: '28px',
+    gap: '14px',
   },
-  avatarWrapper: {
-    position: 'relative',
-    flexShrink: 0,
-  },
-  avatar: {
-    width: '72px',
-    height: '72px',
-    borderRadius: '50%',
-    backgroundColor: '#EBF3FB',
-    color: '#4A90D9',
+  headerIcon: {
+    width: '48px',
+    height: '48px',
+    borderRadius: '12px',
+    backgroundColor: '#4A90D9',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    fontSize: '28px',
-    fontWeight: '600',
-    border: '3px solid #FFFFFF',
-    boxShadow: '0 4px 12px rgba(74, 144, 217, 0.15)',
-  },
-  avatarBadge: {
-    position: 'absolute',
-    bottom: '0',
-    right: '0',
-    backgroundColor: '#4A90D9',
-    borderRadius: '50%',
-    padding: '4px',
-    border: '2px solid #FFFFFF',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-  },
-  headerText: {
-    flex: 1,
+    boxShadow: '0 4px 12px rgba(74, 144, 217, 0.25)',
   },
   mainTitle: {
     fontSize: '24px',
     fontWeight: '700',
     color: '#1A202C',
     margin: 0,
-    letterSpacing: '-0.5px',
   },
   subTitle: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
     fontSize: '14px',
     color: '#718096',
-    margin: '4px 0 0 0',
+    margin: '2px 0 0 0',
+  },
+  backButton: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '6px',
+    backgroundColor: '#FFFFFF',
+    border: '1px solid #E2E8F0',
+    borderRadius: '8px',
+    color: '#4A90D9',
+    fontSize: '14px',
+    fontWeight: '500',
+    cursor: 'pointer',
+    padding: '8px 14px',
+    transition: 'all 0.2s ease',
+    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
   },
 
   successMessage: {
@@ -540,17 +511,75 @@ const styles = {
     animation: 'fadeIn 0.3s ease',
   },
 
-  formCard: {
+  profileCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: '16px',
     border: '1px solid #E2E8F0',
-    padding: '28px 32px',
+    borderRadius: '16px',
+    padding: '32px 36px',
     boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
     boxSizing: 'border-box',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '18px',
+  },
+
+  avatarSection: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    marginBottom: '8px',
+  },
+  avatarWrapper: {
+    position: 'relative',
+    marginBottom: '12px',
+  },
+  avatar: {
+    width: '80px',
+    height: '80px',
+    borderRadius: '50%',
+    backgroundColor: '#EBF3FB',
+    color: '#4A90D9',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: '32px',
+    fontWeight: '600',
+    border: '3px solid #FFFFFF',
+    boxShadow: '0 4px 12px rgba(74, 144, 217, 0.15)',
+  },
+  avatarBadge: {
+    position: 'absolute',
+    bottom: '0',
+    right: '0',
+    backgroundColor: '#4A90D9',
+    borderRadius: '50%',
+    padding: '4px',
+    border: '2px solid #FFFFFF',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+  },
+  userName: {
+    margin: '0 0 4px 0',
+    fontSize: '20px',
+    fontWeight: '700',
+    color: '#1A202C',
+  },
+  roleBadge: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '6px',
+    padding: '4px 14px',
+    backgroundColor: '#F1F5F9',
+    borderRadius: '20px',
+  },
+  roleText: {
+    fontSize: '14px',
+    fontWeight: '500',
   },
 
   formGroup: {
-    marginBottom: '20px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '6px',
     textAlign: 'left',
   },
   label: {
@@ -560,7 +589,6 @@ const styles = {
     fontSize: '14px',
     color: '#334155',
     fontWeight: '500',
-    marginBottom: '8px',
   },
   labelIcon: {
     flexShrink: 0,
@@ -569,33 +597,49 @@ const styles = {
     color: '#E74C3C',
     fontSize: '14px',
   },
-  input: {
-    width: '100%',
-    padding: '10px 14px',
-    border: '1px solid #E2E8F0',
-    borderRadius: '10px',
-    boxSizing: 'border-box',
-    fontSize: '14px',
-    color: '#1A202C',
-    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
-    outline: 'none',
-    transition: 'all 0.2s ease',
-    backgroundColor: '#FAFBFC',
-  },
-  inputReadOnly: {
-    width: '100%',
-    padding: '10px 14px',
-    border: '1px solid #E2E8F0',
-    backgroundColor: '#F1F5F9',
-    borderRadius: '10px',
-    boxSizing: 'border-box',
-    fontSize: '14px',
+  hintText: {
+    fontSize: '12px',
     color: '#94A3B8',
-    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
+    fontWeight: '400',
+    marginLeft: '4px',
   },
-
+  hintTextSmall: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    fontSize: '12px',
+    color: '#94A3B8',
+    marginTop: '4px',
+  },
+  input: {
+    padding: '10px 14px',
+    fontSize: '14px',
+    border: '1px solid #E2E8F0',
+    borderRadius: '10px',
+    outline: 'none',
+    boxSizing: 'border-box',
+    width: '100%',
+    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
+    backgroundColor: '#FAFBFC',
+    transition: 'all 0.2s ease',
+    color: '#1A202C',
+  },
+  inputDisabled: {
+    padding: '10px 14px',
+    fontSize: '14px',
+    border: '1px solid #E2E8F0',
+    borderRadius: '10px',
+    outline: 'none',
+    boxSizing: 'border-box',
+    width: '100%',
+    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
+    backgroundColor: '#F1F5F9',
+    color: '#94A3B8',
+    cursor: 'not-allowed',
+  },
   passwordWrapper: {
     position: 'relative',
+    width: '100%',
   },
   passwordToggle: {
     position: 'absolute',
@@ -610,61 +654,32 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
   },
-
-  roleDisplay: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px',
-  },
-  roleBadge: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: '6px',
-    padding: '6px 14px',
-    borderRadius: '20px',
-    fontSize: '13px',
-    fontWeight: '500',
-  },
-  readOnlyHint: {
-    fontSize: '12px',
-    color: '#94A3B8',
-  },
-
   errorText: {
     display: 'flex',
     alignItems: 'center',
     gap: '6px',
     fontSize: '13px',
     color: '#E74C3C',
-    marginTop: '6px',
-  },
-  hintText: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '6px',
-    fontSize: '12px',
-    color: '#94A3B8',
-    marginTop: '6px',
   },
 
-  submitButton: {
+  btnSave: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     gap: '10px',
     width: '100%',
     padding: '12px',
+    fontSize: '15px',
+    fontWeight: '600',
     backgroundColor: '#4A90D9',
     color: '#FFFFFF',
     border: 'none',
     borderRadius: '10px',
     cursor: 'pointer',
-    fontSize: '15px',
-    fontWeight: '600',
     fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
-    marginTop: '10px',
-    transition: 'all 0.2s ease',
     boxShadow: '0 4px 12px rgba(74, 144, 217, 0.2)',
+    transition: 'all 0.2s ease',
+    marginTop: '4px',
   },
 };
 
@@ -680,14 +695,15 @@ styleSheet.textContent = `
     from { opacity: 0; transform: translateY(-8px); }
     to { opacity: 1; transform: translateY(0); }
   }
+
+  input:focus {
+    border-color: #4A90D9 !important;
+    box-shadow: 0 0 0 3px rgba(74, 144, 217, 0.1) !important;
+  }
   
   @media (max-width: 640px) {
-    .header-area {
-      flex-direction: column;
-      text-align: center;
-    }
-    .form-card {
-      padding: 20px !important;
+    .profile-card {
+      padding: 24px 20px !important;
     }
   }
 `;
