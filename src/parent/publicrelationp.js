@@ -9,7 +9,6 @@ import {
   Loader2,
   Sparkles,
   Eye,
-  Users,
   X
 } from 'lucide-react';
 
@@ -103,7 +102,7 @@ export default function PublicRelationsP() {
   return (
     <div style={styles.container}>
       <div style={styles.wrapper}>
-        {/* Header */}
+        {/* Header & Stats Inline */}
         <div style={styles.header}>
           <div style={styles.headerLeft}>
             <div style={styles.headerIcon}>
@@ -117,10 +116,8 @@ export default function PublicRelationsP() {
               </p>
             </div>
           </div>
-        </div>
 
-        {/* Stats */}
-        <div style={styles.statsGrid}>
+          {/* Stats Card at Top Right */}
           <div style={styles.statCard}>
             <div style={{ ...styles.statIconWrapper, backgroundColor: '#EBF3FB' }}>
               <Megaphone size={20} color="#4A90D9" />
@@ -128,15 +125,6 @@ export default function PublicRelationsP() {
             <div style={styles.statContent}>
               <span style={styles.statLabel}>ข่าวสารทั้งหมด</span>
               <span style={styles.statValue}>{prList.length} รายการ</span>
-            </div>
-          </div>
-          <div style={styles.statCard}>
-            <div style={{ ...styles.statIconWrapper, backgroundColor: '#E8F8ED' }}>
-              <Users size={20} color="#27AE60" />
-            </div>
-            <div style={styles.statContent}>
-              <span style={styles.statLabel}>ครูผู้ดูแลระบบ</span>
-              <span style={styles.statValue}>{users.length} คน</span>
             </div>
           </div>
         </div>
@@ -298,7 +286,7 @@ const styles = {
     alignItems: 'center',
     marginBottom: '24px',
     flexWrap: 'wrap',
-    gap: '12px',
+    gap: '16px',
   },
   headerLeft: {
     display: 'flex',
@@ -330,25 +318,20 @@ const styles = {
     margin: '2px 0 0 0',
   },
 
-  statsGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-    gap: '16px',
-    marginBottom: '24px',
-  },
   statCard: {
     display: 'flex',
     alignItems: 'center',
     gap: '14px',
     backgroundColor: '#FFFFFF',
-    padding: '16px 20px',
+    padding: '12px 20px',
     borderRadius: '12px',
     border: '1px solid #E2E8F0',
     boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+    minWidth: '200px',
   },
   statIconWrapper: {
-    width: '44px',
-    height: '44px',
+    width: '40px',
+    height: '40px',
     borderRadius: '10px',
     display: 'flex',
     alignItems: 'center',
@@ -365,7 +348,7 @@ const styles = {
     fontWeight: '500',
   },
   statValue: {
-    fontSize: '22px',
+    fontSize: '18px',
     fontWeight: '700',
     color: '#1A202C',
   },
@@ -649,8 +632,12 @@ if (typeof document !== 'undefined') {
       .card-action {
         justify-content: center !important;
       }
-      .stats-grid {
-        grid-template-columns: 1fr !important;
+      .header {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+      }
+      .stat-card {
+        width: 100% !important;
       }
       .detail-item {
         flex-direction: column !important;
