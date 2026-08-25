@@ -16,7 +16,6 @@ import {
   School,
   FileSpreadsheet,
   Sparkles
-  
 } from "lucide-react";
 
 function ParticipatingActivities() {
@@ -145,8 +144,6 @@ function ParticipatingActivities() {
       })),
     };
 
-
-    
     setSaving(true);
     try {
       await axios.post(`${API_URL}/attendance/save`, payload);
@@ -222,7 +219,7 @@ function ParticipatingActivities() {
                 ...(!isViewMode ? styles.tabBtnActive : {})
               }}
             >
-              {!isViewMode ? <Edit3 size={14} /> : <Edit3 size={14} />}
+              <Edit3 size={14} />
               บันทึก
             </button>
             <button
@@ -233,7 +230,7 @@ function ParticipatingActivities() {
                 ...(isViewMode ? styles.tabBtnActive : {})
               }}
             >
-              {isViewMode ? <Eye size={14} /> : <Eye size={14} />}
+              <Eye size={14} />
               ประวัติ
             </button>
           </div>
@@ -394,9 +391,9 @@ function ParticipatingActivities() {
           {/* Table */}
           <div style={styles.tableContainer}>
             <div style={styles.tableHeader}>
-              <div style={{ ...styles.tableHeaderCell, width: '40px', textAlign: 'center' }}>#</div>
-              <div style={styles.tableHeaderCell}>รายชื่อนักเรียน</div>
-              <div style={{ ...styles.tableHeaderCell, width: '200px', textAlign: 'center' }}>สถานะการเข้าร่วม</div>
+              <div style={styles.colIndex}>#</div>
+              <div style={styles.colName}>รายชื่อนักเรียน</div>
+              <div style={styles.colStatus}>สถานะการเข้าร่วม</div>
             </div>
 
             <div style={styles.tableBody}>
@@ -413,16 +410,13 @@ function ParticipatingActivities() {
               ) : (
                 filteredStudents.map((student, index) => (
                   <div key={student.id} style={styles.tableRow}>
-                    <div style={{ ...styles.tableCell, width: '40px', textAlign: 'center', color: '#94A3B8', fontSize: '13px' }}>
+                    <div style={styles.colIndex}>
                       {index + 1}
                     </div>
-                    <div style={{ ...styles.tableCell, fontWeight: '500', color: '#1E293B' }}>
-                      <div style={styles.studentAvatar}>
-                        {student.name?.charAt(0) || 'S'}
-                      </div>
-                      {student.name}
+                    <div style={styles.colName}>
+                      <span>{student.name}</span>
                     </div>
-                    <div style={{ ...styles.tableCell, width: '200px', display: 'flex', justifyContent: 'center' }}>
+                    <div style={styles.colStatus}>
                       {!isViewMode ? (
                         <div style={styles.toggleGroup}>
                           <button
@@ -849,11 +843,10 @@ const styles = {
   },
   tableHeader: {
     display: 'flex',
+    alignItems: 'center',
     backgroundColor: '#F8FAFC',
-    padding: '10px 16px',
+    padding: '12px 16px',
     borderBottom: '1px solid #E2E8F0',
-  },
-  tableHeaderCell: {
     fontSize: '12px',
     fontWeight: '600',
     color: '#475569',
@@ -871,25 +864,26 @@ const styles = {
     borderBottom: '1px solid #F1F5F9',
     transition: 'background 0.15s ease',
   },
-  tableCell: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '10px',
-    fontSize: '14px',
-    color: '#334155',
-    flex: 1,
-  },
-  studentAvatar: {
-    width: '32px',
-    height: '32px',
-    borderRadius: '50%',
-    backgroundColor: '#EBF3FB',
-    color: '#4A90D9',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
+  colIndex: {
+    width: '50px',
+    textAlign: 'center',
+    flexShrink: 0,
+    color: '#94A3B8',
     fontSize: '13px',
-    fontWeight: '600',
+  },
+  colName: {
+    flex: 1,
+    display: 'flex',
+    alignItems: 'center',
+    fontWeight: '500',
+    color: '#1E293B',
+    fontSize: '14px',
+  },
+  colStatus: {
+    width: '220px',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
     flexShrink: 0,
   },
   toggleGroup: {
@@ -1055,7 +1049,7 @@ styleSheet.textContent = `
       flex-wrap: wrap !important;
       gap: 8px !important;
     }
-    .table-row .table-cell:last-child {
+    .table-row .col-status {
       width: 100% !important;
       justify-content: center !important;
     }
