@@ -200,7 +200,7 @@ function EditProfile() {
 }
 
 const styles = {
-  container: { padding: "30px", backgroundColor: "#dff3ff", minHeight: "100vh", fontFamily: "'Kanit', sans-serif", display: "flex", flexDirection: "column", alignItems: "center", position: "relative" },
+  container: { padding: "30px", backgroundColor: "#f0f9ff 0%", minHeight: "100vh", fontFamily: "'Kanit', sans-serif", display: "flex", flexDirection: "column", alignItems: "center", position: "relative" },
   topHeader: { position: "absolute", top: "20px", right: "40px", fontSize: "15px", fontWeight: "600", color: "#1e293b" },
   mainTitle: { fontSize: "26px", fontWeight: "600", color: "#1e293b", margin: "40px 0 6px 0", alignSelf: "flex-start", maxWidth: "550px", width: "100%" },
   subTitle: { fontSize: "15px", color: "#64748b", margin: "0 0 25px 0", alignSelf: "flex-start", maxWidth: "550px", width: "100%" },

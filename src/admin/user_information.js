@@ -7,7 +7,7 @@ function UserInformation() {
 
   // State สำหรับเก็บบทบาทที่เลือก
   const [selectedRole, setSelectedRole] = useState('ทั้งหมด');
-  
+
   // 🟢 State สำหรับช่องค้นหา
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -89,7 +89,7 @@ function UserInformation() {
 
       {/* รวมส่วนค้นหา Tab และ ตารางไว้ใน Card เดียวกัน */}
       <div style={styles.tableCard}>
-        
+
         {/* 🟢 แถบด้านบน: เลือก Tab และ ช่องค้นหา */}
         <div style={styles.headerControls}>
           <div style={styles.filterContainer}>
@@ -218,11 +218,11 @@ function UserInformation() {
 }
 
 const styles = {
-  container: { padding: "30px", backgroundColor: "#f8fafc", minHeight: "100vh", fontFamily: "'Kanit', sans-serif" },
+  container: { padding: "30px", backgroundColor: "#f0f9ff 0%", minHeight: "100vh", fontFamily: "'Kanit', sans-serif" },
   subTitle: { fontSize: "14px", color: "#64748b", margin: "4px 0 24px 0" },
 
   tableCard: { background: "#ffffff", borderRadius: "12px", boxShadow: "0 1px 3px rgba(0,0,0,0.05), 0 10px 15px -3px rgba(0,0,0,0.03)", border: "1px solid #e2e8f0", padding: "20px", overflow: "hidden" },
-  
+
   headerControls: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px", flexWrap: "wrap", gap: "12px" },
   filterContainer: { display: "flex", gap: "8px", flexWrap: "wrap" },
   tabButton: {

@@ -616,7 +616,7 @@ function StudentManagement() {
 }
 
 const styles = {
-  studentContainer: { padding: '30px', fontFamily: 'system-ui, -apple-system, sans-serif', backgroundColor: '#dff3ff', minHeight: '100vh' },
+  studentContainer: { padding: '30px', fontFamily: 'system-ui, -apple-system, sans-serif', backgroundColor: 'f0f9ff 0%', minHeight: '100vh' },
   studentHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' },
   titleSection: { display: 'flex', flexDirection: 'column' },
   btnValueAdd: { background: 'linear-gradient(135deg, #0ea5e9, #0369a1)', color: '#ffffff', border: 'none', padding: '10px 18px', borderRadius: '8px', fontWeight: '700', cursor: 'pointer', fontSize: '13px', boxShadow: '0 4px 12px rgba(14,165,233,0.3)' },

@@ -426,7 +426,7 @@ const styles = {
   container: {
     padding: "20px 10px",
     fontFamily: "sans-serif",
-    backgroundColor: "transparent",
+    backgroundColor: "f0f9ff 0%",
     width: "100%",
     boxSizing: "border-box",
   },
