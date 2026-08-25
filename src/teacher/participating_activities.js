@@ -10,7 +10,7 @@ function ParticipatingActivities() {
   const [filterStatus, setFilterStatus] = useState("all");
 
   const loggedInClassId = localStorage.getItem("teacher_class_id") || "1";
-  
+
   // 🟢 ตั้งค่าเริ่มต้นสำหรับแสดงชื่อชั้นเรียน
   const [className, setClassName] = useState(
     localStorage.getItem("teacher_class_name") || "อนุบาล1 ห้องปกติ"
@@ -389,8 +389,16 @@ function ParticipatingActivities() {
 }
 
 const styles = {
-  container: { backgroundColor: "#f8fafc", minHeight: "100vh", padding: "2rem 1rem", fontFamily: "'Kanit', 'Sarabun', sans-serif", color: "#334155" },
-  wrapper: { maxWidth: "780px", margin: "0 auto" },
+  container: { backgroundColor: "f0f9ff 0%", minHeight: "100vh", padding: "2rem 1rem", fontFamily: "'Kanit', 'Sarabun', sans-serif", color: "#334155" },
+  wrapper: {
+    maxWidth: "850px",
+    margin: "0 auto",
+    backgroundColor: "#ffffff",
+    borderRadius: "24px",
+    padding: "24px",
+    boxShadow: "0 10px 30px rgba(0, 0, 0, 0.05)",
+    border: "1px solid #e2e8f0"
+  },
   topBanner: { display: "flex", justifyContent: "space-between", alignItems: "center", backgroundColor: "#ffffff", padding: "12px 20px", borderRadius: "12px", marginBottom: "1.5rem", border: "1px solid #e2e8f0" },
   classInfo: { display: "flex", alignItems: "center", gap: "10px" },
   classBadge: { backgroundColor: "#eff6ff", color: "#2563eb", fontSize: "12px", fontWeight: "600", padding: "4px 10px", borderRadius: "6px" },
@@ -398,7 +406,12 @@ const styles = {
   modeTabs: { display: "flex", gap: "6px", backgroundColor: "#f1f5f9", padding: "4px", borderRadius: "8px" },
   tabBtn: { border: "none", padding: "6px 14px", borderRadius: "6px", fontSize: "13px", fontWeight: "500", color: "#64748b", backgroundColor: "transparent", cursor: "pointer" },
   tabBtnActive: { backgroundColor: "#ffffff", color: "#2563eb", fontWeight: "600", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" },
-  mainCard: { backgroundColor: "#ffffff", borderRadius: "16px", padding: "24px", boxShadow: "0 4px 20px rgba(0,0,0,0.03)", border: "1px solid #e2e8f0" },
+  mainCard: {
+    backgroundColor: "#ffffff",
+    borderRadius: "16px",
+    padding: "24px",
+    border: "1px solid #e2e8f0"
+  },
   cardHeader: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" },
   title: { fontSize: "18px", fontWeight: "700", color: "#0f172a", margin: 0 },
   subtitle: { fontSize: "13px", color: "#64748b", marginTop: "2px", margin: 0 },
