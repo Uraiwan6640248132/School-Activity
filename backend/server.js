@@ -548,6 +548,7 @@ app.delete("/api/calendar/pr/:prId", (req, res) => {
     res.json({ message: "ลบกิจกรรมในปฏิทินเรียบร้อยแล้ว" });
   });
 });
+
 // ==========================================
 // 📝 ระบบ API เช็คชื่อการเข้าร่วมกิจกรรม
 // ==========================================
@@ -627,6 +628,36 @@ app.post("/attendance/save", (req, res) => {
       if (err) return res.status(500).json(err);
       res.json({ message: "บันทึกการเข้าร่วมกิจกรรมสำเร็จเรียบร้อยแล้ว" });
     });
+  });
+});
+
+// 🟢 ดึงประวัติการเข้าร่วมกิจกรรมของนักเรียน (สำหรับหน้าผู้ปกครอง)
+app.get("/api/parent/activities/:parentId", (req, res) => {
+  const { parentId } = req.params;
+
+  const sql = `
+    SELECT 
+      a.Activity_id,
+      a.Name_activity,
+      DATE_FORMAT(a.Activity_date, '%Y-%m-%d') AS Activity_date,
+      a.Location,
+      s.Name AS Student_name,
+      s.Class_level,
+      IF(pa.Student_id IS NOT NULL, 1, 0) AS attended
+    FROM student s
+    JOIN activity a
+    LEFT JOIN participating_activities pa 
+      ON pa.Student_id = s.Student_id AND pa.Activity_id = a.Activity_id
+    WHERE s.User_id = ?
+    ORDER BY a.Activity_date DESC, a.Activity_id DESC
+  `;
+
+  db.query(sql, [parentId], (err, results) => {
+    if (err) {
+      console.error("❌ Error fetching parent activities:", err);
+      return res.status(500).json({ error: "เกิดข้อผิดพลาดในการดึงข้อมูลกิจกรรมของผู้ปกครอง" });
+    }
+    res.json(results);
   });
 });
 
@@ -839,12 +870,12 @@ app.post("/login", (req, res) => {
         user.Status = "ถูกระงับสิทธิ์";
       }
       if (user.Status === "รออนุมัติ") {
-  return res.json({
-    success: false,
-    blocked: true,
-    error: "บัญชีของคุณกำลังอยู่ระหว่างรอแอดมินอนุมัติสิทธิ์"
-  });
-}
+        return res.json({
+          success: false,
+          blocked: true,
+          error: "บัญชีของคุณกำลังอยู่ระหว่างรอแอดมินอนุมัติสิทธิ์"
+        });
+      }
 
       if (
         user.Status === "ระงับ" ||
@@ -918,6 +949,7 @@ app.post('/api/register', (req, res) => {
     );
   });
 });
+
 // ==========================================
 // 🎓 1. API ระบบปีการศึกษา (Academic Years)
 // ==========================================
