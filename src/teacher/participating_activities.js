@@ -1,5 +1,31 @@
 import React, { useEffect, useState, useMemo } from "react";
 import axios from "axios";
+import {
+  Users,
+  UserCheck,
+  UserX,
+  CalendarDays,
+  Search,
+  Filter,
+  Download,
+  Save,
+  Edit3,
+  Eye,
+  EyeOff,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  Loader2,
+  ChevronDown,
+  ChevronUp,
+  Activity,
+  School,
+  FileSpreadsheet,
+  RefreshCw,
+  Sparkles,
+  ArrowLeft,
+  ArrowRight
+} from "lucide-react";
 
 function ParticipatingActivities() {
   const [activities, setActivities] = useState([]);
@@ -8,12 +34,13 @@ function ParticipatingActivities() {
   const [isViewMode, setIsViewMode] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const loggedInClassId = localStorage.getItem("teacher_class_id") || "1";
 
-  // 🟢 ตั้งค่าเริ่มต้นสำหรับแสดงชื่อชั้นเรียน
   const [className, setClassName] = useState(
-    localStorage.getItem("teacher_class_name") || "อนุบาล1 ห้องปกติ"
+    localStorage.getItem("teacher_class_name") || "อนุบาล 1 ห้องปกติ"
   );
 
   const API_URL = "http://localhost:3001";
@@ -23,7 +50,6 @@ function ParticipatingActivities() {
     fetchClassName();
   }, []);
 
-  // 🟢 ดึงข้อมูลชื่อชั้นเรียนตาม ID
   const fetchClassName = async () => {
     try {
       const res = await axios.get(`${API_URL}/attendance/class/${loggedInClassId}`);
@@ -33,20 +59,22 @@ function ParticipatingActivities() {
         localStorage.setItem("teacher_class_name", name);
       }
     } catch (err) {
-      // หากหา API ไม่พบจะใช้ค่า fallback เป็น "อนุบาล1 ห้องปกติ"
       if (!localStorage.getItem("teacher_class_name")) {
-        setClassName("อนุบาล1 ห้องปกติ");
+        setClassName("อนุบาล 1 ห้องปกติ");
       }
     }
   };
 
   const fetchActivitiesData = async () => {
+    setLoading(true);
     try {
       const resActivity = await axios.get(`${API_URL}/attendance/activities`);
       const actData = Array.isArray(resActivity.data) ? resActivity.data : (resActivity.data.data || []);
       setActivities(actData);
     } catch (err) {
       console.error("ดึงข้อมูลกิจกรรมไม่สำเร็จ:", err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -59,6 +87,7 @@ function ParticipatingActivities() {
   }, [selectedActivity, loggedInClassId]);
 
   const fetchStudents = async (activityId, classId) => {
+    setLoading(true);
     try {
       const res = await axios.get(
         `${API_URL}/attendance/students?activity=${activityId}&class=${classId}`
@@ -75,20 +104,20 @@ function ParticipatingActivities() {
     } catch (err) {
       console.error("ดึงรายชื่อนักเรียนไม่สำเร็จ:", err);
       setStudents([]);
+    } finally {
+      setLoading(false);
     }
   };
 
-  // คำนวณยอดรวม และ เปอร์เซ็นต์
   const totalStudents = students.length;
   const attendedCount = students.filter((s) => s.attended).length;
   const absentCount = totalStudents - attendedCount;
   const attendedPercentage = totalStudents > 0 ? ((attendedCount / totalStudents) * 100).toFixed(1) : "0.0";
   const absentPercentage = totalStudents > 0 ? ((absentCount / totalStudents) * 100).toFixed(1) : "0.0";
 
-  // ค้นหาและกรองข้อมูล
   const filteredStudents = useMemo(() => {
     return students.filter((student) => {
-      const matchesSearch = student.name.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesSearch = (student.name || '').toLowerCase().includes(searchTerm.toLowerCase());
       const matchesFilter =
         filterStatus === "all" ? true :
           filterStatus === "attended" ? student.attended :
@@ -124,6 +153,7 @@ function ParticipatingActivities() {
       })),
     };
 
+    setSaving(true);
     try {
       await axios.post(`${API_URL}/attendance/save`, payload);
       alert("บันทึกการเข้าร่วมกิจกรรมเรียบร้อยแล้ว!");
@@ -132,10 +162,11 @@ function ParticipatingActivities() {
     } catch (err) {
       console.error(err);
       alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล");
+    } finally {
+      setSaving(false);
     }
   };
 
-  // 📊 ส่งออกเป็น CSV (เปิดใน Excel ได้ทันที)
   const exportToCSV = () => {
     if (students.length === 0) return alert("ไม่มีข้อมูลสำหรับส่งออก");
 
@@ -164,55 +195,83 @@ function ParticipatingActivities() {
     document.body.removeChild(link);
   };
 
+  if (loading && !students.length) {
+    return (
+      <div style={styles.loadingContainer}>
+        <Loader2 size={48} style={styles.spinner} />
+        <p style={styles.loadingText}>กำลังโหลดข้อมูล...</p>
+      </div>
+    );
+  }
+
   return (
     <div style={styles.container}>
       <div style={styles.wrapper}>
-
-        {/* Banner แสดงห้องเรียนและโหมด */}
+        {/* Header Banner */}
         <div style={styles.topBanner}>
           <div style={styles.classInfo}>
-            <span style={styles.classBadge}>ห้องเรียน</span>
-            {/* 🟢 แสดงชื่อชั้นเรียนที่ได้รับการแก้ไขแล้ว */}
-            <span style={styles.className}>{className} (ID: {loggedInClassId})</span>
+            <div style={styles.classIconWrapper}>
+              <School size={18} color="#FFFFFF" />
+            </div>
+            <div>
+              <span style={styles.classLabel}>ห้องเรียน</span>
+              <span style={styles.className}>{className}</span>
+              <span style={styles.classId}>ID: {loggedInClassId}</span>
+            </div>
           </div>
           <div style={styles.modeTabs}>
             <button
               type="button"
               onClick={() => setIsViewMode(false)}
-              style={{ ...styles.tabBtn, ...(!isViewMode ? styles.tabBtnActive : {}) }}
+              style={{
+                ...styles.tabBtn,
+                ...(!isViewMode ? styles.tabBtnActive : {})
+              }}
             >
-              หน้าบันทึก
+              {!isViewMode ? <Edit3 size={14} /> : <Edit3 size={14} />}
+              บันทึก
             </button>
             <button
               type="button"
               onClick={() => setIsViewMode(true)}
-              style={{ ...styles.tabBtn, ...(isViewMode ? styles.tabBtnActive : {}) }}
+              style={{
+                ...styles.tabBtn,
+                ...(isViewMode ? styles.tabBtnActive : {})
+              }}
             >
-              หน้าประวัติ
+              {isViewMode ? <Eye size={14} /> : <Eye size={14} />}
+              ประวัติ
             </button>
           </div>
         </div>
 
-        {/* Card หลัก */}
+        {/* Main Card */}
         <div style={styles.mainCard}>
+          {/* Header */}
           <div style={styles.cardHeader}>
             <div>
               <h1 style={styles.title}>
                 {isViewMode ? "ประวัติการเข้าร่วมกิจกรรม" : "บันทึกการเข้าร่วมกิจกรรม"}
               </h1>
-              <p style={styles.subtitle}>จัดการการเข้าร่วมกิจกรรมนักเรียนในห้องเรียน</p>
+              <p style={styles.subtitle}>
+                <Sparkles size={14} color="#4A90D9" />
+                จัดการการเข้าร่วมกิจกรรมนักเรียนในห้องเรียน
+              </p>
             </div>
-
             {selectedActivity && students.length > 0 && (
               <button type="button" onClick={exportToCSV} style={styles.exportBtn}>
-                📥 ส่งออก CSV (Excel)
+                <FileSpreadsheet size={16} />
+                ส่งออก CSV
               </button>
             )}
           </div>
 
-          {/* เลือกกิจกรรม */}
+          {/* Select Activity */}
           <div style={styles.selectSection}>
-            <label style={styles.inputLabel}>เลือกกิจกรรม</label>
+            <label style={styles.inputLabel}>
+              <CalendarDays size={16} style={styles.labelIcon} />
+              เลือกกิจกรรม
+            </label>
             <select
               value={selectedActivity}
               onChange={(e) => setSelectedActivity(e.target.value)}
@@ -227,61 +286,98 @@ function ParticipatingActivities() {
             </select>
           </div>
 
-          {/* สรุปสถิติ */}
+          {/* Statistics */}
           {selectedActivity !== "" && (
             <div style={styles.summaryGrid}>
-              <div style={{ ...styles.statCard, borderColor: '#e2e8f0' }}>
-                <span style={styles.statTitle}>นักเรียนทั้งหมด</span>
-                <div style={styles.statValue}>{totalStudents} <span style={styles.statUnit}>คน</span></div>
-              </div>
-
-              <div style={{ ...styles.statCard, borderColor: '#bbf7d0', backgroundColor: '#f0fdf4' }}>
-                <span style={{ ...styles.statTitle, color: '#166534' }}>เข้าร่วม</span>
-                <div style={{ ...styles.statValue, color: '#15803d' }}>
-                  {attendedCount} <span style={styles.statUnit}>คน ({attendedPercentage}%)</span>
+              <div style={styles.statCard}>
+                <div style={styles.statIconWrapperBlue}>
+                  <Users size={18} color="#4A90D9" />
+                </div>
+                <div style={styles.statContent}>
+                  <span style={styles.statLabel}>นักเรียนทั้งหมด</span>
+                  <span style={styles.statValue}>{totalStudents} <span style={styles.statUnit}>คน</span></span>
                 </div>
               </div>
 
-              <div style={{ ...styles.statCard, borderColor: '#fecaca', backgroundColor: '#fef2f2' }}>
-                <span style={{ ...styles.statTitle, color: '#991b1b' }}>ไม่เข้าร่วม</span>
-                <div style={{ ...styles.statValue, color: '#dc2626' }}>
-                  {absentCount} <span style={styles.statUnit}>คน ({absentPercentage}%)</span>
+              <div style={{ ...styles.statCard, backgroundColor: '#F0FDF4' }}>
+                <div style={{ ...styles.statIconWrapperBlue, backgroundColor: '#D1FAE5' }}>
+                  <UserCheck size={18} color="#16A34A" />
+                </div>
+                <div style={styles.statContent}>
+                  <span style={{ ...styles.statLabel, color: '#166534' }}>เข้าร่วม</span>
+                  <span style={{ ...styles.statValue, color: '#15803D' }}>
+                    {attendedCount} <span style={styles.statUnit}>คน ({attendedPercentage}%)</span>
+                  </span>
+                </div>
+              </div>
+
+              <div style={{ ...styles.statCard, backgroundColor: '#FEF2F2' }}>
+                <div style={{ ...styles.statIconWrapperBlue, backgroundColor: '#FEE2E2' }}>
+                  <UserX size={18} color="#DC2626" />
+                </div>
+                <div style={styles.statContent}>
+                  <span style={{ ...styles.statLabel, color: '#991B1B' }}>ไม่เข้าร่วม</span>
+                  <span style={{ ...styles.statValue, color: '#DC2626' }}>
+                    {absentCount} <span style={styles.statUnit}>คน ({absentPercentage}%)</span>
+                  </span>
                 </div>
               </div>
             </div>
           )}
 
-          {/* Toolbar: ค้นหา & เลือกทั้งหมด */}
+          {/* Toolbar */}
           {selectedActivity && students.length > 0 && (
             <div style={styles.toolbar}>
-              <input
-                type="text"
-                placeholder="🔍 ค้นหาชื่อนักเรียน..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                style={styles.searchInput}
-              />
+              <div style={styles.searchWrapper}>
+                <Search size={16} color="#94A3B8" style={styles.searchIcon} />
+                <input
+                  type="text"
+                  placeholder="ค้นหาชื่อนักเรียน..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  style={styles.searchInput}
+                />
+                {searchTerm && (
+                  <button
+                    onClick={() => setSearchTerm('')}
+                    style={styles.clearSearchBtn}
+                  >
+                    <XCircle size={14} />
+                  </button>
+                )}
+              </div>
 
               <div style={styles.filterGroup}>
                 <button
                   type="button"
                   onClick={() => setFilterStatus("all")}
-                  style={{ ...styles.filterChip, ...(filterStatus === "all" ? styles.filterChipActive : {}) }}
+                  style={{
+                    ...styles.filterChip,
+                    ...(filterStatus === "all" ? styles.filterChipActive : {})
+                  }}
                 >
                   ทั้งหมด
                 </button>
                 <button
                   type="button"
                   onClick={() => setFilterStatus("attended")}
-                  style={{ ...styles.filterChip, ...(filterStatus === "attended" ? styles.filterChipActive : {}) }}
+                  style={{
+                    ...styles.filterChip,
+                    ...(filterStatus === "attended" ? styles.filterChipActive : {})
+                  }}
                 >
+                  <CheckCircle size={12} />
                   เข้าร่วม
                 </button>
                 <button
                   type="button"
                   onClick={() => setFilterStatus("absent")}
-                  style={{ ...styles.filterChip, ...(filterStatus === "absent" ? styles.filterChipActive : {}) }}
+                  style={{
+                    ...styles.filterChip,
+                    ...(filterStatus === "absent" ? styles.filterChipActive : {})
+                  }}
                 >
+                  <XCircle size={12} />
                   ไม่เข้าร่วม
                 </button>
               </div>
@@ -289,59 +385,74 @@ function ParticipatingActivities() {
               {!isViewMode && (
                 <div style={styles.bulkActions}>
                   <button type="button" onClick={() => handleSelectAll(true)} style={styles.bulkBtnSuccess}>
-                    ✓ เข้าร่วมหมด
+                    <CheckCircle size={14} />
+                    เข้าร่วมหมด
                   </button>
                   <button type="button" onClick={() => handleSelectAll(false)} style={styles.bulkBtnDanger}>
-                    ✕ ไม่เข้าร่วมหมด
+                    <XCircle size={14} />
+                    ไม่เข้าร่วมหมด
                   </button>
                 </div>
               )}
             </div>
           )}
 
-          {/* ตารางนักเรียน */}
+          {/* Table */}
           <div style={styles.tableContainer}>
-            <div style={styles.tableHeaderRow}>
-              <div style={{ flex: 0.5, textAlign: 'center' }}>#</div>
-              <div style={{ flex: 3 }}>รายชื่อนักเรียน</div>
-              <div style={{ flex: 2, textAlign: 'center' }}>สถานะการเข้าร่วม</div>
+            <div style={styles.tableHeader}>
+              <div style={{ ...styles.tableHeaderCell, width: '40px', textAlign: 'center' }}>#</div>
+              <div style={styles.tableHeaderCell}>รายชื่อนักเรียน</div>
+              <div style={{ ...styles.tableHeaderCell, width: '200px', textAlign: 'center' }}>สถานะการเข้าร่วม</div>
             </div>
 
             <div style={styles.tableBody}>
               {!selectedActivity ? (
-                <div style={styles.emptyState}>📌 กรุณาเลือกกิจกรรมเพื่อแสดงรายชื่อ</div>
+                <div style={styles.emptyState}>
+                  <Activity size={40} color="#CBD5E1" />
+                  <p>📌 กรุณาเลือกกิจกรรมเพื่อแสดงรายชื่อ</p>
+                </div>
               ) : filteredStudents.length === 0 ? (
-                <div style={styles.emptyState}>ไม่พบรายชื่อที่ตรงกับคำค้นหา</div>
+                <div style={styles.emptyState}>
+                  <Search size={40} color="#CBD5E1" />
+                  <p>ไม่พบรายชื่อที่ตรงกับคำค้นหา</p>
+                </div>
               ) : (
                 filteredStudents.map((student, index) => (
                   <div key={student.id} style={styles.tableRow}>
-                    <div style={{ flex: 0.5, textAlign: 'center', color: '#94a3b8', fontSize: '13px' }}>
+                    <div style={{ ...styles.tableCell, width: '40px', textAlign: 'center', color: '#94A3B8', fontSize: '13px' }}>
                       {index + 1}
                     </div>
-                    <div style={{ flex: 3, fontWeight: '500', color: '#1e293b' }}>
+                    <div style={{ ...styles.tableCell, fontWeight: '500', color: '#1E293B' }}>
+                      <div style={styles.studentAvatar}>
+                        {student.name?.charAt(0) || 'S'}
+                      </div>
                       {student.name}
                     </div>
-                    <div style={{ flex: 2, display: 'flex', justifyContent: 'center' }}>
+                    <div style={{ ...styles.tableCell, width: '200px', display: 'flex', justifyContent: 'center' }}>
                       {!isViewMode ? (
-                        <div style={styles.toggleSegment}>
+                        <div style={styles.toggleGroup}>
                           <button
                             type="button"
                             onClick={() => handleStatusChange(student.id, true)}
                             style={{
-                              ...styles.segmentBtn,
-                              ...(student.attended ? styles.segmentBtnAttended : {})
+                              ...styles.toggleBtn,
+                              ...(student.attended ? styles.toggleBtnActive : {}),
+                              ...(student.attended ? styles.toggleBtnSuccess : {})
                             }}
                           >
+                            <CheckCircle size={14} />
                             เข้าร่วม
                           </button>
                           <button
                             type="button"
                             onClick={() => handleStatusChange(student.id, false)}
                             style={{
-                              ...styles.segmentBtn,
-                              ...(!student.attended ? styles.segmentBtnAbsent : {})
+                              ...styles.toggleBtn,
+                              ...(!student.attended ? styles.toggleBtnActive : {}),
+                              ...(!student.attended ? styles.toggleBtnDanger : {})
                             }}
                           >
+                            <XCircle size={14} />
                             ไม่เข้าร่วม
                           </button>
                         </div>
@@ -349,12 +460,12 @@ function ParticipatingActivities() {
                         <span
                           style={{
                             ...styles.statusBadge,
-                            backgroundColor: student.attended ? "#dcfce7" : "#fee2e2",
-                            color: student.attended ? "#15803d" : "#dc2626",
-                            borderColor: student.attended ? "#bbf7d0" : "#fecaca",
+                            backgroundColor: student.attended ? '#DCFCE7' : '#FEE2E2',
+                            color: student.attended ? '#15803D' : '#DC2626',
                           }}
                         >
-                          {student.attended ? "✓ เข้าร่วม" : "✕ ไม่เข้าร่วม"}
+                          {student.attended ? <CheckCircle size={14} /> : <XCircle size={14} />}
+                          {student.attended ? "เข้าร่วม" : "ไม่เข้าร่วม"}
                         </span>
                       )}
                     </div>
@@ -364,12 +475,27 @@ function ParticipatingActivities() {
             </div>
           </div>
 
-          {/* ปุ่มบันทึก/แก้ไข */}
+          {/* Footer Actions */}
           {students.length > 0 && (
             <div style={styles.footerRow}>
               {!isViewMode ? (
-                <button type="button" onClick={handleSubmit} style={styles.primarySubmitBtn}>
-                  💾 บันทึกการเข้าร่วมกิจกรรม
+                <button
+                  type="button"
+                  onClick={handleSubmit}
+                  style={styles.primarySubmitBtn}
+                  disabled={saving}
+                >
+                  {saving ? (
+                    <>
+                      <Loader2 size={18} style={styles.spinnerSmall} />
+                      กำลังบันทึก...
+                    </>
+                  ) : (
+                    <>
+                      <Save size={18} />
+                      บันทึกการเข้าร่วมกิจกรรม
+                    </>
+                  )}
                 </button>
               ) : (
                 <button
@@ -377,7 +503,8 @@ function ParticipatingActivities() {
                   onClick={() => setIsViewMode(false)}
                   style={styles.secondaryEditBtn}
                 >
-                  ✏️ แก้ไขการเข้าร่วม
+                  <Edit3 size={18} />
+                  แก้ไขการเข้าร่วม
                 </button>
               )}
             </div>
@@ -389,62 +516,577 @@ function ParticipatingActivities() {
 }
 
 const styles = {
-  container: { backgroundColor: "f0f9ff 0%", minHeight: "100vh", padding: "2rem 1rem", fontFamily: "'Kanit', 'Sarabun', sans-serif", color: "#334155" },
+  container: {
+    padding: '20px',
+    minHeight: '100vh',
+    backgroundColor: '#F8FAFC',
+    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
+  },
   wrapper: {
-    maxWidth: "850px",
-    margin: "0 auto",
-    backgroundColor: "#ffffff",
-    borderRadius: "24px",
-    padding: "24px",
-    boxShadow: "0 10px 30px rgba(0, 0, 0, 0.05)",
-    border: "1px solid #e2e8f0"
+    maxWidth: '960px',
+    margin: '0 auto',
+    width: '100%',
   },
-  topBanner: { display: "flex", justifyContent: "space-between", alignItems: "center", backgroundColor: "#ffffff", padding: "12px 20px", borderRadius: "12px", marginBottom: "1.5rem", border: "1px solid #e2e8f0" },
-  classInfo: { display: "flex", alignItems: "center", gap: "10px" },
-  classBadge: { backgroundColor: "#eff6ff", color: "#2563eb", fontSize: "12px", fontWeight: "600", padding: "4px 10px", borderRadius: "6px" },
-  className: { fontSize: "14px", fontWeight: "600", color: "#1e293b" },
-  modeTabs: { display: "flex", gap: "6px", backgroundColor: "#f1f5f9", padding: "4px", borderRadius: "8px" },
-  tabBtn: { border: "none", padding: "6px 14px", borderRadius: "6px", fontSize: "13px", fontWeight: "500", color: "#64748b", backgroundColor: "transparent", cursor: "pointer" },
-  tabBtnActive: { backgroundColor: "#ffffff", color: "#2563eb", fontWeight: "600", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" },
+
+  loadingContainer: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: '100vh',
+    gap: '16px',
+  },
+  spinner: {
+    animation: 'spin 1s linear infinite',
+    color: '#4A90D9',
+  },
+  spinnerSmall: {
+    animation: 'spin 1s linear infinite',
+  },
+  loadingText: {
+    color: '#94A3B8',
+    fontSize: '16px',
+  },
+
+  topBanner: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    padding: '14px 20px',
+    borderRadius: '16px',
+    marginBottom: '20px',
+    border: '1px solid #E2E8F0',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+    flexWrap: 'wrap',
+    gap: '12px',
+  },
+  classInfo: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+  },
+  classIconWrapper: {
+    width: '36px',
+    height: '36px',
+    borderRadius: '10px',
+    backgroundColor: '#4A90D9',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  classLabel: {
+    fontSize: '11px',
+    fontWeight: '500',
+    color: '#94A3B8',
+    display: 'block',
+  },
+  className: {
+    fontSize: '15px',
+    fontWeight: '600',
+    color: '#1A202C',
+    marginRight: '8px',
+  },
+  classId: {
+    fontSize: '12px',
+    color: '#94A3B8',
+    backgroundColor: '#F1F5F9',
+    padding: '2px 8px',
+    borderRadius: '4px',
+  },
+  modeTabs: {
+    display: 'flex',
+    gap: '4px',
+    backgroundColor: '#F1F5F9',
+    padding: '4px',
+    borderRadius: '10px',
+  },
+  tabBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    border: 'none',
+    padding: '7px 16px',
+    borderRadius: '8px',
+    fontSize: '13px',
+    fontWeight: '500',
+    color: '#64748B',
+    backgroundColor: 'transparent',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
+  },
+  tabBtnActive: {
+    backgroundColor: '#FFFFFF',
+    color: '#4A90D9',
+    fontWeight: '600',
+    boxShadow: '0 2px 4px rgba(0,0,0,0.06)',
+  },
+
   mainCard: {
-    backgroundColor: "#ffffff",
-    borderRadius: "16px",
-    padding: "24px",
-    border: "1px solid #e2e8f0"
+    backgroundColor: '#FFFFFF',
+    borderRadius: '16px',
+    padding: '28px',
+    border: '1px solid #E2E8F0',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
   },
-  cardHeader: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" },
-  title: { fontSize: "18px", fontWeight: "700", color: "#0f172a", margin: 0 },
-  subtitle: { fontSize: "13px", color: "#64748b", marginTop: "2px", margin: 0 },
-  exportBtn: { backgroundColor: "#10b981", color: "#ffffff", border: "none", padding: "8px 16px", borderRadius: "8px", fontSize: "13px", fontWeight: "600", cursor: "pointer" },
-  selectSection: { marginBottom: "20px" },
-  inputLabel: { display: "block", fontSize: "13px", fontWeight: "600", color: "#475569", marginBottom: "6px" },
-  selectInput: { width: "100%", padding: "10px 14px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "14px", color: "#1e293b", outline: "none", backgroundColor: "#f8fafc" },
-  summaryGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "12px", marginBottom: "20px" },
-  statCard: { border: "1px solid", borderRadius: "10px", padding: "14px", backgroundColor: "#ffffff" },
-  statTitle: { fontSize: "12px", fontWeight: "600", color: "#64748b" },
-  statValue: { fontSize: "20px", fontWeight: "700", color: "#0f172a", marginTop: "4px" },
-  statUnit: { fontSize: "13px", fontWeight: "normal", color: "#64748b" },
-  toolbar: { display: "flex", flexWrap: "wrap", gap: "10px", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", padding: "10px", backgroundColor: "#f8fafc", borderRadius: "10px" },
-  searchInput: { border: "1px solid #cbd5e1", borderRadius: "6px", padding: "6px 12px", fontSize: "13px", outline: "none", width: "180px" },
-  filterGroup: { display: "flex", gap: "4px" },
-  filterChip: { border: "none", backgroundColor: "transparent", padding: "4px 8px", borderRadius: "6px", fontSize: "12px", color: "#64748b", cursor: "pointer" },
-  filterChipActive: { backgroundColor: "#2563eb", color: "#ffffff", fontWeight: "600" },
-  bulkActions: { display: "flex", gap: "6px" },
-  bulkBtnSuccess: { border: "1px solid #bbf7d0", backgroundColor: "#f0fdf4", color: "#166534", fontSize: "12px", padding: "4px 8px", borderRadius: "6px", cursor: "pointer" },
-  bulkBtnDanger: { border: "1px solid #fecaca", backgroundColor: "#fef2f2", color: "#991b1b", fontSize: "12px", padding: "4px 8px", borderRadius: "6px", cursor: "pointer" },
-  tableContainer: { border: "1px solid #e2e8f0", borderRadius: "10px", overflow: "hidden" },
-  tableHeaderRow: { display: "flex", backgroundColor: "#f1f5f9", padding: "10px 16px", fontSize: "13px", fontWeight: "600", color: "#475569" },
-  tableBody: { display: "flex", flexDirection: "column" },
-  tableRow: { display: "flex", alignItems: "center", padding: "10px 16px", borderBottom: "1px solid #f1f5f9" },
-  emptyState: { textAlign: "center", padding: "2rem", color: "#94a3b8", fontSize: "13px" },
-  toggleSegment: { display: "inline-flex", backgroundColor: "#f1f5f9", borderRadius: "8px", padding: "3px" },
-  segmentBtn: { border: "none", padding: "4px 12px", borderRadius: "6px", fontSize: "12px", fontWeight: "500", color: "#64748b", backgroundColor: "transparent", cursor: "pointer" },
-  segmentBtnAttended: { backgroundColor: "#16a34a", color: "#ffffff", fontWeight: "600" },
-  segmentBtnAbsent: { backgroundColor: "#dc2626", color: "#ffffff", fontWeight: "600" },
-  statusBadge: { display: "inline-block", fontSize: "12px", fontWeight: "600", padding: "3px 10px", borderRadius: "12px", border: "1px solid" },
-  footerRow: { display: "flex", justifyContent: "center", marginTop: "20px" },
-  primarySubmitBtn: { backgroundColor: "#2563eb", color: "#ffffff", border: "none", padding: "10px 28px", borderRadius: "8px", fontSize: "14px", fontWeight: "600", cursor: "pointer" },
-  secondaryEditBtn: { backgroundColor: "#ffffff", color: "#334155", border: "1px solid #cbd5e1", padding: "10px 28px", borderRadius: "8px", fontSize: "14px", fontWeight: "600", cursor: "pointer" }
+  cardHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: '24px',
+    flexWrap: 'wrap',
+    gap: '12px',
+  },
+  title: {
+    fontSize: '20px',
+    fontWeight: '700',
+    color: '#1A202C',
+    margin: 0,
+  },
+  subtitle: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    fontSize: '14px',
+    color: '#718096',
+    margin: '4px 0 0 0',
+  },
+  exportBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    padding: '8px 18px',
+    backgroundColor: '#27AE60',
+    color: '#FFFFFF',
+    border: 'none',
+    borderRadius: '10px',
+    cursor: 'pointer',
+    fontSize: '13px',
+    fontWeight: '600',
+    transition: 'all 0.2s ease',
+    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
+    boxShadow: '0 4px 12px rgba(39, 174, 96, 0.2)',
+  },
+
+  selectSection: {
+    marginBottom: '24px',
+  },
+  inputLabel: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    fontSize: '14px',
+    fontWeight: '500',
+    color: '#334155',
+    marginBottom: '8px',
+  },
+  labelIcon: {
+    color: '#4A90D9',
+  },
+  selectInput: {
+    width: '100%',
+    padding: '10px 14px',
+    borderRadius: '10px',
+    border: '1px solid #E2E8F0',
+    fontSize: '14px',
+    color: '#1A202C',
+    outline: 'none',
+    backgroundColor: '#FAFBFC',
+    transition: 'all 0.2s ease',
+    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
+    appearance: 'auto',
+  },
+
+  summaryGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+    gap: '12px',
+    marginBottom: '24px',
+  },
+  statCard: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    border: '1px solid #E2E8F0',
+    borderRadius: '12px',
+    padding: '14px 18px',
+    backgroundColor: '#FFFFFF',
+  },
+  statIconWrapperBlue: {
+    width: '40px',
+    height: '40px',
+    borderRadius: '10px',
+    backgroundColor: '#EBF3FB',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  statContent: {
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  statLabel: {
+    fontSize: '12px',
+    fontWeight: '500',
+    color: '#94A3B8',
+  },
+  statValue: {
+    fontSize: '20px',
+    fontWeight: '700',
+    color: '#1A202C',
+  },
+  statUnit: {
+    fontSize: '13px',
+    fontWeight: '400',
+    color: '#94A3B8',
+  },
+
+  toolbar: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: '10px',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '16px',
+    padding: '12px 16px',
+    backgroundColor: '#F8FAFC',
+    borderRadius: '12px',
+    border: '1px solid #E2E8F0',
+  },
+  searchWrapper: {
+    position: 'relative',
+    display: 'flex',
+    alignItems: 'center',
+    flex: 1,
+    minWidth: '180px',
+  },
+  searchIcon: {
+    position: 'absolute',
+    left: '12px',
+  },
+  searchInput: {
+    width: '100%',
+    padding: '8px 36px 8px 38px',
+    borderRadius: '8px',
+    border: '1px solid #E2E8F0',
+    fontSize: '13px',
+    outline: 'none',
+    backgroundColor: '#FFFFFF',
+    transition: 'all 0.2s ease',
+    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
+  },
+  clearSearchBtn: {
+    position: 'absolute',
+    right: '10px',
+    background: 'none',
+    border: 'none',
+    color: '#94A3B8',
+    cursor: 'pointer',
+    padding: '4px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  filterGroup: {
+    display: 'flex',
+    gap: '4px',
+  },
+  filterChip: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '4px',
+    border: 'none',
+    padding: '5px 12px',
+    borderRadius: '8px',
+    fontSize: '12px',
+    fontWeight: '500',
+    color: '#64748B',
+    backgroundColor: 'transparent',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
+  },
+  filterChipActive: {
+    backgroundColor: '#4A90D9',
+    color: '#FFFFFF',
+    fontWeight: '600',
+  },
+  bulkActions: {
+    display: 'flex',
+    gap: '6px',
+  },
+  bulkBtnSuccess: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '4px',
+    padding: '5px 12px',
+    backgroundColor: '#F0FDF4',
+    color: '#166534',
+    border: '1px solid #BBF7D0',
+    borderRadius: '8px',
+    fontSize: '12px',
+    fontWeight: '500',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
+  },
+  bulkBtnDanger: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '4px',
+    padding: '5px 12px',
+    backgroundColor: '#FEF2F2',
+    color: '#991B1B',
+    border: '1px solid #FECACA',
+    borderRadius: '8px',
+    fontSize: '12px',
+    fontWeight: '500',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
+  },
+
+  tableContainer: {
+    border: '1px solid #E2E8F0',
+    borderRadius: '12px',
+    overflow: 'hidden',
+  },
+  tableHeader: {
+    display: 'flex',
+    backgroundColor: '#F8FAFC',
+    padding: '10px 16px',
+    borderBottom: '1px solid #E2E8F0',
+  },
+  tableHeaderCell: {
+    fontSize: '12px',
+    fontWeight: '600',
+    color: '#475569',
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px',
+  },
+  tableBody: {
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  tableRow: {
+    display: 'flex',
+    alignItems: 'center',
+    padding: '10px 16px',
+    borderBottom: '1px solid #F1F5F9',
+    transition: 'background 0.15s ease',
+  },
+  tableCell: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+    fontSize: '14px',
+    color: '#334155',
+    flex: 1,
+  },
+  studentAvatar: {
+    width: '32px',
+    height: '32px',
+    borderRadius: '50%',
+    backgroundColor: '#EBF3FB',
+    color: '#4A90D9',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: '13px',
+    fontWeight: '600',
+    flexShrink: 0,
+  },
+  toggleGroup: {
+    display: 'inline-flex',
+    backgroundColor: '#F1F5F9',
+    borderRadius: '8px',
+    padding: '3px',
+    gap: '2px',
+  },
+  toggleBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '4px',
+    border: 'none',
+    padding: '5px 12px',
+    borderRadius: '6px',
+    fontSize: '12px',
+    fontWeight: '500',
+    color: '#64748B',
+    backgroundColor: 'transparent',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
+  },
+  toggleBtnActive: {
+    fontWeight: '600',
+  },
+  toggleBtnSuccess: {
+    backgroundColor: '#16A34A',
+    color: '#FFFFFF',
+  },
+  toggleBtnDanger: {
+    backgroundColor: '#DC2626',
+    color: '#FFFFFF',
+  },
+  statusBadge: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '6px',
+    fontSize: '12px',
+    fontWeight: '600',
+    padding: '5px 14px',
+    borderRadius: '12px',
+  },
+
+  emptyState: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '40px 20px',
+    color: '#94A3B8',
+    fontSize: '14px',
+    gap: '12px',
+  },
+
+  footerRow: {
+    display: 'flex',
+    justifyContent: 'center',
+    marginTop: '24px',
+  },
+  primarySubmitBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+    padding: '12px 32px',
+    backgroundColor: '#4A90D9',
+    color: '#FFFFFF',
+    border: 'none',
+    borderRadius: '10px',
+    fontSize: '15px',
+    fontWeight: '600',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
+    boxShadow: '0 4px 12px rgba(74, 144, 217, 0.25)',
+  },
+  secondaryEditBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+    padding: '12px 32px',
+    backgroundColor: '#FFFFFF',
+    color: '#334155',
+    border: '1px solid #E2E8F0',
+    borderRadius: '10px',
+    fontSize: '15px',
+    fontWeight: '600',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
+  },
 };
+
+// Global CSS animations
+const styleSheet = document.createElement("style");
+styleSheet.textContent = `
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+  
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .stat-card {
+    animation: fadeInUp 0.3s ease forwards;
+  }
+  .stat-card:nth-child(1) { animation-delay: 0.05s; }
+  .stat-card:nth-child(2) { animation-delay: 0.1s; }
+  .stat-card:nth-child(3) { animation-delay: 0.15s; }
+  
+  .table-row:hover {
+    background-color: #F8FAFC;
+  }
+  
+  .filter-chip:hover:not(.filter-chip-active) {
+    background-color: #E2E8F0;
+  }
+  
+  .toggle-btn:hover:not(.toggle-btn-active) {
+    background-color: #E2E8F0;
+  }
+  
+  @media (max-width: 768px) {
+    .top-banner {
+      flex-direction: column !important;
+      align-items: stretch !important;
+    }
+    .mode-tabs {
+      justify-content: center !important;
+    }
+    .summary-grid {
+      grid-template-columns: 1fr !important;
+    }
+    .toolbar {
+      flex-direction: column !important;
+      align-items: stretch !important;
+    }
+    .filter-group {
+      justify-content: center !important;
+    }
+    .bulk-actions {
+      justify-content: center !important;
+    }
+    .card-header {
+      flex-direction: column !important;
+      align-items: flex-start !important;
+    }
+    .export-btn {
+      width: 100% !important;
+      justify-content: center !important;
+    }
+    .table-row {
+      flex-wrap: wrap !important;
+      gap: 8px !important;
+    }
+    .table-row .table-cell:last-child {
+      width: 100% !important;
+      justify-content: center !important;
+    }
+    .toggle-group {
+      flex-wrap: wrap !important;
+      justify-content: center !important;
+    }
+    .primary-submit-btn, .secondary-edit-btn {
+      width: 100% !important;
+      justify-content: center !important;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .main-card {
+      padding: 16px !important;
+    }
+    .class-info {
+      flex-wrap: wrap !important;
+    }
+    .search-wrapper {
+      min-width: 100% !important;
+    }
+  }
+`;
+document.head.appendChild(styleSheet);
 
 export default ParticipatingActivities;
