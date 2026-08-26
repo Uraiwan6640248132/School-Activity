@@ -41,6 +41,8 @@ function ParticipatingActivities() {
     fetchClassName();
   }, []);
 
+
+  
   const fetchClassName = async () => {
     try {
       const res = await axios.get(`${API_URL}/attendance/class/${loggedInClassId}`);
