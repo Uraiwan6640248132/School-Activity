@@ -68,8 +68,8 @@ function TermComparisonChart({ studentDevList }) {
       {
         label: 'ภาคเรียนที่ 1',
         data: scoresTerm1,
-        backgroundColor: '#FFEBCD',
-        borderColor: '#FFEBCD',
+        backgroundColor: '#2baf2b',
+        borderColor: '#2baf2b',
         borderWidth: 1,
         borderRadius: 4,
         maxBarThickness: 48,
@@ -77,8 +77,8 @@ function TermComparisonChart({ studentDevList }) {
       {
         label: 'ภาคเรียนที่ 2',
         data: scoresTerm2,
-        backgroundColor: '#d0d9ff',
-        borderColor: '#d0d9ff',
+        backgroundColor: '#dd191d',
+        borderColor: '#dd191d',
         borderWidth: 1,
         borderRadius: 4,
         maxBarThickness: 48,
