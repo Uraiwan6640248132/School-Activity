@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import logoSchool from "../logo_school.png";
 import {
     School,
     Calendar,
@@ -70,12 +71,12 @@ export default function HomePage({
     };
 
     const activities = [
-        { icon: "🔬", title: "สัปดาห์วิทยาศาสตร์", text: "เรียนรู้ผ่านการทดลองสุดตื่นเต้นและนิทรรศการสร้างสรรค์", bg: "linear-gradient(135deg, #E0F2FE 0%, #BAE6FD 100%)", tag: "วิชาการ" },
-        { icon: "⚽", title: "กีฬาสีสาธิตสัมพันธ์", text: "เติมพลังทีมเวิร์ก สุขภาพแข็งแรง และมิตรภาพที่แน่นแฟ้น", bg: "linear-gradient(135deg, #DCFCE7 0%, #BBF7D0 100%)", tag: "สุขภาพ" },
-        { icon: "🎨", title: "เวทีแสดงความสามารถ", text: "เปิดพื้นที่ให้ทุกความฝันและความสามารถได้เปล่งประกาย", bg: "linear-gradient(135deg, #FFEDD5 0%, #FED7AA 100%)", tag: "ศิลปะ" },
-        { icon: "🌱", title: "นักชมน้อยปลูกผักสวนครัว", text: "เรียนรู้ธรรมชาติ ความรับผิดชอบ และวิถีชีวิตพอเพียง", bg: "linear-gradient(135deg, #FEF08A 0%, #FDE047 100%)", tag: "ทักษะชีวิต" },
-        { icon: "🎵", title: "ดนตรีและจังหวะสร้างสุข", text: "ฝึกสมาธิ จินตนาการ และสุนทรียภาพผ่านเสียงเพลง", bg: "linear-gradient(135deg, #F3E8FF 0%, #E9D5FF 100%)", tag: "ดนตรี" },
-        { icon: "📖", title: "นิทานสายใยคุณธรรม", text: "ปลูกฝังจริยธรรมและค่านิยมที่ดีผ่านเรื่องราวสนุกสนาน", bg: "linear-gradient(135deg, #FFE4E6 0%, #FECDD3 100%)", tag: "จริยธรรม" },
+        { icon: "🔬", title: "สัปดาห์วิทยาศาสตร์", text: "เรียนรู้ผ่านการทดลองสุดตื่นเต้นและนิทรรศการสร้างสรรค์", bg: "linear-gradient(135deg, #f0f4c3 0%, #ffeb3b 100%)", tag: "วิชาการ" },
+        { icon: "⚽", title: "กีฬาสีสาธิตสัมพันธ์", text: "เติมพลังทีมเวิร์ก สุขภาพแข็งแรง และมิตรภาพที่แน่นแฟ้น", bg: "linear-gradient(135deg, #E0F2FE 0%, #64bceb 100%)", tag: "สุขภาพ" },
+        { icon: "🎨", title: "เวทีแสดงความสามารถ", text: "เปิดพื้นที่ให้ทุกความฝันและความสามารถได้เปล่งประกาย", bg: "linear-gradient(135deg, #FEF3C7 0%, #ffdf60 100%)", tag: "ศิลปะ" },
+        { icon: "🌱", title: "นักชมน้อยปลูกผักสวนครัว", text: "เรียนรู้ธรรมชาติ ความรับผิดชอบ และวิถีชีวิตพอเพียง", bg: "linear-gradient(135deg, #dcedc8 0%, #42bd41 100%)", tag: "ทักษะชีวิต" },
+        { icon: "🎵", title: "ดนตรีและจังหวะสร้างสุข", text: "ฝึกสมาธิ จินตนาการ และสุนทรียภาพผ่านเสียงเพลง", bg: "linear-gradient(135deg, #eeeaf3 0%, #c195f1 100%)", tag: "ดนตรี" },
+        { icon: "📖", title: "นิทานสายใยคุณธรรม", text: "ปลูกฝังจริยธรรมและค่านิยมที่ดีผ่านเรื่องราวสนุกสนาน", bg: "linear-gradient(135deg, #FFE4E6 0%, #fc99a4 100%)", tag: "จริยธรรม" },
     ];
 
     const scrollTo = (id) => {
@@ -97,11 +98,11 @@ export default function HomePage({
                 background: scrolled ? 'rgba(255, 255, 255, 0.92)' : 'rgba(255, 255, 255, 0.75)',
             }}>
                 <button type="button" style={styles.brand} onClick={() => scrollTo("home")}>
-                    <div style={styles.logoWrapper}>
-                        <School size={24} color="#0284C7" />
-                    </div>
-                    <span style={styles.brandText}>{schoolName}</span>
-                </button>
+    <div style={styles.logoWrapper}>
+        <img src={logoSchool} alt="ตราโรงเรียน" style={styles.logoImage} />
+    </div>
+    <span style={styles.brandText}>{schoolName}</span>
+</button>
 
                 <button className="menu-toggle" style={styles.menuToggle} onClick={() => setMenuOpen(!menuOpen)}>
                     {menuOpen ? <X size={24} color="#0F172A" /> : <Menu size={24} color="#0F172A" />}
@@ -126,7 +127,6 @@ export default function HomePage({
             <main>
                 {/* 🌟 Hero Section */}
                 <section id="home" style={styles.hero}>
-                    {/* Background Soft Orbs */}
                     <div style={styles.orb1}></div>
                     <div style={styles.orb2}></div>
 
@@ -154,19 +154,12 @@ export default function HomePage({
                                 <div style={{ ...styles.featureDot, background: '#38BDF8' }}></div>
                                 <span>เปิดสอน บริบาล - ป.6</span>
                             </div>
-                            
                         </div>
                     </div>
 
                     <div style={styles.heroImageWrapper}>
                         <div style={styles.imageBackdrop}></div>
                         <img src={heroImageUrl} alt="โรงเรียนสาธิตมหาวิทยาลัยราชภัฏเลย" style={styles.heroImage} />
-                        <div>
-                            
-                            <div>
-                                
-                            </div>
-                        </div>
                     </div>
                 </section>
 
@@ -257,7 +250,7 @@ export default function HomePage({
                                         </div>
                                         <div style={styles.newsBody}>
                                             <div style={styles.newsMeta}>
-                                                <Clock size={13} color="#94A3B8" />
+                                                <Clock size={13} color="#0284C7" />
                                                 <span>{displayFormattedDate(item.Date)}</span>
                                             </div>
                                             <h3 style={styles.newsTitle}>{item.Name_activity || item.Name}</h3>
@@ -290,8 +283,8 @@ export default function HomePage({
 
                         <div style={styles.activityGrid}>
                             {activities.map((activity, index) => (
-                                <div key={index} style={styles.activityCard}>
-                                    <div style={{ ...styles.activityIconBox, background: activity.bg }}>
+                                <div key={index} style={{ ...styles.activityCard, background: activity.bg }}>
+                                    <div style={styles.activityIconBox}>
                                         {activity.icon}
                                     </div>
                                     <span style={styles.activityTag}>{activity.tag}</span>
@@ -382,30 +375,36 @@ const styles = {
         transition: "all 0.3s ease",
     },
     brand: {
-        display: "flex",
-        alignItems: "center",
-        gap: 12,
-        border: 0,
-        background: "transparent",
-        cursor: "pointer",
-        padding: 0,
-    },
+    display: "flex",
+    alignItems: "center",     // 👈 บังคับให้โลโก้และข้อความอยู่กึ่งกลางแนวตั้งเดียวกัน
+    gap: 12,                  // เว้นระยะห่างระหว่างโลโก้กับตัวหนังสือ
+    background: "none",
+    border: "none",
+    padding: 0,
+    cursor: "pointer",
+},
     logoWrapper: {
-        width: 44,
-        height: 44,
-        borderRadius: 14,
-        background: "linear-gradient(135deg, #E0F2FE 0%, #BAE6FD 100%)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        boxShadow: "0 4px 12px rgba(56, 189, 248, 0.2)",
-    },
+    width: 58,
+    height: 58,
+    minWidth: 58,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+    transform: "translateY(4px)", // 👈 ขยับตัวโลโก้ลงมาด้านล่าง 4-6px
+},
+    logoImage: {
+    width: "100%",
+    height: "100%",
+    objectFit: "contain", 
+},
     brandText: {
-        fontWeight: 700,
-        fontSize: "clamp(14px, 1.2vw, 17px)",
-        color: "#0F172A",
-        letterSpacing: "-0.02em",
-    },
+    fontSize: 18,
+    fontWeight: 700,
+    color: "#0F172A",
+    lineHeight: 1,           // 👈 บังคับความสูงบรรทัดตัวหนังสือไม่ให้มีพื้นที่ว่างดันลงมา
+    display: "inline-block",
+},
     menuToggle: {
         display: "none",
         border: 0,
@@ -457,7 +456,7 @@ const styles = {
     hero: {
         minHeight: "82vh",
         display: "grid",
-        gridTemplateColumns: "0.8fr 1.6fr", // 👈 ปรับเพิ่มสัดส่วนพื้นที่ฝั่งขวาให้อ่าน/แสดงผลภาพกว้างขึ้น
+        gridTemplateColumns: "0.8fr 1.3fr",
         position: "relative",
         background: "linear-gradient(180deg, #F0F9FF 0%, #E0F2FE 50%, #F8FAFC 100%)",
         padding: "clamp(40px, 6vw, 80px) clamp(20px, 5vw, 80px)",
@@ -519,13 +518,6 @@ const styles = {
         WebkitBackgroundClip: "text",
         WebkitTextFillColor: "transparent",
     },
-    heroText: {
-        fontSize: "clamp(15px, 1.1vw, 17px)",
-        color: "#475569",
-        margin: "20px 0 32px",
-        lineHeight: 1.7,
-        maxWidth: 540,
-    },
     heroActions: {
         display: "flex",
         gap: 14,
@@ -584,7 +576,7 @@ const styles = {
         alignItems: "center",
         justifyContent: "center",
         zIndex: 2,
-        width: "100%", // 👈 สั่งขยายพื้นที่กล่องหุ้มรูปให้เต็ม 100%
+        width: "100%",
     },
     imageBackdrop: {
         position: "absolute",
@@ -598,7 +590,7 @@ const styles = {
     },
     heroImage: {
         width: "100%",
-        maxWidth: "none", // 👈 ปลดล็อกข้อจำกัดขนาด เพื่อให้รูปภาพขยายได้เต็มที่ตามต้องการ
+        maxWidth: "none",
         height: "auto",
         borderRadius: 24,
         boxShadow: "0 25px 50px -12px rgba(15, 23, 42, 0.15)",
@@ -606,22 +598,7 @@ const styles = {
         position: "relative",
         zIndex: 1,
         border: "4px solid #FFFFFF",
-        transform: "scale(1.15)", // 👈 ขยายสเกลรูปภาพให้ใหญ่ขึ้นทันที
-    },
-    floatingBadge: {
-        position: "absolute",
-        bottom: 24,
-        left: 24,
-        background: "rgba(255, 255, 255, 0.95)",
-        backdropFilter: "blur(10px)",
-        padding: "12px 20px",
-        borderRadius: 16,
-        display: "flex",
-        alignItems: "center",
-        gap: 12,
-        boxShadow: "0 10px 25px rgba(0,0,0,0.1)",
-        zIndex: 3,
-        border: "1px solid #E0F2FE",
+        transform: "scale(1.15)",
     },
     sectionContainer: {
         maxWidth: 1200,
@@ -712,10 +689,10 @@ const styles = {
     statCard: {
         padding: "24px 20px",
         borderRadius: 20,
-        background: "#FFFFFF",
-        border: "1px solid #F1F5F9",
+        background: "linear-gradient(180deg, #FFFFFF 0%, #F0F9FF 100%)",
+        border: "1px solid #E0F2FE",
         textAlign: "center",
-        boxShadow: "0 4px 20px rgba(0,0,0,0.03)",
+        boxShadow: "0 4px 20px rgba(56, 189, 248, 0.05)",
         transition: "all 0.3s ease",
     },
     statIconBag: {
@@ -741,23 +718,23 @@ const styles = {
         background: "#F8FAFC",
     },
     newsGrid: {
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
-        gap: 28,
-    },
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", // 👈 ปรับ minmax จาก 320px เหลือ 250px - 260px
+    gap: 20, // 👈 ลดระยะห่างระหว่างการ์ดจาก 28 เหลือ 20px
+},
     newsCard: {
-        background: "#FFFFFF",
-        borderRadius: 20,
+        background: "linear-gradient(180deg, #FFFFFF 0%, #d2e9fa 100%)",
+        borderRadius: 24,
         overflow: "hidden",
-        boxShadow: "0 4px 20px rgba(0,0,0,0.03)",
-        border: "1px solid #F1F5F9",
+        boxShadow: "0 8px 24px rgba(56, 189, 248, 0.06)",
+        border: "1px solid #E0F2FE",
         transition: "all 0.3s ease",
         display: "flex",
         flexDirection: "column",
     },
     newsImageWrapper: {
         position: "relative",
-        height: 210,
+        height: 160,
         overflow: "hidden",
     },
     newsImage: {
@@ -786,7 +763,7 @@ const styles = {
         fontWeight: 600,
     },
     newsBody: {
-        padding: "20px 24px",
+        padding: "14px 18px",
         display: "flex",
         flexDirection: "column",
         flexGrow: 1,
@@ -796,19 +773,19 @@ const styles = {
         alignItems: "center",
         gap: 6,
         fontSize: 12,
-        color: "#94A3B8",
+        color: "#0284C7",
         marginBottom: 10,
-        fontWeight: 500,
+        fontWeight: 600,
     },
     newsTitle: {
-        fontSize: 17,
+        fontSize: 15,
         fontWeight: 700,
         color: "#0F172A",
         margin: "0 0 10px 0",
         lineHeight: 1.4,
     },
     newsDescription: {
-        fontSize: 14,
+        fontSize: 13,
         color: "#64748B",
         margin: "0 0 16px 0",
         display: "-webkit-box",
@@ -837,14 +814,14 @@ const styles = {
         gap: 24,
     },
     activityCard: {
-        padding: "32px 28px",
-        borderRadius: 24,
-        background: "#FFFFFF",
-        border: "1px solid #F1F5F9",
-        boxShadow: "0 4px 20px rgba(0,0,0,0.02)",
-        transition: "all 0.3s ease",
-        position: "relative",
-    },
+    padding: "32px 28px",
+    borderRadius: 24,
+    background: "linear-gradient(145deg, #F0F9FF 0%, #E0F2FE 100%)", // 👈 เปลี่ยนเป็นสีฟ้าอมขาวพาสเทลทั้งใบ
+    border: "1px solid #BAE6FD",
+    boxShadow: "0 10px 25px rgba(56, 189, 248, 0.08)",
+    transition: "all 0.3s ease",
+    position: "relative",
+},
     activityIconBox: {
         width: 60,
         height: 60,
@@ -856,12 +833,12 @@ const styles = {
         marginBottom: 20,
     },
     activityTag: {
-        fontSize: 11,
+        fontSize: 12,
         fontWeight: 700,
         color: "#0284C7",
-        background: "#F0F9FF",
-        padding: "4px 10px",
-        borderRadius: 8,
+        background: "#E0F2FE",
+        padding: "5px 12px",
+        borderRadius: 20,
         position: "absolute",
         top: 28,
         right: 28,
@@ -940,15 +917,15 @@ const styles = {
         fontSize: 14,
     },
     footerBottom: {
-        borderTop: "1px solid #1E293B",
-        paddingTop: 28,
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        flexWrap: "wrap",
-        gap: 16,
-        fontSize: 13,
-    },
+    borderTop: "1px solid #1E293B",
+    paddingTop: 28,
+    display: "flex",
+    justifyContent: "space-between", // 👈 เปลี่ยนเป็น justifyContent
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: 16,
+    fontSize: 13,
+},
     copyright: {
         margin: 0,
     },
@@ -1010,17 +987,17 @@ const responsiveCss = `
   
   .statCard:hover {
     transform: translateY(-6px);
-    box-shadow: 0 12px 30px rgba(0,0,0,0.06);
+    box-shadow: 0 12px 30px rgba(56, 189, 248, 0.12);
   }
   
   .newsCard:hover {
     transform: translateY(-8px);
-    box-shadow: 0 20px 40px rgba(2, 132, 199, 0.08);
+    box-shadow: 0 20px 40px rgba(2, 132, 199, 0.12);
   }
   
   .activityCard:hover {
     transform: translateY(-6px);
-    box-shadow: 0 16px 32px rgba(0,0,0,0.05);
+    box-shadow: 0 16px 32px rgba(2, 132, 199, 0.12);
     border-color: #BAE6FD;
   }
   
