@@ -510,6 +510,9 @@ export default function Developmentp() {
                   style={{ ...styles.tabBtn, ...(activeTab === 'social' ? styles.tabBtnActive : {}) }}
                   onClick={() => setActiveTab('social')}
                 >
+
+
+
                   <Handshake size={14} />
                   สังคม
                 </button>
