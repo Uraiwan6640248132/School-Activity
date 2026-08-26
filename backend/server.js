@@ -662,8 +662,10 @@ app.get("/api/parent/activities/:parentId", (req, res) => {
 });
 
 // ==========================================
-// 🧑‍🎓 API พัฒนาการ
+// 🧑‍🎓 API พัฒนาการนักเรียน (Development API)
 // ==========================================
+
+// 1. ดึงข้อมูลนักเรียนตามระดับชั้น
 app.get('/api/student', (req, res) => {
   const { class_level } = req.query;
   if (!class_level) {
@@ -676,6 +678,7 @@ app.get('/api/student', (req, res) => {
   });
 });
 
+// 2. ดึงประวัติพัฒนาการทั้งหมดในระดับชั้น
 app.get('/api/development', (req, res) => {
   const { class_level } = req.query;
   if (!class_level) {
@@ -695,6 +698,7 @@ app.get('/api/development', (req, res) => {
   });
 });
 
+// 3. ดึงประวัติพัฒนาการของนักเรียนเฉพาะคน
 app.get('/api/development/student', (req, res) => {
   console.log("👉 Query ที่ได้รับ:", req.query);
   const studentId = req.query.student_id || req.query.studentId || req.query.Student_id;
@@ -711,6 +715,45 @@ app.get('/api/development/student', (req, res) => {
   });
 });
 
+// 4. บันทึกข้อมูลพัฒนาการใหม่
+app.post('/api/development', (req, res) => {
+  const {
+    Student_id, Year, Term, date, Physical, Weight, Height,
+    Dental_health, Vaccination, Motor_skills, Emotional, Emotion, Emotion_control,
+    Confidence, Social, Stress, Interaction, Assistance, Intellectual,
+    Problem_solving, Communication, Remembering
+  } = req.body;
+
+  if (!Student_id) {
+    return res.status(400).json({ error: "กรุณาระบุรหัสนักเรียน (Student_id)" });
+  }
+
+  const insertSql = `
+    INSERT INTO development (
+      Student_id, Year, Term, date, Physical, Weight, Height, 
+      Dental_health, Vaccination, Motor_skills, Emotional, Emotion, 
+      Emotion_control, Confidence, Social, Stress, Interaction, 
+      Assistance, Intellectual, Problem_solving, Communication, Remembering
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `;
+
+  const values = [
+    Student_id, Year, Term, date, Physical, Weight, Height, Dental_health,
+    Vaccination, Motor_skills, Emotional, Emotion, Emotion_control, Confidence,
+    Social, Stress, Interaction, Assistance, Intellectual, Problem_solving,
+    Communication, Remembering
+  ];
+
+  db.query(insertSql, values, (err, result) => {
+    if (err) {
+      console.error("Database error during POST:", err);
+      return res.status(500).json({ error: err.message });
+    }
+    res.status(201).json({ message: "บันทึกการประเมินพัฒนาการเรียบร้อย", id: result.insertId });
+  });
+});
+
+// 5. แก้ไขข้อมูลพัฒนาการ
 app.put('/api/development/:id', (req, res) => {
   const devId = req.params.id;
   const {
@@ -760,9 +803,10 @@ app.put('/api/development/:id', (req, res) => {
   });
 });
 
+// 6. ลบข้อมูลพัฒนาการ (ปรับปรุงการรับค่า class_level ให้ยืดหยุ่นขึ้น)
 app.delete('/api/development/:id', (req, res) => {
   const devId = req.params.id;
-  const { class_level } = req.query;
+  const class_level = req.query.class_level || req.body.class_level || req.body.Class_level;
 
   if (!class_level) {
     return res.status(400).json({ message: "กรุณาระบุ class_level เพื่อตรวจสอบสิทธิ์การลบ" });
@@ -785,43 +829,6 @@ app.delete('/api/development/:id', (req, res) => {
       if (err) return res.status(500).json({ error: err.message });
       res.json({ message: "ลบข้อมูลการประเมินพัฒนาการเรียบร้อย" });
     });
-  });
-});
-
-app.post('/api/development', (req, res) => {
-  const {
-    Student_id, Year, Term, date, Physical, Weight, Height,
-    Dental_health, Vaccination, Motor_skills, Emotional, Emotion, Emotion_control,
-    Confidence, Social, Stress, Interaction, Assistance, Intellectual,
-    Problem_solving, Communication, Remembering
-  } = req.body;
-
-  if (!Student_id) {
-    return res.status(400).json({ error: "กรุณาระบุรหัสนักเรียน (Student_id)" });
-  }
-
-  const insertSql = `
-    INSERT INTO development (
-      Student_id, Year, Term, date, Physical, Weight, Height, 
-      Dental_health, Vaccination, Motor_skills, Emotional, Emotion, 
-      Emotion_control, Confidence, Social, Stress, Interaction, 
-      Assistance, Intellectual, Problem_solving, Communication, Remembering
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `;
-
-  const values = [
-    Student_id, Year, Term, date, Physical, Weight, Height, Dental_health,
-    Vaccination, Motor_skills, Emotional, Emotion, Emotion_control, Confidence,
-    Social, Stress, Interaction, Assistance, Intellectual, Problem_solving,
-    Communication, Remembering
-  ];
-
-  db.query(insertSql, values, (err, result) => {
-    if (err) {
-      console.error("Database error during POST:", err);
-      return res.status(500).json({ error: err.message });
-    }
-    res.status(201).json({ message: "บันทึกการประเมินพัฒนาการเรียบร้อย", id: result.insertId });
   });
 });
 

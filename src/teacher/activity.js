@@ -1,9 +1,27 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import {
+  Image,
+  Calendar,
+  MapPin,
+  Camera,
+  Search,
+  X,
+  Loader2,
+  FolderOpen,
+  Plus,
+  Edit,
+  Trash2,
+  Upload,
+  ChevronLeft,
+  ChevronRight,
+  Sparkles
+} from "lucide-react";
 
 function Activity() {
   const [activities, setActivities] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [loading, setLoading] = useState(true);
 
   const [nameActivity, setNameActivity] = useState("");
   const [photographer, setPhotographer] = useState("");
@@ -29,6 +47,7 @@ function Activity() {
   }, []);
 
   const fetchActivities = async () => {
+    setLoading(true);
     try {
       const res = await axios.get(API_URL, {
         headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache', 'Expires': '0' }
@@ -36,6 +55,8 @@ function Activity() {
       setActivities(res.data);
     } catch (err) {
       console.error("ดึงข้อมูลไม่สำเร็จ! ตรวจสอบการเชื่อมต่อ API:", err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -49,7 +70,7 @@ function Activity() {
         return new Promise((resolve) => {
           const reader = new FileReader();
           reader.onload = (event) => {
-            const img = new Image();
+            const img = new window.Image();
             img.onload = () => {
               const canvas = document.createElement("canvas");
               let width = img.width;
@@ -171,21 +192,56 @@ function Activity() {
     );
   });
 
+  if (loading) {
+    return (
+      <div style={styles.loadingContainer}>
+        <Loader2 size={48} style={styles.spinner} />
+        <p style={styles.loadingText}>กำลังโหลดข้อมูลกิจกรรม...</p>
+      </div>
+    );
+  }
+
   return (
     <div style={styles.container}>
       <div style={styles.wrapper}>
 
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "25px", flexWrap: "wrap", gap: "16px", width: "100%" }}>
-          <div>
-            <h2 style={{ margin: 10, color: '#0369a1' }}>ข้อมูลกิจกรรม</h2>
-
+        {/* Header */}
+        <div style={styles.header}>
+          <div style={styles.headerLeft}>
+            <div style={styles.headerIcon}>
+              <Sparkles size={24} color="#FFFFFF" />
+            </div>
+            <div>
+              <h1 style={styles.mainTitle}>จัดการข้อมูลกิจกรรม 🏫</h1>
+              <p style={styles.subTitle}>
+                ระบบจัดการภาพและกิจกรรมทั้งหมด (ทั้งหมด <span style={styles.activityCount}>{activities.length}</span> กิจกรรม)
+              </p>
+            </div>
           </div>
           <button
             onClick={() => { if (showForm) clearForm(); else setShowForm(true); }}
-            style={showForm ? { ...styles.btn, ...styles.btnDanger } : { ...styles.btn, ...styles.btnPrimary }}
+            style={showForm ? styles.btnDanger : styles.btnPrimary}
           >
-            {showForm ? "✕ ปิดฟอร์มบันทึก" : "+ เพิ่มกิจกรรมใหม่"}
+            {showForm ? <X size={16} /> : <Plus size={16} />}
+            {showForm ? "ปิดฟอร์มบันทึก" : "เพิ่มกิจกรรมใหม่"}
           </button>
+        </div>
+
+        {/* Search Bar */}
+        <div style={styles.searchWrapper}>
+          <Search size={18} color="#94A3B8" style={styles.searchIcon} />
+          <input
+            type="text"
+            placeholder="ค้นหากิจกรรม ชื่อสถานที่ หรือผู้บันทึกภาพ..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={styles.searchInput}
+          />
+          {searchTerm && (
+            <button onClick={() => setSearchTerm('')} style={styles.clearSearchBtn}>
+              <X size={16} />
+            </button>
+          )}
         </div>
 
         {/* Form Modal */}
@@ -197,7 +253,9 @@ function Activity() {
                   <span style={styles.titleDot}></span>
                   {editId ? "แก้ไขข้อมูลกิจกรรม" : "เพิ่มกิจกรรมใหม่"}
                 </h2>
-                <button type="button" onClick={clearForm} style={styles.closeBtn}>✕</button>
+                <button type="button" onClick={clearForm} style={styles.closeBtn}>
+                  <X size={18} />
+                </button>
               </div>
 
               {/* Upload Zone */}
@@ -205,10 +263,8 @@ function Activity() {
                 <label style={styles.uploadLabel}>
                   <input type="file" accept="image/*" multiple onChange={handleImageChange} style={{ display: "none" }} />
                   <div style={styles.uploadIconContainer}>
-                    <svg width="20" height="20" fill="none" stroke="#0284c7" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-                    </svg>
-                    <span style={styles.uploadText}>รูปภาพ</span>
+                    <Upload size={20} color="#4A90D9" />
+                    <span style={styles.uploadText}>อัปโหลดรูป</span>
                   </div>
                 </label>
 
@@ -218,7 +274,7 @@ function Activity() {
                       <img src={src} alt={`preview-${index}`} style={styles.coverImg} />
                     </div>
                   ))}
-                  {previewImages.length === 0 && <span style={styles.emptyItalic}>ยังไม่มีการเลือกรูปภาพ</span>}
+                  {previewImages.length === 0 && <span style={styles.emptyItalic}>ยังไม่ได้เลือกรูปภาพ</span>}
                 </div>
               </div>
 
@@ -246,7 +302,7 @@ function Activity() {
                 </div>
               </div>
 
-              <button type="submit" style={{ ...styles.btn, ...styles.btnSuccess, ...styles.btnFull, marginTop: "24px" }}>
+              <button type="submit" style={styles.btnSuccessFull}>
                 💾 บันทึกข้อมูลกิจกรรม
               </button>
             </form>
@@ -257,8 +313,9 @@ function Activity() {
         <div style={styles.activityGrid}>
           {filteredActivities.length === 0 ? (
             <div style={styles.noDataBox}>
-              <span style={{ fontSize: "36px", display: "block", marginBottom: "8px" }}>📁</span>
-              <p style={{ color: "#94a3b8", fontSize: "14px", margin: 0 }}>ไม่พบข้อมูลกิจกรรมในระบบการค้นหา</p>
+              <FolderOpen size={56} color="#CBD5E1" />
+              <p style={styles.noDataText}>ไม่พบข้อมูลกิจกรรม</p>
+              <p style={styles.noDataSub}>ลองเปลี่ยนคำค้นหาหรือกดเพิ่มกิจกรรมใหม่</p>
             </div>
           ) : (
             filteredActivities.map((item) => {
@@ -280,7 +337,7 @@ function Activity() {
                   <div
                     style={{
                       ...styles.cardImageZone,
-                      cursor: itemImages.length > 0 ? "zoom-in" : "default"
+                      cursor: itemImages.length > 0 ? "pointer" : "default"
                     }}
                     onClick={() => {
                       if (itemImages.length > 0) {
@@ -290,48 +347,52 @@ function Activity() {
                     }}
                   >
                     {itemImages.length > 0 && itemImages[0] ? (
-                      <div style={{ width: "100%", height: "100%", position: "relative" }}>
+                      <div style={styles.cardImageWrapper}>
                         <img src={itemImages[0]} alt={item.Name_activity} style={styles.coverImg} />
                         {itemImages.length > 1 && (
                           <div style={styles.imageBadge}>
-                            +{itemImages.length - 1} รูปภาพ
+                            <Image size={12} />
+                            +{itemImages.length - 1}
                           </div>
                         )}
                       </div>
                     ) : (
                       <div style={styles.noImageZone}>
-                        <svg width="28" height="28" fill="none" stroke="#cbd5e1" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                        <span style={{ fontSize: "11px", color: "#94a3b8" }}>ไม่มีรูปภาพ</span>
+                        <Image size={32} color="#CBD5E1" />
+                        <span style={styles.noImageText}>ไม่มีรูปภาพ</span>
                       </div>
                     )}
                   </div>
 
                   {/* Information Details */}
                   <div style={styles.cardBody}>
-                    <h2 style={styles.cardTitle} title={item.Name_activity}>
+                    <h3 style={styles.cardTitle} title={item.Name_activity}>
                       {item.Name_activity || "ไม่มีชื่อกิจกรรม"}
-                    </h2>
-                    <div style={styles.cardDetailsBorder}>
-                      <p style={styles.cardDetailItem}>
-                        <span style={styles.primaryColor}>📸</span> <strong style={styles.detailLabel}>ผู้บันทึก:</strong> {item.Photographer || "ไม่ระบุ"}
-                      </p>
-                      <p style={styles.cardDetailItem}>
-                        <span style={styles.primaryColor}>📅</span> <strong style={styles.detailLabel}>วันที่:</strong> {formatDate(item.Activity_date)}
-                      </p>
-                      <p style={styles.cardDetailItem}>
-                        <span style={styles.primaryColor}>📍</span> <strong style={styles.detailLabel}>สถานที่:</strong> {item.Location || "ไม่ระบุ"}
-                      </p>
+                    </h3>
+                    <div style={styles.cardDetails}>
+                      <div style={styles.cardDetailItem}>
+                        <Camera size={14} color="#94A3B8" />
+                        <span>{item.Photographer || "ไม่ระบุ"}</span>
+                      </div>
+                      <div style={styles.cardDetailItem}>
+                        <Calendar size={14} color="#94A3B8" />
+                        <span>{formatDate(item.Activity_date)}</span>
+                      </div>
+                      <div style={styles.cardDetailItem}>
+                        <MapPin size={14} color="#94A3B8" />
+                        <span>{item.Location || "ไม่ระบุ"}</span>
+                      </div>
                     </div>
                   </div>
 
                   {/* Action Buttons */}
-                  <div style={styles.cardActionsRow}>
-                    <button onClick={() => handleEdit(item)} style={{ ...styles.actionBtn, ...styles.btnEdit }}>
+                  <div style={styles.cardActions}>
+                    <button onClick={() => handleEdit(item)} style={styles.btnEdit}>
+                      <Edit size={14} />
                       แก้ไข
                     </button>
-                    <button onClick={() => handleDelete(item.Activity_id)} style={{ ...styles.actionBtn, ...styles.btnDelete }}>
+                    <button onClick={() => handleDelete(item.Activity_id)} style={styles.btnDelete}>
+                      <Trash2 size={14} />
                       ลบ
                     </button>
                   </div>
@@ -348,10 +409,15 @@ function Activity() {
             <div style={styles.galleryContainer} onClick={(e) => e.stopPropagation()}>
               <div style={styles.galleryHeader}>
                 <div>
-                  <h2 style={styles.modalTitle}>{galleryTitle}</h2>
-                  <span style={styles.gallerySub}>📂 คลังภาพถ่ายรวมทั้งหมด ({activeGalleryImages.length} รูป)</span>
+                  <h2 style={styles.galleryTitle}>{galleryTitle}</h2>
+                  <span style={styles.gallerySub}>
+                    <Image size={14} />
+                    คลังภาพถ่ายรวมทั้งหมด ({activeGalleryImages.length} รูป)
+                  </span>
                 </div>
-                <button onClick={() => setActiveGalleryImages(null)} style={styles.circleCloseBtn}>✕</button>
+                <button onClick={() => setActiveGalleryImages(null)} style={styles.closeBtn}>
+                  <X size={18} />
+                </button>
               </div>
 
               <div style={styles.galleryGrid}>
@@ -376,7 +442,9 @@ function Activity() {
         {lightBoxImage && (
           <div style={styles.lightboxOverlay} onClick={() => setLightBoxImage(null)}>
             <div style={styles.lightboxContent} onClick={(e) => e.stopPropagation()}>
-              <button onClick={() => setLightBoxImage(null)} style={styles.lightboxCloseBtn}>✕</button>
+              <button onClick={() => setLightBoxImage(null)} style={styles.lightboxCloseBtn}>
+                <X size={24} />
+              </button>
 
               <div style={styles.lightboxMainRow}>
                 {currentLightBoxIndex > 0 ? (
@@ -388,7 +456,7 @@ function Activity() {
                     }}
                     style={styles.arrowBtn}
                   >
-                    ◀
+                    <ChevronLeft size={24} />
                   </button>
                 ) : <div style={{ width: "48px" }} />}
 
@@ -405,13 +473,13 @@ function Activity() {
                     }}
                     style={styles.arrowBtn}
                   >
-                    ▶
+                    <ChevronRight size={24} />
                   </button>
                 ) : <div style={{ width: "48px" }} />}
               </div>
 
               <div style={styles.lightboxCounter}>
-                รูปภาพที่ {currentLightBoxIndex + 1} จาก {activeGalleryImages.length}
+                {currentLightBoxIndex + 1} / {activeGalleryImages.length}
               </div>
             </div>
           </div>
@@ -422,495 +490,582 @@ function Activity() {
   );
 }
 
+// ============================================================
+// STYLES (คัดลอกดีไซน์และธีมจากฝั่งผู้ปกครองแบบ 100%)
+// ============================================================
+
 const styles = {
   container: {
-    padding: "20px 10px",
-    fontFamily: "sans-serif",
-    backgroundColor: "f0f9ff 0%",
-    width: "100%",
-    boxSizing: "border-box",
+    padding: '20px',
+    minHeight: '100vh',
+    backgroundColor: '#F8FAFC',
+    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
   },
   wrapper: {
-    maxWidth: "1240px",
-    margin: "0 auto",
-    width: "100%",
+    maxWidth: '1400px',
+    margin: '0 auto',
+    width: '100%',
   },
-  headerBox: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: "25px",
-    flexWrap: "wrap",
-    gap: "16px",
-    backgroundColor: "#ffffff",
-    border: "1px solid #ccc",
-    borderRadius: "8px",
-    padding: "20px",
-    boxShadow: "0 4px 10px rgba(0, 0, 0, 0.05)",
+
+  // Loading
+  loadingContainer: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: '100vh',
+    gap: '16px',
   },
-  badge: {
-    padding: "3px 10px",
-    fontSize: "12px",
-    fontWeight: "bold",
-    backgroundColor: "#e0f2fe",
-    color: "#0284c7",
-    borderRadius: "12px",
-    display: "inline-block",
-    marginBottom: "6px",
+  spinner: {
+    animation: 'spin 1s linear infinite',
+    color: '#4A90D9',
+  },
+  loadingText: {
+    color: '#94A3B8',
+    fontSize: '16px',
+  },
+
+  // Header
+  header: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '20px',
+    flexWrap: 'wrap',
+    gap: '12px',
+  },
+  headerLeft: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '14px',
+  },
+  headerIcon: {
+    width: '48px',
+    height: '48px',
+    borderRadius: '12px',
+    backgroundColor: '#4A90D9',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    boxShadow: '0 4px 12px rgba(74, 144, 217, 0.25)',
   },
   mainTitle: {
-    fontSize: "24px",
-    fontWeight: "bold",
+    fontSize: '24px',
+    fontWeight: '700',
+    color: '#1A202C',
     margin: 0,
-    color: "#333333",
   },
-  titleAccent: {
-    color: "#0284c7",
+  subTitle: {
+    fontSize: '14px',
+    color: '#718096',
+    margin: '2px 0 0 0',
   },
-  btn: {
-    padding: "10px 20px",
-    fontSize: "14px",
-    fontWeight: "bold",
-    borderRadius: "6px",
-    border: "none",
-    cursor: "pointer",
-    transition: "background-color 0.2s",
+  activityCount: {
+    fontWeight: '700',
+    color: '#4A90D9',
   },
+
+  // Buttons
   btnPrimary: {
-    backgroundColor: "#0284c7",
-    color: "#ffffff",
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    padding: '10px 18px',
+    backgroundColor: '#4A90D9',
+    color: '#FFFFFF',
+    border: 'none',
+    borderRadius: '10px',
+    cursor: 'pointer',
+    fontSize: '14px',
+    fontWeight: '500',
+    boxShadow: '0 2px 6px rgba(74, 144, 217, 0.2)',
+    transition: 'all 0.2s ease',
+    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
   },
   btnDanger: {
-    backgroundColor: "#ef4444",
-    color: "#ffffff",
-  },
-  btnSuccess: {
-    backgroundColor: "#10b981",
-    color: "#ffffff",
-  },
-  btnFull: {
-    width: "100%",
-  },
-  searchWrapper: {
-    position: "relative",
-    display: "flex",
-    alignItems: "center",
-    marginBottom: "25px",
-    width: "100%",
-  },
-  searchIcon: {
-    position: "absolute",
-    left: "15px",
-    fontSize: "16px",
-  },
-  searchInput: {
-    width: "100%",
-    padding: "12px 15px 12px 42px",
-    backgroundColor: "#ffffff",
-    border: "1px solid #ccc",
-    borderRadius: "8px",
-    fontSize: "14px",
-    boxSizing: "border-box",
-    color: "#333333",
-    outline: "none",
-  },
-  modalOverlay: {
-    position: "fixed",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(15, 23, 42, 0.4)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 9999,
-    padding: "16px",
-  },
-  modalForm: {
-    backgroundColor: "#ffffff",
-    borderRadius: "8px",
-    width: "100%",
-    maxWidth: "480px",
-    padding: "25px",
-    boxShadow: "0 10px 25px rgba(0, 0, 0, 0.15)",
-    border: "1px solid #ccc",
-    boxSizing: "border-box",
-  },
-  modalHeader: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: "20px",
-    borderBottom: "1px solid #f1f5f9",
-    paddingBottom: "12px",
-  },
-  modalTitle: {
-    fontSize: "18px",
-    fontWeight: "bold",
-    margin: 0,
-    color: "#333333",
-    display: "flex",
-    alignItems: "center",
-    gap: "8px",
-  },
-  titleDot: {
-    width: "10px",
-    height: "10px",
-    backgroundColor: "#0284c7",
-    borderRadius: "50%",
-    display: "inline-block",
-  },
-  closeBtn: {
-    background: "none",
-    border: "none",
-    fontSize: "20px",
-    color: "#94a3b8",
-    cursor: "pointer",
-  },
-  uploadZone: {
-    display: "flex",
-    alignItems: "center",
-    border: "1px dashed #0284c7",
-    borderRadius: "8px",
-    padding: "15px",
-    marginBottom: "20px",
-    backgroundColor: "#f0f9ff",
-  },
-  uploadLabel: {
-    cursor: "pointer",
-    border: "1px solid #ccc",
-    borderRadius: "8px",
-    padding: "10px",
-    backgroundColor: "#ffffff",
-    textAlign: "center",
-    minWidth: "70px",
-    boxSizing: "border-box",
-  },
-  uploadIconContainer: {
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  uploadText: {
-    marginTop: "4px",
-    fontSize: "11px",
-    fontWeight: "bold",
-    color: "#0284c7",
-  },
-  previewContainer: {
-    display: "flex",
-    gap: "8px",
-    flexWrap: "wrap",
-    flex: 1,
-    marginLeft: "16px",
-    overflowY: "auto",
-    maxHeight: "75px",
-    paddingRight: "4px",
-  },
-  previewBox: {
-    width: "50px",
-    height: "50px",
-    borderRadius: "6px",
-    overflow: "hidden",
-    border: "1px solid #f1f5f9",
-    boxShadow: "0 2px 4px rgba(0,0,0,0.02)",
-    flexShrink: 0,
-  },
-  coverImg: {
-    width: "100%",
-    height: "100%",
-    objectFit: "cover",
-  },
-  emptyItalic: {
-    fontSize: "12px",
-    color: "#94a3b8",
-    fontStyle: "italic",
-  },
-  formGroupStack: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "16px",
-  },
-  inputLabel: {
-    display: "block",
-    fontSize: "12px",
-    fontWeight: "bold",
-    color: "#475569",
-    marginBottom: "6px",
-  },
-  textInput: {
-    width: "100%",
-    padding: "10px 12px",
-    border: "1px solid #ccc",
-    borderRadius: "6px",
-    fontSize: "14px",
-    backgroundColor: "#ffffff",
-    boxSizing: "border-box",
-    color: "#333333",
-    outline: "none",
-  },
-  gridTwoColumns: {
-    display: "flex",
-    gap: "12px",
-  },
-  activityGrid: {
-    display: "flex",
-    gap: "20px",
-    flexWrap: "wrap",
-    width: "100%",
-  },
-  noDataBox: {
-    width: "100%",
-    textAlign: "center",
-    backgroundColor: "#ffffff",
-    borderRadius: "8px",
-    border: "1px solid #ccc",
-    padding: "40px 16px",
-    boxShadow: "0 4px 10px rgba(0,0,0,0.05)",
-  },
-  activityCard: {
-    backgroundColor: "#ffffff",
-    border: "1px solid #ccc",
-    borderRadius: "12px",
-    boxShadow: "0 4px 10px rgba(0, 0, 0, 0.05)",
-    width: "calc(25% - 15px)",
-    minWidth: "260px",
-    display: "flex",
-    flexDirection: "column",
-    overflow: "hidden",
-    boxSizing: "border-box",
-    flexGrow: 1,
-  },
-  cardImageZone: {
-    width: "100%",
-    height: "176px",
-    backgroundColor: "#f8fafc",
-    position: "relative",
-    overflow: "hidden",
-  },
-  imageBadge: {
-    position: "absolute",
-    bottom: "8px",
-    right: "8px",
-    backgroundColor: "rgba(15, 23, 42, 0.75)",
-    color: "#ffffff",
-    fontSize: "11px",
-    fontWeight: "bold",
-    padding: "2px 8px",
-    borderRadius: "4px",
-  },
-  noImageZone: {
-    width: "100%",
-    height: "100%",
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: "6px",
-  },
-  cardBody: {
-    padding: "16px",
-    flexGrow: 1,
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "space-between",
-  },
-  cardTitle: {
-    fontSize: "16px",
-    fontWeight: "bold",
-    margin: "0 0 12px 0",
-    color: "#333333",
-    overflow: "hidden",
-    textOverflow: "ellipsis",
-    whiteSpace: "nowrap",
-  },
-  cardDetailsBorder: {
-    borderLeft: "2px solid #e2e8f0",
-    paddingLeft: "12px",
-    display: "flex",
-    flexDirection: "column",
-    gap: "8px",
-  },
-  cardDetailItem: {
-    fontSize: "13px",
-    color: "#000000",          // 💡 เปลี่ยนรายละเอียดข้อมูลหลังไอคอนให้เป็นสีดำเข้มชัดเจน
-    fontWeight: "bold",        // 💡 เพิ่มความหนาให้ตัวหนังสืออ่านง่ายขึ้น
-    margin: 0,
-  },
-  detailLabel: {
-    color: "#000000",          // 💡 เปลี่ยนคำว่า "ผู้บันทึก:", "วันที่:", "สถานที่:" ให้เป็นสีดำเข้ม
-    fontWeight: "bold",
-  },
-  primaryColor: {
-    color: "#0284c7",
-  },
-  cardActionsRow: {
-    display: "flex",
-    backgroundColor: "#ffffff",
-    padding: "12px 16px",
-    gap: "12px",
-  },
-  actionBtn: {
-    flex: 1,
-    padding: "10px 0",
-    fontSize: "14px",
-    fontWeight: "bold",
-    borderRadius: "10px",
-    cursor: "pointer",
-    transition: "all 0.2s ease-in-out",
-    textAlign: "center",
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    padding: '10px 18px',
+    backgroundColor: '#EF4444',
+    color: '#FFFFFF',
+    border: 'none',
+    borderRadius: '10px',
+    cursor: 'pointer',
+    fontSize: '14px',
+    fontWeight: '500',
+    transition: 'all 0.2s ease',
+    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
   },
   btnEdit: {
-    backgroundColor: "#e0f2fe",
-    color: "#0369a1",
-    border: "1px solid #bae6fd",
+    flex: 1,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '6px',
+    padding: '8px',
+    backgroundColor: '#EBF3FB',
+    color: '#4A90D9',
+    border: 'none',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    fontSize: '13px',
+    fontWeight: '500',
+    transition: 'all 0.2s ease',
+    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
   },
   btnDelete: {
-    backgroundColor: "#ffe4e6",
-    color: "#b91c1c",
-    border: "1px solid #fecdd3",
+    flex: 1,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '6px',
+    padding: '8px',
+    backgroundColor: '#FEE2E2',
+    color: '#EF4444',
+    border: 'none',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    fontSize: '13px',
+    fontWeight: '500',
+    transition: 'all 0.2s ease',
+    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
   },
-  galleryContainer: {
-    backgroundColor: "#ffffff",
-    border: "1px solid #ccc",
-    borderRadius: "8px",
-    width: "100%",
-    maxWidth: "560px",
-    padding: "25px",
-    boxShadow: "0 15px 35px rgba(0,0,0,0.2)",
-    display: "flex",
-    flexDirection: "column",
-    maxHeight: "80vh",
-    boxSizing: "border-box",
+  btnSuccessFull: {
+    width: '100%',
+    padding: '12px',
+    backgroundColor: '#10B981',
+    color: '#FFFFFF',
+    border: 'none',
+    borderRadius: '10px',
+    cursor: 'pointer',
+    fontSize: '14px',
+    fontWeight: '600',
+    marginTop: '24px',
+    boxShadow: '0 2px 6px rgba(16, 185, 129, 0.2)',
+    transition: 'all 0.2s ease',
+    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
   },
-  galleryHeader: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    width: "100%",
-    marginBottom: "16px",
-    borderBottom: "1px solid #f1f5f9",
-    paddingBottom: "12px",
+
+  // Search Bar
+  searchWrapper: {
+    position: 'relative',
+    display: 'flex',
+    alignItems: 'center',
+    marginBottom: '24px',
   },
-  gallerySub: {
-    fontSize: "12px",
-    fontWeight: "bold",
-    color: "#0284c7",
-    marginTop: "2px",
-    display: "block",
+  searchIcon: {
+    position: 'absolute',
+    left: '14px',
   },
-  circleCloseBtn: {
-    backgroundColor: "#f1f5f9",
-    border: "none",
-    width: "28px",
-    height: "28px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: "50%",
-    color: "#94a3b8",
-    fontSize: "12px",
-    cursor: "pointer",
+  searchInput: {
+    width: '100%',
+    padding: '12px 44px 12px 44px',
+    borderRadius: '12px',
+    border: '1px solid #E2E8F0',
+    fontSize: '14px',
+    backgroundColor: '#FFFFFF',
+    outline: 'none',
+    transition: 'all 0.2s ease',
+    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
   },
-  galleryGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(4, 1fr)",
-    gap: "12px",
-    overflowY: "auto",
-    paddingRight: "4px",
-    boxSizing: "border-box",
+  clearSearchBtn: {
+    position: 'absolute',
+    right: '14px',
+    background: 'none',
+    border: 'none',
+    color: '#94A3B8',
+    cursor: 'pointer',
+    padding: '4px',
   },
-  galleryItemBox: {
-    width: "100%",
-    aspectRatio: "1/1",
-    borderRadius: "6px",
-    border: "1px solid #ccc",
-    overflow: "hidden",
-    backgroundColor: "#f8fafc",
-    cursor: "zoom-in",
+
+  // Activity Grid
+  activityGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+    gap: '20px',
   },
-  lightboxOverlay: {
-    position: "fixed",
+  activityCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: '16px',
+    border: '1px solid #E2E8F0',
+    overflow: 'hidden',
+    transition: 'all 0.2s ease',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  cardImageZone: {
+    width: '100%',
+    height: '200px',
+    backgroundColor: '#F8FAFC',
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  cardImageWrapper: {
+    width: '100%',
+    height: '100%',
+    position: 'relative',
+  },
+  coverImg: {
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover',
+  },
+  imageBadge: {
+    position: 'absolute',
+    bottom: '8px',
+    right: '8px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '4px',
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    color: '#FFFFFF',
+    padding: '4px 10px',
+    borderRadius: '8px',
+    fontSize: '12px',
+    fontWeight: '500',
+  },
+  noImageZone: {
+    width: '100%',
+    height: '100%',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '6px',
+  },
+  noImageText: {
+    fontSize: '12px',
+    color: '#94A3B8',
+  },
+  cardBody: {
+    padding: '16px 18px',
+    flex: 1,
+  },
+  cardTitle: {
+    fontSize: '16px',
+    fontWeight: '600',
+    color: '#1A202C',
+    margin: '0 0 10px 0',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+  },
+  cardDetails: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '6px',
+  },
+  cardDetailItem: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    fontSize: '13px',
+    color: '#64748B',
+  },
+  cardActions: {
+    display: 'flex',
+    padding: '12px 18px 18px',
+    gap: '10px',
+  },
+
+  // Modal / Form Modal
+  modalOverlay: {
+    position: 'fixed',
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: "rgba(2, 6, 23, 0.95)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
+    backgroundColor: 'rgba(15, 23, 42, 0.5)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 9999,
+    padding: '16px',
+    backdropFilter: 'blur(4px)',
+  },
+  modalForm: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: '16px',
+    width: '100%',
+    maxWidth: '500px',
+    padding: '24px',
+    boxShadow: '0 25px 50px rgba(0,0,0,0.2)',
+    boxSizing: 'border-box',
+    maxHeight: '90vh',
+    overflowY: 'auto',
+  },
+  modalHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '20px',
+    paddingBottom: '12px',
+    borderBottom: '1px solid #F1F5F9',
+  },
+  modalTitle: {
+    fontSize: '18px',
+    fontWeight: '600',
+    color: '#1A202C',
+    margin: 0,
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+  },
+  titleDot: {
+    width: '8px',
+    height: '8px',
+    backgroundColor: '#4A90D9',
+    borderRadius: '50%',
+  },
+  closeBtn: {
+    background: 'none',
+    border: 'none',
+    color: '#94A3B8',
+    cursor: 'pointer',
+    padding: '4px',
+    borderRadius: '8px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  uploadZone: {
+    display: 'flex',
+    alignItems: 'center',
+    border: '1px dashed #CBD5E1',
+    borderRadius: '12px',
+    padding: '14px',
+    marginBottom: '20px',
+    backgroundColor: '#F8FAFC',
+  },
+  uploadLabel: {
+    cursor: 'pointer',
+    border: '1px solid #E2E8F0',
+    borderRadius: '10px',
+    padding: '10px 14px',
+    backgroundColor: '#FFFFFF',
+    textAlign: 'center',
+    flexShrink: 0,
+  },
+  uploadIconContainer: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '4px',
+  },
+  uploadText: {
+    fontSize: '12px',
+    fontWeight: '500',
+    color: '#4A90D9',
+  },
+  previewContainer: {
+    display: 'flex',
+    gap: '8px',
+    flexWrap: 'wrap',
+    flex: 1,
+    marginLeft: '12px',
+    overflowY: 'auto',
+    maxHeight: '70px',
+  },
+  previewBox: {
+    width: '48px',
+    height: '48px',
+    borderRadius: '8px',
+    overflow: 'hidden',
+    border: '1px solid #E2E8F0',
+    flexShrink: 0,
+  },
+  emptyItalic: {
+    fontSize: '12px',
+    color: '#94A3B8',
+    fontStyle: 'italic',
+  },
+  formGroupStack: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '14px',
+  },
+  inputLabel: {
+    display: 'block',
+    fontSize: '13px',
+    fontWeight: '500',
+    color: '#475569',
+    marginBottom: '6px',
+  },
+  textInput: {
+    width: '100%',
+    padding: '10px 14px',
+    border: '1px solid #E2E8F0',
+    borderRadius: '10px',
+    fontSize: '14px',
+    backgroundColor: '#FFFFFF',
+    boxSizing: 'border-box',
+    outline: 'none',
+    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
+  },
+  gridTwoColumns: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: '12px',
+  },
+
+  // Gallery
+  galleryContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: '16px',
+    width: '100%',
+    maxWidth: '640px',
+    padding: '24px',
+    boxShadow: '0 25px 50px rgba(0,0,0,0.2)',
+    maxHeight: '85vh',
+    display: 'flex',
+    flexDirection: 'column',
+    boxSizing: 'border-box',
+  },
+  galleryHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: '16px',
+    paddingBottom: '12px',
+    borderBottom: '1px solid #F1F5F9',
+  },
+  galleryTitle: {
+    fontSize: '18px',
+    fontWeight: '600',
+    color: '#1A202C',
+    margin: 0,
+  },
+  gallerySub: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    fontSize: '13px',
+    color: '#94A3B8',
+    marginTop: '2px',
+  },
+  galleryGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(4, 1fr)',
+    gap: '12px',
+    overflowY: 'auto',
+    paddingRight: '4px',
+  },
+  galleryItemBox: {
+    position: 'relative',
+    width: '100%',
+    aspectRatio: '1/1',
+    borderRadius: '10px',
+    overflow: 'hidden',
+    backgroundColor: '#F8FAFC',
+    cursor: 'pointer',
+    border: '1px solid #E2E8F0',
+  },
+
+  // Lightbox
+  lightboxOverlay: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(2, 6, 23, 0.92)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
     zIndex: 11000,
-    padding: "16px",
+    padding: '16px',
   },
   lightboxContent: {
-    backgroundColor: "transparent",
-    width: "100%",
-    maxWidth: "850px",
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    position: "relative",
+    width: '100%',
+    maxWidth: '900px',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    position: 'relative',
   },
   lightboxCloseBtn: {
-    position: "absolute",
-    top: "-48px",
+    position: 'absolute',
+    top: '-48px',
     right: 0,
-    backgroundColor: "rgba(255,255,255,0.1)",
-    border: "none",
-    color: "#ffffff",
-    width: "36px",
-    height: "36px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: "50%",
-    fontSize: "16px",
-    cursor: "pointer",
+    background: 'rgba(255,255,255,0.1)',
+    border: 'none',
+    color: '#FFFFFF',
+    width: '44px',
+    height: '44px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: '50%',
+    cursor: 'pointer',
   },
   lightboxMainRow: {
-    display: "flex",
-    width: "100%",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: "16px",
+    display: 'flex',
+    width: '100%',
+    alignItems: 'center',
+    gap: '16px',
   },
   arrowBtn: {
-    width: "48px",
-    height: "48px",
-    borderRadius: "50%",
-    border: "1px solid rgba(255,255,255,0.2)",
-    backgroundColor: "rgba(255,255,255,0.05)",
-    color: "#ffffff",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    cursor: "pointer",
+    width: '48px',
+    height: '48px',
+    borderRadius: '50%',
+    border: '1px solid rgba(255,255,255,0.2)',
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    color: '#FFFFFF',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer',
+    flexShrink: 0,
   },
   lightboxImgContainer: {
     flex: 1,
-    height: "65vh",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    overflow: "hidden",
+    height: '70vh',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
   },
   lightboxImg: {
-    maxWidth: "100%",
-    maxHeight: "100%",
-    objectFit: "contain",
-    borderRadius: "8px",
-    boxShadow: "0 25px 50px rgba(0,0,0,0.5)",
+    maxWidth: '100%',
+    maxHeight: '100%',
+    objectFit: 'contain',
+    borderRadius: '8px',
+    boxShadow: '0 25px 50px rgba(0,0,0,0.5)',
   },
   lightboxCounter: {
-    marginTop: "20px",
-    padding: "4px 12px",
-    backgroundColor: "rgba(255,255,255,0.1)",
-    borderRadius: "12px",
-    fontSize: "12px",
-    color: "rgba(255,255,255,0.8)",
-  }
+    marginTop: '20px',
+    padding: '6px 18px',
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: '20px',
+    fontSize: '14px',
+    color: 'rgba(255,255,255,0.8)',
+  },
+
+  // No Data
+  noDataBox: {
+    gridColumn: '1 / -1',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '60px 20px',
+    backgroundColor: '#FFFFFF',
+    borderRadius: '16px',
+    border: '1px solid #E2E8F0',
+  },
+  noDataText: {
+    fontSize: '18px',
+    fontWeight: '600',
+    color: '#475569',
+    margin: '16px 0 4px 0',
+  },
+  noDataSub: {
+    fontSize: '14px',
+    color: '#94A3B8',
+    margin: 0,
+  },
 };
 
 export default Activity;

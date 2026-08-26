@@ -21,22 +21,17 @@ import {
   TrendingUp,
   Heart,
   Brain,
-  Users,
   Activity,
   Weight,
   Ruler,
-  Shield,      // แทน Tooth
+  Shield,
   Syringe,
   Move,
   Handshake,
-  Sparkles,
   Loader2,
   CheckCircle,
   AlertCircle,
-  UserCheck,
-  ShieldCheck,
-  Clock,
-  FileText
+  Users
 } from 'lucide-react';
 
 ChartJS.register(
@@ -78,8 +73,8 @@ function TermComparisonChart({ studentDevList }) {
       {
         label: 'ภาคเรียนที่ 1',
         data: scoresTerm1,
-        backgroundColor: '#FFEBCD',
-        borderColor: '#FFEBCD',
+        backgroundColor: '#2baf2b',
+        borderColor: '#2baf2b',
         borderWidth: 1,
         borderRadius: 4,
         maxBarThickness: 48,
@@ -87,8 +82,8 @@ function TermComparisonChart({ studentDevList }) {
       {
         label: 'ภาคเรียนที่ 2',
         data: scoresTerm2,
-        backgroundColor: '#d0d9ff',
-        borderColor: '#d0d9ff',
+        backgroundColor: '#dd191d',
+        borderColor: '#dd191d',
         borderWidth: 1,
         borderRadius: 4,
         maxBarThickness: 48,
@@ -312,7 +307,8 @@ export default function Development() {
   };
 
   const openEditModal = (item) => {
-    setSelectedId(item.Development_id || item.development_id);
+    const targetId = item.Development_id || item.development_id || item.id || item._id;
+    setSelectedId(targetId);
 
     let cleanDate = '';
     if (item.date_clean) {
@@ -389,21 +385,41 @@ export default function Development() {
     }
   };
 
+  // 🟢 แก้ไขจุดนี้: แนบ ?class_level= ไปยัง API ลบข้อมูลตามที่ Backend ร้องขอ
   const handleDeleteSubmit = async () => {
-    if (!selectedId) return;
+    if (!selectedId) {
+      alert("ไม่พบ ID ของรายการที่จะลบ");
+      return;
+    }
+
+    const currentLevel = teacherClassLevel || getCurrentClassLevel(formData.Student_id) || (devList.length > 0 ? devList[0].class_level : null);
+
+    if (!currentLevel) {
+      alert("ไม่พบข้อมูลระดับชั้นเรียน (class_level) สำหรับตรวจสอบสิทธิ์การลบ");
+      return;
+    }
+
     try {
-      const res = await fetch(`${API_URL}/${selectedId}`, { method: 'DELETE' });
+      const res = await fetch(`${API_URL}/${selectedId}?class_level=${encodeURIComponent(currentLevel)}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const data = await res.json().catch(() => ({}));
+
       if (res.ok) {
-        alert("ลบข้อมูลการประเมินเรียบร้อย!");
+        alert(data.message || "ลบข้อมูลการประเมินเรียบร้อย!");
         setIsDeleteOpen(false);
-        const currentLevel = getCurrentClassLevel(formData.Student_id);
         resetForm();
         fetchDevelopmentData(currentLevel);
       } else {
-        alert("ไม่สามารถลบข้อมูลได้");
+        alert(data.message || data.error || "ไม่สามารถลบข้อมูลได้");
       }
     } catch (err) {
-      alert("เกิดข้อผิดพลาดในการลบข้อมูล");
+      console.error("Delete Error:", err);
+      alert("เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์เพื่อลบข้อมูล");
     }
   };
 
@@ -544,6 +560,7 @@ export default function Development() {
             </div>
           ) : (
             devList.map((item, idx) => {
+              const targetId = item.Development_id || item.development_id || item.id || item._id;
               const scoreBody = item.Weight && item.Height ? 100 : 75;
               const scoreEmotion = calculateSectionScore([item.Emotion, item.Emotion_control, item.Confidence]);
               const scoreSocial = calculateSectionScore([item.Stress, item.Interaction, item.Assistance]);
@@ -588,7 +605,14 @@ export default function Development() {
                         <Edit2 size={14} />
                         แก้ไข
                       </button>
-                      <button onClick={() => { setSelectedId(item.Development_id || item.development_id); setIsDeleteOpen(true); }} style={styles.deleteBtn}>
+                      <button 
+                        onClick={() => { 
+                          setSelectedId(targetId); 
+                          setFormData(prev => ({ ...prev, Student_id: String(item.Student_id) }));
+                          setIsDeleteOpen(true); 
+                        }} 
+                        style={styles.deleteBtn}
+                      >
                         <Trash2 size={14} />
                         ลบ
                       </button>
@@ -630,7 +654,7 @@ export default function Development() {
                       ส่วนสูง: <strong>{item.Height || '-'}</strong> ซม.
                     </span>
                     <span style={styles.bodySummaryItem}>
-                      <Shield size={14} color="#94A3B8" />  {/* เปลี่ยนจาก Tooth เป็น Shield */}
+                      <Shield size={14} color="#94A3B8" />
                       ฟัน: <strong style={{ color: '#27AE60' }}>{item.Dental_health || 'ปกติ'}</strong>
                     </span>
                   </div>
@@ -690,7 +714,7 @@ export default function Development() {
                   <span>ส่วนสูง: <strong>{selectedDetailItem.Height || '-'} ซม.</strong></span>
                 </div>
                 <div style={styles.detailBodyItem}>
-                  <Shield size={14} color="#94A3B8" />  {/* เปลี่ยนจาก Tooth เป็น Shield */}
+                  <Shield size={14} color="#94A3B8" />
                   <span>ฟัน: <strong>{selectedDetailItem.Dental_health || 'ปกติ'}</strong></span>
                 </div>
                 <div style={styles.detailBodyItem}>
@@ -1126,7 +1150,7 @@ export default function Development() {
   );
 }
 
-// สไตล์ทั้งหมด (เหมือนเดิม)
+// สไตล์ CSS
 const styles = {
   container: {
     padding: '20px',
@@ -1834,79 +1858,3 @@ const styles = {
     boxShadow: '0 4px 12px rgba(231, 76, 60, 0.2)',
   },
 };
-
-// Global CSS animations
-const styleSheet = document.createElement("style");
-styleSheet.textContent = `
-  @keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-  }
-  
-  @media (max-width: 768px) {
-    .stats-grid {
-      grid-template-columns: repeat(2, 1fr) !important;
-    }
-    .score-circles {
-      gap: 20px !important;
-    }
-    .score-circle-value {
-      width: 48px !important;
-      height: 48px !important;
-      font-size: 14px !important;
-    }
-    .body-summary {
-      gap: 16px !important;
-      flex-direction: column !important;
-      align-items: center !important;
-    }
-    .form-row {
-      flex-direction: column !important;
-    }
-    .detail-body-grid {
-      grid-template-columns: 1fr !important;
-    }
-    .tab-container {
-      flex-wrap: wrap !important;
-    }
-    .tab-btn {
-      flex: 1 1 calc(50% - 4px) !important;
-    }
-  }
-  
-  @media (max-width: 480px) {
-    .stats-grid {
-      grid-template-columns: 1fr !important;
-    }
-    .header {
-      flex-direction: column !important;
-      align-items: flex-start !important;
-    }
-    .btn-primary {
-      width: 100% !important;
-      justify-content: center !important;
-    }
-    .card-header {
-      flex-direction: column !important;
-      align-items: flex-start !important;
-    }
-    .score-circles {
-      gap: 12px !important;
-    }
-    .score-circle-value {
-      width: 40px !important;
-      height: 40px !important;
-      font-size: 12px !important;
-    }
-    .score-circle-label {
-      font-size: 11px !important;
-    }
-    .modal-content {
-      padding: 16px !important;
-    }
-    .delete-modal {
-      padding: 24px 20px !important;
-    }
-  }
-`;
-document.head.appendChild(styleSheet);

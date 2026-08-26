@@ -205,15 +205,15 @@ function StudentManagement() {
     const genderValue = formData.Gender === "หญิง" ? 2 : 1;
     const formattedName = formatStudentNameWithPrefix(formData.Name, formData.Gender);
 
-    const payload = {
-      Name: formattedName,
-      Birthday: formData.Birthday,
-      Class_level: selectedClass,
-      Blood_group: formData.Blood_group || '',
-      User_id: null,
-      Image: formData.Image || '',
-      Gender: genderValue
-    };
+   const payload = {
+  Name: formattedName,
+  Birthday: formData.Birthday,
+  Class_level: selectedClass,
+  Blood_group: formData.Blood_group || '',
+  User_id: formData.User_id ? parseInt(formData.User_id, 10) : null, // ถ้าเลือกผู้ปกครองส่ง ID ไป ถ้าไม่เลือกส่ง null (DB รองรับแล้ว ไม่พังแน่นอน)
+  Image: formData.Image || '',
+  Gender: genderValue
+};
 
     fetch('http://localhost:3001/api/students', {
       method: 'POST',
