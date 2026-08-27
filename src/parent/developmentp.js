@@ -26,7 +26,8 @@ import {
   Handshake,
   Loader2,
   AlertCircle,
-  X
+  X,
+  UserCheck
 } from 'lucide-react';
 
 ChartJS.register(
@@ -152,13 +153,12 @@ export default function Developmentp() {
     return null;
   };
 
-  const fetchDevelopmentData = async (targetStudentIds) => {
-    if (!targetStudentIds || (Array.isArray(targetStudentIds) && targetStudentIds.length === 0)) return;
+  // ปรับให้ดึงข้อมูลตาม studentId เดียวที่เลือก
+  const fetchDevelopmentData = async (targetStudentId) => {
+    if (!targetStudentId) return;
     setLoading(true);
     try {
-      const singleStudentId = Array.isArray(targetStudentIds) ? targetStudentIds[0] : targetStudentIds;
-      const res = await fetch(`${API_URL}?Student_id=${singleStudentId}`);
-
+      const res = await fetch(`${API_URL}?Student_id=${targetStudentId}`);
       if (res.ok) {
         const data = await res.json();
         setDevList(Array.isArray(data) ? data : []);
@@ -190,7 +190,7 @@ export default function Developmentp() {
 
         if (childIds && childIds.length > 0) {
           setStudentIdOfParent(childIds[0]);
-          await fetchDevelopmentData(childIds);
+          await fetchDevelopmentData(childIds[0]);
         } else {
           console.warn("ไม่พบข้อมูลนักเรียนที่ผูกกับบัญชีผู้ปกครองนี้");
           setStudentIdOfParent(null);
@@ -203,6 +203,13 @@ export default function Developmentp() {
       console.error("เกิดข้อผิดพลาดในการอ่านข้อมูลผู้ใช้:", error);
     }
   }, []);
+
+  // ฟังก์ชันสลับเลือกนักเรียน
+  const handleStudentChange = (e) => {
+    const selectedId = Number(e.target.value);
+    setStudentIdOfParent(selectedId);
+    fetchDevelopmentData(selectedId);
+  };
 
   const getStudentName = useCallback((studentId) => {
     if (!studentId) return "ไม่ระบุรหัส";
@@ -291,15 +298,43 @@ export default function Developmentp() {
             <div>
               <h1 style={styles.mainTitle}>บันทึกพัฒนาการเด็ก</h1>
               <p style={styles.subTitle}>
-                นักเรียนในความปกครอง:{' '}
-                {studentIdOfParent ? (
-                  <strong style={{ color: '#4A90D9' }}>{getStudentName(studentIdOfParent)}</strong>
-                ) : (
-                  <strong style={{ color: '#E74C3C' }}>ไม่พบข้อมูลนักเรียนที่ผูกกับบัญชีของคุณ</strong>
-                )}
+                สลับดูข้อมูลนักเรียนในความปกครอง
               </p>
             </div>
           </div>
+
+          {/* เพิ่ม Dropdown เลือกเด็กที่ Header */}
+          {students.length > 0 && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: '#FFFFFF', padding: '6px 12px', borderRadius: '10px', border: '1px solid #E2E8F0' }}>
+              <UserCheck size={18} color="#4A90D9" />
+              <select
+                value={studentIdOfParent || ''}
+                onChange={handleStudentChange}
+                style={{
+                  border: '1px solid #CBD5E1',
+                  borderRadius: '6px',
+                  padding: '6px 12px',
+                  fontSize: '14px',
+                  fontFamily: "'Kanit', sans-serif",
+                  color: '#1E293B',
+                  fontWeight: '600',
+                  outline: 'none',
+                  cursor: 'pointer'
+                }}
+              >
+                {students.map((st) => {
+                  const stId = Number(st.Student_id || st.id || st.student_id || st.Student_Id);
+                  const stName = st.Name || st.name || st.Student_name || `${st.First_name || ''} ${st.Last_name || ''}`.trim();
+                  const stClass = st.Class_level || st.class_level || '';
+                  return (
+                    <option key={stId} value={stId}>
+                      {stName} {stClass ? `(${stClass})` : ''}
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+          )}
         </div>
 
         {/* Stats Summary */}
@@ -429,7 +464,7 @@ export default function Developmentp() {
         </div>
       </div>
 
-      {/* Detail Modal */}
+      {/* Detail Modal (แก้ไขปิดแท็กสมบูรณ์) */}
       {isDetailOpen && selectedDetailItem && (
         <div style={styles.modalOverlay} onClick={() => setIsDetailOpen(false)}>
           <div style={styles.modalContent} onClick={(e) => e.stopPropagation()}>
@@ -510,9 +545,6 @@ export default function Developmentp() {
                   style={{ ...styles.tabBtn, ...(activeTab === 'social' ? styles.tabBtnActive : {}) }}
                   onClick={() => setActiveTab('social')}
                 >
-
-
-
                   <Handshake size={14} />
                   สังคม
                 </button>

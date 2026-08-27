@@ -127,7 +127,7 @@ function ActivityP() {
               <Sparkles size={24} color="#FFFFFF" />
             </div>
             <div>
-              <h1 style={styles.mainTitle}>กิจกรรมของหนู ๆ 👶</h1>
+              <h1 style={styles.mainTitle}>กิจกรรมของนักเรียน 👶</h1>
               <p style={styles.subTitle}>
                 รวมกิจกรรมสนุก ๆ ที่เด็ก ๆ ได้ทำร่วมกัน (ทั้งหมด <span style={styles.activityCount}>{activities.length}</span> กิจกรรม)
               </p>

@@ -7,7 +7,8 @@ import {
   Clock,
   Loader2,
   Users,
-  FileText
+  FileText,
+  UserCheck
 } from "lucide-react";
 
 const BASE_URL = "http://localhost:3001";
@@ -15,23 +16,34 @@ const BASE_URL = "http://localhost:3001";
 function NotificationParent() {
   const [list, setList] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  // ดึงระดับชั้นของผู้ปกครองจาก localStorage
-  const getParentClass = () => {
+  
+  // 🟢 1. ดึงรายชื่อเด็กทั้งหมดของผู้ปกครองจาก user ใน localStorage
+  const getParentStudents = () => {
     const storedUser = localStorage.getItem("user");
     if (storedUser) {
       try {
         const userData = JSON.parse(storedUser);
-        return userData.Class_level || userData.class_level || "อนุบาล 1 ห้องปกติ";
+        return userData.students || [];
       } catch (e) {
         console.error("Error parsing user data:", e);
-        return "อนุบาล 1 ห้องปกติ";
       }
     }
-    return "อนุบาล 1 ห้องปกติ";
+    return [];
   };
 
-  const parentClass = getParentClass();
+  const students = getParentStudents();
+
+  // 🟢 2. สร้าง State สำหรับเด็กที่เลือกอยู่ปัจจุบัน (ดึงจาก selectedStudent หรือใช้เด็กคนแรก)
+  const [selectedStudent, setSelectedStudent] = useState(() => {
+    const saved = localStorage.getItem("selectedStudent");
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) {}
+    }
+    return students.length > 0 ? students[0] : null;
+  });
+
+  // 🟢 3. ดึงชั้นเรียนของเด็กที่เลือกอยู่
+  const currentClassLevel = selectedStudent?.Class_level || selectedStudent?.class_level || "";
 
   useEffect(() => {
     getData();
@@ -49,15 +61,21 @@ function NotificationParent() {
     }
   };
 
-  // กรองเฉพาะการบ้านที่เป็นของระดับชั้นของบุตรหลาน
+  // 🟢 4. สลับการเลือกเด็ก และบันทึกลง localStorage
+  const handleSelectStudent = (student) => {
+    setSelectedStudent(student);
+    localStorage.setItem("selectedStudent", JSON.stringify(student));
+  };
+
+  // 🟢 5. กรองการบ้านตามชั้นเรียนของเด็กที่เลือกอยู่ตอนนี้
   const filteredList = list.filter((item) => {
     const currentClass = item.Class_level || item.class_level;
-    if (!currentClass || !parentClass) return false;
+    if (!currentClass || !currentClassLevel) return false;
 
-    const dbClass = currentClass.toString().replace(/\s+/g, "");
-    const myClass = parentClass.toString().replace(/\s+/g, "");
+    const dbClass = String(currentClass).replace(/\s+/g, "").trim();
+    const targetClass = String(currentClassLevel).replace(/\s+/g, "").trim();
 
-    return dbClass.includes(myClass) || myClass.includes(dbClass);
+    return dbClass === targetClass;
   });
 
   if (loading) {
@@ -72,21 +90,57 @@ function NotificationParent() {
   return (
     <div style={styles.container}>
       <div style={styles.wrapper}>
-        {/* Header */}
-        <div style={styles.header}>
-          <div style={styles.headerLeft}>
-            <div style={styles.headerIcon}>
-              <Bell size={24} color="#FFFFFF" />
-            </div>
-            <div>
-              <h1 style={styles.mainTitle}>การแจ้งเตือนการบ้าน</h1>
-              <p style={styles.subTitle}>
-                <span style={styles.countBadge}>{filteredList.length}</span> รายการการบ้าน
-                <span style={styles.classLabel}> | ชั้น {parentClass}</span>
-              </p>
-            </div>
-          </div>
-        </div>
+        
+        {/* Header พร้อม Dropdown เลือกเด็ก */}
+<div style={styles.header}>
+  <div style={styles.headerLeft}>
+    <div style={styles.headerIcon}>
+      <Bell size={24} color="#FFFFFF" />
+    </div>
+    <div>
+      <h1 style={styles.mainTitle}>การแจ้งเตือนการบ้าน</h1>
+      <p style={styles.subTitle}>
+        <span style={styles.countBadge}>{filteredList.length}</span> รายการการบ้าน
+        <span style={styles.classLabel}> 
+          | ชั้น {currentClassLevel || "ไม่ระบุชั้นเรียน"}
+        </span>
+      </p>
+    </div>
+  </div>
+
+  {/* 🟢 Dropdown สลับบุตรหลาน / ชั้นเรียน */}
+  {students.length > 0 && (
+    <div style={styles.dropdownContainer}>
+      <label htmlFor="studentSelect" style={styles.dropdownLabel}>
+        <Users size={16} color="#475569" />
+        เลือกบุตรหลาน:
+      </label>
+      <select
+        id="studentSelect"
+        value={selectedStudent?.Student_id || selectedStudent?.id || ""}
+        onChange={(e) => {
+          const selectedId = e.target.value;
+          const foundStudent = students.find(
+            (s) => String(s.Student_id || s.id) === String(selectedId)
+          );
+          if (foundStudent) {
+            handleSelectStudent(foundStudent);
+          }
+        }}
+        style={styles.selectInput}
+      >
+        {students.map((std, idx) => (
+          <option 
+            key={std.Student_id || std.id || idx} 
+            value={std.Student_id || std.id}
+          >
+            {std.FirstName || std.name || `คนที่ ${idx + 1}`} ({std.Class_level || std.class_level})
+          </option>
+        ))}
+      </select>
+    </div>
+  )}
+</div>
 
         {/* Notification Grid */}
         {filteredList.length === 0 ? (
@@ -94,7 +148,7 @@ function NotificationParent() {
             <Bell size={56} color="#CBD5E1" />
             <p style={styles.emptyText}>ไม่มีรายการแจ้งเตือนการบ้าน</p>
             <p style={styles.emptySubText}>
-              ยังไม่มีการมอบหมายการบ้านใหม่สำหรับชั้นเรียนนี้ในขณะนี้
+              ยังไม่มีการมอบหมายการบ้านใหม่สำหรับ {currentClassLevel || "ชั้นเรียนนี้"} ในขณะนี้
             </p>
           </div>
         ) : (
@@ -117,7 +171,7 @@ function NotificationParent() {
                     </div>
                     <div style={styles.cardBadge}>
                       <Users size={12} color="#4A90D9" />
-                      {item.Class_level || item.class_level || parentClass}
+                      {item.Class_level || item.class_level}
                     </div>
                   </div>
 
@@ -166,7 +220,6 @@ const styles = {
     margin: '0 auto',
     width: '100%',
   },
-
   loadingContainer: {
     display: 'flex',
     flexDirection: 'column',
@@ -185,14 +238,17 @@ const styles = {
     color: '#94A3B8',
     fontSize: '16px',
   },
-
   header: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: '28px',
     flexWrap: 'wrap',
-    gap: '12px',
+    gap: '16px',
+    backgroundColor: '#FFFFFF',
+    padding: '20px',
+    borderRadius: '16px',
+    border: '1px solid #E2E8F0',
   },
   headerLeft: {
     display: 'flex',
@@ -210,7 +266,7 @@ const styles = {
     boxShadow: '0 4px 12px rgba(74, 144, 217, 0.25)',
   },
   mainTitle: {
-    fontSize: '24px',
+    fontSize: '22px',
     fontWeight: '700',
     color: '#1A202C',
     margin: 0,
@@ -225,21 +281,51 @@ const styles = {
     color: '#4A90D9',
   },
   classLabel: {
-    color: '#94A3B8',
+    color: '#64748B',
+    fontWeight: '500',
   },
 
+  dropdownContainer: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+    backgroundColor: '#F8FAFC',
+    padding: '8px 14px',
+    borderRadius: '12px',
+    border: '1px solid #CBD5E1',
+  },
+  dropdownLabel: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    fontSize: '14px',
+    fontWeight: '600',
+    color: '#475569',
+    whiteSpace: 'nowrap',
+  },
+  selectInput: {
+    padding: '6px 12px',
+    borderRadius: '8px',
+    border: '1px solid #94A3B8',
+    backgroundColor: '#FFFFFF',
+    color: '#1E293B',
+    fontSize: '14px',
+    fontWeight: '500',
+    outline: 'none',
+    cursor: 'pointer',
+    fontFamily: "'Kanit', sans-serif",
+    boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+  },
   grid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))',
     gap: '20px',
   },
-
   card: {
     backgroundColor: '#FFFFFF',
     borderRadius: '16px',
     border: '1px solid #E2E8F0',
     overflow: 'hidden',
-    transition: 'all 0.2s ease',
     boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
     display: 'flex',
     flexDirection: 'column',
@@ -314,7 +400,6 @@ const styles = {
     fontSize: '13px',
     color: '#475569',
   },
-
   emptyState: {
     display: 'flex',
     flexDirection: 'column',
@@ -324,6 +409,7 @@ const styles = {
     backgroundColor: '#FFFFFF',
     borderRadius: '16px',
     border: '1px solid #E2E8F0',
+    marginTop: '20px',
   },
   emptyText: {
     fontSize: '18px',

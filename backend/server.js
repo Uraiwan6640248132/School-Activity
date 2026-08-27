@@ -17,6 +17,7 @@ app.use(cors({
 // ปรับเพิ่มความจุการรับข้อความจากเดิมไม่กี่ KB ให้กลายเป็น 50MB เพื่อรองรับ Base64 ของรูปภาพเยอะ ๆ
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
 // บันทึกไฟล์อัปโหลด
 const uploadDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadDir)) {
@@ -43,20 +44,16 @@ const fileFilter = (req, file, cb) => {
 const upload = multer({ storage: storage, fileFilter: fileFilter, limits: { fileSize: 5 * 1024 * 1024 } });
 
 // ฟังก์ชันช่วยตรวจสอบและแปลงฟอร์แมตวันที่จากหน้าบ้านให้เป็น YYYY-MM-DD ก่อนบันทึกลงฐานข้อมูล
-// ฟังก์ชันแปลงวันที่สำหรับ MySQL (ตัดปัญหา Timezone เคลื่อน)
 function parseDateForMySQL(dateStr) {
   if (!dateStr) return null;
 
-  // ถ้าส่งมาเป็น ISO string หรือสตริง เช่น "2026-08-30T00:00:00.000Z" หรือ "2026-08-30"
-  // ให้ใช้ Regex ดึงเฉพาะ YYYY-MM-DD ออกมาตรงๆ
   if (typeof dateStr === 'string') {
     const match = dateStr.match(/^\d{4}-\d{2}-\d{2}/);
     if (match) {
-      return match[0]; // จะได้ "2026-08-30" พอดี ไม่โดนบวก/ลบเวลา
+      return match[0];
     }
   }
 
-  // ป้องกันกรณีส่งมาเป็น Date Object
   const d = new Date(dateStr);
   if (isNaN(d.getTime())) return null;
 
@@ -180,7 +177,6 @@ app.delete("/activities/:id", (req, res) => {
 // ==========================================
 // 🚀 เพิ่ม API สำหรับดึงรายชื่อผู้ปกครองไปใช้ทำ Autocomplete
 // ==========================================
-// 🔄 API ดึงรายชื่อผู้ปกครองเฉพาะที่มี Role เป็น 'ผู้ปกครอง'
 app.get('/api/parents', (req, res) => {
   const sql = "SELECT User_id, Name, Role FROM users WHERE Role = 'ผู้ปกครอง'";
   db.query(sql, (err, results) => {
@@ -211,14 +207,12 @@ app.get("/api/students", (req, res) => {
   }
 });
 
-// ➕ เพิ่มนักเรียนใหม่ (ป้องกันการเซฟค่า default ค้าง)
 app.post("/api/students", (req, res) => {
   const body = req.body || {};
   const { Name, Class_level, Blood_group, Image } = body;
   const Birthday = parseDateForMySQL(body.Birthday || body.birthday);
   const Gender = body.Gender || body.gender || null;
 
-  // แปลงค่า User_id ให้เป็น integer หรือ null อย่างเด็ดขาด
   const rawUserId = body.User_id !== undefined ? body.User_id : body.user_id;
   const User_id = (rawUserId && rawUserId !== 'null' && rawUserId !== 'undefined') ? parseInt(rawUserId, 10) : null;
 
@@ -232,7 +226,6 @@ app.post("/api/students", (req, res) => {
   });
 });
 
-// ✏️ แก้ไขข้อมูลนักเรียน
 app.put("/api/students/:id", (req, res) => {
   const studentId = req.params.id;
   const body = req.body || {};
@@ -240,7 +233,6 @@ app.put("/api/students/:id", (req, res) => {
   const Birthday = parseDateForMySQL(body.Birthday || body.birthday);
   const Gender = body.Gender || body.gender || null;
 
-  // แปลงค่า User_id ให้เป็น integer หรือ null อย่างเด็ดขาด
   const rawUserId = body.User_id !== undefined ? body.User_id : body.user_id;
   const User_id = (rawUserId && rawUserId !== 'null' && rawUserId !== 'undefined') ? parseInt(rawUserId, 10) : null;
 
@@ -284,12 +276,13 @@ app.post("/notifications", (req, res) => {
     const targetClassClean = String(Class_level || "").replace(/\s+/g, "").toLowerCase();
 
     const findEmailsSql = `
-      SELECT Email 
-      FROM users 
-      WHERE Role = 'ผู้ปกครอง' 
-        AND Email IS NOT NULL 
-        AND Email != '' 
-        AND LOWER(REPLACE(Class_level, ' ', '')) = ?
+      SELECT DISTINCT u.Email 
+      FROM users u
+      JOIN student s ON u.User_id = s.User_id
+      WHERE u.Role = 'ผู้ปกครอง' 
+        AND u.Email IS NOT NULL 
+        AND u.Email != '' 
+        AND LOWER(REPLACE(s.Class_level, ' ', '')) = ?
     `;
 
     db.query(findEmailsSql, [targetClassClean], (emailErr, parentRows) => {
@@ -303,7 +296,7 @@ app.post("/notifications", (req, res) => {
         const uniqueEmails = [...new Set(rawEmails)];
         const emailList = uniqueEmails.join(",");
 
-        console.log(`📧 พบอีเมลผู้ปกครองชั้น ${Class_level} ทั้งหมด ${uniqueEmails.length} ท่าน:`, emailList);
+        console.log(`📧 พบอีเมลผู้ปกครองของนักเรียนชั้น ${Class_level} ทั้งหมด ${uniqueEmails.length} ท่าน:`, emailList);
 
         const transporter = nodemailer.createTransport({
           service: 'gmail',
@@ -448,19 +441,11 @@ app.delete('/api/publicrelations/:id', (req, res) => {
     res.json({ message: "ลบข้อมูลประชาสัมพันธ์เรียบร้อยแล้ว" });
   });
 });
-app.get("/api/publicrelations", (req, res) => {
-  const sql = `SELECT PublicRelation_id, Name_activity, DATE_FORMAT(Date, '%Y-%m-%d') AS Date, Location, Detail, User_id, Image FROM publicrelations ORDER BY PublicRelation_id DESC`;
-  db.query(sql, (err, result) => {
-    if (err) return res.status(500).json(err);
-    res.json(result);
-  });
-});
 
 // ==========================================
 // 📅 ระบบ API จัดการปฏิทินกิจกรรม (CALENDAR)
 // ==========================================
 
-// 1. ดึงข้อมูลปฏิทินทั้งหมด
 app.get("/api/calendar", (req, res) => {
   db.query(
     `SELECT Calendar_id, PublicRelation_id, Name, DATE_FORMAT(Date, '%Y-%m-%d') AS Date, Time, Location, User_id FROM calendar ORDER BY Date ASC`,
@@ -471,7 +456,6 @@ app.get("/api/calendar", (req, res) => {
   );
 });
 
-// 2. เพิ่มกิจกรรมใหม่ลงปฏิทิน
 app.post("/api/calendar", (req, res) => {
   const body = req.body || {};
   const Name = body.Name || body.name || null;
@@ -494,7 +478,6 @@ app.post("/api/calendar", (req, res) => {
   );
 });
 
-// 3. แก้ไขกิจกรรมด้วย Calendar_id
 app.put("/api/calendar/:id", (req, res) => {
   const body = req.body || {};
   const Name = body.Name || body.name || null;
@@ -516,7 +499,6 @@ app.put("/api/calendar/:id", (req, res) => {
   );
 });
 
-// 4. แก้ไขกิจกรรมในปฏิทินอ้างอิงจาก PublicRelation_id
 app.put("/api/calendar/pr/:prId", (req, res) => {
   const { prId } = req.params;
   const body = req.body || {};
@@ -535,7 +517,6 @@ app.put("/api/calendar/pr/:prId", (req, res) => {
   });
 });
 
-// 5. ลบกิจกรรมในปฏิทินอ้างอิงจาก PublicRelation_id
 app.delete("/api/calendar/pr/:prId", (req, res) => {
   const { prId } = req.params;
   const sql = `DELETE FROM calendar WHERE PublicRelation_id = ?`;
@@ -553,37 +534,31 @@ app.delete("/api/calendar/pr/:prId", (req, res) => {
 // 📝 ระบบ API เช็คชื่อการเข้าร่วมกิจกรรม
 // ==========================================
 
-// 🟢 ดึงรายชื่อนักเรียนสำหรับเช็คชื่อ (แก้ไขการซ้ำซ้อนและรองรับการค้นหาผ่าน ID / Class_level)
 app.get("/attendance/students", (req, res) => {
   const { activity, class: classId } = req.query;
 
-  // 🟢 SQL แก้ไขพิเศษ: ใช้ REPLACE() ลบช่องว่างออกทั้งหมด ป้องกันปัญหาคำว่า "อนุบาล1 ห้องปกติ" กับ "อนุบาล1ห้องปกติ"
   const sql = `
     SELECT 
       s.Student_id AS id, 
       s.Name AS name, 
+      s.Class_level AS class_id,
       IF(pa.Student_id IS NOT NULL, 1, 0) AS attended
     FROM student s
     LEFT JOIN participating_activities pa 
       ON s.Student_id = pa.Student_id AND pa.Activity_id = ?
     WHERE 
       LOWER(REPLACE(s.Class_level, ' ', '')) = LOWER(REPLACE(?, ' ', ''))
-      OR LOWER(REPLACE(s.Class_level, ' ', '')) = (
-        SELECT LOWER(REPLACE(Class_level, ' ', '')) FROM users WHERE User_id = ?
-      )
-      OR s.User_id = ?
+      OR s.Class_level LIKE CONCAT('%', ?, '%')
     ORDER BY s.Student_id ASC
   `;
 
-  db.query(sql, [activity, classId, classId, classId], (err, result) => {
-    if (err) {
-      console.error("SQL Attendance Error:", err);
-      return res.status(500).json(err);
-    }
-
+  db.query(sql, [activity, classId, classId], (err, result) => {
+    if (err) return res.status(500).json(err);
+    
     const formattedResult = result.map(row => ({
       id: row.id,
       name: row.name,
+      class_id: row.class_id,
       attended: row.attended === 1
     }));
 
@@ -591,7 +566,6 @@ app.get("/attendance/students", (req, res) => {
   });
 });
 
-// 🟢 ดึงรายการกิจกรรมทั้งหมด
 app.get("/attendance/activities", (req, res) => {
   db.query("SELECT Activity_id AS id, Name_activity AS name FROM activity ORDER BY Activity_id DESC", (err, result) => {
     if (err) return res.status(500).json(err);
@@ -599,7 +573,6 @@ app.get("/attendance/activities", (req, res) => {
   });
 });
 
-// 🟢 ดึงรายการระดับชั้นเรียนทั้งหมด
 app.get("/attendance/classes", (req, res) => {
   db.query("SELECT DISTINCT Class_level AS id, Class_level AS name FROM student WHERE Class_level IS NOT NULL AND Class_level != '' ORDER BY Class_level ASC", (err, result) => {
     if (err) return res.status(500).json(err);
@@ -607,7 +580,38 @@ app.get("/attendance/classes", (req, res) => {
   });
 });
 
-// 🟢 บันทึกข้อมูลการเข้าร่วมกิจกรรม
+app.get("/attendance/class/:id", (req, res) => {
+  const classId = decodeURIComponent(req.params.id);
+
+  const sqlExact = `SELECT DISTINCT Class_level FROM student WHERE Class_level = ? LIMIT 1`;
+
+  db.query(sqlExact, [classId], (err, results) => {
+    if (err) return res.status(500).json({ error: "Database error" });
+
+    if (results && results.length > 0) {
+      return res.json({ id: classId, name: results[0].Class_level });
+    }
+
+    const sqlUser = `SELECT Class_level FROM users WHERE User_id = ? OR Class_level = ? LIMIT 1`;
+    db.query(sqlUser, [classId, classId], (errUser, userResults) => {
+      if (!errUser && userResults.length > 0 && userResults[0].Class_level) {
+        return res.json({ id: classId, name: userResults[0].Class_level });
+      }
+
+      const sqlList = `SELECT DISTINCT Class_level FROM student WHERE Class_level IS NOT NULL AND Class_level != '' ORDER BY Class_level ASC`;
+      db.query(sqlList, (err2, listResults) => {
+        if (!err2 && listResults.length > 0) {
+          const index = parseInt(classId, 10) - 1;
+          if (!isNaN(index) && listResults[index]) {
+            return res.json({ id: classId, name: listResults[index].Class_level });
+          }
+        }
+        return res.json({ id: classId, name: classId });
+      });
+    });
+  });
+});
+
 app.post("/attendance/save", (req, res) => {
   const { activity_id, attendance_list } = req.body;
   if (!activity_id || !attendance_list || !Array.isArray(attendance_list)) {
@@ -631,7 +635,6 @@ app.post("/attendance/save", (req, res) => {
   });
 });
 
-// 🟢 ดึงประวัติการเข้าร่วมกิจกรรมของนักเรียน (สำหรับหน้าผู้ปกครอง)
 app.get("/api/parent/activities/:parentId", (req, res) => {
   const { parentId } = req.params;
 
@@ -665,7 +668,6 @@ app.get("/api/parent/activities/:parentId", (req, res) => {
 // 🧑‍🎓 API พัฒนาการนักเรียน (Development API)
 // ==========================================
 
-// 1. ดึงข้อมูลนักเรียนตามระดับชั้น
 app.get('/api/student', (req, res) => {
   const { class_level } = req.query;
   if (!class_level) {
@@ -678,7 +680,6 @@ app.get('/api/student', (req, res) => {
   });
 });
 
-// 2. ดึงประวัติพัฒนาการทั้งหมดในระดับชั้น
 app.get('/api/development', (req, res) => {
   const { class_level } = req.query;
   if (!class_level) {
@@ -698,7 +699,6 @@ app.get('/api/development', (req, res) => {
   });
 });
 
-// 3. ดึงประวัติพัฒนาการของนักเรียนเฉพาะคน
 app.get('/api/development/student', (req, res) => {
   console.log("👉 Query ที่ได้รับ:", req.query);
   const studentId = req.query.student_id || req.query.studentId || req.query.Student_id;
@@ -715,7 +715,6 @@ app.get('/api/development/student', (req, res) => {
   });
 });
 
-// 4. บันทึกข้อมูลพัฒนาการใหม่
 app.post('/api/development', (req, res) => {
   const {
     Student_id, Year, Term, date, Physical, Weight, Height,
@@ -753,7 +752,6 @@ app.post('/api/development', (req, res) => {
   });
 });
 
-// 5. แก้ไขข้อมูลพัฒนาการ
 app.put('/api/development/:id', (req, res) => {
   const devId = req.params.id;
   const {
@@ -803,7 +801,6 @@ app.put('/api/development/:id', (req, res) => {
   });
 });
 
-// 6. ลบข้อมูลพัฒนาการ (ปรับปรุงการรับค่า class_level ให้ยืดหยุ่นขึ้น)
 app.delete('/api/development/:id', (req, res) => {
   const devId = req.params.id;
   const class_level = req.query.class_level || req.body.class_level || req.body.Class_level;
@@ -839,86 +836,84 @@ app.post("/login", (req, res) => {
   const username = req.body.UserName || req.body.username;
   const password = req.body.Password || req.body.password;
 
-  if (!username || !password) {
-    return res.status(400).json({
-      success: false,
-      error: "กรุณากรอกข้อมูลให้ครบ"
-    });
-  }
+  if (!username || !password) return res.status(400).json({ success: false, error: "กรุณากรอกข้อมูลให้ครบ" });
 
-  db.query(
-    "SELECT * FROM users WHERE UserName = ? AND Password = ?",
-    [username, password],
-    (err, result) => {
-      if (err) {
-        return res.status(500).json({
-          success: false,
-          error: "ฐานข้อมูลมีปัญหา"
-        });
-      }
+  db.query("SELECT * FROM users WHERE UserName = ? AND Password = ?", [username, password], (err, result) => {
+    if (err) return res.status(500).json({ success: false, error: "ฐานข้อมูลมีปัญหา" });
+    if (result.length === 0) return res.status(401).json({ success: false, error: "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง" });
 
-      if (result.length === 0) {
-        return res.status(401).json({
-          success: false,
-          error: "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง"
-        });
-      }
+    let user = result[0];
+    const currentStatus = String(user.Status || "").trim();
+    const currentRole = String(user.Role || "").trim();
 
-      let user = result[0];
-      const currentStatus = String(user.Status || "").trim();
-      const currentRole = String(user.Role || "").trim();
-
-      if (currentRole === "ถูกระงับสิทธิ์" && currentStatus === "ใช้งาน") {
-        db.query(
-          "UPDATE users SET Role = 'ผู้ใช้งานเก่า (รอระบุสิทธิ์)', Status = 'ถูกระงับสิทธิ์' WHERE User_id = ?",
-          [user.User_id]
-        );
-        user.Role = "ผู้ใช้งานเก่า (รอระบุสิทธิ์)";
-        user.Status = "ถูกระงับสิทธิ์";
-      }
-      if (user.Status === "รออนุมัติ") {
-        return res.json({
-          success: false,
-          blocked: true,
-          error: "บัญชีของคุณกำลังอยู่ระหว่างรอแอดมินอนุมัติสิทธิ์"
-        });
-      }
-
-      if (
-        user.Status === "ระงับ" ||
-        user.Status === "ถูกระงับ" ||
-        user.Status === "ถูกระงับสิทธิ์" ||
-        user.Status == 0 ||
-        String(user.Role).trim() === "ถูกระงับสิทธิ์"
-      ) {
-        return res.json({
-          success: false,
-          blocked: true,
-          error: "บัญชีของคุณถูกระงับสิทธิ์การใช้งาน กรุณาติดต่อผู้ดูแลระบบ"
-        });
-      }
-
+    if (currentRole === "ถูกระงับสิทธิ์" && currentStatus === "ใช้งาน") {
+      db.query(
+        "UPDATE users SET Role = 'ผู้ใช้งานเก่า (รอระบุสิทธิ์)', Status = 'ถูกระงับสิทธิ์' WHERE User_id = ?",
+        [user.User_id]
+      );
+      user.Role = "ผู้ใช้งานเก่า (รอระบุสิทธิ์)";
+      user.Status = "ถูกระงับสิทธิ์";
+    }
+    if (user.Status === "รออนุมัติ") {
       return res.json({
-        success: true,
-        message: "สำเร็จ",
-        user: {
-          id: user.User_id,
-          User_id: user.User_id,
-          username: user.UserName,
-          UserName: user.UserName,
-          name: user.Name,
-          Name: user.Name,
-          email: user.Email,
-          Email: user.Email,
-          role: user.Role,
-          Role: user.Role,
-          status: user.Status,
-          Status: user.Status,
-          Class_level: user.Class_level,
-        }
+        success: false,
+        blocked: true,
+        error: "บัญชีของคุณกำลังอยู่ระหว่างรอแอดมินอนุมัติสิทธิ์"
       });
     }
-  );
+
+    if (
+      user.Status === "ระงับ" ||
+      user.Status === "ถูกระงับ" ||
+      user.Status === "ถูกระงับสิทธิ์" ||
+      user.Status == 0 ||
+      String(user.Role).trim() === "ถูกระงับสิทธิ์"
+    ) {
+      return res.json({
+        success: false,
+        blocked: true,
+        error: "บัญชีของคุณถูกระงับสิทธิ์การใช้งาน กรุณาติดต่อผู้ดูแลระบบ"
+      });
+    }
+
+    // ดึงข้อมูลเด็กทุกคนในปกครองสำหรับ Role ผู้ปกครอง
+    db.query(
+      "SELECT Student_id, Name, Class_level, Blood_group, Image FROM student WHERE User_id = ?",
+      [user.User_id],
+      (stdErr, students) => {
+        if (stdErr) {
+          console.error("เกิดข้อผิดพลาดในการดึงข้อมูลเด็ก:", stdErr);
+        }
+
+        const studentList = students || [];
+        const classLevels = [...new Set(studentList.map(s => s.Class_level).filter(Boolean))];
+
+        // ✅ เพิ่มการส่ง Class_level ของผู้ใช้เองกลับไปด้วย
+        return res.json({
+          success: true,
+          message: "สำเร็จ",
+          user: {
+            id: user.User_id,
+            User_id: user.User_id,
+            username: user.UserName,
+            UserName: user.UserName,
+            name: user.Name,
+            Name: user.Name,
+            email: user.Email,
+            Email: user.Email,
+            role: user.Role,
+            Role: user.Role,
+            status: user.Status,
+            Status: user.Status,
+            Class_level: user.Class_level,  // ✅ สำคัญมาก! ค่านี้จะใช้กำหนดห้องเรียน
+            class_level: user.Class_level,  // ✅ เพิ่มอีกชื่อเผื่อ Frontend ใช้
+            students: studentList,
+            class_levels: classLevels
+          }
+        });
+      }
+    );
+  });
 });
 
 app.post('/api/register', (req, res) => {
@@ -945,7 +940,6 @@ app.post('/api/register', (req, res) => {
 
     const insertQuery = 'INSERT INTO users (Name, Phone, Email, Password, UserName, Role, Class_level, Status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
     
-    // 🟢 เปลี่ยนค่าสุดท้ายจาก "ใช้งาน" เป็น "รออนุมัติ"
     db.query(
       insertQuery,
       [Name, Phone, Email, Password, UserName, Role, Class_level, "รออนุมัติ"],
@@ -960,7 +954,6 @@ app.post('/api/register', (req, res) => {
 // ==========================================
 // 🎓 1. API ระบบปีการศึกษา (Academic Years)
 // ==========================================
-// สำหรับดึงรายการปีการศึกษาทั้งหมดไปแสดงใน Dropdown ให้ครูเลือก
 app.get("/api/academic-years", (req, res) => {
   const sql = "SELECT * FROM academic_years ORDER BY year_name DESC";
   db.query(sql, (err, result) => {
@@ -976,14 +969,12 @@ app.get("/api/academic-years", (req, res) => {
 // 📈 2. API อัปเดตชั้นเรียนและบันทึกประวัติ (Promote Class)
 // ==========================================
 app.post("/api/students/promote", (req, res) => {
-  // รับค่ามาจากหน้าบ้าน (React)
   const { Student_id, year_id, new_class_level } = req.body;
 
   if (!Student_id || !year_id || !new_class_level) {
     return res.status(400).json({ error: "ข้อมูลไม่ครบถ้วน กรุณาส่ง Student_id, year_id และ new_class_level" });
   }
 
-  // Step 1: อัปเดตชั้นเรียนปัจจุบันในตาราง student หลัก
   const updateSql = "UPDATE student SET Class_level = ? WHERE Student_id = ?";
   db.query(updateSql, [new_class_level, Student_id], (err, updateResult) => {
     if (err) {
@@ -991,7 +982,6 @@ app.post("/api/students/promote", (req, res) => {
       return res.status(500).json({ error: "อัปเดตตารางนักเรียนล้มเหลว", details: err.message });
     }
 
-    // Step 2: บันทึกประวัติลงตาราง student_class_history ที่เราเพิ่งสร้าง
     const historySql = "INSERT INTO student_class_history (Student_id, year_id, class_level) VALUES (?, ?, ?)";
     db.query(historySql, [Student_id, year_id, new_class_level], (err, historyResult) => {
       if (err) {

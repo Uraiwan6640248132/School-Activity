@@ -25,9 +25,13 @@ function ActivityView() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
 
+  // State สำหรับรายชื่อลูกและตัวที่เลือก
+  const [students, setStudents] = useState([]);
+  const [selectedStudentId, setSelectedStudentId] = useState(null);
+
   const API_URL = "http://localhost:3001";
 
-  // 🟢 1. ดึง Parent ID จาก localStorage ให้ถูกต้องตามโครงสร้างระบบ
+  // ดึง Parent ID จาก localStorage
   const getLoggedInParentId = () => {
     const storedUser = localStorage.getItem("user");
     if (storedUser) {
@@ -43,19 +47,7 @@ function ActivityView() {
 
   const loggedInParentId = getLoggedInParentId();
 
-  useEffect(() => {
-    fetchActivitiesList();
-  }, []);
-
-  useEffect(() => {
-    if (selectedActivity && loggedInParentId) {
-      fetchParentActivityData(selectedActivity, loggedInParentId);
-    } else {
-      setActivityData([]);
-    }
-  }, [selectedActivity, loggedInParentId]);
-
-  // 🟢 ดึงรายชื่อกิจกรรมทั้งหมดสำหรับ Dropdown
+  // 1. ดึงรายชื่อกิจกรรมสำหรับ Dropdown
   const fetchActivitiesList = async () => {
     try {
       const res = await axios.get(`${API_URL}/attendance/activities`);
@@ -66,21 +58,44 @@ function ActivityView() {
     }
   };
 
-  // 🟢 2. ดึงและกรองข้อมูลแบบรองรับ Key หลากหลายรูปแบบจาก API
-  const fetchParentActivityData = async (activityId, parentId) => {
+  // 2. ดึงข้อมูลประวัติกิจกรรม (ปรับแก้การ Filter ให้ยืดหยุ่นขึ้น)
+  const fetchParentActivityData = async (activityId, parentId, currentStudentId) => {
     setLoading(true);
     try {
       const res = await axios.get(`${API_URL}/api/parent/activities/${parentId}`);
       const rawData = Array.isArray(res.data) ? res.data : (res.data.data || []);
       
-      // กรองเฉพาะกิจกรรมที่เลือก (รองรับทั้ง Activity_id, activity_id, หรือ id)
-      const filteredByAct = rawData.filter((item) => {
-        const actId = item.Activity_id || item.activity_id || item.id;
-        return String(actId) === String(activityId);
+      const filtered = rawData.filter((item) => {
+        // ดึง Activity ID จาก field ที่เป็นไปได้ทั้งหมด
+        const itemActId = item.Activity_id ?? item.activity_id ?? item.id;
+        
+        // เปรียบเทียบ Activity ID แบบแปลงเป็น String ป้องกัน Type mismatch (String vs Number)
+        const matchesAct = activityId 
+          ? String(itemActId).trim() === String(activityId).trim() 
+          : true;
+
+        // ดึง Student ID จาก field ที่เป็นไปได้ทั้งหมด
+        const itemStId = item.Student_id ?? item.student_id ?? item.Student_Id ?? item.id_student;
+
+        // ถ้าเลือกเด็ก ให้เช็ก Student ID (ถ้า field มีค่า)
+        const matchesStudent = (currentStudentId && itemStId != null)
+          ? String(itemStId).trim() === String(currentStudentId).trim()
+          : true;
+
+        return matchesAct && matchesStudent;
       });
-      
-      // หากกรองแล้วไม่เจอ ให้ใช้ rawData ทั้งหมดในกรณีที่ API ส่งแยกตาม endpoint มาแล้ว
-      setActivityData(filteredByAct.length > 0 ? filteredByAct : rawData);
+
+      // ถ้า Filter ด้วย Student ID แล้วไม่เจอข้อมูล ลองคืนค่าเฉพาะที่กรองด้วย Activity ID เพื่อไม่ให้ข้อมูลหาย
+      if (filtered.length === 0 && rawData.length > 0 && activityId) {
+        const fallbackFilter = rawData.filter((item) => {
+          const itemActId = item.Activity_id ?? item.activity_id ?? item.id;
+          return String(itemActId).trim() === String(activityId).trim();
+        });
+        setActivityData(fallbackFilter);
+      } else {
+        setActivityData(filtered);
+      }
+
     } catch (err) {
       console.error("ดึงข้อมูลการเข้าร่วมล้มเหลว:", err);
       setActivityData([]);
@@ -89,24 +104,63 @@ function ActivityView() {
     }
   };
 
-  // 📊 คำนวณยอดรวมและสถิติ (รองรับทั้ง attended = 1, true หรือ "attended")
+  // 3. ดึงรายชื่อนักเรียนและกิจกรรม
+  useEffect(() => {
+    const fetchStudents = async () => {
+      try {
+        const res = await axios.get(`${API_URL}/api/students?userId=${loggedInParentId}`);
+        const cleanData = Array.isArray(res.data) ? res.data : [];
+        setStudents(cleanData);
+        
+        if (cleanData.length > 0) {
+          const firstId = cleanData[0].Student_id || cleanData[0].id || cleanData[0].student_id;
+          setSelectedStudentId(firstId);
+        }
+      } catch (err) {
+        console.error("Error fetching students list:", err);
+      }
+    };
+
+    fetchStudents();
+    fetchActivitiesList();
+  }, [loggedInParentId]);
+
+  // 4. โหลดข้อมูลกิจกรรมเมื่อมีการเลือก Dropdown
+  useEffect(() => {
+    if (selectedActivity && loggedInParentId) {
+      fetchParentActivityData(selectedActivity, loggedInParentId, selectedStudentId);
+    } else {
+      setActivityData([]);
+    }
+  }, [selectedActivity, loggedInParentId, selectedStudentId]);
+
+  // คำนวณยอดรวมและสถิติ
   const totalItems = activityData.length;
-  const attendedCount = activityData.filter((a) => 
-    a.attended === 1 || a.attended === true || a.status === "attended" || a.status === "present"
-  ).length;
+  const attendedCount = activityData.filter((a) => {
+    const val = a.attended ?? a.status ?? a.Attended;
+    return val === 1 || val === true || val === "1" || val === "attended" || val === "present" || val === "เข้าร่วม";
+  }).length;
   const absentCount = totalItems - attendedCount;
   const attendedPercentage = totalItems > 0 ? ((attendedCount / totalItems) * 100).toFixed(1) : "0.0";
   const absentPercentage = totalItems > 0 ? ((absentCount / totalItems) * 100).toFixed(1) : "0.0";
 
-  // ดึงข้อมูลนักเรียนเพื่อแสดงใน Banner Header
-  const studentName = activityData.length > 0 ? (activityData[0].Student_name || activityData[0].student_name) : "";
-  const classLevel = activityData.length > 0 ? (activityData[0].Class_level || activityData[0].class_level) : "";
+  // ข้อมูลนักเรียนที่เลือก
+  const currentStudentObj = students.find(s => String(s.Student_id || s.id || s.student_id) === String(selectedStudentId));
+  const studentName = currentStudentObj 
+    ? (currentStudentObj.Name || currentStudentObj.name || `${currentStudentObj.First_name || ''} ${currentStudentObj.Last_name || ''}`.trim())
+    : (activityData.length > 0 ? (activityData[0].Student_name || activityData[0].student_name) : "");
+  
+  const classLevel = currentStudentObj
+    ? (currentStudentObj.Class_level || currentStudentObj.class_level || "")
+    : (activityData.length > 0 ? (activityData[0].Class_level || activityData[0].class_level) : "");
 
-  // 🔍 การค้นหาและกรองข้อมูล
+  // ค้นหาและกรอง
   const filteredData = useMemo(() => {
     return activityData.filter((item) => {
-      const isAttended = item.attended === 1 || item.attended === true || item.status === "attended" || item.status === "present";
-      const actName = item.Name_activity || item.activity_name || item.name || "";
+      const val = item.attended ?? item.status ?? item.Attended;
+      const isAttended = val === 1 || val === true || val === "1" || val === "attended" || val === "present" || val === "เข้าร่วม";
+      const actName = item.Name_activity || item.activity_name || item.name || item.Activity_name || "";
+      
       const matchesSearch = actName.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesFilter =
         filterStatus === "all" ? true :
@@ -116,11 +170,11 @@ function ActivityView() {
     });
   }, [activityData, searchTerm, filterStatus]);
 
-  // 📊 ส่งออกข้อมูลประวัติเป็น CSV (Excel)
+  // ส่งออก CSV
   const exportToCSV = () => {
     if (activityData.length === 0) return alert("ไม่มีข้อมูลสำหรับส่งออก");
 
-    const currentActivityName = activities.find(a => String(a.id) === String(selectedActivity))?.name || "กิจกรรม";
+    const currentActivityName = activities.find(a => String(a.id || a.Activity_id) === String(selectedActivity))?.name || "กิจกรรม";
 
     let csvContent = "\uFEFF";
     csvContent += `รายงานการเข้าร่วมกิจกรรม (มุมมองผู้ปกครอง),${currentActivityName}\n`;
@@ -132,7 +186,8 @@ function ActivityView() {
     csvContent += `ลำดับ,ชื่อกิจกรรม,วันที่จัดกิจกรรม,สถานที่,สถานะการเข้าร่วม\n`;
 
     filteredData.forEach((item, idx) => {
-      const isAttended = item.attended === 1 || item.attended === true || item.status === "attended" || item.status === "present";
+      const val = item.attended ?? item.status ?? item.Attended;
+      const isAttended = val === 1 || val === true || val === "1" || val === "attended" || val === "present" || val === "เข้าร่วม";
       csvContent += `${idx + 1},"${item.Name_activity || item.activity_name || "-"}","${item.Activity_date || item.date || "-"}","${item.Location || item.location || "-"}","${isAttended ? "เข้าร่วม" : "ไม่เข้าร่วม"}"\n`;
     });
 
@@ -149,43 +204,55 @@ function ActivityView() {
   return (
     <div style={styles.container}>
       <div style={styles.wrapper}>
-        {/* Top Banner */}
+        {/* Banner */}
         <div style={styles.topBanner}>
           <div style={styles.classInfo}>
             <div style={styles.classIconWrapper}>
               <User size={18} color="#FFFFFF" />
             </div>
             <div>
-              <span style={styles.classLabel}>ผู้ปกครอง</span>
-              <span style={styles.className}>
-                {studentName ? `${studentName}` : "ติดตามประวัติการเข้าร่วม"}
-              </span>
-              <span style={styles.classId}>ชั้น: {classLevel || "ไม่ระบุ"}</span>
+              <span style={styles.classLabel}>เลือกบุตรหลาน</span>
+              {students.length > 0 ? (
+                <select
+                  value={selectedStudentId || ''}
+                  onChange={(e) => setSelectedStudentId(e.target.value)}
+                  style={styles.studentSelect}
+                >
+                  {students.map((st) => {
+                    const stId = st.Student_id || st.id || st.student_id;
+                    const stName = st.Name || st.name || `${st.First_name || ''} ${st.Last_name || ''}`.trim();
+                    const stClass = st.Class_level || st.class_level || '';
+                    return (
+                      <option key={stId} value={stId}>
+                        {stName} {stClass ? `(${stClass})` : ''}
+                      </option>
+                    );
+                  })}
+                </select>
+              ) : (
+                <span style={styles.className}>
+                  {studentName ? `${studentName}` : "ติดตามประวัติการเข้าร่วม"}
+                </span>
+              )}
+              {classLevel && <span style={styles.classId}>ชั้น: {classLevel}</span>}
             </div>
           </div>
           <div style={styles.modeTabs}>
-            <div
-              style={{
-                ...styles.tabBtn,
-                ...styles.tabBtnActive,
-                cursor: 'default'
-              }}
-            >
+            <div style={{ ...styles.tabBtn, ...styles.tabBtnActive, cursor: 'default' }}>
               <Eye size={14} />
               โหมดดูข้อมูล (Read-Only)
             </div>
           </div>
         </div>
 
-        {/* Main Card */}
+        {/* Card Main */}
         <div style={styles.mainCard}>
-          {/* Header */}
           <div style={styles.cardHeader}>
             <div>
               <h1 style={styles.title}>ประวัติการเข้าร่วมกิจกรรม</h1>
               <p style={styles.subtitle}>
                 <Sparkles size={14} color="#4A90D9" />
-                ตรวจสอบรายละเอียดการเข้าร่วมกิจกรรมของนักเรียน
+                ตรวจสอบรายละเอียดการเข้าร่วมกิจกรรมของ: <strong>{studentName || "นักเรียน"}</strong>
               </p>
             </div>
             {selectedActivity && activityData.length > 0 && (
@@ -196,7 +263,7 @@ function ActivityView() {
             )}
           </div>
 
-          {/* Select Activity */}
+          {/* Activity Dropdown */}
           <div style={styles.selectSection}>
             <label style={styles.inputLabel}>
               <CalendarDays size={16} style={styles.labelIcon} />
@@ -208,15 +275,19 @@ function ActivityView() {
               style={styles.selectInput}
             >
               <option value="">-- กรุณาเลือกกิจกรรม --</option>
-              {activities.map((act) => (
-                <option key={act.id || act.Activity_id} value={act.id || act.Activity_id}>
-                  {act.name || act.Name_activity}
-                </option>
-              ))}
+              {activities.map((act) => {
+                const actId = act.id || act.Activity_id || act.activity_id;
+                const actName = act.name || act.Name_activity || act.activity_name;
+                return (
+                  <option key={actId} value={actId}>
+                    {actName}
+                  </option>
+                );
+              })}
             </select>
           </div>
 
-          {/* Statistics */}
+          {/* Stat Summary */}
           {selectedActivity !== "" && (
             <div style={styles.summaryGrid}>
               <div style={styles.statCard}>
@@ -255,7 +326,7 @@ function ActivityView() {
             </div>
           )}
 
-          {/* Toolbar */}
+          {/* Search & Filter Controls */}
           {selectedActivity && activityData.length > 0 && (
             <div style={styles.toolbar}>
               <div style={styles.searchWrapper}>
@@ -268,10 +339,7 @@ function ActivityView() {
                   style={styles.searchInput}
                 />
                 {searchTerm && (
-                  <button
-                    onClick={() => setSearchTerm('')}
-                    style={styles.clearSearchBtn}
-                  >
+                  <button onClick={() => setSearchTerm('')} style={styles.clearSearchBtn}>
                     <XCircle size={14} />
                   </button>
                 )}
@@ -314,7 +382,7 @@ function ActivityView() {
             </div>
           )}
 
-          {/* Table */}
+          {/* Table Data */}
           <div style={styles.tableContainer}>
             <div style={styles.tableHeader}>
               <div style={{ ...styles.tableHeaderCell, width: '40px', textAlign: 'center' }}>#</div>
@@ -336,12 +404,14 @@ function ActivityView() {
               ) : filteredData.length === 0 ? (
                 <div style={styles.emptyState}>
                   <Search size={40} color="#CBD5E1" />
-                  <p>ไม่พบประวัติกิจกรรมที่ตรงกับคำค้นหา</p>
+                  <p>ไม่พบประวัติกิจกรรมที่ตรงกับค่าค้นหา</p>
                 </div>
               ) : (
                 filteredData.map((item, index) => {
-                  const isAttended = item.attended === 1 || item.attended === true || item.status === "attended" || item.status === "present";
-                  const actName = item.Name_activity || item.activity_name || item.name || "กิจกรรมโรงเรียน";
+                  const val = item.attended ?? item.status ?? item.Attended;
+                  const isAttended = val === 1 || val === true || val === "1" || val === "attended" || val === "present" || val === "เข้าร่วม";
+                  const actName = item.Name_activity || item.activity_name || item.name || item.Activity_name || "กิจกรรมโรงเรียน";
+                  
                   return (
                     <div key={item.Activity_id || item.id || index} style={styles.tableRow}>
                       <div style={{ ...styles.tableCell, width: '40px', textAlign: 'center', color: '#94A3B8', fontSize: '13px' }}>
@@ -356,7 +426,7 @@ function ActivityView() {
                           <span style={{ fontWeight: '600', color: '#1E293B' }}>{actName}</span>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#64748B' }}>
                             <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                              <CalendarDays size={12} /> {item.Activity_date || item.date || "ไม่ระบุวันที่"}
+                              <CalendarDays size={12} /> {item.Activity_date || item.date || item.created_at || "ไม่ระบุวันที่"}
                             </span>
                             {(item.Location || item.location) && (
                               <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -391,7 +461,6 @@ function ActivityView() {
   );
 }
 
-// ชุด Style และ Animation เดียวกับหน้าคุณครู
 const styles = {
   container: {
     padding: '20px',
@@ -447,12 +516,25 @@ const styles = {
     color: '#1A202C',
     marginRight: '8px',
   },
+  studentSelect: {
+    border: '1px solid #CBD5E1',
+    borderRadius: '6px',
+    padding: '4px 8px',
+    fontSize: '14px',
+    fontFamily: "'Kanit', sans-serif",
+    fontWeight: '600',
+    color: '#1E293B',
+    outline: 'none',
+    cursor: 'pointer',
+    marginTop: '2px',
+  },
   classId: {
     fontSize: '12px',
     color: '#94A3B8',
     backgroundColor: '#F1F5F9',
     padding: '2px 8px',
     borderRadius: '4px',
+    marginLeft: '8px',
   },
   modeTabs: {
     display: 'flex',
@@ -472,7 +554,6 @@ const styles = {
     fontWeight: '500',
     color: '#64748B',
     backgroundColor: 'transparent',
-    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
   },
   tabBtnActive: {
     backgroundColor: '#FFFFFF',
@@ -480,7 +561,6 @@ const styles = {
     fontWeight: '600',
     boxShadow: '0 2px 4px rgba(0,0,0,0.06)',
   },
-
   mainCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: '16px',
@@ -522,11 +602,8 @@ const styles = {
     cursor: 'pointer',
     fontSize: '13px',
     fontWeight: '600',
-    transition: 'all 0.2s ease',
-    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
     boxShadow: '0 4px 12px rgba(39, 174, 96, 0.2)',
   },
-
   selectSection: {
     marginBottom: '24px',
   },
@@ -551,11 +628,7 @@ const styles = {
     color: '#1A202C',
     outline: 'none',
     backgroundColor: '#FAFBFC',
-    transition: 'all 0.2s ease',
-    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
-    appearance: 'auto',
   },
-
   summaryGrid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
@@ -600,7 +673,6 @@ const styles = {
     fontWeight: '400',
     color: '#94A3B8',
   },
-
   toolbar: {
     display: 'flex',
     flexWrap: 'wrap',
@@ -632,8 +704,6 @@ const styles = {
     fontSize: '13px',
     outline: 'none',
     backgroundColor: '#FFFFFF',
-    transition: 'all 0.2s ease',
-    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
   },
   clearSearchBtn: {
     position: 'absolute',
@@ -643,9 +713,6 @@ const styles = {
     color: '#94A3B8',
     cursor: 'pointer',
     padding: '4px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   filterGroup: {
     display: 'flex',
@@ -663,15 +730,12 @@ const styles = {
     color: '#64748B',
     backgroundColor: 'transparent',
     cursor: 'pointer',
-    transition: 'all 0.2s ease',
-    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
   },
   filterChipActive: {
     backgroundColor: '#4A90D9',
     color: '#FFFFFF',
     fontWeight: '600',
   },
-
   tableContainer: {
     border: '1px solid #E2E8F0',
     borderRadius: '12px',
@@ -688,7 +752,6 @@ const styles = {
     fontWeight: '600',
     color: '#475569',
     textTransform: 'uppercase',
-    letterSpacing: '0.5px',
   },
   tableBody: {
     display: 'flex',
@@ -699,7 +762,6 @@ const styles = {
     alignItems: 'center',
     padding: '10px 16px',
     borderBottom: '1px solid #F1F5F9',
-    transition: 'background 0.15s ease',
   },
   tableCell: {
     display: 'flex',
@@ -730,7 +792,6 @@ const styles = {
     padding: '5px 14px',
     borderRadius: '12px',
   },
-
   emptyState: {
     display: 'flex',
     flexDirection: 'column',
@@ -742,90 +803,5 @@ const styles = {
     gap: '12px',
   },
 };
-
-// Global CSS animations (เหมือนหน้าคุณครู)
-const styleSheet = document.createElement("style");
-styleSheet.textContent = `
-  @keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-  }
-  
-  @keyframes fadeInUp {
-    from {
-      opacity: 0;
-      transform: translateY(12px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-  
-  .stat-card {
-    animation: fadeInUp 0.3s ease forwards;
-  }
-  .stat-card:nth-child(1) { animation-delay: 0.05s; }
-  .stat-card:nth-child(2) { animation-delay: 0.1s; }
-  .stat-card:nth-child(3) { animation-delay: 0.15s; }
-  
-  .table-row:hover {
-    background-color: #F8FAFC;
-  }
-  
-  .filter-chip:hover:not(.filter-chip-active) {
-    background-color: #E2E8F0;
-  }
-  
-  @media (max-width: 768px) {
-    .top-banner {
-      flex-direction: column !important;
-      align-items: stretch !important;
-    }
-    .mode-tabs {
-      justify-content: center !important;
-    }
-    .summary-grid {
-      grid-template-columns: 1fr !important;
-    }
-    .toolbar {
-      flex-direction: column !important;
-      align-items: stretch !important;
-    }
-    .filter-group {
-      justify-content: center !important;
-    }
-    .card-header {
-      flex-direction: column !important;
-      align-items: flex-start !important;
-    }
-    .export-btn {
-      width: 100% !important;
-      justify-content: center !important;
-    }
-    .table-row {
-      flex-wrap: wrap !important;
-      gap: 8px !important;
-    }
-    .table-row > div:last-child {
-      width: 100% !important;
-      justify-content: flex-start !important;
-      padding-left: 44px !important;
-    }
-  }
-  
-  @media (max-width: 480px) {
-    .main-card {
-      padding: 16px !important;
-    }
-    .class-info {
-      flex-wrap: wrap !important;
-    }
-    .search-wrapper {
-      min-width: 100% !important;
-    }
-  }
-`;
-document.head.appendChild(styleSheet);
 
 export default ActivityView;

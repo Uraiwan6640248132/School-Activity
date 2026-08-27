@@ -27,47 +27,91 @@ function ParticipatingActivities() {
   const [filterStatus, setFilterStatus] = useState("all");
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-
-  const loggedInClassId = localStorage.getItem("teacher_class_id") || "1";
-
-  const [className, setClassName] = useState(
-    localStorage.getItem("teacher_class_name") || "อนุบาล 1 ห้องปกติ"
-  );
+  const [loggedInClassId, setLoggedInClassId] = useState("");
+  const [className, setClassName] = useState("กำลังโหลด...");
 
   const API_URL = "http://localhost:3001";
 
-  useEffect(() => {
-    fetchActivitiesData();
-    fetchClassName();
-  }, []);
-
-
-  
-  const fetchClassName = async () => {
+  // ✅ ฟังก์ชันโหลดข้อมูลห้องเรียนจาก API โดยตรง
+  const fetchUserClass = async () => {
     try {
-      const res = await axios.get(`${API_URL}/attendance/class/${loggedInClassId}`);
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      
+      // ถ้ามี user.id ให้ดึงข้อมูลล่าสุดจาก API
+      if (user.id || user.User_id) {
+        const userId = user.id || user.User_id;
+        const response = await axios.get(`${API_URL}/users/${userId}`);
+        const latestUser = response.data;
+        
+        // อัปเดต localStorage ด้วยข้อมูลล่าสุด
+        const updatedUser = { ...user, ...latestUser };
+        localStorage.setItem("user", JSON.stringify(updatedUser));
+        
+        // กำหนด Class_level จาก API
+        const classLevel = latestUser.Class_level || user.Class_level || "1";
+        localStorage.setItem("teacher_class_id", classLevel);
+        localStorage.setItem("class_id", classLevel);
+        
+        setLoggedInClassId(classLevel);
+        setClassName(classLevel);
+        
+        // ดึงชื่อห้องเรียนที่ถูกต้อง
+        await fetchClassName(classLevel);
+        
+        return classLevel;
+      } else {
+        // Fallback ถ้าไม่มี user ใน localStorage
+        const fallbackClass = localStorage.getItem("teacher_class_id") || "1";
+        setLoggedInClassId(fallbackClass);
+        setClassName(fallbackClass);
+        await fetchClassName(fallbackClass);
+        return fallbackClass;
+      }
+    } catch (err) {
+      console.error("Error fetching user class:", err);
+      // ใช้ค่าจาก localStorage เป็น fallback
+      const fallbackClass = localStorage.getItem("teacher_class_id") || 
+                           localStorage.getItem("class_id") || "1";
+      setLoggedInClassId(fallbackClass);
+      setClassName(fallbackClass);
+      return fallbackClass;
+    }
+  };
+
+  const fetchClassName = async (classId) => {
+    try {
+      const res = await axios.get(`${API_URL}/attendance/class/${encodeURIComponent(classId)}`);
       if (res.data && (res.data.name || res.data.Class_level)) {
         const name = res.data.name || res.data.Class_level;
         setClassName(name);
         localStorage.setItem("teacher_class_name", name);
+        return name;
       }
     } catch (err) {
+      console.error("Error fetching class name:", err);
       if (!localStorage.getItem("teacher_class_name")) {
-        setClassName("อนุบาล 1 ห้องปกติ");
+        setClassName(`ห้องเรียน ID: ${classId}`);
       }
     }
   };
 
+  useEffect(() => {
+    const init = async () => {
+      setLoading(true);
+      await fetchUserClass();
+      await fetchActivitiesData();
+      setLoading(false);
+    };
+    init();
+  }, []);
+
   const fetchActivitiesData = async () => {
-    setLoading(true);
     try {
       const resActivity = await axios.get(`${API_URL}/attendance/activities`);
       const actData = Array.isArray(resActivity.data) ? resActivity.data : (resActivity.data.data || []);
       setActivities(actData);
     } catch (err) {
       console.error("ดึงข้อมูลกิจกรรมไม่สำเร็จ:", err);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -79,17 +123,15 @@ function ParticipatingActivities() {
     }
   }, [selectedActivity, loggedInClassId]);
 
-  const fetchStudents = async (activityId, classId) => {
+  const fetchStudents = async (activityId, targetClassId) => {
     setLoading(true);
     try {
       const res = await axios.get(
-        `${API_URL}/attendance/students?activity=${activityId}&class=${classId}`
+        `${API_URL}/attendance/students?activity=${activityId}&class=${encodeURIComponent(targetClassId)}`
       );
       const rawStudents = Array.isArray(res.data) ? res.data : (res.data.data || []);
-      const ownClassStudents = rawStudents.filter(
-        (student) => !student.class_id || String(student.class_id) === String(classId)
-      );
-      const formattedData = ownClassStudents.map((s) => ({
+      
+      const formattedData = rawStudents.map((s) => ({
         ...s,
         attended: s.attended !== undefined ? Boolean(s.attended) : true,
       }));
@@ -139,7 +181,7 @@ function ParticipatingActivities() {
 
     const payload = {
       activity_id: parseInt(selectedActivity, 10),
-      class_id: parseInt(loggedInClassId, 10),
+      class_id: loggedInClassId,
       attendance_list: students.map((s) => ({
         student_id: s.id,
         attended: s.attended,
@@ -188,6 +230,15 @@ function ParticipatingActivities() {
     document.body.removeChild(link);
   };
 
+  // ✅ ปุ่มรีเซ็ตห้องเรียน
+  const resetClass = () => {
+    localStorage.removeItem('teacher_class_id');
+    localStorage.removeItem('class_id');
+    localStorage.removeItem('classId');
+    localStorage.removeItem('teacher_class_name');
+    window.location.reload();
+  };
+
   if (loading && !students.length) {
     return (
       <div style={styles.loadingContainer}>
@@ -212,29 +263,37 @@ function ParticipatingActivities() {
               <span style={styles.classId}>ID: {loggedInClassId}</span>
             </div>
           </div>
-          <div style={styles.modeTabs}>
+          <div style={styles.topActions}>
             <button
-              type="button"
-              onClick={() => setIsViewMode(false)}
-              style={{
-                ...styles.tabBtn,
-                ...(!isViewMode ? styles.tabBtnActive : {})
-              }}
+              onClick={resetClass}
+              style={styles.resetBtn}
             >
-              <Edit3 size={14} />
-              บันทึก
+              🔄 รีเซ็ต
             </button>
-            <button
-              type="button"
-              onClick={() => setIsViewMode(true)}
-              style={{
-                ...styles.tabBtn,
-                ...(isViewMode ? styles.tabBtnActive : {})
-              }}
-            >
-              <Eye size={14} />
-              ประวัติ
-            </button>
+            <div style={styles.modeTabs}>
+              <button
+                type="button"
+                onClick={() => setIsViewMode(false)}
+                style={{
+                  ...styles.tabBtn,
+                  ...(!isViewMode ? styles.tabBtnActive : {})
+                }}
+              >
+                <Edit3 size={14} />
+                บันทึก
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsViewMode(true)}
+                style={{
+                  ...styles.tabBtn,
+                  ...(isViewMode ? styles.tabBtnActive : {})
+                }}
+              >
+                <Eye size={14} />
+                ประวัติ
+              </button>
+            </div>
           </div>
         </div>
 
@@ -407,7 +466,7 @@ function ParticipatingActivities() {
               ) : filteredStudents.length === 0 ? (
                 <div style={styles.emptyState}>
                   <Search size={40} color="#CBD5E1" />
-                  <p>ไม่พบรายชื่อที่ตรงกับคำค้นหา</p>
+                  <p>ไม่พบรายชื่อนักเรียนของห้องนี้</p>
                 </div>
               ) : (
                 filteredStudents.map((student, index) => (
@@ -583,6 +642,23 @@ const styles = {
     backgroundColor: '#F1F5F9',
     padding: '2px 8px',
     borderRadius: '4px',
+  },
+  topActions: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+  },
+  resetBtn: {
+    padding: '6px 14px',
+    backgroundColor: '#EF4444',
+    color: 'white',
+    border: 'none',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    fontSize: '12px',
+    fontWeight: '500',
+    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
+    transition: 'all 0.2s ease',
   },
   modeTabs: {
     display: 'flex',
@@ -979,104 +1055,5 @@ const styles = {
     fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
   },
 };
-
-// Global CSS animations
-const styleSheet = document.createElement("style");
-styleSheet.textContent = `
-  @keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-  }
-  
-  @keyframes fadeInUp {
-    from {
-      opacity: 0;
-      transform: translateY(12px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-  
-  .stat-card {
-    animation: fadeInUp 0.3s ease forwards;
-  }
-  .stat-card:nth-child(1) { animation-delay: 0.05s; }
-  .stat-card:nth-child(2) { animation-delay: 0.1s; }
-  .stat-card:nth-child(3) { animation-delay: 0.15s; }
-  
-  .table-row:hover {
-    background-color: #F8FAFC;
-  }
-  
-  .filter-chip:hover:not(.filter-chip-active) {
-    background-color: #E2E8F0;
-  }
-  
-  .toggle-btn:hover:not(.toggle-btn-active) {
-    background-color: #E2E8F0;
-  }
-  
-  @media (max-width: 768px) {
-    .top-banner {
-      flex-direction: column !important;
-      align-items: stretch !important;
-    }
-    .mode-tabs {
-      justify-content: center !important;
-    }
-    .summary-grid {
-      grid-template-columns: 1fr !important;
-    }
-    .toolbar {
-      flex-direction: column !important;
-      align-items: stretch !important;
-    }
-    .filter-group {
-      justify-content: center !important;
-    }
-    .bulk-actions {
-      justify-content: center !important;
-    }
-    .card-header {
-      flex-direction: column !important;
-      align-items: flex-start !important;
-    }
-    .export-btn {
-      width: 100% !important;
-      justify-content: center !important;
-    }
-    .table-row {
-      flex-wrap: wrap !important;
-      gap: 8px !important;
-    }
-    .table-row .col-status {
-      width: 100% !important;
-      justify-content: center !important;
-    }
-    .toggle-group {
-      flex-wrap: wrap !important;
-      justify-content: center !important;
-    }
-    .primary-submit-btn, .secondary-edit-btn {
-      width: 100% !important;
-      justify-content: center !important;
-    }
-  }
-  
-  @media (max-width: 480px) {
-    .main-card {
-      padding: 16px !important;
-    }
-    .class-info {
-      flex-wrap: wrap !important;
-    }
-    .search-wrapper {
-      min-width: 100% !important;
-    }
-  }
-`;
-document.head.appendChild(styleSheet);
 
 export default ParticipatingActivities;
