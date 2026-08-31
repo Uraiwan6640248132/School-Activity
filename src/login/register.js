@@ -87,12 +87,10 @@ function Register() {
 
                             {/* 🆕 คำนำหน้า + ชื่อ-นามสกุล */}
                             <div style={styles.field}>
-                                
-                                    <div style={styles.inputContainer}></div>
-                                    <div style={{ ...styles.inputContainer, width: '65%' }}>
-                                        <input type="text" name="Name" placeholder="ชื่อ-นามสกุล" value={formData.Name} onChange={handleChange} style={styles.input} required />
-                                    </div>
-                                
+                                <div style={styles.inputContainer}>
+                                    <input type="text" name="Name" placeholder="ชื่อ-นามสกุล" value={formData.Name} onChange={handleChange} style={styles.input} required />
+                                </div>
+
                             </div>
 
                             {/* เบอร์โทร */}
