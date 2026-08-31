@@ -35,33 +35,52 @@ function ActivityP() {
   // State สำหรับ LightBox แสดงรูปขนาดใหญ่
   const [lightBoxImage, setLightBoxImage] = useState(null);
   const [currentLightBoxIndex, setCurrentLightBoxIndex] = useState(0);
-  const [classroomOptions, setClassroomOptions] = useState([]); // รายชื่อห้องที่ผู้ปกครองมีสิทธิ์ (สมมติว่ามาจาก localStorage หรือ API)
-  const [selectedClassrooms, setSelectedClassrooms] = useState(""); // ห้องที่เลือกอยู่ตอนนี้ (String)
+  const [classroomOptions, setClassroomOptions] = useState([]); // รายชื่อห้องเรียนจริงของลูกผู้ปกครองคนนี้ (ดึงจาก /api/students)
+  const [selectedClassrooms, setSelectedClassrooms] = useState(""); // ห้องที่เลือกอยู่ตอนนี้ ("" = เลือกทั้งหมด/ลูกทุกคน)
 
   const API_URL = "http://127.0.0.1:3001/activities";
+  const STUDENTS_API_URL = "http://127.0.0.1:3001/api/students";
 
-  // ใน useEffect ตอนเริ่มต้น: ดึงห้องทั้งหมดที่ผู้ปกครองเกี่ยวข้อง
-  useEffect(() => {
-    // สมมติว่า localStorage เก็บห้องที่ลูกเรียนอยู่ทั้งหมดไว้ใน key "children_classrooms" เช่น ["อนุบาล1 ห้องปกติ", "อนุบาล1 ห้อง 3 ภาษา"]
+  // หา user_id ของผู้ปกครองที่ล็อกอินอยู่ (ใช้ร่วมกันทั้งไฟล์)
+  const getParentId = () => {
     const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
-    const childrenClassrooms = storedUser.Children_Classrooms || ["อนุบาล1 ห้องปกติ", "อนุบาล1 ห้อง 3 ภาษา"]; // เปลี่ยนให้ตรงกับข้อมูลจริงในระบบ
+    return localStorage.getItem("user_id") || storedUser.User_id || storedUser.id;
+  };
 
-    setClassroomOptions(childrenClassrooms);
-    if (childrenClassrooms.length > 0) {
-      setSelectedClassrooms(childrenClassrooms.join(',')); // เลือกทั้งหมดไว้ก่อน
-      fetchActivities(childrenClassrooms.join(','));
-    } else {
-      // ถ้าไม่มีข้อมูลลูก ให้ดึงห้องของตัวเอง
+  // ใน useEffect ตอนเริ่มต้น: ดึงรายชื่อลูก + ห้องเรียนจริงของผู้ปกครองคนนี้จาก backend
+  useEffect(() => {
+    const parentId = getParentId();
+
+    if (!parentId) {
+      console.error("ไม่พบ user_id ของผู้ใช้งาน กรุณา Login ใหม่");
       fetchActivities("");
+      return;
     }
+
+    axios.get(`${STUDENTS_API_URL}?id=${parentId}`)
+      .then((res) => {
+        const students = Array.isArray(res.data) ? res.data : [];
+        // ดึงห้องเรียนของลูกทุกคนแบบไม่ซ้ำ (ตัด null/ว่างทิ้ง)
+        const uniqueClassrooms = [
+          ...new Set(students.map((s) => s.Class_level).filter(Boolean))
+        ];
+        setClassroomOptions(uniqueClassrooms);
+      })
+      .catch((err) => {
+        console.error("ดึงรายชื่อห้องเรียนของบุตรหลานไม่สำเร็จ:", err);
+      })
+      .finally(() => {
+        // ค่าเริ่มต้น: แสดงกิจกรรมของลูกทุกคน (ไม่กรองห้องเรียน)
+        setSelectedClassrooms("");
+        fetchActivities("");
+      });
   }, []);
 
   // แก้ฟังก์ชัน fetchActivities ให้รับพารามิเตอร์ classrooms
   const fetchActivities = async (classroomsParam = "") => {
     setLoading(true);
     try {
-      const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
-      const parentId = localStorage.getItem("user_id") || storedUser.User_id || storedUser.id;
+      const parentId = getParentId();
 
       if (!parentId) {
         console.error("ไม่พบ user_id ของผู้ใช้งาน กรุณา Login ใหม่");
@@ -69,7 +88,7 @@ function ActivityP() {
         return;
       }
 
-      // สร้าง query string สำหรับ classrooms
+      // สร้าง query string สำหรับ classrooms (ถ้าไม่เลือกห้องใดเป็นพิเศษ = ไม่กรอง แสดงของลูกทุกคน)
       const classroomsQuery = classroomsParam ? `&classrooms=${encodeURIComponent(classroomsParam)}` : "";
 
       const res = await axios.get(`${API_URL}?user_id=${parentId}${classroomsQuery}`, {
@@ -178,13 +197,12 @@ function ActivityP() {
                   fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
                 }}
               >
-                <option value="">เลือกทั้งหมด</option>
+                <option value="">เลือกทั้งหมด (ลูกทุกคน)</option>
                 {classroomOptions.map((cls, idx) => (
                   <option key={idx} value={cls}>
                     {cls}
                   </option>
                 ))}
-                {/* ถ้าต้องการเลือกหลายห้องพร้อมกัน ต้องเปลี่ยนเป็น Multi-select หรือใช้ช่องติ๊ก (Checkbox) แต่ Drop-down ปกติเลือกได้ทีละห้อง */}
               </select>
             </div>
           )}
