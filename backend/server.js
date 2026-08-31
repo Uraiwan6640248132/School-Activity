@@ -127,11 +127,48 @@ app.delete('/users/:id', (req, res) => {
 // ==========================================
 // 🏃‍♂️ ระบบ API จัดการกิจกรรม (ACTIVITY)
 // ==========================================
+
+// 1. GET: ดึงกิจกรรมตาม Class_level ของ User โดยไม่ต้องเพิ่มคอลัมน์ใหม่
 app.get("/activities", (req, res) => {
-  const sql = `SELECT a.*, u.Name AS Photographer FROM activity a LEFT JOIN users u ON a.User_id = u.User_id ORDER BY a.Activity_date DESC, a.Activity_id DESC`;
-  db.query(sql, (err, result) => {
-    if (err) return res.status(500).json(err);
-    res.json(result);
+  const { user_id } = req.query;
+
+  if (!user_id) {
+    return res.status(400).json({ error: "กรุณาระบุ user_id" });
+  }
+
+  // ดึง Role และ Class_level ของผู้ใช้งานปัจจุบันก่อน
+  const userSql = "SELECT Role, Class_level FROM users WHERE User_id = ?";
+  db.query(userSql, [user_id], (err, userResult) => {
+    if (err || userResult.length === 0) {
+      return res.status(500).json({ error: "ไม่พบข้อมูลผู้ใช้งาน" });
+    }
+
+    const { Role, Class_level } = userResult[0];
+
+    let sql = "";
+    let params = [];
+
+    if (Role === 'แอดมิน') {
+      // แอดมิน: เห็นกิจกรรมทั้งหมด
+      sql = `SELECT a.*, u.Name AS Photographer 
+             FROM activity a 
+             LEFT JOIN users u ON a.User_id = u.User_id 
+             ORDER BY a.Activity_date DESC, a.Activity_id DESC`;
+    } else {
+      // ครูและผู้ปกครอง: ดึงเฉพาะกิจกรรมที่ "ครูผู้โพสต์ (u2.Class_level)" มีชั้นเรียนตรงกับ User ที่ดู
+      sql = `SELECT a.*, u.Name AS Photographer 
+             FROM activity a 
+             LEFT JOIN users u ON a.User_id = u.User_id 
+             JOIN users u2 ON a.User_id = u2.User_id 
+             WHERE u2.Class_level = ? 
+             ORDER BY a.Activity_date DESC, a.Activity_id DESC`;
+      params = [Class_level];
+    }
+
+    db.query(sql, params, (err, result) => {
+      if (err) return res.status(500).json(err);
+      res.json(result);
+    });
   });
 });
 
@@ -144,13 +181,17 @@ app.post("/activities", (req, res) => {
 
   if (!Name_activity) return res.status(400).json({ error: "กรุณาระบุชื่อกิจกรรม" });
 
+  // ✅ ลบส่วนที่ดึง Class_level ออกได้เลย ไม่ต้องใช้แล้ว
+  // const getUserSql = "SELECT Class_level FROM users WHERE User_id = ?";
+  // db.query(getUserSql, [User_id], (err, userResult) => { ... });
+
+  // ✅ แก้ SQL ให้ตัด Classroom_id ออก
   const sql = "INSERT INTO activity (Name_activity, Image, Activity_date, Location, User_id) VALUES (?, ?, ?, ?, ?)";
   db.query(sql, [Name_activity, finalImage, Activity_date, body.Location || body.location || null, User_id], (err, result) => {
     if (err) { console.error(err); return res.status(500).json({ error: "ตรวจสอบคีย์เชื่อมโยงผู้ใช้งาน", details: err.message }); }
     res.status(201).json({ message: "เพิ่มกิจกรรมสำเร็จ", Activity_id: result.insertId });
   });
 });
-
 app.put("/activities/:id", (req, res) => {
   const body = req.body || {};
   const Name_activity = body.Name_activity || body.name_activity || body.title || body.Name || null;
@@ -160,9 +201,10 @@ app.put("/activities/:id", (req, res) => {
 
   if (!Name_activity) return res.status(400).json({ error: "กรุณาระบุชื่อกิจกรรม" });
 
+  // ✅ แก้ SQL ให้ตัด Classroom_id ออก
   const sql = "UPDATE activity SET Name_activity=?, Image=?, Activity_date=?, Location=?, User_id=? WHERE Activity_id=?";
   db.query(sql, [Name_activity, finalImage, Activity_date, body.Location || body.location || null, User_id, req.params.id], (err, result) => {
-    if (err) { console.error(err); return res.status(500).json({ error: "ไม่สามารถอัปเดตกิจกรรมได้เนื่องจากคีย์ล็อกอินขัดแย้ง", details: err.message }); }
+    if (err) { console.error(err); return res.status(500).json({ error: "ไม่สามารถอัปเดตกิจกรรมได้", details: err.message }); }
     res.json({ success: true, message: "แก้ไขกิจกรรมสำเร็จ" });
   });
 });
@@ -554,7 +596,7 @@ app.get("/attendance/students", (req, res) => {
 
   db.query(sql, [activity, classId, classId], (err, result) => {
     if (err) return res.status(500).json(err);
-    
+
     const formattedResult = result.map(row => ({
       id: row.id,
       name: row.name,
@@ -939,7 +981,7 @@ app.post('/api/register', (req, res) => {
     }
 
     const insertQuery = 'INSERT INTO users (Name, Phone, Email, Password, UserName, Role, Class_level, Status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
-    
+
     db.query(
       insertQuery,
       [Name, Phone, Email, Password, UserName, Role, Class_level, "รออนุมัติ"],
@@ -988,7 +1030,7 @@ app.post("/api/students/promote", (req, res) => {
         console.error("Error inserting student history:", err);
         return res.status(500).json({ error: "บันทึกประวัติล้มเหลว", details: err.message });
       }
-      
+
       res.status(200).json({ success: true, message: "อัปเดตชั้นเรียนและบันทึกประวัติเรียบร้อยแล้ว!" });
     });
   });

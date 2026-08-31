@@ -40,6 +40,16 @@ function Activity() {
   const [lightBoxImage, setLightBoxImage] = useState(null);
   const [currentLightBoxIndex, setCurrentLightBoxIndex] = useState(0);
 
+  // ----------------------------------------------------
+  // 1. ดึงข้อมูลผู้ใช้งานและล็อกห้องเรียนจาก localStorage
+  // ----------------------------------------------------
+  const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
+  const defaultClassroom = storedUser.Class_level || storedUser.class_level || "อนุบาล1";
+  const currentUserId = localStorage.getItem("user_id") || storedUser.User_id || storedUser.id || 1;
+
+  // ตั้งค่าเริ่มต้นให้เป็นห้องของครูผู้ใช้งานทันที
+  const [classroomId, setClassroomId] = useState(defaultClassroom);
+
   const API_URL = "http://127.0.0.1:3001/activities";
 
   useEffect(() => {
@@ -49,12 +59,12 @@ function Activity() {
   const fetchActivities = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(API_URL, {
+      const res = await axios.get(`${API_URL}?user_id=${currentUserId}`, {
         headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache', 'Expires': '0' }
       });
       setActivities(res.data);
     } catch (err) {
-      console.error("ดึงข้อมูลไม่สำเร็จ! ตรวจสอบการเชื่อมต่อ API:", err);
+      console.error("ดึงข้อมูลไม่สำเร็จ!", err);
     } finally {
       setLoading(false);
     }
@@ -103,18 +113,22 @@ function Activity() {
     }
   };
 
+  // ----------------------------------------------------
+  // 2. ปรับปรุงระบบ Submit ให้ล็อกห้องเรียนอัตโนมัติ
+  // ----------------------------------------------------
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!nameActivity) return alert("กรุณากรอกชื่อกิจกรรม");
 
     let finalImages = images.length > 0 ? images : (editId && previewImages.length > 0 ? previewImages : null);
 
+    // 💡 ลบ Classroom_id ออกจากการส่งข้อมูล เพราะ Backend จะดึงจากตาราง users ให้อัตโนมัติ
     const requestData = {
       Name_activity: nameActivity,
       Photographer: photographer,
       Location: location,
       Activity_date: activityDate ? activityDate : null,
-      User_id: 1,
+      User_id: currentUserId,
       Image: finalImages ? JSON.stringify(finalImages) : null
     };
 
@@ -151,6 +165,7 @@ function Activity() {
     setPhotographer(item.Photographer || "");
     setLocation(item.Location || "");
     setActivityDate(item.Activity_date ? item.Activity_date.split("T")[0] : "");
+    setClassroomId(item.Classroom_id || defaultClassroom);
     setImages([]);
 
     let oldImages = [];
@@ -172,6 +187,7 @@ function Activity() {
     setPhotographer("");
     setLocation("");
     setActivityDate("");
+    setClassroomId(defaultClassroom);
     setImages([]);
     setPreviewImages([]);
     setEditId(null);
@@ -280,6 +296,23 @@ function Activity() {
 
               {/* Form Inputs */}
               <div style={styles.formGroupStack}>
+                {/* 3. แสดงห้องเรียนที่ถูกล็อกไว้จากระบบลงทะเบียน (แสดงเฉยๆ ไม่ส่งค่าไปหลังบ้าน) */}
+                <div>
+                  <label style={styles.inputLabel}>ห้องเรียนที่บันทึกกิจกรรม (ล็อกตามสิทธิ์ผู้ใช้งาน)</label>
+                  <input
+                    type="text"
+                    value={`ชั้น ${classroomId || defaultClassroom}`}
+                    disabled
+                    style={{
+                      ...styles.textInput,
+                      backgroundColor: "#F1F5F9",
+                      color: "#64748B",
+                      cursor: "not-allowed",
+                      fontWeight: "600"
+                    }}
+                  />
+                </div>
+
                 <div>
                   <label style={styles.inputLabel}>ชื่อกิจกรรม</label>
                   <input type="text" placeholder="กรอกชื่อกิจกรรม" value={nameActivity} onChange={(e) => setNameActivity(e.target.value)} style={styles.textInput} />
@@ -490,10 +523,6 @@ function Activity() {
   );
 }
 
-// ============================================================
-// STYLES (คัดลอกดีไซน์และธีมจากฝั่งผู้ปกครองแบบ 100%)
-// ============================================================
-
 const styles = {
   container: {
     padding: '20px',
@@ -506,8 +535,6 @@ const styles = {
     margin: '0 auto',
     width: '100%',
   },
-
-  // Loading
   loadingContainer: {
     display: 'flex',
     flexDirection: 'column',
@@ -524,8 +551,6 @@ const styles = {
     color: '#94A3B8',
     fontSize: '16px',
   },
-
-  // Header
   header: {
     display: 'flex',
     justifyContent: 'space-between',
@@ -564,8 +589,6 @@ const styles = {
     fontWeight: '700',
     color: '#4A90D9',
   },
-
-  // Buttons
   btnPrimary: {
     display: 'flex',
     alignItems: 'center',
@@ -595,7 +618,7 @@ const styles = {
     fontSize: '14px',
     fontWeight: '500',
     transition: 'all 0.2s ease',
-    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
+    fontFamily: "'Kanit', 'Sarbun', system-ui, sans-serif",
   },
   btnEdit: {
     flex: 1,
@@ -646,8 +669,6 @@ const styles = {
     transition: 'all 0.2s ease',
     fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
   },
-
-  // Search Bar
   searchWrapper: {
     position: 'relative',
     display: 'flex',
@@ -678,8 +699,6 @@ const styles = {
     cursor: 'pointer',
     padding: '4px',
   },
-
-  // Activity Grid
   activityGrid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
@@ -769,8 +788,6 @@ const styles = {
     padding: '12px 18px 18px',
     gap: '10px',
   },
-
-  // Modal / Form Modal
   modalOverlay: {
     position: 'fixed',
     top: 0,
@@ -909,8 +926,6 @@ const styles = {
     gridTemplateColumns: '1fr 1fr',
     gap: '12px',
   },
-
-  // Gallery
   galleryContainer: {
     backgroundColor: '#FFFFFF',
     borderRadius: '16px',
@@ -962,8 +977,6 @@ const styles = {
     cursor: 'pointer',
     border: '1px solid #E2E8F0',
   },
-
-  // Lightbox
   lightboxOverlay: {
     position: 'fixed',
     top: 0,
@@ -1042,8 +1055,6 @@ const styles = {
     fontSize: '14px',
     color: 'rgba(255,255,255,0.8)',
   },
-
-  // No Data
   noDataBox: {
     gridColumn: '1 / -1',
     display: 'flex',
