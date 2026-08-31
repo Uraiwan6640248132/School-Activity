@@ -55,7 +55,7 @@ function Navbar({ children }) {
     }
   };
 
-  // 📌 รายการเมนูพร้อม Lucide Icons (ปรับใช้ LayoutDashboard เป็นมาตรฐานเดียวกับทุกบทบาท)
+  // 📌 รายการเมนูพร้อม Lucide Icons
   const menuItems = [
     { path: "/home", label: "หน้าหลัก", icon: LayoutDashboard },
     { path: "/personal", label: "ข้อมูลส่วนตัว", icon: User },
@@ -160,12 +160,15 @@ function Navbar({ children }) {
             </div>
           </div>
 
-          {/* โปรไฟล์ผู้ใช้ */}
+          {/* โปรไฟล์ผู้ใช้ (ปรับแก้ให้แสดงชื่อ และ บทบาท "ครูผู้สอน" ซ้อนกัน) */}
           <div style={styles.profileBadge}>
             <div style={styles.statusDotWrapper}>
               <span style={styles.statusDot}></span>
             </div>
-            <span style={styles.username}>{userName}</span>
+            <div style={styles.userInfoWrapper}>
+              <span style={styles.username}>{userName}</span>
+              <span style={styles.userRole}>ครูผู้สอน</span>
+            </div>
           </div>
         </header>
 
@@ -369,10 +372,20 @@ const styles = {
     borderRadius: "50%",
     boxShadow: "0 0 0 3px rgba(16, 185, 129, 0.2)",
   },
+  userInfoWrapper: {
+    display: "flex",
+    flexDirection: "column",
+    lineHeight: "1.2",
+  },
   username: {
     fontSize: "13px",
     fontWeight: "600",
     color: "#1e293b",
+  },
+  userRole: {
+    fontSize: "11px",
+    fontWeight: "500",
+    color: "#0ea5e9",
   },
   main: {
     padding: "24px",

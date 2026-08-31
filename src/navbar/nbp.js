@@ -8,7 +8,7 @@ import {
   Megaphone,
   BellRing,
   CalendarDays,
-  Users2, // 🟢 เพิ่ม Users2 Icon ให้ตรงตามของครู
+  Users2,
   TrendingUp,
   LogOut,
   Menu,
@@ -63,7 +63,7 @@ function Navbar({ children }) {
     }
   };
 
-  // 📌 รายการเมนูสำหรับผู้ปกครอง (เพิ่มเมนู 'การเข้าร่วมกิจกรรม' ให้เหมือนฝั่งครู)
+  // 📌 รายการเมนูสำหรับผู้ปกครอง
   const menuItems = [
     { path: "/homeparent", label: "หน้าหลัก", icon: LayoutDashboard },
     { path: "/personal_dataparent", label: "ข้อมูลส่วนตัว", icon: User },
@@ -72,7 +72,7 @@ function Navbar({ children }) {
     { path: "/publicrelationp", label: "ประชาสัมพันธ์", icon: Megaphone },
     { path: "/notificationp", label: "แจ้งเตือนการบ้าน", icon: BellRing },
     { path: "/calendarp", label: "ปฏิทินกิจกรรม", icon: CalendarDays },
-    { path: "/participatingp", label: "การเข้าร่วมกิจกรรม", icon: Users2 }, // 🟢 เพิ่มปุ่มดูการเข้าร่วม
+    { path: "/participatingp", label: "การเข้าร่วมกิจกรรม", icon: Users2 },
     { path: "/developmentp", label: "พัฒนาการนักเรียน", icon: TrendingUp },
   ];
 
@@ -167,11 +167,15 @@ function Navbar({ children }) {
             </div>
           </div>
 
+          {/* ปรับปรุงโครงสร้างส่วนแสดงชื่อผู้ใช้ และบทบาทผู้ปกครองด้านล่าง */}
           <div style={styles.profileBadge}>
             <div style={styles.statusDotWrapper}>
               <span style={styles.statusDot}></span>
             </div>
-            <span style={styles.username}>{parentName}</span>
+            <div style={styles.userInfoWrapper}>
+              <span style={styles.username}>{parentName}</span>
+              <span style={styles.userRole}>ผู้ปกครอง</span>
+            </div>
           </div>
         </header>
 
@@ -371,10 +375,20 @@ const styles = {
     borderRadius: "50%",
     boxShadow: "0 0 0 3px rgba(16, 185, 129, 0.2)",
   },
+  userInfoWrapper: {
+    display: "flex",
+    flexDirection: "column",
+    lineHeight: "1.2",
+  },
   username: {
     fontSize: "13px",
     fontWeight: "600",
     color: "#1e293b",
+  },
+  userRole: {
+    fontSize: "11px",
+    fontWeight: "500",
+    color: "#0ea5e9",
   },
   main: {
     padding: "24px",
@@ -392,8 +406,6 @@ if (typeof document !== "undefined") {
     @media (min-width: 1024px) {
       .app-sidebar + div {
         margin-left: 270px !important;
-
-        
       }
       button[aria-label="Open Menu"], button[aria-label="Close Menu"] {
         display: none !important;
