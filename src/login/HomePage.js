@@ -152,7 +152,7 @@ export default function HomePage({
                         <div style={styles.quickFeature}>
                             <div style={styles.featureItem}>
                                 <div style={{ ...styles.featureDot, background: '#38BDF8' }}></div>
-                                <span>เปิดสอน บริบาล - ป.6</span>
+                                <span>เปิดสอน บริบาล - ม.6</span>
                             </div>
                         </div>
                     </div>
@@ -205,7 +205,7 @@ export default function HomePage({
                                 </div>
                                 <div style={styles.statCard}>
                                     <div style={{ ...styles.statIconBag, background: '#F3E8FF' }}><BookOpen size={22} color="#9333EA" /></div>
-                                    <div style={styles.statNumber}>บริบาล-ป.6</div>
+                                    <div style={styles.statNumber}>บริบาล-ม.6</div>
                                     <div style={styles.statLabel}>ระดับชั้นที่เปิดสอน</div>
                                 </div>
                             </div>
