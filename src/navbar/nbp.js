@@ -392,6 +392,8 @@ if (typeof document !== "undefined") {
     @media (min-width: 1024px) {
       .app-sidebar + div {
         margin-left: 270px !important;
+
+        
       }
       button[aria-label="Open Menu"], button[aria-label="Close Menu"] {
         display: none !important;
