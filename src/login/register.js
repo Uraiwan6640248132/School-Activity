@@ -5,7 +5,6 @@ import bgImg from '../bg-pattern.jpg';
 
 function Register() {
     const [formData, setFormData] = useState({
-        Prefix: '', // 🆕 เพิ่มคำนำหน้า
         Name: '',
         Phone: '',
         Email: '',
@@ -47,7 +46,7 @@ function Register() {
 
             if (response.ok) {
                 setMessage({ text: data.message || 'ลงทะเบียนสำเร็จ!', type: 'success' });
-                setFormData({ Prefix: '', Name: '', Phone: '', Email: '', UserName: '', Role: '', Class_level: '', Password: '', ConfirmPassword: '' });
+                setFormData({ Name: '', Phone: '', Email: '', UserName: '', Role: '', Class_level: '', Password: '', ConfirmPassword: '' });
 
                 setTimeout(() => {
                     navigate('/login');
@@ -85,12 +84,11 @@ function Register() {
                                 </div>
                             )}
 
-                            {/* 🆕 คำนำหน้า + ชื่อ-นามสกุล */}
+                            {/* ชื่อ-นามสกุล */}
                             <div style={styles.field}>
                                 <div style={styles.inputContainer}>
                                     <input type="text" name="Name" placeholder="ชื่อ-นามสกุล" value={formData.Name} onChange={handleChange} style={styles.input} required />
                                 </div>
-
                             </div>
 
                             {/* เบอร์โทร */}
