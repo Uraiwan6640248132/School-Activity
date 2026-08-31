@@ -14,8 +14,7 @@ import {
   FolderOpen,
   Sparkles,
   ChevronLeft,
-  ChevronRight,
-  RefreshCw
+  ChevronRight
 } from "lucide-react";
 
 // 🌟 คอมโพเนนต์ไอคอนดาวน์โหลด
@@ -36,72 +35,52 @@ function ActivityP() {
   // State สำหรับ LightBox แสดงรูปขนาดใหญ่
   const [lightBoxImage, setLightBoxImage] = useState(null);
   const [currentLightBoxIndex, setCurrentLightBoxIndex] = useState(0);
-  const [classroomOptions, setClassroomOptions] = useState([]);
-  const [selectedClassrooms, setSelectedClassrooms] = useState("");
+  const [classroomOptions, setClassroomOptions] = useState([]); // รายชื่อห้องเรียนจริงของลูกผู้ปกครองคนนี้ (ดึงจาก /api/students)
+  const [selectedClassrooms, setSelectedClassrooms] = useState(""); // ห้องที่เลือกอยู่ตอนนี้ ("" = เลือกทั้งหมด/ลูกทุกคน)
 
   const API_URL = "http://127.0.0.1:3001/activities";
+  const STUDENTS_API_URL = "http://127.0.0.1:3001/api/students";
 
-  // ✅ useEffect แก้ไขใหม่: ดึงข้อมูลจาก API จริง
+  // หา user_id ของผู้ปกครองที่ล็อกอินอยู่ (ใช้ร่วมกันทั้งไฟล์)
+  const getParentId = () => {
+    const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
+    return localStorage.getItem("user_id") || storedUser.User_id || storedUser.id;
+  };
+
+  // ใน useEffect ตอนเริ่มต้น: ดึงรายชื่อลูก + ห้องเรียนจริงของผู้ปกครองคนนี้จาก backend
   useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
-        const userId = localStorage.getItem("user_id") || storedUser.User_id || storedUser.id;
+    const parentId = getParentId();
 
-        if (!userId) {
-          console.error("ไม่พบ user_id");
-          setLoading(false);
-          return;
-        }
+    if (!parentId) {
+      console.error("ไม่พบ user_id ของผู้ใช้งาน กรุณา Login ใหม่");
+      fetchActivities("");
+      return;
+    }
 
-        // ดึงข้อมูลผู้ใช้จาก API
-        const userResponse = await axios.get(`http://127.0.0.1:3001/users/${userId}`);
-        const userData = userResponse.data;
-
-        // ดึงข้อมูลนักเรียนจาก API
-        const studentResponse = await axios.get(`http://127.0.0.1:3001/api/students?userId=${userId}`);
-        const students = studentResponse.data || [];
-
-        // สร้างรายชื่อห้องจากนักเรียน
-        let classroomList = [...new Set(students.map(s => s.Class_level).filter(Boolean))];
-        
-        // ถ้าไม่มีข้อมูลนักเรียน ให้ใช้ Class_level ของผู้ใช้
-        if (classroomList.length === 0 && userData.Class_level) {
-          classroomList.push(userData.Class_level);
-        }
-
-        // ถ้ายังไม่มีข้อมูลเลย ให้ใช้ค่าเริ่มต้น
-        if (classroomList.length === 0) {
-          classroomList.push("อนุบาล2 ห้องปกติ");
-        }
-
-        console.log("📌 ห้องที่พบ:", classroomList);
-        
-        setClassroomOptions(classroomList);
-        
-        // เลือกห้องแรกเป็นค่าเริ่มต้น
-        setSelectedClassrooms(classroomList[0]);
-        fetchActivities(classroomList[0]);
-        
-      } catch (error) {
-        console.error("Error fetching user data:", error);
-        // ใช้ค่าเริ่มต้น
-        const fallbackClassrooms = ["อนุบาล2 ห้องปกติ"];
-        setClassroomOptions(fallbackClassrooms);
-        setSelectedClassrooms(fallbackClassrooms[0]);
-        fetchActivities(fallbackClassrooms[0]);
-      }
-    };
-
-    fetchUserData();
+    axios.get(`${STUDENTS_API_URL}?id=${parentId}`)
+      .then((res) => {
+        const students = Array.isArray(res.data) ? res.data : [];
+        // ดึงห้องเรียนของลูกทุกคนแบบไม่ซ้ำ (ตัด null/ว่างทิ้ง)
+        const uniqueClassrooms = [
+          ...new Set(students.map((s) => s.Class_level).filter(Boolean))
+        ];
+        setClassroomOptions(uniqueClassrooms);
+      })
+      .catch((err) => {
+        console.error("ดึงรายชื่อห้องเรียนของบุตรหลานไม่สำเร็จ:", err);
+      })
+      .finally(() => {
+        // ค่าเริ่มต้น: แสดงกิจกรรมของลูกทุกคน (ไม่กรองห้องเรียน)
+        setSelectedClassrooms("");
+        fetchActivities("");
+      });
   }, []);
 
-  // ✅ ฟังก์ชัน fetchActivities
+  // แก้ฟังก์ชัน fetchActivities ให้รับพารามิเตอร์ classrooms
   const fetchActivities = async (classroomsParam = "") => {
     setLoading(true);
     try {
-      const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
-      const parentId = localStorage.getItem("user_id") || storedUser.User_id || storedUser.id;
+      const parentId = getParentId();
 
       if (!parentId) {
         console.error("ไม่พบ user_id ของผู้ใช้งาน กรุณา Login ใหม่");
@@ -109,6 +88,7 @@ function ActivityP() {
         return;
       }
 
+      // สร้าง query string สำหรับ classrooms (ถ้าไม่เลือกห้องใดเป็นพิเศษ = ไม่กรอง แสดงของลูกทุกคน)
       const classroomsQuery = classroomsParam ? `&classrooms=${encodeURIComponent(classroomsParam)}` : "";
 
       const res = await axios.get(`${API_URL}?user_id=${parentId}${classroomsQuery}`, {
@@ -124,47 +104,6 @@ function ActivityP() {
       console.error("ดึงข้อมูลกิจกรรมฝั่งผู้ปกครองไม่สำเร็จ:", err);
     } finally {
       setLoading(false);
-    }
-  };
-
-  // ✅ ฟังก์ชันรีเฟรชข้อมูลห้องเรียน
-  const refreshClassrooms = async () => {
-    try {
-      const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
-      const userId = localStorage.getItem("user_id") || storedUser.User_id || storedUser.id;
-
-      if (!userId) {
-        console.error("ไม่พบ user_id");
-        return;
-      }
-
-      // ดึงข้อมูลนักเรียนล่าสุด
-      const studentResponse = await axios.get(`http://127.0.0.1:3001/api/students?userId=${userId}`);
-      const students = studentResponse.data || [];
-
-      // สร้างรายชื่อห้อง
-      let classroomList = [...new Set(students.map(s => s.Class_level).filter(Boolean))];
-      
-      if (classroomList.length === 0) {
-        // ถ้าไม่มีนักเรียน ให้ดึง Class_level ของผู้ใช้
-        const userResponse = await axios.get(`http://127.0.0.1:3001/users/${userId}`);
-        if (userResponse.data.Class_level) {
-          classroomList.push(userResponse.data.Class_level);
-        } else {
-          classroomList.push("อนุบาล2 ห้องปกติ");
-        }
-      }
-
-      console.log("🔄 รีเฟรชห้องเรียน:", classroomList);
-      
-      setClassroomOptions(classroomList);
-      if (classroomList.length > 0) {
-        setSelectedClassrooms(classroomList[0]);
-        fetchActivities(classroomList[0]);
-      }
-      
-    } catch (error) {
-      console.error("Error refreshing classrooms:", error);
     }
   };
 
@@ -234,61 +173,37 @@ function ActivityP() {
       <div style={styles.wrapper}>
         {/* Header */}
         <div style={styles.header}>
-          {/* ✅ Dropdown เลือกห้องเรียน แก้ไขแล้ว */}
+          {/* Dropdown เลือกห้องเรียน */}
           {classroomOptions.length > 0 && (
-            <div style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+            <div style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
               <label style={{ fontSize: '14px', fontWeight: '500', color: '#475569' }}>
                 เลือกห้องเรียนของบุตรหลาน:
               </label>
-              <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-                <select
-                  value={selectedClassrooms}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    setSelectedClassrooms(value);
-                    fetchActivities(value);
-                  }}
-                  style={{
-                    padding: '10px 14px',
-                    border: '1px solid #E2E8F0',
-                    borderRadius: '10px',
-                    fontSize: '14px',
-                    backgroundColor: '#FFFFFF',
-                    minWidth: '200px',
-                    outline: 'none',
-                    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
-                  }}
-                >
-                  <option value="">เลือกทั้งหมด</option>
-                  {classroomOptions.map((cls, idx) => (
-                    <option key={idx} value={cls}>
-                      {cls}
-                    </option>
-                  ))}
-                </select>
-                
-                {/* ✅ ปุ่มรีเฟรช */}
-                <button
-                  onClick={refreshClassrooms}
-                  style={{
-                    padding: '10px 14px',
-                    backgroundColor: '#4A90D9',
-                    color: '#FFFFFF',
-                    border: 'none',
-                    borderRadius: '10px',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
-                    fontSize: '13px',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  <RefreshCw size={16} />
-                  รีเฟรช
-                </button>
-              </div>
+              <select
+                value={selectedClassrooms}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setSelectedClassrooms(value);
+                  fetchActivities(value); // เรียก API ใหม่เมื่อเปลี่ยนห้อง
+                }}
+                style={{
+                  padding: '10px 14px',
+                  border: '1px solid #E2E8F0',
+                  borderRadius: '10px',
+                  fontSize: '14px',
+                  backgroundColor: '#FFFFFF',
+                  minWidth: '250px',
+                  outline: 'none',
+                  fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
+                }}
+              >
+                <option value="">เลือกทั้งหมด (ลูกทุกคน)</option>
+                {classroomOptions.map((cls, idx) => (
+                  <option key={idx} value={cls}>
+                    {cls}
+                  </option>
+                ))}
+              </select>
             </div>
           )}
           <div style={styles.headerLeft}>
