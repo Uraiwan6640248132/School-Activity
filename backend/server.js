@@ -88,32 +88,36 @@ app.get("/users/:id", (req, res) => {
 });
 
 app.put("/users/:id", (req, res) => {
-  const Name = req.body.Name || req.body.name;
-  const Phone = req.body.Phone || req.body.phone;
-  const Email = req.body.Email || req.body.email || null;
-  const UserName = req.body.UserName || req.body.Username || req.body.username;
-  const Role = req.body.Role || req.body.role;
-  const Class_level = req.body.Class_level || req.body.class_level;
-  const Status = req.body.Status || req.body.status || 'ใช้งาน';
-  const Password = req.body.Password || req.body.password;
+  const { id } = req.params;
+  const body = req.body || {};
 
-  let sql = "";
-  let params = [];
+  // 1. ค้นหาข้อมูลเดิมจากฐานข้อมูลออกมาก่อน
+  db.query("SELECT * FROM users WHERE User_id = ?", [id], (err, results) => {
+    if (err) return res.status(500).json(err);
+    if (results.length === 0) return res.status(404).json({ message: "ไม่พบผู้ใช้งาน" });
 
-  if (Password && Password.trim() !== "") {
-    sql = `UPDATE users SET Name=?, Phone=?, Email=?, UserName=?, Role=?, Class_level=?, Status=?, Password=? WHERE User_id=?`;
-    params = [Name, Phone, Email, UserName, Role, Class_level, Status, Password, req.params.id];
-  } else {
-    sql = `UPDATE users SET Name=?, Phone=?, Email=?, UserName=?, Role=?, Class_level=?, Status=? WHERE User_id=?`;
-    params = [Name, Phone, Email, UserName, Role, Class_level, Status, req.params.id];
-  }
+    const currentUser = results[0];
 
-  db.query(sql, params, (err, result) => {
-    if (err) {
-      console.error("Backend Error updating user:", err);
-      return res.status(500).json(err);
-    }
-    res.json({ success: true, message: "อัปเดตผู้ใช้งานสำเร็จ" });
+    // 2. ถ้าหน้าบ้านส่งค่าใหม่มาให้ใช้ค่าใหม่ ถ้าไม่ได้ส่งมา (undefined) ให้คงใช้ค่าเดิมใน Database
+    const Name = body.Name !== undefined ? body.Name : (body.name !== undefined ? body.name : currentUser.Name);
+    const Phone = body.Phone !== undefined ? body.Phone : (body.phone !== undefined ? body.phone : currentUser.Phone);
+    const Email = body.Email !== undefined ? body.Email : (body.email !== undefined ? body.email : currentUser.Email);
+    const UserName = body.UserName !== undefined ? body.UserName : (body.Username !== undefined ? body.Username : (body.username !== undefined ? body.username : currentUser.UserName));
+    const Role = body.Role !== undefined ? body.Role : (body.role !== undefined ? body.role : currentUser.Role);
+    const Class_level = body.Class_level !== undefined ? body.Class_level : (body.class_level !== undefined ? body.class_level : currentUser.Class_level);
+    const Status = body.Status !== undefined ? body.Status : (body.status !== undefined ? body.status : currentUser.Status);
+    const Password = (body.Password && body.Password.trim() !== "") ? body.Password : (body.password && body.password.trim() !== "" ? body.password : currentUser.Password);
+
+    const sql = `UPDATE users SET Name=?, Phone=?, Email=?, UserName=?, Role=?, Class_level=?, Status=?, Password=? WHERE User_id=?`;
+    const params = [Name, Phone, Email, UserName, Role, Class_level, Status, Password, id];
+
+    db.query(sql, params, (err, result) => {
+      if (err) {
+        console.error("Backend Error updating user:", err);
+        return res.status(500).json(err);
+      }
+      res.json({ success: true, message: "อัปเดตผู้ใช้งานสำเร็จ" });
+    });
   });
 });
 
