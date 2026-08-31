@@ -35,30 +35,44 @@ function ActivityP() {
   // State สำหรับ LightBox แสดงรูปขนาดใหญ่
   const [lightBoxImage, setLightBoxImage] = useState(null);
   const [currentLightBoxIndex, setCurrentLightBoxIndex] = useState(0);
+  const [classroomOptions, setClassroomOptions] = useState([]); // รายชื่อห้องที่ผู้ปกครองมีสิทธิ์ (สมมติว่ามาจาก localStorage หรือ API)
+  const [selectedClassrooms, setSelectedClassrooms] = useState(""); // ห้องที่เลือกอยู่ตอนนี้ (String)
 
   const API_URL = "http://127.0.0.1:3001/activities";
 
+  // ใน useEffect ตอนเริ่มต้น: ดึงห้องทั้งหมดที่ผู้ปกครองเกี่ยวข้อง
   useEffect(() => {
-    fetchActivities();
+    // สมมติว่า localStorage เก็บห้องที่ลูกเรียนอยู่ทั้งหมดไว้ใน key "children_classrooms" เช่น ["อนุบาล1 ห้องปกติ", "อนุบาล1 ห้อง 3 ภาษา"]
+    const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
+    const childrenClassrooms = storedUser.Children_Classrooms || ["อนุบาล1 ห้องปกติ", "อนุบาล1 ห้อง 3 ภาษา"]; // เปลี่ยนให้ตรงกับข้อมูลจริงในระบบ
+
+    setClassroomOptions(childrenClassrooms);
+    if (childrenClassrooms.length > 0) {
+      setSelectedClassrooms(childrenClassrooms.join(',')); // เลือกทั้งหมดไว้ก่อน
+      fetchActivities(childrenClassrooms.join(','));
+    } else {
+      // ถ้าไม่มีข้อมูลลูก ให้ดึงห้องของตัวเอง
+      fetchActivities("");
+    }
   }, []);
 
-  const fetchActivities = async () => {
+  // แก้ฟังก์ชัน fetchActivities ให้รับพารามิเตอร์ classrooms
+  const fetchActivities = async (classroomsParam = "") => {
     setLoading(true);
     try {
-      // 1. ดึง user_id ของผู้ปกครองที่เก็บไว้ใน localStorage ตอน Login
-      // (ลองเช็คดูว่าในระบบของคุณใช้ชื่อ key อะไร เช่น "user_id", "userId" หรือเก็บไว้ใน Object "user")
       const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
       const parentId = localStorage.getItem("user_id") || storedUser.User_id || storedUser.id;
 
-      // หากไม่มี user_id ให้แจ้งเตือนก่อนส่ง request
       if (!parentId) {
         console.error("ไม่พบ user_id ของผู้ใช้งาน กรุณา Login ใหม่");
         setLoading(false);
         return;
       }
 
-      // 2. แนบ ?user_id=${parentId} ไปกับ API URL
-      const res = await axios.get(`${API_URL}?user_id=${parentId}`, {
+      // สร้าง query string สำหรับ classrooms
+      const classroomsQuery = classroomsParam ? `&classrooms=${encodeURIComponent(classroomsParam)}` : "";
+
+      const res = await axios.get(`${API_URL}?user_id=${parentId}${classroomsQuery}`, {
         headers: {
           'Cache-Control': 'no-cache',
           'Pragma': 'no-cache',
@@ -140,6 +154,40 @@ function ActivityP() {
       <div style={styles.wrapper}>
         {/* Header */}
         <div style={styles.header}>
+          {/* Dropdown เลือกห้องเรียน */}
+          {classroomOptions.length > 0 && (
+            <div style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <label style={{ fontSize: '14px', fontWeight: '500', color: '#475569' }}>
+                เลือกห้องเรียนของบุตรหลาน:
+              </label>
+              <select
+                value={selectedClassrooms}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setSelectedClassrooms(value);
+                  fetchActivities(value); // เรียก API ใหม่เมื่อเปลี่ยนห้อง
+                }}
+                style={{
+                  padding: '10px 14px',
+                  border: '1px solid #E2E8F0',
+                  borderRadius: '10px',
+                  fontSize: '14px',
+                  backgroundColor: '#FFFFFF',
+                  minWidth: '250px',
+                  outline: 'none',
+                  fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
+                }}
+              >
+                <option value="">เลือกทั้งหมด</option>
+                {classroomOptions.map((cls, idx) => (
+                  <option key={idx} value={cls}>
+                    {cls}
+                  </option>
+                ))}
+                {/* ถ้าต้องการเลือกหลายห้องพร้อมกัน ต้องเปลี่ยนเป็น Multi-select หรือใช้ช่องติ๊ก (Checkbox) แต่ Drop-down ปกติเลือกได้ทีละห้อง */}
+              </select>
+            </div>
+          )}
           <div style={styles.headerLeft}>
             <div style={styles.headerIcon}>
               <Sparkles size={24} color="#FFFFFF" />

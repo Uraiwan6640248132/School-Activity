@@ -128,15 +128,15 @@ app.delete('/users/:id', (req, res) => {
 // 🏃‍♂️ ระบบ API จัดการกิจกรรม (ACTIVITY)
 // ==========================================
 
-// 1. GET: ดึงกิจกรรมตาม Class_level ของ User โดยไม่ต้องเพิ่มคอลัมน์ใหม่
+// 1. GET: ดึงกิจกรรมตาม Class_level ของ User (รองรับหลายห้อง)
 app.get("/activities", (req, res) => {
-  const { user_id } = req.query;
+  const { user_id, classrooms } = req.query;
 
   if (!user_id) {
     return res.status(400).json({ error: "กรุณาระบุ user_id" });
   }
 
-  // ดึง Role และ Class_level ของผู้ใช้งานปัจจุบันก่อน
+  // ดึง Role ของผู้ใช้งานปัจจุบันก่อน
   const userSql = "SELECT Role, Class_level FROM users WHERE User_id = ?";
   db.query(userSql, [user_id], (err, userResult) => {
     if (err || userResult.length === 0) {
@@ -144,7 +144,6 @@ app.get("/activities", (req, res) => {
     }
 
     const { Role, Class_level } = userResult[0];
-
     let sql = "";
     let params = [];
 
@@ -155,14 +154,36 @@ app.get("/activities", (req, res) => {
              LEFT JOIN users u ON a.User_id = u.User_id 
              ORDER BY a.Activity_date DESC, a.Activity_id DESC`;
     } else {
-      // ครูและผู้ปกครอง: ดึงเฉพาะกิจกรรมที่ "ครูผู้โพสต์ (u2.Class_level)" มีชั้นเรียนตรงกับ User ที่ดู
-      sql = `SELECT a.*, u.Name AS Photographer 
-             FROM activity a 
-             LEFT JOIN users u ON a.User_id = u.User_id 
-             JOIN users u2 ON a.User_id = u2.User_id 
-             WHERE u2.Class_level = ? 
-             ORDER BY a.Activity_date DESC, a.Activity_id DESC`;
-      params = [Class_level];
+      // ครูและผู้ปกครอง:
+      // ถ้ามีการส่งค่า classrooms มาจาก Drop-down (คั่นด้วยจุลภาค เช่น "อนุบาล1 ห้องปกติ,อนุบาล1 ห้อง 3 ภาษา")
+      if (classrooms) {
+        const classroomArray = classrooms.split(',').map(c => c.trim()).filter(c => c);
+        if (classroomArray.length > 0) {
+          const placeholders = classroomArray.map(() => '?').join(', ');
+          sql = `SELECT a.*, u.Name AS Photographer 
+                 FROM activity a 
+                 LEFT JOIN users u ON a.User_id = u.User_id 
+                 WHERE u.Class_level IN (${placeholders}) 
+                 ORDER BY a.Activity_date DESC, a.Activity_id DESC`;
+          params = classroomArray;
+        } else {
+          // ถ้าไม่มีห้องที่เลือก ให้ดึงห้องของตัวเอง
+          sql = `SELECT a.*, u.Name AS Photographer 
+                 FROM activity a 
+                 LEFT JOIN users u ON a.User_id = u.User_id 
+                 WHERE u.Class_level = ? 
+                 ORDER BY a.Activity_date DESC, a.Activity_id DESC`;
+          params = [Class_level];
+        }
+      } else {
+        // ค่าเริ่มต้น: ดึงเฉพาะห้องของตัวเอง
+        sql = `SELECT a.*, u.Name AS Photographer 
+               FROM activity a 
+               LEFT JOIN users u ON a.User_id = u.User_id 
+               WHERE u.Class_level = ? 
+               ORDER BY a.Activity_date DESC, a.Activity_id DESC`;
+        params = [Class_level];
+      }
     }
 
     db.query(sql, params, (err, result) => {
@@ -171,7 +192,6 @@ app.get("/activities", (req, res) => {
     });
   });
 });
-
 app.post("/activities", (req, res) => {
   const body = req.body || {};
   const Name_activity = body.Name_activity || body.name_activity || body.Name || body.title || null;
