@@ -62,7 +62,6 @@ function Navbar({ children }) {
   };
 
   // 📌 รายการเมนูสำหรับระบบผู้ดูแลระบบ (Admin)
-  // ปรับให้ใช้ LayoutDashboard และ User เป็นมาตรฐานเดียวกัน
   const menuItems = [
     { path: "/homeadmin", label: "หน้าหลักผู้ดูแล", icon: LayoutDashboard },
     { path: "/personal_dataad", label: "ข้อมูลส่วนตัว", icon: User },
@@ -166,7 +165,10 @@ function Navbar({ children }) {
             <div style={styles.statusDotWrapper}>
               <span style={styles.statusDot}></span>
             </div>
-            <span style={styles.username}>{adminName}</span>
+            <div style={{ display: "flex", flexDirection: "column", lineHeight: "1.2" }}>
+              <span style={styles.username}>{adminName}</span>
+              <span style={styles.roleText}>แอดมิน</span>
+            </div>
           </div>
         </header>
 
@@ -191,7 +193,7 @@ function Navbar({ children }) {
   );
 }
 
-// 🎨 Styles (ใช้มาตรฐานเดียวกันกับทุกระบบ)
+// 🎨 Styles
 const styles = {
   layout: {
     display: "flex",
@@ -374,6 +376,11 @@ const styles = {
     fontSize: "13px",
     fontWeight: "600",
     color: "#1e293b",
+  },
+  roleText: {
+    fontSize: "11px",
+    fontWeight: "500",
+    color: "#0ea5e9",
   },
   main: {
     padding: "24px",

@@ -50,7 +50,12 @@ const HomeParent = () => {
 
     const fetchParentHomeData = async () => {
       try {
-        const activityRes = await axios.get("http://localhost:3001/activities");
+        // 1. ดึง user_id ของผู้ปกครองที่ล็อกอินอยู่
+        const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
+        const parentId = localStorage.getItem("user_id") || storedUser.User_id || storedUser.id || 1;
+
+        // 2. ส่ง ?user_id=${parentId} แนบไปกับ URL activities
+        const activityRes = await axios.get(`http://localhost:3001/activities?user_id=${parentId}`);
         const notificationRes = await axios.get("http://localhost:3001/notifications");
 
         // กรองข้อมูลการบ้านให้ตรงกับห้องเรียน

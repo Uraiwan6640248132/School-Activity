@@ -39,9 +39,15 @@ const Home = () => {
 
     const fetchHomeData = async () => {
       try {
+        // 1. ดึง user_id ของผู้ใช้ที่ล็อกอินอยู่
+        const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
+        const userId = localStorage.getItem("user_id") || storedUser.User_id || storedUser.id || 1;
+
         const studentRes = await axios.get("http://localhost:3001/api/students");
         const userRes = await axios.get("http://localhost:3001/users");
-        const activityRes = await axios.get("http://localhost:3001/activities");
+
+        // 2. แนบ ?user_id=${userId} เข้าไปที่ API /activities
+        const activityRes = await axios.get(`http://localhost:3001/activities?user_id=${userId}`);
         const notificationRes = await axios.get("http://localhost:3001/notifications");
 
         const teacherUsers = userRes.data.filter(user => user.Role === "ครูผู้สอน");

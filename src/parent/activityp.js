@@ -45,9 +45,27 @@ function ActivityP() {
   const fetchActivities = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(API_URL, {
-        headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache', 'Expires': '0' }
+      // 1. ดึง user_id ของผู้ปกครองที่เก็บไว้ใน localStorage ตอน Login
+      // (ลองเช็คดูว่าในระบบของคุณใช้ชื่อ key อะไร เช่น "user_id", "userId" หรือเก็บไว้ใน Object "user")
+      const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
+      const parentId = localStorage.getItem("user_id") || storedUser.User_id || storedUser.id;
+
+      // หากไม่มี user_id ให้แจ้งเตือนก่อนส่ง request
+      if (!parentId) {
+        console.error("ไม่พบ user_id ของผู้ใช้งาน กรุณา Login ใหม่");
+        setLoading(false);
+        return;
+      }
+
+      // 2. แนบ ?user_id=${parentId} ไปกับ API URL
+      const res = await axios.get(`${API_URL}?user_id=${parentId}`, {
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
       });
+
       setActivities(res.data);
     } catch (err) {
       console.error("ดึงข้อมูลกิจกรรมฝั่งผู้ปกครองไม่สำเร็จ:", err);
