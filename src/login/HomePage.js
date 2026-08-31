@@ -98,11 +98,11 @@ export default function HomePage({
                 background: scrolled ? 'rgba(255, 255, 255, 0.92)' : 'rgba(255, 255, 255, 0.75)',
             }}>
                 <button type="button" style={styles.brand} onClick={() => scrollTo("home")}>
-    <div style={styles.logoWrapper}>
-        <img src={logoSchool} alt="ตราโรงเรียน" style={styles.logoImage} />
-    </div>
-    <span style={styles.brandText}>{schoolName}</span>
-</button>
+                    <div style={styles.logoWrapper}>
+                        <img src={logoSchool} alt="ตราโรงเรียน" style={styles.logoImage} />
+                    </div>
+                    <span style={styles.brandText}>{schoolName}</span>
+                </button>
 
                 <button className="menu-toggle" style={styles.menuToggle} onClick={() => setMenuOpen(!menuOpen)}>
                     {menuOpen ? <X size={24} color="#0F172A" /> : <Menu size={24} color="#0F172A" />}
@@ -139,7 +139,7 @@ export default function HomePage({
                             โรงเรียนสาธิตมหาวิทยาลัยราชภัฏเลย <br />
                             <span style={styles.heroHighlight}></span>
                         </h1>
-            
+
                         <div style={styles.heroActions}>
                             <button type="button" style={styles.primaryButton} onClick={handleRegister}>
                                 ลงทะเบียนใช้งาน <ArrowRight size={18} />
@@ -375,36 +375,36 @@ const styles = {
         transition: "all 0.3s ease",
     },
     brand: {
-    display: "flex",
-    alignItems: "center",     // 👈 บังคับให้โลโก้และข้อความอยู่กึ่งกลางแนวตั้งเดียวกัน
-    gap: 12,                  // เว้นระยะห่างระหว่างโลโก้กับตัวหนังสือ
-    background: "none",
-    border: "none",
-    padding: 0,
-    cursor: "pointer",
-},
+        display: "flex",
+        alignItems: "center",     // 👈 บังคับให้โลโก้และข้อความอยู่กึ่งกลางแนวตั้งเดียวกัน
+        gap: 12,                  // เว้นระยะห่างระหว่างโลโก้กับตัวหนังสือ
+        background: "none",
+        border: "none",
+        padding: 0,
+        cursor: "pointer",
+    },
     logoWrapper: {
-    width: 58,
-    height: 58,
-    minWidth: 58,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    overflow: "hidden",
-    transform: "translateY(4px)", // 👈 ขยับตัวโลโก้ลงมาด้านล่าง 4-6px
-},
+        width: 58,
+        height: 58,
+        minWidth: 58,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        overflow: "hidden",
+        transform: "translateY(4px)", // 👈 ขยับตัวโลโก้ลงมาด้านล่าง 4-6px
+    },
     logoImage: {
-    width: "100%",
-    height: "100%",
-    objectFit: "contain", 
-},
+        width: "100%",
+        height: "100%",
+        objectFit: "contain",
+    },
     brandText: {
-    fontSize: 18,
-    fontWeight: 700,
-    color: "#0F172A",
-    lineHeight: 1,           // 👈 บังคับความสูงบรรทัดตัวหนังสือไม่ให้มีพื้นที่ว่างดันลงมา
-    display: "inline-block",
-},
+        fontSize: 18,
+        fontWeight: 700,
+        color: "#0F172A",
+        lineHeight: 1,           // 👈 บังคับความสูงบรรทัดตัวหนังสือไม่ให้มีพื้นที่ว่างดันลงมา
+        display: "inline-block",
+    },
     menuToggle: {
         display: "none",
         border: 0,
@@ -718,10 +718,10 @@ const styles = {
         background: "#F8FAFC",
     },
     newsGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", // 👈 ปรับ minmax จาก 320px เหลือ 250px - 260px
-    gap: 20, // 👈 ลดระยะห่างระหว่างการ์ดจาก 28 เหลือ 20px
-},
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", // 👈 ปรับ minmax จาก 320px เหลือ 250px - 260px
+        gap: 20, // 👈 ลดระยะห่างระหว่างการ์ดจาก 28 เหลือ 20px
+    },
     newsCard: {
         background: "linear-gradient(180deg, #FFFFFF 0%, #d2e9fa 100%)",
         borderRadius: 24,
@@ -814,14 +814,14 @@ const styles = {
         gap: 24,
     },
     activityCard: {
-    padding: "32px 28px",
-    borderRadius: 24,
-    background: "linear-gradient(145deg, #F0F9FF 0%, #E0F2FE 100%)", // 👈 เปลี่ยนเป็นสีฟ้าอมขาวพาสเทลทั้งใบ
-    border: "1px solid #BAE6FD",
-    boxShadow: "0 10px 25px rgba(56, 189, 248, 0.08)",
-    transition: "all 0.3s ease",
-    position: "relative",
-},
+        padding: "32px 28px",
+        borderRadius: 24,
+        background: "linear-gradient(145deg, #F0F9FF 0%, #E0F2FE 100%)", // 👈 เปลี่ยนเป็นสีฟ้าอมขาวพาสเทลทั้งใบ
+        border: "1px solid #BAE6FD",
+        boxShadow: "0 10px 25px rgba(56, 189, 248, 0.08)",
+        transition: "all 0.3s ease",
+        position: "relative",
+    },
     activityIconBox: {
         width: 60,
         height: 60,
@@ -917,15 +917,15 @@ const styles = {
         fontSize: 14,
     },
     footerBottom: {
-    borderTop: "1px solid #1E293B",
-    paddingTop: 28,
-    display: "flex",
-    justifyContent: "space-between", // 👈 เปลี่ยนเป็น justifyContent
-    alignItems: "center",
-    flexWrap: "wrap",
-    gap: 16,
-    fontSize: 13,
-},
+        borderTop: "1px solid #1E293B",
+        paddingTop: 28,
+        display: "flex",
+        justifyContent: "space-between", // 👈 เปลี่ยนเป็น justifyContent
+        alignItems: "center",
+        flexWrap: "wrap",
+        gap: 16,
+        fontSize: 13,
+    },
     copyright: {
         margin: 0,
     },
