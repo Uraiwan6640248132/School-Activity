@@ -26,8 +26,24 @@ const HomeAdmin = () => {
   useEffect(() => {
     const fetchAdminDashboardData = async () => {
       try {
+        // ✅ ดึง user_id จาก localStorage
+        const userData = JSON.parse(localStorage.getItem('user') || '{}');
+        const userId = userData.User_id || userData.id || userData.user_id;
+        
+        console.log('👤 Admin User ID:', userId);
+
+        // ถ้าไม่มี userId ให้ใช้ค่าเริ่มต้น หรือแสดง error
+        if (!userId) {
+          console.warn('⚠️ ไม่พบ user_id ใน localStorage');
+        }
+
         const userRes = await axios.get("http://localhost:3001/users");
-        const activityRes = await axios.get("http://localhost:3001/activities");
+        
+        // ✅ แก้ไข: ส่ง user_id ไปด้วย
+        const activityRes = await axios.get("http://localhost:3001/activities", {
+          params: { user_id: userId || 1 } // ถ้าไม่มีให้ใช้ 1 เป็นค่าเริ่มต้น
+        });
+        
         const studentRes = await axios.get("http://localhost:3001/api/students");
 
         setUsers(userRes.data);
@@ -281,7 +297,6 @@ const styles = {
     borderRadius: '16px',
   },
 
-  // Header
   header: {
     display: 'flex',
     justifyContent: 'space-between',
@@ -319,7 +334,6 @@ const styles = {
     fontWeight: '500',
   },
 
-  // Stats Grid
   statsGrid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
@@ -366,7 +380,6 @@ const styles = {
     letterSpacing: '-0.5px',
   },
 
-  // Main Grid
   mainGrid: {
     display: 'grid',
     gridTemplateColumns: '1fr 1fr',
@@ -374,7 +387,6 @@ const styles = {
     width: '100%',
   },
 
-  // Card
   card: {
     backgroundColor: '#FFFFFF',
     borderRadius: '16px',
@@ -416,7 +428,6 @@ const styles = {
     flex: 1,
   },
 
-  // User List
   userList: {
     display: 'flex',
     flexDirection: 'column',
@@ -477,7 +488,6 @@ const styles = {
     borderRadius: '12px',
   },
 
-  // Activity List
   activityList: {
     display: 'flex',
     flexDirection: 'column',
@@ -528,7 +538,6 @@ const styles = {
     color: '#95A5A6',
   },
 
-  // View More
   viewMore: {
     display: 'flex',
     alignItems: 'center',
@@ -543,7 +552,6 @@ const styles = {
     transition: 'background 0.2s ease',
   },
 
-  // Footer Stats
   footerStats: {
     display: 'flex',
     flexWrap: 'wrap',
@@ -561,7 +569,6 @@ const styles = {
     color: '#4A5568',
   },
 
-  // Loading
   loadingWrapper: {
     display: 'flex',
     flexDirection: 'column',
@@ -579,7 +586,6 @@ const styles = {
     fontSize: '14px',
   },
 
-  // Empty
   emptyText: {
     color: '#A0AEC0',
     fontSize: '14px',

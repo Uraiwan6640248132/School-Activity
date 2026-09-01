@@ -982,6 +982,9 @@ app.post("/login", (req, res) => {
   });
 });
 
+// ==========================================
+// 🔐 ระบบลงทะเบียน (REGISTER API) - ห้ามสมัครครู
+// ==========================================
 app.post('/api/register', (req, res) => {
   const Name = req.body.Name || req.body.name;
   const Phone = req.body.Phone || req.body.phone;
@@ -991,6 +994,13 @@ app.post('/api/register', (req, res) => {
   const Class_level = req.body.Class_level || req.body.class_level;
   const Password = req.body.Password || req.body.password;
   const ConfirmPassword = req.body.ConfirmPassword || req.body.confirmpassword;
+
+  // ✅ ห้ามสมัคร Role = ครูผู้สอน
+  if (Role === 'ครูผู้สอน') {
+    return res.status(403).json({ 
+      message: 'ไม่สามารถสมัครเป็นครูได้ กรุณาติดต่อผู้ดูแลระบบ' 
+    });
+  }
 
   if (Password !== ConfirmPassword) {
     return res.status(400).json({ message: 'รหัสผ่านและยืนยันรหัสผ่านไม่ตรงกัน!' });
@@ -1014,6 +1024,146 @@ app.post('/api/register', (req, res) => {
         return res.status(200).json({ message: 'ลงทะเบียนเรียบร้อยแล้ว รอการอนุมัติสิทธิ์จากผู้ดูแลระบบ' });
       }
     );
+  });
+});
+
+// ==========================================
+// 👑 API สำหรับ Admin จัดการครู
+// ==========================================
+
+// 📝 สร้างบัญชีครู (เฉพาะ Admin) + ส่งอีเมลแจ้งเตือน
+app.post('/api/admin/create-teacher', (req, res) => {
+  const { Name, Phone, Email, UserName, Class_level, Password } = req.body;
+
+  // ตรวจสอบข้อมูล
+  if (!Name || !Phone || !Email || !UserName || !Class_level || !Password) {
+    return res.status(400).json({ message: 'กรุณากรอกข้อมูลให้ครบทุกช่อง' });
+  }
+
+  // ตรวจสอบ Username ซ้ำ
+  db.query('SELECT * FROM users WHERE UserName = ?', [UserName], (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    
+    if (results.length > 0) {
+      return res.status(400).json({ message: 'ชื่อผู้ใช้นี้มีอยู่ในระบบแล้ว' });
+    }
+
+    // ตรวจสอบ Email ซ้ำ
+    db.query('SELECT * FROM users WHERE Email = ?', [Email], (err, emailResults) => {
+      if (err) return res.status(500).json({ error: err.message });
+      
+      if (emailResults.length > 0) {
+        return res.status(400).json({ message: 'อีเมลนี้มีอยู่ในระบบแล้ว' });
+      }
+
+      // ✅ บันทึกข้อมูลครู (Role = ครูผู้สอน, Status = ใช้งาน)
+      const sql = `INSERT INTO users (Name, Phone, Email, Password, UserName, Role, Class_level, Status) 
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
+      
+      db.query(
+        sql,
+        [Name, Phone, Email, Password, UserName, 'ครูผู้สอน', Class_level, 'ใช้งาน'],
+        (err, result) => {
+          if (err) {
+            console.error('Error creating teacher:', err);
+            return res.status(500).json({ message: 'เกิดข้อผิดพลาดในการสร้างบัญชีครู' });
+          }
+          
+          // ✅ ========== ส่งอีเมลแจ้งเตือน ==========
+          const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+              user: 'anchanaarthan@gmail.com',
+              pass: 'liaknnlnlogqazqj'
+            }
+          });
+
+          const mailOptions = {
+            from: '"ระบบบันทึกกิจกรรมนักเรียน" <anchanaarthan@gmail.com>',
+            to: Email,
+            subject: '🎉 ยินดีต้อนรับ! คุณได้รับบัญชีผู้ใช้งานระบบบันทึกกิจกรรม',
+            html: `
+              <div style="font-family: 'Kanit', sans-serif; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #0369a1; border-bottom: 2px solid #0369a1; padding-bottom: 10px;">
+                  🎉 ยินดีต้อนรับคุณ ${Name}
+                </h2>
+                <p style="font-size: 16px;">ผู้ดูแลระบบได้สร้างบัญชีผู้ใช้งานสำหรับคุณแล้ว</p>
+                
+                <div style="background-color: #f8fafc; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                  <p style="margin: 5px 0;"><b>👤 ชื่อผู้ใช้:</b> ${UserName}</p>
+                  <p style="margin: 5px 0;"><b>🔑 รหัสผ่าน:</b> ${Password}</p>
+                  <p style="margin: 5px 0;"><b>🏫 ห้องเรียน:</b> ${Class_level}</p>
+                  <p style="margin: 5px 0;"><b>📧 อีเมล:</b> ${Email}</p>
+                </div>
+
+                <p style="font-size: 14px; color: #dc2626;">
+                  ⚠️ <strong>กรุณาเปลี่ยนรหัสผ่านเมื่อเข้าสู่ระบบครั้งแรก</strong>
+                </p>
+
+                <p style="font-size: 14px; text-align: center;">
+                  <a href="http://localhost:3000/login" style="display: inline-block; padding: 12px 24px; background-color: #0ea5e9; color: white; text-decoration: none; border-radius: 8px;">
+                    🔗 เข้าสู่ระบบที่นี่
+                  </a>
+                </p>
+
+                <p style="font-size: 12px; color: #888888; text-align: center; margin-top: 30px;">
+                  * อีเมลนี้เป็นการแจ้งเตือนอัตโนมัติจากระบบบันทึกกิจกรรมนักเรียนระดับปฐมวัย
+                </p>
+              </div>
+            `
+          };
+
+          // ส่งอีเมล
+          transporter.sendMail(mailOptions, (mailErr, info) => {
+            if (mailErr) {
+              console.error('❌ ส่งอีเมลล้มเหลว:', mailErr);
+            } else {
+              console.log('✅ ส่งอีเมลแจ้งเตือนถึงครูสำเร็จ:', info.response);
+            }
+          });
+          // ✅ ========== จบส่วนส่งอีเมล ==========
+
+          res.status(201).json({ 
+            message: '✅ สร้างบัญชีครูสำเร็จ! (ส่งอีเมลแจ้งเตือนแล้ว)',
+            teacher: { Name, Email, UserName, Class_level }
+          });
+        }
+      );
+    });
+  });
+});
+
+// 📋 ดูรายชื่อครูทั้งหมด (เฉพาะ Admin)
+app.get('/api/admin/teachers', (req, res) => {
+  const sql = `SELECT User_id, Name, Phone, Email, UserName, Class_level, Status, created_at 
+               FROM users 
+               WHERE Role = 'ครูผู้สอน' 
+               ORDER BY created_at DESC`;
+  
+  db.query(sql, (err, results) => {
+    if (err) {
+      console.error('Error fetching teachers:', err);
+      return res.status(500).json({ message: 'เกิดข้อผิดพลาดในการดึงข้อมูล' });
+    }
+    res.json(results);
+  });
+});
+
+// 🗑️ ลบครู (เฉพาะ Admin)
+app.delete('/api/admin/teachers/:id', (req, res) => {
+  const { id } = req.params;
+  
+  db.query('DELETE FROM users WHERE User_id = ? AND Role = "ครูผู้สอน"', [id], (err, result) => {
+    if (err) {
+      console.error('Error deleting teacher:', err);
+      return res.status(500).json({ message: 'เกิดข้อผิดพลาดในการลบข้อมูล' });
+    }
+    
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: 'ไม่พบครูที่ต้องการลบ' });
+    }
+    
+    res.json({ message: '🗑️ ลบครูสำเร็จ' });
   });
 });
 

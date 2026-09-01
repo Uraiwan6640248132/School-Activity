@@ -39,6 +39,20 @@ function UserInformation() {
     suspended: 0
   });
 
+  // ✅ State สำหรับ Modal เพิ่มครู
+  const [showAddTeacherModal, setShowAddTeacherModal] = useState(false);
+  const [teacherForm, setTeacherForm] = useState({
+    Name: '',
+    Phone: '',
+    Email: '',
+    UserName: '',
+    Class_level: '',
+    Password: '',
+    ConfirmPassword: ''
+  });
+  const [formMessage, setFormMessage] = useState({ text: '', type: '' });
+  const [submitting, setSubmitting] = useState(false);
+
   useEffect(() => {
     fetchUsers();
   }, []);
@@ -98,6 +112,65 @@ function UserInformation() {
 
   const toggleRow = (index) => {
     setExpandedRow(expandedRow === index ? null : index);
+  };
+
+  // ✅ ฟังก์ชันเพิ่มครู
+  const handleTeacherChange = (e) => {
+    setTeacherForm({
+      ...teacherForm,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  const handleAddTeacher = async (e) => {
+    e.preventDefault();
+    setFormMessage({ text: '', type: '' });
+
+    if (teacherForm.Password !== teacherForm.ConfirmPassword) {
+      setFormMessage({ text: 'รหัสผ่านและยืนยันรหัสผ่านไม่ตรงกัน!', type: 'danger' });
+      return;
+    }
+
+    if (teacherForm.Password.length < 6) {
+      setFormMessage({ text: 'รหัสผ่านต้องมีความยาวอย่างน้อย 6 ตัวอักษร', type: 'danger' });
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const response = await axios.post('http://127.0.0.1:3001/api/admin/create-teacher', {
+        Name: teacherForm.Name,
+        Phone: teacherForm.Phone,
+        Email: teacherForm.Email,
+        UserName: teacherForm.UserName,
+        Class_level: teacherForm.Class_level,
+        Password: teacherForm.Password
+      }, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+
+      if (response.status === 201) {
+        setFormMessage({ text: '✅ สร้างบัญชีครูสำเร็จ!', type: 'success' });
+        setTeacherForm({
+          Name: '', Phone: '', Email: '', UserName: '', Class_level: '', Password: '', ConfirmPassword: ''
+        });
+        fetchUsers();
+        setTimeout(() => {
+          setShowAddTeacherModal(false);
+          setFormMessage({ text: '', type: '' });
+        }, 1500);
+      }
+    } catch (error) {
+      console.error('Error creating teacher:', error);
+      setFormMessage({ 
+        text: error.response?.data?.message || 'เกิดข้อผิดพลาดในการสร้างบัญชีครู', 
+        type: 'danger' 
+      });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   if (loading) {
@@ -169,10 +242,17 @@ function UserInformation() {
             </p>
           </div>
         </div>
-        <button onClick={fetchUsers} style={styles.refreshButton}>
-          <RefreshCw size={16} />
-          โหลดข้อมูลใหม่
-        </button>
+        <div style={styles.headerActions}>
+          {/* ✅ ปุ่มเพิ่มครู */}
+          <button onClick={() => setShowAddTeacherModal(true)} style={styles.addTeacherButton}>
+            <UserPlus size={16} />
+            เพิ่มครู
+          </button>
+          <button onClick={fetchUsers} style={styles.refreshButton}>
+            <RefreshCw size={16} />
+            โหลดข้อมูลใหม่
+          </button>
+        </div>
       </div>
 
       {/* Statistics Cards */}
@@ -334,7 +414,7 @@ function UserInformation() {
                           )}
                         </td>
                       </tr>
-                      {/* Expanded Row - แสดงข้อมูลเพิ่มเติม (เบอร์โทร, ชื่อผู้ใช้, รหัสผ่าน) */}
+                      {/* Expanded Row */}
                       {expandedRow === index && (
                         <tr style={styles.expandedRow}>
                           <td colSpan="6">
@@ -379,11 +459,11 @@ function UserInformation() {
           </table>
         </div>
 
-        {/* แสดงจำนวนรายการ */}
+        {/* Footer Info */}
         <div style={styles.footerInfo}>
           <span>
             พบทั้งหมด {filteredUsers.length} รายการ
-            {searchTerm && ` (จาก {users.length} รายการ)`}
+            {searchTerm && ` (จาก ${users.length} รายการ)`}
           </span>
           <span style={styles.expandHint}>
             <ChevronDown size={14} />
@@ -391,6 +471,140 @@ function UserInformation() {
           </span>
         </div>
       </div>
+
+      {/* ✅ Modal เพิ่มครู */}
+      {showAddTeacherModal && (
+        <div style={styles.modalOverlay} onClick={() => setShowAddTeacherModal(false)}>
+          <div style={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+            <div style={styles.modalHeader}>
+              <h2 style={styles.modalTitle}>
+                <UserPlus size={20} color="#4A90D9" />
+                เพิ่มบัญชีครู
+              </h2>
+              <button onClick={() => setShowAddTeacherModal(false)} style={styles.modalCloseBtn}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddTeacher} style={styles.modalForm}>
+              {formMessage.text && (
+                <div style={formMessage.type === 'danger' ? styles.modalAlertDanger : styles.modalAlertSuccess}>
+                  {formMessage.text}
+                </div>
+              )}
+
+              <div style={styles.modalRow}>
+                <div style={styles.modalField}>
+                  <label style={styles.modalLabel}>ชื่อ-นามสกุล *</label>
+                  <input
+                    type="text"
+                    name="Name"
+                    placeholder="เช่น สมชาย ใจดี"
+                    value={teacherForm.Name}
+                    onChange={handleTeacherChange}
+                    required
+                    style={styles.modalInput}
+                  />
+                </div>
+                <div style={styles.modalField}>
+                  <label style={styles.modalLabel}>เบอร์โทรศัพท์ *</label>
+                  <input
+                    type="text"
+                    name="Phone"
+                    placeholder="081-234-5678"
+                    value={teacherForm.Phone}
+                    onChange={handleTeacherChange}
+                    required
+                    style={styles.modalInput}
+                  />
+                </div>
+              </div>
+
+              <div style={styles.modalRow}>
+                <div style={styles.modalField}>
+                  <label style={styles.modalLabel}>อีเมล *</label>
+                  <input
+                    type="email"
+                    name="Email"
+                    placeholder="teacher@school.com"
+                    value={teacherForm.Email}
+                    onChange={handleTeacherChange}
+                    required
+                    style={styles.modalInput}
+                  />
+                </div>
+                <div style={styles.modalField}>
+                  <label style={styles.modalLabel}>ชื่อผู้ใช้ (Username) *</label>
+                  <input
+                    type="text"
+                    name="UserName"
+                    placeholder="teacher01"
+                    value={teacherForm.UserName}
+                    onChange={handleTeacherChange}
+                    required
+                    style={styles.modalInput}
+                  />
+                </div>
+              </div>
+
+              <div style={styles.modalField}>
+                <label style={styles.modalLabel}>ห้องเรียน *</label>
+                <select
+                  name="Class_level"
+                  value={teacherForm.Class_level}
+                  onChange={handleTeacherChange}
+                  required
+                  style={styles.modalSelect}
+                >
+                  <option value="">เลือกห้องเรียน</option>
+                  <option value="อนุบาล1 ห้องปกติ">อนุบาล 1 ห้องปกติ</option>
+                  <option value="อนุบาล1 ห้อง 3 ภาษา">อนุบาล 1 ห้อง 3 ภาษา</option>
+                  <option value="อนุบาล2 ห้องปกติ">อนุบาล 2 ห้องปกติ</option>
+                  <option value="อนุบาล2 ห้อง 3 ภาษา">อนุบาล 2 ห้อง 3 ภาษา</option>
+                  <option value="อนุบาล3 ห้องปกติ">อนุบาล 3 ห้องปกติ</option>
+                  <option value="อนุบาล3 ห้อง 3 ภาษา">อนุบาล 3 ห้อง 3 ภาษา</option>
+                </select>
+              </div>
+
+              <div style={styles.modalRow}>
+                <div style={styles.modalField}>
+                  <label style={styles.modalLabel}>รหัสผ่าน *</label>
+                  <input
+                    type="password"
+                    name="Password"
+                    placeholder="อย่างน้อย 6 ตัวอักษร"
+                    value={teacherForm.Password}
+                    onChange={handleTeacherChange}
+                    required
+                    style={styles.modalInput}
+                  />
+                </div>
+                <div style={styles.modalField}>
+                  <label style={styles.modalLabel}>ยืนยันรหัสผ่าน *</label>
+                  <input
+                    type="password"
+                    name="ConfirmPassword"
+                    placeholder="พิมพ์รหัสผ่านอีกครั้ง"
+                    value={teacherForm.ConfirmPassword}
+                    onChange={handleTeacherChange}
+                    required
+                    style={styles.modalInput}
+                  />
+                </div>
+              </div>
+
+              <div style={styles.modalButtonGroup}>
+                <button type="submit" disabled={submitting} style={styles.modalSubmitButton}>
+                  {submitting ? 'กำลังสร้าง...' : '✅ สร้างบัญชีครู'}
+                </button>
+                <button type="button" onClick={() => setShowAddTeacherModal(false)} style={styles.modalCancelButton}>
+                  ยกเลิก
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -442,6 +656,11 @@ const styles = {
     alignItems: 'center',
     gap: '16px',
   },
+  headerActions: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+  },
   headerIcon: {
     width: '52px',
     height: '52px',
@@ -478,6 +697,23 @@ const styles = {
     cursor: 'pointer',
     transition: 'all 0.2s ease',
     fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
+  },
+  // ✅ ปุ่มเพิ่มครู
+  addTeacherButton: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    padding: '10px 18px',
+    backgroundColor: '#4A90D9',
+    border: 'none',
+    borderRadius: '10px',
+    color: '#FFFFFF',
+    fontSize: '14px',
+    fontWeight: '500',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
+    boxShadow: '0 2px 8px rgba(74, 144, 217, 0.25)',
   },
 
   statsGrid: {
@@ -779,6 +1015,142 @@ const styles = {
     color: '#94A3B8',
     fontSize: '12px',
   },
+
+  // ✅ Modal Styles
+  modalOverlay: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backdropFilter: 'blur(4px)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1000,
+  },
+  modalContent: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: '16px',
+    padding: '32px',
+    maxWidth: '600px',
+    width: '95%',
+    maxHeight: '90vh',
+    overflowY: 'auto',
+    boxShadow: '0 20px 60px rgba(0, 0, 0, 0.2)',
+  },
+  modalHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '24px',
+  },
+  modalTitle: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+    fontSize: '22px',
+    fontWeight: '700',
+    color: '#1A202C',
+    margin: 0,
+  },
+  modalCloseBtn: {
+    background: 'none',
+    border: 'none',
+    color: '#94A3B8',
+    cursor: 'pointer',
+    padding: '4px',
+    borderRadius: '8px',
+    transition: 'background 0.2s ease',
+  },
+  modalForm: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '16px',
+  },
+  modalRow: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: '16px',
+  },
+  modalField: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '6px',
+  },
+  modalLabel: {
+    fontSize: '14px',
+    fontWeight: '600',
+    color: '#334155',
+  },
+  modalInput: {
+    padding: '10px 14px',
+    border: '1px solid #D1D5DB',
+    borderRadius: '8px',
+    fontSize: '14px',
+    outline: 'none',
+    transition: 'border-color 0.2s ease',
+    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
+  },
+  modalSelect: {
+    padding: '10px 14px',
+    border: '1px solid #D1D5DB',
+    borderRadius: '8px',
+    fontSize: '14px',
+    outline: 'none',
+    transition: 'border-color 0.2s ease',
+    backgroundColor: 'white',
+    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
+  },
+  modalButtonGroup: {
+    display: 'flex',
+    gap: '12px',
+    marginTop: '8px',
+  },
+  modalSubmitButton: {
+    flex: 1,
+    padding: '12px',
+    backgroundColor: '#4A90D9',
+    color: '#FFFFFF',
+    border: 'none',
+    borderRadius: '8px',
+    fontSize: '16px',
+    fontWeight: '600',
+    cursor: 'pointer',
+    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
+    transition: 'background 0.2s ease',
+    boxShadow: '0 2px 8px rgba(74, 144, 217, 0.25)',
+  },
+  modalCancelButton: {
+    flex: 1,
+    padding: '12px',
+    backgroundColor: '#F1F5F9',
+    color: '#64748B',
+    border: 'none',
+    borderRadius: '8px',
+    fontSize: '16px',
+    fontWeight: '500',
+    cursor: 'pointer',
+    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
+    transition: 'background 0.2s ease',
+  },
+  modalAlertDanger: {
+    padding: '10px 14px',
+    backgroundColor: '#FEE2E2',
+    color: '#DC2626',
+    borderRadius: '8px',
+    fontSize: '14px',
+    textAlign: 'center',
+  },
+  modalAlertSuccess: {
+    padding: '10px 14px',
+    backgroundColor: '#D1FAE5',
+    color: '#059669',
+    borderRadius: '8px',
+    fontSize: '14px',
+    textAlign: 'center',
+  },
 };
 
 // Global CSS animations
@@ -793,6 +1165,9 @@ styleSheet.textContent = `
     .stats-grid {
       grid-template-columns: repeat(2, 1fr) !important;
     }
+    .modal-row {
+      grid-template-columns: 1fr !important;
+    }
   }
   
   @media (max-width: 480px) {
@@ -801,6 +1176,9 @@ styleSheet.textContent = `
     }
     .search-input {
       width: 160px !important;
+    }
+    .modal-content {
+      padding: 20px !important;
     }
   }
 `;
