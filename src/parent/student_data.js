@@ -662,6 +662,8 @@ if (typeof document !== 'undefined') {
       .stat-card-top {
         width: 100% !important;
         justify-content: flex-start !important;
+
+        
       }
       .view-row {
         flex-direction: column !important;
