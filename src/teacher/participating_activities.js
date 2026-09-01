@@ -8,7 +8,6 @@ import {
   Search,
   Save,
   Edit3,
-  Eye,
   CheckCircle,
   XCircle,
   Loader2,
@@ -23,6 +22,7 @@ function ParticipatingActivities() {
   const [students, setStudents] = useState([]);
   const [selectedActivity, setSelectedActivity] = useState("");
   const [isViewMode, setIsViewMode] = useState(false);
+  const [isSaved, setIsSaved] = useState(false); // ✅ เพิ่ม state เช็คสถานะบันทึก
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [loading, setLoading] = useState(false);
@@ -32,35 +32,30 @@ function ParticipatingActivities() {
 
   const API_URL = "http://localhost:3001";
 
-  // ✅ ฟังก์ชันโหลดข้อมูลห้องเรียนจาก API โดยตรง
+  // ✅ ฟังก์ชันโหลดข้อมูลห้องเรียนของครูที่เข้าสู่ระบบเท่านั้น
   const fetchUserClass = async () => {
     try {
       const user = JSON.parse(localStorage.getItem("user") || "{}");
-      
-      // ถ้ามี user.id ให้ดึงข้อมูลล่าสุดจาก API
+
       if (user.id || user.User_id) {
         const userId = user.id || user.User_id;
         const response = await axios.get(`${API_URL}/users/${userId}`);
         const latestUser = response.data;
-        
-        // อัปเดต localStorage ด้วยข้อมูลล่าสุด
+
         const updatedUser = { ...user, ...latestUser };
         localStorage.setItem("user", JSON.stringify(updatedUser));
-        
-        // กำหนด Class_level จาก API
+
         const classLevel = latestUser.Class_level || user.Class_level || "1";
         localStorage.setItem("teacher_class_id", classLevel);
         localStorage.setItem("class_id", classLevel);
-        
+
         setLoggedInClassId(classLevel);
         setClassName(classLevel);
-        
-        // ดึงชื่อห้องเรียนที่ถูกต้อง
+
         await fetchClassName(classLevel);
-        
+
         return classLevel;
       } else {
-        // Fallback ถ้าไม่มี user ใน localStorage
         const fallbackClass = localStorage.getItem("teacher_class_id") || "1";
         setLoggedInClassId(fallbackClass);
         setClassName(fallbackClass);
@@ -69,9 +64,8 @@ function ParticipatingActivities() {
       }
     } catch (err) {
       console.error("Error fetching user class:", err);
-      // ใช้ค่าจาก localStorage เป็น fallback
-      const fallbackClass = localStorage.getItem("teacher_class_id") || 
-                           localStorage.getItem("class_id") || "1";
+      const fallbackClass = localStorage.getItem("teacher_class_id") ||
+        localStorage.getItem("class_id") || "1";
       setLoggedInClassId(fallbackClass);
       setClassName(fallbackClass);
       return fallbackClass;
@@ -120,6 +114,8 @@ function ParticipatingActivities() {
       fetchStudents(selectedActivity, loggedInClassId);
     } else {
       setStudents([]);
+      setIsViewMode(false);
+      setIsSaved(false);
     }
   }, [selectedActivity, loggedInClassId]);
 
@@ -130,12 +126,45 @@ function ParticipatingActivities() {
         `${API_URL}/attendance/students?activity=${activityId}&class=${encodeURIComponent(targetClassId)}`
       );
       const rawStudents = Array.isArray(res.data) ? res.data : (res.data.data || []);
-      
-      const formattedData = rawStudents.map((s) => ({
-        ...s,
-        attended: s.attended !== undefined ? Boolean(s.attended) : true,
-      }));
+
+      // ✅ 1. ตรวจสอบว่าเคยบันทึกแล้วหรือยังจากฟิลด์ที่ "ยืนยันการบันทึกจริง" เท่านั้น
+      // หมายเหตุ: ห้ามใช้ field "attended" มาเช็ค เพราะ API จะส่ง attended กลับมาเสมอ
+      // (ตั้งค่า default เป็น false/true ให้ทุกแถว) ไม่ว่าจะเคยบันทึกจริงหรือไม่ก็ตาม
+      // จึงต้องอิงจากฟิลด์ที่มีเฉพาะตอนมีการบันทึกลงฐานข้อมูลแล้วเท่านั้น
+      const hasBeenSaved =
+        rawStudents.length > 0 &&
+        rawStudents.every(
+          (s) =>
+            (s.status !== undefined && s.status !== null && s.status !== "") ||
+            s.is_saved === true ||
+            (s.attendance_id !== undefined && s.attendance_id !== null) ||
+            (s.updated_at !== undefined && s.updated_at !== null && s.updated_at !== "")
+        );
+
+      // ✅ 2. แปลงข้อมูลนักเรียนและดึงสถานะที่เคยบันทึกไว้มาแสดง
+      const formattedData = rawStudents.map((s) => {
+        // ดึงสถานะเดิม: เช็คทั้ง s.attended และ s.status (เช่น 'attended' หรือ 'absent')
+        let isAttended = true;
+        if (s.attended !== undefined && s.attended !== null) {
+          isAttended = Boolean(s.attended);
+        } else if (s.status !== undefined && s.status !== null) {
+          isAttended = s.status === "attended" || s.status === true || s.status === 1;
+        }
+
+        return {
+          ...s,
+          attended: isAttended,
+        };
+      });
+
       setStudents(formattedData);
+
+      // ✅ 3. ถ้าเคยบันทึกแล้ว ให้ล็อกหน้าจอเป็น View Mode ทันที (จะขึ้นปุ่ม "แก้ไขกิจกรรม")
+      if (hasBeenSaved) {
+        setIsViewMode(true);
+      } else {
+        setIsViewMode(false);
+      }
     } catch (err) {
       console.error("ดึงรายชื่อนักเรียนไม่สำเร็จ:", err);
       setStudents([]);
@@ -143,7 +172,6 @@ function ParticipatingActivities() {
       setLoading(false);
     }
   };
-
   const totalStudents = students.length;
   const attendedCount = students.filter((s) => s.attended).length;
   const absentCount = totalStudents - attendedCount;
@@ -192,8 +220,12 @@ function ParticipatingActivities() {
     try {
       await axios.post(`${API_URL}/attendance/save`, payload);
       alert("บันทึกการเข้าร่วมกิจกรรมเรียบร้อยแล้ว!");
-      await fetchStudents(selectedActivity, loggedInClassId);
+
+      // ✅ ล็อกหน้าจอทันทีหลังจากบันทึกเสร็จ
       setIsViewMode(true);
+
+      // ดึงข้อมูลใหม่อีกครั้ง
+      await fetchStudents(selectedActivity, loggedInClassId);
     } catch (err) {
       console.error(err);
       alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล");
@@ -230,15 +262,6 @@ function ParticipatingActivities() {
     document.body.removeChild(link);
   };
 
-  // ✅ ปุ่มรีเซ็ตห้องเรียน
-  const resetClass = () => {
-    localStorage.removeItem('teacher_class_id');
-    localStorage.removeItem('class_id');
-    localStorage.removeItem('classId');
-    localStorage.removeItem('teacher_class_name');
-    window.location.reload();
-  };
-
   if (loading && !students.length) {
     return (
       <div style={styles.loadingContainer}>
@@ -258,41 +281,9 @@ function ParticipatingActivities() {
               <School size={18} color="#FFFFFF" />
             </div>
             <div>
-              <span style={styles.classLabel}>ห้องเรียน</span>
+              <span style={styles.classLabel}>ห้องเรียนของคุณ</span>
               <span style={styles.className}>{className}</span>
               <span style={styles.classId}>ID: {loggedInClassId}</span>
-            </div>
-          </div>
-          <div style={styles.topActions}>
-            <button
-              onClick={resetClass}
-              style={styles.resetBtn}
-            >
-              🔄 รีเซ็ต
-            </button>
-            <div style={styles.modeTabs}>
-              <button
-                type="button"
-                onClick={() => setIsViewMode(false)}
-                style={{
-                  ...styles.tabBtn,
-                  ...(!isViewMode ? styles.tabBtnActive : {})
-                }}
-              >
-                <Edit3 size={14} />
-                บันทึก
-              </button>
-              <button
-                type="button"
-                onClick={() => setIsViewMode(true)}
-                style={{
-                  ...styles.tabBtn,
-                  ...(isViewMode ? styles.tabBtnActive : {})
-                }}
-              >
-                <Eye size={14} />
-                ประวัติ
-              </button>
             </div>
           </div>
         </div>
@@ -527,7 +518,18 @@ function ParticipatingActivities() {
           {/* Footer Actions */}
           {students.length > 0 && (
             <div style={styles.footerRow}>
-              {!isViewMode ? (
+              {/* ✅ เมื่ออยู่ใน View Mode และบันทึกแล้ว จะขึ้นแค่ปุ่ม "แก้ไข" */}
+              {isViewMode ? (
+                <button
+                  type="button"
+                  onClick={() => setIsViewMode(false)}
+                  style={styles.secondaryEditBtn}
+                >
+                  <Edit3 size={18} />
+                  แก้ไขกิจกรรม
+                </button>
+              ) : (
+                /* ✅ เมื่ออยู่ในโหมดกำลังแก้ไข หรือ บันทึกครั้งแรก จะขึ้นเฉพาะปุ่ม "บันทึก" */
                 <button
                   type="button"
                   onClick={handleSubmit}
@@ -546,15 +548,6 @@ function ParticipatingActivities() {
                     </>
                   )}
                 </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => setIsViewMode(false)}
-                  style={styles.secondaryEditBtn}
-                >
-                  <Edit3 size={18} />
-                  แก้ไขการเข้าร่วม
-                </button>
               )}
             </div>
           )}
@@ -563,6 +556,8 @@ function ParticipatingActivities() {
     </div>
   );
 }
+
+// ... styles คงเดิมไว้ได้เลย
 
 const styles = {
   container: {

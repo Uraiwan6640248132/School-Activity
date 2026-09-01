@@ -983,23 +983,24 @@ app.post("/login", (req, res) => {
 });
 
 // ==========================================
-// 🔐 ระบบลงทะเบียน (REGISTER API) - ห้ามสมัครครู
+// 🔐 ระบบลงทะเบียน (REGISTER API) - ล็อกเป็นผู้ปกครองอัตโนมัติ
 // ==========================================
 app.post('/api/register', (req, res) => {
   const Name = req.body.Name || req.body.name;
   const Phone = req.body.Phone || req.body.phone;
   const Email = req.body.Email || req.body.email || null;
   const UserName = req.body.UserName || req.body.Username || req.body.username;
-  const Role = req.body.Role || req.body.role;
+
+  // ✅ กำหนด Role เป็น "ผู้ปกครอง" อัตโนมัติ (ไม่รับค่าจาก client ป้องกันการปลอมแปลงค่า)
+  const Role = 'ผู้ปกครอง';
+
   const Class_level = req.body.Class_level || req.body.class_level;
   const Password = req.body.Password || req.body.password;
   const ConfirmPassword = req.body.ConfirmPassword || req.body.confirmpassword;
 
-  // ✅ ห้ามสมัคร Role = ครูผู้สอน
-  if (Role === 'ครูผู้สอน') {
-    return res.status(403).json({ 
-      message: 'ไม่สามารถสมัครเป็นครูได้ กรุณาติดต่อผู้ดูแลระบบ' 
-    });
+  // ตรวจสอบข้อมูลเบื้องต้น
+  if (!UserName || !Password) {
+    return res.status(400).json({ message: 'กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน' });
   }
 
   if (Password !== ConfirmPassword) {
@@ -1021,11 +1022,15 @@ app.post('/api/register', (req, res) => {
       [Name, Phone, Email, Password, UserName, Role, Class_level, "รออนุมัติ"],
       (err, result) => {
         if (err) return res.status(500).json({ error: err.message });
+        console.log('Insert result:', result);
+        console.log('insertId:', result.insertId);
         return res.status(200).json({ message: 'ลงทะเบียนเรียบร้อยแล้ว รอการอนุมัติสิทธิ์จากผู้ดูแลระบบ' });
+
       }
     );
   });
 });
+
 
 // ==========================================
 // 👑 API สำหรับ Admin จัดการครู
@@ -1043,7 +1048,7 @@ app.post('/api/admin/create-teacher', (req, res) => {
   // ตรวจสอบ Username ซ้ำ
   db.query('SELECT * FROM users WHERE UserName = ?', [UserName], (err, results) => {
     if (err) return res.status(500).json({ error: err.message });
-    
+
     if (results.length > 0) {
       return res.status(400).json({ message: 'ชื่อผู้ใช้นี้มีอยู่ในระบบแล้ว' });
     }
@@ -1051,7 +1056,7 @@ app.post('/api/admin/create-teacher', (req, res) => {
     // ตรวจสอบ Email ซ้ำ
     db.query('SELECT * FROM users WHERE Email = ?', [Email], (err, emailResults) => {
       if (err) return res.status(500).json({ error: err.message });
-      
+
       if (emailResults.length > 0) {
         return res.status(400).json({ message: 'อีเมลนี้มีอยู่ในระบบแล้ว' });
       }
@@ -1059,7 +1064,7 @@ app.post('/api/admin/create-teacher', (req, res) => {
       // ✅ บันทึกข้อมูลครู (Role = ครูผู้สอน, Status = ใช้งาน)
       const sql = `INSERT INTO users (Name, Phone, Email, Password, UserName, Role, Class_level, Status) 
                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
-      
+
       db.query(
         sql,
         [Name, Phone, Email, Password, UserName, 'ครูผู้สอน', Class_level, 'ใช้งาน'],
@@ -1068,7 +1073,7 @@ app.post('/api/admin/create-teacher', (req, res) => {
             console.error('Error creating teacher:', err);
             return res.status(500).json({ message: 'เกิดข้อผิดพลาดในการสร้างบัญชีครู' });
           }
-          
+
           // ✅ ========== ส่งอีเมลแจ้งเตือน ==========
           const transporter = nodemailer.createTransport({
             service: 'gmail',
@@ -1123,7 +1128,7 @@ app.post('/api/admin/create-teacher', (req, res) => {
           });
           // ✅ ========== จบส่วนส่งอีเมล ==========
 
-          res.status(201).json({ 
+          res.status(201).json({
             message: '✅ สร้างบัญชีครูสำเร็จ! (ส่งอีเมลแจ้งเตือนแล้ว)',
             teacher: { Name, Email, UserName, Class_level }
           });
@@ -1139,7 +1144,7 @@ app.get('/api/admin/teachers', (req, res) => {
                FROM users 
                WHERE Role = 'ครูผู้สอน' 
                ORDER BY created_at DESC`;
-  
+
   db.query(sql, (err, results) => {
     if (err) {
       console.error('Error fetching teachers:', err);
@@ -1152,17 +1157,17 @@ app.get('/api/admin/teachers', (req, res) => {
 // 🗑️ ลบครู (เฉพาะ Admin)
 app.delete('/api/admin/teachers/:id', (req, res) => {
   const { id } = req.params;
-  
+
   db.query('DELETE FROM users WHERE User_id = ? AND Role = "ครูผู้สอน"', [id], (err, result) => {
     if (err) {
       console.error('Error deleting teacher:', err);
       return res.status(500).json({ message: 'เกิดข้อผิดพลาดในการลบข้อมูล' });
     }
-    
+
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: 'ไม่พบครูที่ต้องการลบ' });
     }
-    
+
     res.json({ message: '🗑️ ลบครูสำเร็จ' });
   });
 });

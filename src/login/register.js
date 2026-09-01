@@ -9,7 +9,7 @@ function Register() {
         Phone: '',
         Email: '',
         UserName: '',
-        Role: '',
+        Role: 'ผู้ปกครอง', // 👈 ล็อกค่าเริ่มต้นเป็น "ผู้ปกครอง" ทันที
         Class_level: '',
         Password: '',
         ConfirmPassword: ''
@@ -18,12 +18,14 @@ function Register() {
     const [message, setMessage] = useState({ text: '', type: '' });
     const navigate = useNavigate();
 
+
     const handleChange = (e) => {
         setFormData({
             ...formData,
             [e.target.name]: e.target.value
         });
     };
+
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -46,8 +48,7 @@ function Register() {
 
             if (response.ok) {
                 setMessage({ text: data.message || 'ลงทะเบียนสำเร็จ!', type: 'success' });
-                setFormData({ Name: '', Phone: '', Email: '', UserName: '', Role: '', Class_level: '', Password: '', ConfirmPassword: '' });
-
+                setFormData({ Name: '', Phone: '', Email: '', UserName: '', Role: 'ผู้ปกครอง', Class_level: '', Password: '', ConfirmPassword: '' });
                 setTimeout(() => {
                     navigate('/login');
                 }, 2000);
@@ -112,24 +113,12 @@ function Register() {
                                 </div>
                             </div>
 
-                            {/* ✅ สถานะ/ตำแหน่ง - ลบตัวเลือก "ครูผู้สอน" ออก */}
-                            <div style={styles.field}>
-                                <div style={styles.inputContainer}>
-                                    <select name="Role" value={formData.Role} onChange={handleChange} style={styles.selectInput} required>
-                                        <option value="">เลือกสถานะ</option>
-                                        {/* ❌ ลบบรรทัดนี้: <option value="ครูผู้สอน">ครูผู้สอน</option> */}
-                                        <option value="ผู้ปกครอง">ผู้ปกครอง</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            {/* ✅ เพิ่มข้อความแจ้งเตือน */}
-                            <div style={styles.noteBox}>
-                                <p style={styles.noteText}>
-                                    ⚠️ ระบบนี้สำหรับ <strong>ผู้ปกครอง</strong> เท่านั้น<br />
-                                    หากคุณเป็นครู กรุณาติดต่อ <strong>ผู้ดูแลระบบ</strong>
-                                </p>
-                            </div>
+                            {/* ✅ ล็อกสถานะ/ตำแหน่ง เป็น "ผู้ปกครอง" อัตโนมัติ */}
+                            <input
+                                type="hidden"
+                                name="Role"
+                                value={formData.Role}
+                            />
 
                             {/* ห้องเรียน */}
                             <div style={styles.field}>
@@ -332,25 +321,25 @@ const styles = {
         fontSize: "14px",
         textDecoration: "underline",
     },
-    alertDanger: { 
-        color: '#ef4444', 
-        backgroundColor: 'rgba(254, 242, 242, 0.8)', 
-        padding: '10px', 
-        borderRadius: '6px', 
-        border: '1px solid #fee2e2', 
-        fontSize: '13px', 
-        textAlign: 'center', 
-        marginBottom: '15px' 
+    alertDanger: {
+        color: '#ef4444',
+        backgroundColor: 'rgba(254, 242, 242, 0.8)',
+        padding: '10px',
+        borderRadius: '6px',
+        border: '1px solid #fee2e2',
+        fontSize: '13px',
+        textAlign: 'center',
+        marginBottom: '15px'
     },
-    alertSuccess: { 
-        color: '#10b981', 
-        backgroundColor: 'rgba(236, 253, 245, 0.8)', 
-        padding: '10px', 
-        borderRadius: '6px', 
-        border: '1px solid #d1fae5', 
-        fontSize: '13px', 
-        textAlign: 'center', 
-        marginBottom: '15px' 
+    alertSuccess: {
+        color: '#10b981',
+        backgroundColor: 'rgba(236, 253, 245, 0.8)',
+        padding: '10px',
+        borderRadius: '6px',
+        border: '1px solid #d1fae5',
+        fontSize: '13px',
+        textAlign: 'center',
+        marginBottom: '15px'
     },
     // ✅ เพิ่ม Style สำหรับข้อความแจ้งเตือน
     noteBox: {
