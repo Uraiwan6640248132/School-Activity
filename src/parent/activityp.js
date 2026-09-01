@@ -197,7 +197,7 @@ function ActivityP() {
                   fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
                 }}
               >
-                <option value="">เลือกทั้งหมด (ลูกทุกคน)</option>
+
                 {classroomOptions.map((cls, idx) => (
                   <option key={idx} value={cls}>
                     {cls}
