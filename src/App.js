@@ -30,6 +30,7 @@ import HomeAdmin from './admin/homeadmin';
 import UserInformation from './admin/user_information';
 import PersonalDataAd from './admin/personal_dataad';
 
+
 // Parent
 import HomeParent from './parent/homeparent';
 import PersonalDataParent from './parent/personal_dataparent';
@@ -39,8 +40,6 @@ import Calendarp from './parent/calendarp';
 import Notificationp from './parent/notificationp';
 import PublicRelationsp from './parent/publicrelationp';
 import ActivityP from "./parent/activityp";
-
-// 🟢 แก้ไข path นำเข้าจากโฟลเดอร์ parent
 import ActivityView from './parent/activityView';
 
 function App() {
@@ -122,6 +121,8 @@ function App() {
           <Route path="/homeadmin" element={<HomeAdmin />} />
           <Route path="/user_information" element={<UserInformation />} />
           <Route path="/personal_dataad" element={<PersonalDataAd />} />
+          
+          
           <Route path="*" element={<Navigate to="/homeadmin" />} />
         </Routes>
       </NavbarAdmin>
@@ -146,7 +147,6 @@ function App() {
           <Route path="/personal" element={<PersonalData />} />
           <Route path="/development" element={<Development />} />
           <Route path="/promote-class" element={<PromoteClass />} />
-
           <Route path="*" element={<Navigate to="/home" />} />
         </Routes>
       </NavbarTeacher>
@@ -169,10 +169,7 @@ function App() {
           <Route path="/notificationp" element={<Notificationp />} />
           <Route path="/publicrelationp" element={<PublicRelationsp />} />
           <Route path="/activityp" element={<ActivityP />} />
-          
-          {/* 🟢 Route เมนูการเข้าร่วมกิจกรรมของผู้ปกครอง */}
           <Route path="/participatingp" element={<ActivityView />} />
-
           <Route path="*" element={<Navigate to="/homeparent" />} />
         </Routes>
       </NavbarParent>

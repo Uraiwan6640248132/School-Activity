@@ -66,6 +66,7 @@ function Navbar({ children }) {
     { path: "/homeadmin", label: "หน้าหลักผู้ดูแล", icon: LayoutDashboard },
     { path: "/personal_dataad", label: "ข้อมูลส่วนตัว", icon: User },
     { path: "/user_information", label: "จัดการข้อมูลผู้ใช้", icon: Users },
+    
   ];
 
   return (

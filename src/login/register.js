@@ -112,15 +112,23 @@ function Register() {
                                 </div>
                             </div>
 
-                            {/* สถานะ/ตำแหน่ง */}
+                            {/* ✅ สถานะ/ตำแหน่ง - ลบตัวเลือก "ครูผู้สอน" ออก */}
                             <div style={styles.field}>
                                 <div style={styles.inputContainer}>
                                     <select name="Role" value={formData.Role} onChange={handleChange} style={styles.selectInput} required>
                                         <option value="">เลือกสถานะ</option>
-                                        <option value="ครูผู้สอน">ครูผู้สอน</option>
+                                        {/* ❌ ลบบรรทัดนี้: <option value="ครูผู้สอน">ครูผู้สอน</option> */}
                                         <option value="ผู้ปกครอง">ผู้ปกครอง</option>
                                     </select>
                                 </div>
+                            </div>
+
+                            {/* ✅ เพิ่มข้อความแจ้งเตือน */}
+                            <div style={styles.noteBox}>
+                                <p style={styles.noteText}>
+                                    ⚠️ ระบบนี้สำหรับ <strong>ผู้ปกครอง</strong> เท่านั้น<br />
+                                    หากคุณเป็นครู กรุณาติดต่อ <strong>ผู้ดูแลระบบ</strong>
+                                </p>
                             </div>
 
                             {/* ห้องเรียน */}
@@ -324,8 +332,42 @@ const styles = {
         fontSize: "14px",
         textDecoration: "underline",
     },
-    alertDanger: { color: '#ef4444', backgroundColor: 'rgba(254, 242, 242, 0.8)', padding: '10px', borderRadius: '6px', border: '1px solid #fee2e2', fontSize: '13px', textAlign: 'center', marginBottom: '15px' },
-    alertSuccess: { color: '#10b981', backgroundColor: 'rgba(236, 253, 245, 0.8)', padding: '10px', borderRadius: '6px', border: '1px solid #d1fae5', fontSize: '13px', textAlign: 'center', marginBottom: '15px' }
+    alertDanger: { 
+        color: '#ef4444', 
+        backgroundColor: 'rgba(254, 242, 242, 0.8)', 
+        padding: '10px', 
+        borderRadius: '6px', 
+        border: '1px solid #fee2e2', 
+        fontSize: '13px', 
+        textAlign: 'center', 
+        marginBottom: '15px' 
+    },
+    alertSuccess: { 
+        color: '#10b981', 
+        backgroundColor: 'rgba(236, 253, 245, 0.8)', 
+        padding: '10px', 
+        borderRadius: '6px', 
+        border: '1px solid #d1fae5', 
+        fontSize: '13px', 
+        textAlign: 'center', 
+        marginBottom: '15px' 
+    },
+    // ✅ เพิ่ม Style สำหรับข้อความแจ้งเตือน
+    noteBox: {
+        backgroundColor: 'rgba(251, 191, 36, 0.15)',
+        border: '1px solid #fbbf24',
+        borderRadius: '8px',
+        padding: '10px 14px',
+        marginBottom: '15px',
+        marginTop: '-5px'
+    },
+    noteText: {
+        margin: 0,
+        fontSize: '13px',
+        color: '#92400e',
+        textAlign: 'center',
+        lineHeight: '1.6'
+    }
 };
 
 export default Register;
