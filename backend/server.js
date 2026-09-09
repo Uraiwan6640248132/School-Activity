@@ -69,7 +69,18 @@ function parseDateForMySQL(dateStr) {
 // ==========================================
 
 app.get("/users", (req, res) => {
-  const sql = "SELECT User_id, Name, Phone, Email, Password, UserName, Role, Class_level, Status FROM users";
+  // เปลี่ยน s.First_name, s.Last_name เป็น s.Name ให้ตรงกับตาราง student จริง
+  const sql = `
+    SELECT 
+      u.User_id, u.Name, u.Phone, u.Email, u.Password, u.UserName, u.Role, u.Class_level, u.Status,
+      COALESCE(GROUP_CONCAT(s.Student_code SEPARATOR ', '), u.Student_code) AS student_codes,
+      GROUP_CONCAT(s.Name SEPARATOR ', ') AS student_names
+    FROM users u
+    LEFT JOIN student s ON u.User_id = s.User_id
+    GROUP BY u.User_id
+    ORDER BY u.User_id ASC
+  `;
+  
   db.query(sql, (err, result) => {
     if (err) {
       console.error("เกิดข้อผิดพลาดในการดึงข้อมูล users:", err);
@@ -196,6 +207,7 @@ app.get("/activities", (req, res) => {
     });
   });
 });
+
 app.post("/activities", (req, res) => {
   const body = req.body || {};
   const Name_activity = body.Name_activity || body.name_activity || body.Name || body.title || null;
@@ -205,17 +217,13 @@ app.post("/activities", (req, res) => {
 
   if (!Name_activity) return res.status(400).json({ error: "กรุณาระบุชื่อกิจกรรม" });
 
-  // ✅ ลบส่วนที่ดึง Class_level ออกได้เลย ไม่ต้องใช้แล้ว
-  // const getUserSql = "SELECT Class_level FROM users WHERE User_id = ?";
-  // db.query(getUserSql, [User_id], (err, userResult) => { ... });
-
-  // ✅ แก้ SQL ให้ตัด Classroom_id ออก
   const sql = "INSERT INTO activity (Name_activity, Image, Activity_date, Location, User_id) VALUES (?, ?, ?, ?, ?)";
   db.query(sql, [Name_activity, finalImage, Activity_date, body.Location || body.location || null, User_id], (err, result) => {
     if (err) { console.error(err); return res.status(500).json({ error: "ตรวจสอบคีย์เชื่อมโยงผู้ใช้งาน", details: err.message }); }
     res.status(201).json({ message: "เพิ่มกิจกรรมสำเร็จ", Activity_id: result.insertId });
   });
 });
+
 app.put("/activities/:id", (req, res) => {
   const body = req.body || {};
   const Name_activity = body.Name_activity || body.name_activity || body.title || body.Name || null;
@@ -225,7 +233,6 @@ app.put("/activities/:id", (req, res) => {
 
   if (!Name_activity) return res.status(400).json({ error: "กรุณาระบุชื่อกิจกรรม" });
 
-  // ✅ แก้ SQL ให้ตัด Classroom_id ออก
   const sql = "UPDATE activity SET Name_activity=?, Image=?, Activity_date=?, Location=?, User_id=? WHERE Activity_id=?";
   db.query(sql, [Name_activity, finalImage, Activity_date, body.Location || body.location || null, User_id, req.params.id], (err, result) => {
     if (err) { console.error(err); return res.status(500).json({ error: "ไม่สามารถอัปเดตกิจกรรมได้", details: err.message }); }
@@ -276,14 +283,15 @@ app.get("/api/students", (req, res) => {
 app.post("/api/students", (req, res) => {
   const body = req.body || {};
   const { Name, Class_level, Blood_group, Image } = body;
+  const Student_code = body.Student_code || body.student_code || body.studentCode || null;
   const Birthday = parseDateForMySQL(body.Birthday || body.birthday);
   const Gender = body.Gender || body.gender || null;
 
   const rawUserId = body.User_id !== undefined ? body.User_id : body.user_id;
   const User_id = (rawUserId && rawUserId !== 'null' && rawUserId !== 'undefined') ? parseInt(rawUserId, 10) : null;
 
-  const sql = `INSERT INTO student (Name, Birthday, Gender, Class_level, User_id, Blood_group, Image) VALUES (?, ?, ?, ?, ?, ?, ?)`;
-  db.query(sql, [Name, Birthday, Gender, Class_level, User_id, Blood_group, Image || null], (err, result) => {
+  const sql = `INSERT INTO student (Student_code, Name, Birthday, Gender, Class_level, User_id, Blood_group, Image) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
+  db.query(sql, [Student_code, Name, Birthday, Gender, Class_level, User_id, Blood_group, Image || null], (err, result) => {
     if (err) {
       console.error("Insert Error:", err);
       return res.status(500).json({ error: "เกิดข้อผิดพลาดในการเพิ่มข้อมูลนักเรียน", details: err.message });
@@ -296,14 +304,15 @@ app.put("/api/students/:id", (req, res) => {
   const studentId = req.params.id;
   const body = req.body || {};
   const { Name, Class_level, Blood_group, Image } = body;
+  const Student_code = body.Student_code || body.student_code || body.studentCode || null;
   const Birthday = parseDateForMySQL(body.Birthday || body.birthday);
   const Gender = body.Gender || body.gender || null;
 
   const rawUserId = body.User_id !== undefined ? body.User_id : body.user_id;
   const User_id = (rawUserId && rawUserId !== 'null' && rawUserId !== 'undefined') ? parseInt(rawUserId, 10) : null;
 
-  const sql = `UPDATE student SET Name=?, Birthday=?, Gender=?, Class_level=?, User_id=?, Blood_group=?, Image=? WHERE Student_id=?`;
-  db.query(sql, [Name, Birthday, Gender, Class_level, User_id, Blood_group, Image || null, studentId], (err, result) => {
+  const sql = `UPDATE student SET Student_code=?, Name=?, Birthday=?, Gender=?, Class_level=?, User_id=?, Blood_group=?, Image=? WHERE Student_id=?`;
+  db.query(sql, [Student_code, Name, Birthday, Gender, Class_level, User_id, Blood_group, Image || null, studentId], (err, result) => {
     if (err) {
       console.error("Update Error:", err);
       return res.status(500).json({ error: "เกิดข้อผิดพลาดในการแก้ไขข้อมูลนักเรียน", details: err.message });
@@ -954,7 +963,6 @@ app.post("/login", (req, res) => {
         const studentList = students || [];
         const classLevels = [...new Set(studentList.map(s => s.Class_level).filter(Boolean))];
 
-        // ✅ เพิ่มการส่ง Class_level ของผู้ใช้เองกลับไปด้วย
         return res.json({
           success: true,
           message: "สำเร็จ",
@@ -971,8 +979,8 @@ app.post("/login", (req, res) => {
             Role: user.Role,
             status: user.Status,
             Status: user.Status,
-            Class_level: user.Class_level,  // ✅ สำคัญมาก! ค่านี้จะใช้กำหนดห้องเรียน
-            class_level: user.Class_level,  // ✅ เพิ่มอีกชื่อเผื่อ Frontend ใช้
+            Class_level: user.Class_level,
+            class_level: user.Class_level,
             students: studentList,
             class_levels: classLevels
           }
@@ -990,148 +998,165 @@ app.post('/api/register', (req, res) => {
   const Phone = req.body.Phone || req.body.phone;
   const Email = req.body.Email || req.body.email || null;
   const UserName = req.body.UserName || req.body.Username || req.body.username;
-
-  // ✅ กำหนด Role เป็น "ผู้ปกครอง" อัตโนมัติ (ไม่รับค่าจาก client ป้องกันการปลอมแปลงค่า)
   const Role = 'ผู้ปกครอง';
-
   const Class_level = req.body.Class_level || req.body.class_level;
+  const Student_code = req.body.Student_code || req.body.student_code || req.body.studentCode; 
   const Password = req.body.Password || req.body.password;
   const ConfirmPassword = req.body.ConfirmPassword || req.body.confirmpassword;
 
-  // ตรวจสอบข้อมูลเบื้องต้น
-  if (!UserName || !Password) {
-    return res.status(400).json({ message: 'กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน' });
+  if (!UserName || !Password || !Student_code) {
+    return res.status(400).json({ message: 'กรุณากรอกข้อมูลและรหัสนักเรียนให้ครบถ้วน' });
   }
 
   if (Password !== ConfirmPassword) {
     return res.status(400).json({ message: 'รหัสผ่านและยืนยันรหัสผ่านไม่ตรงกัน!' });
   }
 
-  const checkUserQuery = 'SELECT UserName FROM users WHERE UserName = ?';
-  db.query(checkUserQuery, [UserName], (err, results) => {
+  // 1. ตรวจสอบว่ามีรหัสนักเรียนนี้ในตาราง student หรือไม่
+  db.query('SELECT * FROM student WHERE Student_code = ?', [Student_code], (err, studentResults) => {
     if (err) return res.status(500).json({ error: err.message });
-
-    if (results.length > 0) {
-      return res.status(400).json({ message: 'ชื่อผู้ใช้นี้มีอยู่ในระบบแล้ว' });
+    if (studentResults.length === 0) {
+      return res.status(400).json({ message: 'ไม่พบรหัสนักเรียนนี้ในระบบ กรุณาตรวจสอบรหัสนักเรียนอีกครั้ง' });
     }
 
-    const insertQuery = 'INSERT INTO users (Name, Phone, Email, Password, UserName, Role, Class_level, Status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
-
-    db.query(
-      insertQuery,
-      [Name, Phone, Email, Password, UserName, Role, Class_level, "รออนุมัติ"],
-      (err, result) => {
-        if (err) return res.status(500).json({ error: err.message });
-        console.log('Insert result:', result);
-        console.log('insertId:', result.insertId);
-        return res.status(200).json({ message: 'ลงทะเบียนเรียบร้อยแล้ว รอการอนุมัติสิทธิ์จากผู้ดูแลระบบ' });
-
+    // 2. ตรวจสอบชื่อผู้ใช้ซ้ำ
+    db.query('SELECT UserName FROM users WHERE UserName = ?', [UserName], (err, userResults) => {
+      if (err) return res.status(500).json({ error: err.message });
+      if (userResults.length > 0) {
+        return res.status(400).json({ message: 'ชื่อผู้ใช้นี้มีอยู่ในระบบแล้ว' });
       }
-    );
+
+      // 3. เพิ่ม Student_code ลงในตาราง users ด้วย
+      const insertQuery = 'INSERT INTO users (Name, Phone, Email, Password, UserName, Role, Class_level, Student_code, Status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)';
+      db.query(
+        insertQuery,
+        [Name, Phone, Email, Password, UserName, Role, Class_level, Student_code, 'รออนุมัติ'],
+        (err, result) => {
+          if (err) return res.status(500).json({ error: err.message });
+
+          const newUserId = result.insertId;
+
+          // 4. ผูก User_id กลับไปยังตาราง student
+          db.query(
+            'UPDATE student SET User_id = ? WHERE Student_code = ?',
+            [newUserId, Student_code],
+            (err) => {
+              if (err) return res.status(500).json({ error: err.message });
+              return res.status(200).json({ message: 'ลงทะเบียนและผูกบัญชีเรียบร้อยแล้ว รอการอนุมัติสิทธิ์จากผู้ดูแลระบบ' });
+            }
+          );
+        }
+      );
+    });
   });
 });
-
 
 // ==========================================
 // 👑 API สำหรับ Admin จัดการครู
 // ==========================================
 
 // 📝 สร้างบัญชีครู (เฉพาะ Admin) + ส่งอีเมลแจ้งเตือน
-app.post('/api/admin/create-teacher', (req, res) => {
+app.post('/api/admin/create-teacher', async (req, res) => {
   const { Name, Phone, Email, UserName, Class_level, Password } = req.body;
 
-  // ตรวจสอบข้อมูล
   if (!Name || !Phone || !Email || !UserName || !Class_level || !Password) {
     return res.status(400).json({ message: 'กรุณากรอกข้อมูลให้ครบทุกช่อง' });
   }
 
-  // ตรวจสอบ Username ซ้ำ
-  db.query('SELECT * FROM users WHERE UserName = ?', [UserName], (err, results) => {
+  db.query('SELECT * FROM users WHERE UserName = ?', [UserName], async (err, results) => {
     if (err) return res.status(500).json({ error: err.message });
 
     if (results.length > 0) {
       return res.status(400).json({ message: 'ชื่อผู้ใช้นี้มีอยู่ในระบบแล้ว' });
     }
 
-    // ตรวจสอบ Email ซ้ำ
-    db.query('SELECT * FROM users WHERE Email = ?', [Email], (err, emailResults) => {
+    db.query('SELECT * FROM users WHERE Email = ?', [Email], async (err, emailResults) => {
       if (err) return res.status(500).json({ error: err.message });
 
       if (emailResults.length > 0) {
         return res.status(400).json({ message: 'อีเมลนี้มีอยู่ในระบบแล้ว' });
       }
 
-      // ✅ บันทึกข้อมูลครู (Role = ครูผู้สอน, Status = ใช้งาน)
       const sql = `INSERT INTO users (Name, Phone, Email, Password, UserName, Role, Class_level, Status) 
                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
 
       db.query(
         sql,
         [Name, Phone, Email, Password, UserName, 'ครูผู้สอน', Class_level, 'ใช้งาน'],
-        (err, result) => {
+        async (err, result) => {
           if (err) {
             console.error('Error creating teacher:', err);
             return res.status(500).json({ message: 'เกิดข้อผิดพลาดในการสร้างบัญชีครู' });
           }
 
-          // ✅ ========== ส่งอีเมลแจ้งเตือน ==========
-          const transporter = nodemailer.createTransport({
-            service: 'gmail',
-            auth: {
-              user: 'anchanaarthan@gmail.com',
-              pass: 'liaknnlnlogqazqj'
-            }
-          });
+          try {
+            const transporter = nodemailer.createTransport({
+              host: 'smtp.gmail.com',
+              port: 587,
+              secure: false,
+              auth: {
+                user: 'anchanaarthan@gmail.com',
+                pass: 'liaknnlnlogqazqj'
+              },
+              tls: {
+                rejectUnauthorized: false
+              },
+              connectionTimeout: 10000,
+              greetingTimeout: 10000,
+              socketTimeout: 10000
+            });
 
-          const mailOptions = {
-            from: '"ระบบบันทึกกิจกรรมนักเรียน" <anchanaarthan@gmail.com>',
-            to: Email,
-            subject: '🎉 ยินดีต้อนรับ! คุณได้รับบัญชีผู้ใช้งานระบบบันทึกกิจกรรม',
-            html: `
-              <div style="font-family: 'Kanit', sans-serif; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px; max-width: 600px; margin: 0 auto;">
-                <h2 style="color: #0369a1; border-bottom: 2px solid #0369a1; padding-bottom: 10px;">
-                  🎉 ยินดีต้อนรับคุณ ${Name}
-                </h2>
-                <p style="font-size: 16px;">ผู้ดูแลระบบได้สร้างบัญชีผู้ใช้งานสำหรับคุณแล้ว</p>
-                
-                <div style="background-color: #f8fafc; padding: 15px; border-radius: 8px; margin: 20px 0;">
-                  <p style="margin: 5px 0;"><b>👤 ชื่อผู้ใช้:</b> ${UserName}</p>
-                  <p style="margin: 5px 0;"><b>🔑 รหัสผ่าน:</b> ${Password}</p>
-                  <p style="margin: 5px 0;"><b>🏫 ห้องเรียน:</b> ${Class_level}</p>
-                  <p style="margin: 5px 0;"><b>📧 อีเมล:</b> ${Email}</p>
+            const mailOptions = {
+              from: '"ระบบบันทึกกิจกรรมนักเรียน" <anchanaarthan@gmail.com>',
+              to: Email,
+              subject: '🎉 ยินดีต้อนรับ! คุณได้รับบัญชีผู้ใช้งานระบบบันทึกกิจกรรม',
+              html: `
+                <div style="font-family: 'Kanit', sans-serif; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px; max-width: 600px; margin: 0 auto;">
+                  <h2 style="color: #0369a1; border-bottom: 2px solid #0369a1; padding-bottom: 10px;">
+                    🎉 ยินดีต้อนรับคุณ ${Name}
+                  </h2>
+                  <p style="font-size: 16px;">ผู้ดูแลระบบได้สร้างบัญชีผู้ใช้งานสำหรับคุณแล้ว</p>
+                  
+                  <div style="background-color: #f8fafc; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                    <p style="margin: 5px 0;"><b>👤 ชื่อผู้ใช้:</b> ${UserName}</p>
+                    <p style="margin: 5px 0;"><b>🔑 รหัสผ่าน:</b> ${Password}</p>
+                    <p style="margin: 5px 0;"><b>🏫 ห้องเรียน:</b> ${Class_level}</p>
+                    <p style="margin: 5px 0;"><b>📧 อีเมล:</b> ${Email}</p>
+                  </div>
+
+                  <p style="font-size: 14px; color: #dc2626;">
+                    ⚠️ <strong>กรุณาเปลี่ยนรหัสผ่านเมื่อเข้าสู่ระบบครั้งแรก</strong>
+                  </p>
+
+                  <p style="font-size: 14px; text-align: center;">
+                    <a href="http://localhost:3000/login" style="display: inline-block; padding: 12px 24px; background-color: #0ea5e9; color: white; text-decoration: none; border-radius: 8px;">
+                      🔗 เข้าสู่ระบบที่นี่
+                    </a>
+                  </p>
+
+                  <p style="font-size: 12px; color: #888888; text-align: center; margin-top: 30px;">
+                    * อีเมลนี้เป็นการแจ้งเตือนอัตโนมัติจากระบบบันทึกกิจกรรมนักเรียนระดับปฐมวัย
+                  </p>
                 </div>
+              `
+            };
 
-                <p style="font-size: 14px; color: #dc2626;">
-                  ⚠️ <strong>กรุณาเปลี่ยนรหัสผ่านเมื่อเข้าสู่ระบบครั้งแรก</strong>
-                </p>
+            const info = await transporter.sendMail(mailOptions);
+            console.log('✅ ส่งอีเมลแจ้งเตือนถึงครูสำเร็จ:', info.response);
 
-                <p style="font-size: 14px; text-align: center;">
-                  <a href="http://localhost:3000/login" style="display: inline-block; padding: 12px 24px; background-color: #0ea5e9; color: white; text-decoration: none; border-radius: 8px;">
-                    🔗 เข้าสู่ระบบที่นี่
-                  </a>
-                </p>
+            res.status(201).json({
+              message: '✅ สร้างบัญชีครูสำเร็จ! (ส่งอีเมลแจ้งเตือนแล้ว)',
+              teacher: { Name, Email, UserName, Class_level }
+            });
 
-                <p style="font-size: 12px; color: #888888; text-align: center; margin-top: 30px;">
-                  * อีเมลนี้เป็นการแจ้งเตือนอัตโนมัติจากระบบบันทึกกิจกรรมนักเรียนระดับปฐมวัย
-                </p>
-              </div>
-            `
-          };
-
-          // ส่งอีเมล
-          transporter.sendMail(mailOptions, (mailErr, info) => {
-            if (mailErr) {
-              console.error('❌ ส่งอีเมลล้มเหลว:', mailErr);
-            } else {
-              console.log('✅ ส่งอีเมลแจ้งเตือนถึงครูสำเร็จ:', info.response);
-            }
-          });
-          // ✅ ========== จบส่วนส่งอีเมล ==========
-
-          res.status(201).json({
-            message: '✅ สร้างบัญชีครูสำเร็จ! (ส่งอีเมลแจ้งเตือนแล้ว)',
-            teacher: { Name, Email, UserName, Class_level }
-          });
+          } catch (mailErr) {
+            console.error('❌ ส่งอีเมลล้มเหลว:', mailErr);
+            res.status(201).json({
+              message: '✅ สร้างบัญชีครูสำเร็จ! (⚠️ แต่ส่งอีเมลแจ้งเตือนไม่สำเร็จ)',
+              teacher: { Name, Email, UserName, Class_level },
+              email_error: mailErr.message
+            });
+          }
         }
       );
     });

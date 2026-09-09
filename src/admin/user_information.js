@@ -21,9 +21,7 @@ import {
   Key,
   RefreshCw,
   ChevronDown,
-  ChevronUp,
   Filter,
-  UserCog
 } from 'lucide-react';
 
 function UserInformation() {
@@ -39,7 +37,7 @@ function UserInformation() {
     suspended: 0
   });
 
-  // ✅ State สำหรับ Modal เพิ่มครู
+  // State สำหรับ Modal เพิ่มครู
   const [showAddTeacherModal, setShowAddTeacherModal] = useState(false);
   const [teacherForm, setTeacherForm] = useState({
     Name: '',
@@ -60,8 +58,8 @@ function UserInformation() {
   const fetchUsers = async () => {
     try {
       const res = await axios.get('http://127.0.0.1:3001/users');
-      setUsers(res.data);
-      calculateStats(res.data);
+      setUsers(res.data || []);
+      calculateStats(res.data || []);
       setLoading(false);
     } catch (err) {
       console.error("Error fetching users:", err);
@@ -114,11 +112,11 @@ function UserInformation() {
     setExpandedRow(expandedRow === index ? null : index);
   };
 
-  // ✅ ฟังก์ชันเพิ่มครู
+  // ฟังก์ชันเพิ่มครู
   const handleTeacherChange = (e) => {
     setTeacherForm({
       ...teacherForm,
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.value || ''
     });
   };
 
@@ -192,11 +190,16 @@ function UserInformation() {
     else if (selectedRole === 'แอดมิน') matchesRole = user.Role === 'แอดมิน' || user.Role === 'Admin';
 
     const query = searchTerm.toLowerCase().trim();
+    const studentCode = user.Student_code || user.student_codes || '';
+    const studentName = user.student_names || '';
+
     const nameMatch = (user.Name || '').toLowerCase().includes(query);
     const phoneMatch = (user.Phone || '').toLowerCase().includes(query);
     const usernameMatch = (user.UserName || user.username || '').toLowerCase().includes(query);
     const classMatch = (user.Class_level || '').toLowerCase().includes(query);
-    const matchesSearch = nameMatch || phoneMatch || usernameMatch || classMatch;
+    const studentCodeMatch = studentCode.toLowerCase().includes(query);
+    const studentNameMatch = studentName.toLowerCase().includes(query);
+    const matchesSearch = nameMatch || phoneMatch || usernameMatch || classMatch || studentCodeMatch || studentNameMatch;
 
     return matchesRole && matchesSearch;
   });
@@ -243,7 +246,6 @@ function UserInformation() {
           </div>
         </div>
         <div style={styles.headerActions}>
-          {/* ✅ ปุ่มเพิ่มครู */}
           <button onClick={() => setShowAddTeacherModal(true)} style={styles.addTeacherButton}>
             <UserPlus size={16} />
             เพิ่มครู
@@ -302,7 +304,7 @@ function UserInformation() {
             <Search size={16} color="#94A3B8" style={styles.searchIcon} />
             <input
               type="text"
-              placeholder="ค้นหาชื่อ, ระดับชั้น..."
+              placeholder="ค้นหาชื่อ, รหัสนักเรียน..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               style={styles.searchInput}
@@ -323,6 +325,7 @@ function UserInformation() {
                 <th style={{ ...styles.th, width: '50px' }}>#</th>
                 <th style={styles.th}>ชื่อ-นามสกุล</th>
                 <th style={styles.th}>บทบาท</th>
+                <th style={styles.th}>รหัสนักเรียน</th>
                 <th style={styles.th}>ระดับชั้น</th>
                 <th style={styles.th}>สถานะ</th>
                 <th style={{ ...styles.th, textAlign: 'center', width: '140px' }}>จัดการ</th>
@@ -331,7 +334,7 @@ function UserInformation() {
             <tbody>
               {filteredUsers.length === 0 ? (
                 <tr>
-                  <td colSpan="6" style={styles.emptyState}>
+                  <td colSpan="7" style={styles.emptyState}>
                     <Users size={48} color="#CBD5E1" />
                     <p>ไม่พบข้อมูลผู้ใช้งานที่ตรงกับเงื่อนไข</p>
                   </td>
@@ -344,9 +347,10 @@ function UserInformation() {
                   const StatusIcon = statusBadge.icon;
                   const isPending = user.Status === 'รออนุมัติ';
                   const isSuspended = user.Status === 'ถูกระงับสิทธิ์';
+                  const studentCodeVal = user.Student_code || user.student_codes;
 
                   return (
-                    <React.Fragment key={user.User_id || index}>
+                    <React.Fragment key={user.User_id || user.id || index}>
                       <tr
                         style={{
                           ...styles.trRow,
@@ -371,6 +375,15 @@ function UserInformation() {
                             <RoleIcon size={14} />
                             {user.Role || '-'}
                           </span>
+                        </td>
+                        <td style={styles.td}>
+                          {studentCodeVal ? (
+                            <span style={styles.studentCodeBadge}>
+                              🎓 {studentCodeVal}
+                            </span>
+                          ) : (
+                            <span style={{ color: '#94A3B8', fontSize: '13px' }}>-</span>
+                          )}
                         </td>
                         <td style={styles.td}>
                           {user.Class_level ? (
@@ -417,7 +430,7 @@ function UserInformation() {
                       {/* Expanded Row */}
                       {expandedRow === index && (
                         <tr style={styles.expandedRow}>
-                          <td colSpan="6">
+                          <td colSpan="7">
                             <div style={styles.expandedContent}>
                               <div style={styles.expandedItem}>
                                 <span style={styles.expandedLabel}>
@@ -447,6 +460,16 @@ function UserInformation() {
                                 </span>
                                 <span>{user.Email || '-'}</span>
                               </div>
+                              <div style={styles.expandedItem}>
+                                <span style={styles.expandedLabel}>
+                                  🎓 บุตรหลานในปกครอง
+                                </span>
+                                <span style={{ fontWeight: '600', color: '#1E293B' }}>
+                                  {(user.student_names || studentCodeVal)
+                                    ? `${user.student_names || 'รหัส:'} (${studentCodeVal || '-'})`
+                                    : 'ไม่มีข้อมูลลูกในระบบ'}
+                                </span>
+                              </div>
                             </div>
                           </td>
                         </tr>
@@ -472,7 +495,7 @@ function UserInformation() {
         </div>
       </div>
 
-      {/* ✅ Modal เพิ่มครู */}
+      {/* Modal เพิ่มครู */}
       {showAddTeacherModal && (
         <div style={styles.modalOverlay} onClick={() => setShowAddTeacherModal(false)}>
           <div style={styles.modalContent} onClick={(e) => e.stopPropagation()}>
@@ -500,7 +523,7 @@ function UserInformation() {
                     type="text"
                     name="Name"
                     placeholder="เช่น สมชาย ใจดี"
-                    value={teacherForm.Name}
+                    value={teacherForm.Name || ''}
                     onChange={handleTeacherChange}
                     required
                     style={styles.modalInput}
@@ -512,7 +535,7 @@ function UserInformation() {
                     type="text"
                     name="Phone"
                     placeholder="081-234-5678"
-                    value={teacherForm.Phone}
+                    value={teacherForm.Phone || ''}
                     onChange={handleTeacherChange}
                     required
                     style={styles.modalInput}
@@ -527,7 +550,7 @@ function UserInformation() {
                     type="email"
                     name="Email"
                     placeholder="teacher@school.com"
-                    value={teacherForm.Email}
+                    value={teacherForm.Email || ''}
                     onChange={handleTeacherChange}
                     required
                     style={styles.modalInput}
@@ -539,7 +562,7 @@ function UserInformation() {
                     type="text"
                     name="UserName"
                     placeholder="teacher01"
-                    value={teacherForm.UserName}
+                    value={teacherForm.UserName || ''}
                     onChange={handleTeacherChange}
                     required
                     style={styles.modalInput}
@@ -551,7 +574,7 @@ function UserInformation() {
                 <label style={styles.modalLabel}>ห้องเรียน *</label>
                 <select
                   name="Class_level"
-                  value={teacherForm.Class_level}
+                  value={teacherForm.Class_level || ''}
                   onChange={handleTeacherChange}
                   required
                   style={styles.modalSelect}
@@ -573,7 +596,7 @@ function UserInformation() {
                     type="password"
                     name="Password"
                     placeholder="อย่างน้อย 6 ตัวอักษร"
-                    value={teacherForm.Password}
+                    value={teacherForm.Password || ''}
                     onChange={handleTeacherChange}
                     required
                     style={styles.modalInput}
@@ -585,7 +608,7 @@ function UserInformation() {
                     type="password"
                     name="ConfirmPassword"
                     placeholder="พิมพ์รหัสผ่านอีกครั้ง"
-                    value={teacherForm.ConfirmPassword}
+                    value={teacherForm.ConfirmPassword || ''}
                     onChange={handleTeacherChange}
                     required
                     style={styles.modalInput}
@@ -698,7 +721,6 @@ const styles = {
     transition: 'all 0.2s ease',
     fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
   },
-  // ✅ ปุ่มเพิ่มครู
   addTeacherButton: {
     display: 'flex',
     alignItems: 'center',
@@ -897,6 +919,17 @@ const styles = {
     fontSize: '12px',
     fontWeight: '500',
   },
+  studentCodeBadge: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '4px',
+    padding: '4px 10px',
+    borderRadius: '12px',
+    backgroundColor: '#EBF5FF',
+    color: '#0066CC',
+    fontSize: '13px',
+    fontWeight: '600',
+  },
   statusBadge: {
     display: 'inline-flex',
     alignItems: 'center',
@@ -1016,7 +1049,6 @@ const styles = {
     fontSize: '12px',
   },
 
-  // ✅ Modal Styles
   modalOverlay: {
     position: 'fixed',
     top: 0,
@@ -1152,36 +1184,5 @@ const styles = {
     textAlign: 'center',
   },
 };
-
-// Global CSS animations
-const styleSheet = document.createElement("style");
-styleSheet.textContent = `
-  @keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-  }
-  
-  @media (max-width: 768px) {
-    .stats-grid {
-      grid-template-columns: repeat(2, 1fr) !important;
-    }
-    .modal-row {
-      grid-template-columns: 1fr !important;
-    }
-  }
-  
-  @media (max-width: 480px) {
-    .stats-grid {
-      grid-template-columns: 1fr !important;
-    }
-    .search-input {
-      width: 160px !important;
-    }
-    .modal-content {
-      padding: 20px !important;
-    }
-  }
-`;
-document.head.appendChild(styleSheet);
 
 export default UserInformation;

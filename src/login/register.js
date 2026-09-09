@@ -9,7 +9,8 @@ function Register() {
         Phone: '',
         Email: '',
         UserName: '',
-        Role: 'ผู้ปกครอง', // 👈 ล็อกค่าเริ่มต้นเป็น "ผู้ปกครอง" ทันที
+        Role: 'ผู้ปกครอง', 
+        Student_code: '',
         Class_level: '',
         Password: '',
         ConfirmPassword: ''
@@ -134,6 +135,20 @@ function Register() {
                                         <option value="ไม่มี">ไม่มี (สำหรับผู้ปกครอง)</option>
                                     </select>
                                 </div>
+                            </div>
+                            {/* รหัสนักเรียนประจำตัว */}
+                                <div style={styles.field}>
+                            <div style={styles.inputContainer}>
+                            <input 
+                                    type="text" 
+                                    name="student_code" 
+                                    placeholder="รหัสนักเรียนของบุตรหลาน (เช่น STD-67001)" 
+                                    value={formData.student_code} 
+                                    onChange={handleChange} 
+                                    style={styles.input} 
+                                    required 
+                                    />
+                                 </div>
                             </div>
 
                             {/* รหัสผ่าน */}

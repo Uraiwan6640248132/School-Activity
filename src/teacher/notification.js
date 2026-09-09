@@ -13,10 +13,34 @@ import {
   Loader2,
   Users,
   FileText,
-  CalendarDays
+  CalendarDays,
+  Filter
 } from "lucide-react";
 
 const BASE_URL = "http://localhost:3001";
+
+// 🟢 รายชื่อวิชาสำหรับระดับอนุบาล
+const KIN_SUBJECTS = [
+  "ภาษาไทย",
+  "ภาษาอังกฤษ",
+  "ภาษาจีน",
+  "คณิตศาสตร์",
+  "วิทยาศาสตร์",
+  "ศิลปะ",
+  "ดนตรี",
+  "พละศึกษา",
+  "คอมพิวเตอร์"
+];
+
+// 🟢 รายชื่อห้องเรียนระดับอนุบาลสำหรับให้เลือก
+const CLASS_LEVELS = [
+  "อนุบาล1 ห้องปกติ",
+  "อนุบาล1 ห้อง 3 ภาษา",
+  "อนุบาล2 ห้องปกติ",
+  "อนุบาล2 ห้อง 3 ภาษา",
+  "อนุบาล3 ห้องปกติ",
+  "อนุบาล3 ห้อง 3 ภาษา"
+];
 
 function Notification() {
   const [list, setList] = useState([]);
@@ -25,6 +49,9 @@ function Notification() {
   const [editId, setEditId] = useState(null);
   const [deleteId, setDeleteId] = useState(null);
 
+  // 🟢 เพิ่ม State สำหรับกรองห้องเรียนที่ต้องการดูบนหน้าจอ
+  const [selectedFilterClass, setSelectedFilterClass] = useState("ALL");
+
   // ดึงระดับชั้นของครูที่ล็อกอินจาก localStorage
   const [myClassLevel, setMyClassLevel] = useState("");
   const [class_level, setClassLevel] = useState("");
@@ -32,13 +59,17 @@ function Notification() {
   const [details, setDetails] = useState("");
   const [deadline, setDeadline] = useState("");
 
+  // วันที่ปัจจุบันสำหรับล็อกไม่ให้เลือกวันย้อนหลัง (Format: YYYY-MM-DD)
+  const todayStr = new Date().toLocaleDateString("en-CA", {
+    timeZone: "Asia/Bangkok",
+  });
+
   useEffect(() => {
     // 🟢 อ่านข้อมูลครูจาก localStorage ตอนโหลดคอมโพเนนต์
     const storedUser = localStorage.getItem("user");
     if (storedUser) {
       try {
         const userData = JSON.parse(storedUser);
-        // ดึง Key ระดับชั้นของครู (รองรับทั้ง Class_level, class_level, class_name, room)
         const teacherClass =
           userData.Class_level ||
           userData.class_level ||
@@ -46,7 +77,7 @@ function Notification() {
           userData.room ||
           "";
         setMyClassLevel(teacherClass);
-        setClassLevel(teacherClass);
+        setClassLevel(teacherClass); // ตั้งค่าเริ่มต้นตอนสั่งการบ้านเป็นห้องประจำชั้น
       } catch (e) {
         console.error("Error parsing user data:", e);
       }
@@ -68,7 +99,7 @@ function Notification() {
 
   const resetForm = () => {
     setEditId(null);
-    setClassLevel(myClassLevel); // 🟢 Reset กลับเป็นชั้นเรียนของครูที่ล็อกอิน
+    setClassLevel(myClassLevel); // Reset กลับเป็นห้องประจำชั้นของครู
     setSubject("");
     setDetails("");
     setDeadline("");
@@ -77,9 +108,6 @@ function Notification() {
 
   const saveData = async (e) => {
     e.preventDefault();
-    const todayStr = new Date().toLocaleDateString("en-CA", {
-      timeZone: "Asia/Bangkok",
-    });
 
     const data = {
       User_id: 1,
@@ -122,15 +150,17 @@ function Notification() {
     }
   };
 
-  // 🟢 กรองข้อมูลตามชั้นเรียนของครู โดยตัดช่องว่างทิ้งก่อนเทียบ
+  // 🟢 ปรับ Logic การกรอง: แสดงทั้งหมด หรือแสดงตามตัวกรองที่เลือก
   const filteredList = list.filter((item) => {
+    if (selectedFilterClass === "ALL") return true;
+
     const currentClass = item.Class_level || item.class_level;
-    if (!currentClass || !myClassLevel) return false;
+    if (!currentClass) return false;
 
     const dbClass = String(currentClass).replace(/\s+/g, "").trim();
-    const teacherClass = String(myClassLevel).replace(/\s+/g, "").trim();
+    const filterClass = String(selectedFilterClass).replace(/\s+/g, "").trim();
 
-    return dbClass === teacherClass;
+    return dbClass === filterClass;
   });
 
   if (loading) {
@@ -155,14 +185,34 @@ function Notification() {
               <h1 style={styles.mainTitle}>การแจ้งเตือนการบ้าน</h1>
               <p style={styles.subTitle}>
                 <span style={styles.countBadge}>{filteredList.length}</span> รายการแจ้งเตือน
-                <span style={styles.classLabel}> | {myClassLevel || "ไม่ระบุชั้นเรียน"}</span>
+                <span style={styles.classLabel}> | ห้องประจำชั้น: {myClassLevel || "ไม่ระบุ"}</span>
               </p>
             </div>
           </div>
-          <button style={styles.btnPrimary} onClick={() => setShowModal(true)}>
-            <Plus size={18} />
-            แจ้งเตือนใหม่
-          </button>
+
+          <div style={styles.headerActions}>
+            {/* 🟢 ตัวเลือกกรองห้องเรียนบนหน้าจอ */}
+            <div style={styles.filterBox}>
+              <Filter size={16} color="#64748B" />
+              <select
+                value={selectedFilterClass}
+                onChange={(e) => setSelectedFilterClass(e.target.value)}
+                style={styles.filterSelect}
+              >
+                <option value="ALL">แสดงทุกห้องเรียน</option>
+                {CLASS_LEVELS.map((cls, index) => (
+                  <option key={index} value={cls}>
+                    {cls} {cls === myClassLevel ? "(ห้องของคุณ)" : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <button style={styles.btnPrimary} onClick={() => setShowModal(true)}>
+              <Plus size={18} />
+              แจ้งเตือนใหม่
+            </button>
+          </div>
         </div>
 
         {/* Notification Grid */}
@@ -170,7 +220,7 @@ function Notification() {
           <div style={styles.emptyState}>
             <Bell size={56} color="#CBD5E1" />
             <p style={styles.emptyText}>ไม่มีการแจ้งเตือน</p>
-            <p style={styles.emptySubText}>ยังไม่มีข้อมูลการแจ้งเตือนการบ้านสำหรับห้องนี้</p>
+            <p style={styles.emptySubText}>ยังไม่มีข้อมูลการแจ้งเตือนการบ้านในหมวดหมู่นี้</p>
           </div>
         ) : (
           <div style={styles.grid}>
@@ -251,31 +301,46 @@ function Notification() {
             </div>
 
             <form onSubmit={saveData}>
+              {/* ระดับชั้น Dropdown */}
               <div style={styles.formGroup}>
                 <label style={styles.formLabel}>
                   <Users size={14} style={styles.labelIcon} />
-                  ระดับชั้น
+                  ระดับชั้น *
                 </label>
-                <input
-                  type="text"
+                <select
                   value={class_level}
-                  readOnly
-                  style={styles.formInputReadonly}
-                />
+                  onChange={(e) => setClassLevel(e.target.value)}
+                  required
+                  style={styles.formSelect}
+                >
+                  <option value="">-- เลือกระดับชั้น --</option>
+                  {CLASS_LEVELS.map((cls, index) => (
+                    <option key={index} value={cls}>
+                      {cls} {cls === myClassLevel ? "(ห้องประจำชั้นของคุณ)" : ""}
+                    </option>
+                  ))}
+                </select>
               </div>
 
+              {/* วิชา Dropdown */}
               <div style={styles.formGroup}>
                 <label style={styles.formLabel}>
                   <BookOpen size={14} style={styles.labelIcon} />
                   วิชา *
                 </label>
-                <input
+                <select
                   value={subject}
                   onChange={(e) => setSubject(e.target.value)}
                   required
-                  style={styles.formInput}
-                  placeholder="กรอกชื่อวิชา"
-                />
+                  style={styles.formSelect}
+                >
+                  <option value="">-- เลือกวิชา --</option>
+                  {KIN_SUBJECTS.map((subj, index) => (
+                    <option key={index} value={subj}>
+                      {subj}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div style={styles.formGroup}>
@@ -300,6 +365,7 @@ function Notification() {
                 <input
                   type="date"
                   value={deadline}
+                  min={todayStr}
                   onChange={(e) => setDeadline(e.target.value)}
                   style={styles.formInput}
                 />
@@ -388,6 +454,30 @@ const styles = {
     display: "flex",
     alignItems: "center",
     gap: "14px",
+  },
+  headerActions: {
+    display: "flex",
+    alignItems: "center",
+    gap: "12px",
+    flexWrap: "wrap",
+  },
+  filterBox: {
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    backgroundColor: "#FFFFFF",
+    padding: "8px 12px",
+    borderRadius: "10px",
+    border: "1px solid #E2E8F0",
+  },
+  filterSelect: {
+    border: "none",
+    backgroundColor: "transparent",
+    fontSize: "14px",
+    color: "#334155",
+    outline: "none",
+    cursor: "pointer",
+    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
   },
   headerIcon: {
     width: "48px",
@@ -641,18 +731,18 @@ const styles = {
     fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
     boxSizing: "border-box",
   },
-  formInputReadonly: {
+  formSelect: {
     width: "100%",
     padding: "10px 14px",
     border: "1px solid #E2E8F0",
     borderRadius: "10px",
     fontSize: "14px",
-    backgroundColor: "#F1F5F9",
-    color: "#64748B",
+    backgroundColor: "#FAFBFC",
     outline: "none",
+    transition: "all 0.2s ease",
     fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
     boxSizing: "border-box",
-    cursor: "not-allowed",
+    cursor: "pointer",
   },
   formTextarea: {
     width: "100%",

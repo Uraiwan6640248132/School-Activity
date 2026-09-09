@@ -506,7 +506,7 @@ const styles = {
         border: "1px solid #E0F2FE",
     },
     heroTitle: {
-        fontSize: "clamp(32px, 3.8vw, 54px)",
+        fontSize: "clamp(40px, 4.0vw, 45px)",
         fontWeight: 800,
         lineHeight: 1.25,
         color: "#0F172A",
@@ -520,9 +520,9 @@ const styles = {
     },
     heroActions: {
         display: "flex",
-        gap: 14,
+        gap: 18,
         flexWrap: "wrap",
-        marginBottom: 36,
+        marginBottom: 35,
     },
     primaryButton: {
         display: "flex",
@@ -589,7 +589,7 @@ const styles = {
         zIndex: 0,
     },
     heroImage: {
-        width: "100%",
+        width: "85%",
         maxWidth: "none",
         height: "auto",
         borderRadius: 24,

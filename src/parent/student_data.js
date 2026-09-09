@@ -7,7 +7,8 @@ import {
   School,
   Droplet,
   Loader2,
-  Sparkles
+  Sparkles,
+  Hash // 1. นำเข้า Hash Icon สำหรับแสดงรหัสนักเรียน
 } from 'lucide-react';
 
 const StudentData = () => {
@@ -118,7 +119,7 @@ const StudentData = () => {
   return (
     <div style={styles.container}>
       <div style={styles.wrapper}>
-        {/* Header พร้อมย้ายกล่องสถิติไปไว้มุมขวาบน */}
+        {/* Header */}
         <div style={styles.header}>
           <div style={styles.headerLeft}>
             <div style={styles.headerIcon}>
@@ -145,7 +146,7 @@ const StudentData = () => {
           </div>
         </div>
 
-        {/* Student Grid (การ์ดกะทัดรัด ไม่ยาวเต็มจอ) */}
+        {/* Student Grid */}
         <div style={styles.studentGrid}>
           {students.length === 0 ? (
             <div style={styles.emptyState}>
@@ -158,6 +159,8 @@ const StudentData = () => {
           ) : (
             students.map((student, index) => {
               const imgUrl = getImageUrl(student.Image);
+              const studentCode = student.Student_code || student.student_code || 'ไม่มีรหัส'; // ดึงรหัสนักเรียน
+
               return (
                 <div
                   key={student.Student_id || student.student_id || index}
@@ -177,6 +180,11 @@ const StudentData = () => {
                     <div style={styles.cardInfo}>
                       <h4 style={styles.cardName}>{student.Name || 'ไม่ระบุชื่อ-นามสกุล'}</h4>
                       <div style={styles.cardMeta}>
+                        {/* 2. เพิ่มแสดงรหัสนักเรียนบนการ์ด */}
+                        <span style={styles.cardMetaItem}>
+                          <Hash size={12} color="#94A3B8" />
+                          {studentCode}
+                        </span>
                         <span style={styles.cardMetaItem}>
                           <School size={12} color="#94A3B8" />
                           {student.Class_level || 'ไม่ได้ระบุ'}
@@ -235,6 +243,13 @@ const StudentData = () => {
                 )}
               </div>
               <div style={styles.viewInfo}>
+                {/* 3. เพิ่มฟิลด์แสดงรหัสนักเรียนใน Modal */}
+                <div style={styles.viewItem}>
+                  <span style={styles.viewLabel}>รหัสนักเรียน</span>
+                  <span style={styles.viewValue}>
+                    {viewingStudent.Student_code || viewingStudent.student_code || '-'}
+                  </span>
+                </div>
                 <div style={styles.viewItem}>
                   <span style={styles.viewLabel}>ชื่อ-นามสกุล</span>
                   <span style={styles.viewValue}>{viewingStudent.Name || '-'}</span>
@@ -339,7 +354,6 @@ const styles = {
     margin: '2px 0 0 0',
   },
 
-  // สไตล์สำหรับกล่องสถิติที่ย้ายไปมุมขวาบน
   statCardTop: {
     display: 'flex',
     alignItems: 'center',
@@ -374,7 +388,6 @@ const styles = {
     color: '#1A202C',
   },
 
-  // ปรับให้การ์ดไม่กว้างเต็มจอ (กำหนด max-width และจัดกลุ่ม)
   studentGrid: {
     display: 'flex',
     flexWrap: 'wrap',
@@ -392,7 +405,7 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     width: '100%',
-    maxWidth: '320px', // จำกัดความกว้างไม่ให้ยืดยาวจนเกินไป
+    maxWidth: '320px',
   },
   cardTop: {
     display: 'flex',
@@ -492,7 +505,6 @@ const styles = {
     margin: 0,
   },
 
-  // Modal
   modalOverlay: {
     position: 'fixed',
     top: 0,
@@ -545,7 +557,6 @@ const styles = {
     transition: 'background 0.2s ease',
   },
 
-  // View Modal
   viewContent: {
     display: 'flex',
     flexDirection: 'column',
@@ -623,7 +634,6 @@ const styles = {
   },
 };
 
-// Injection Style for Animation & Responsive
 if (typeof document !== 'undefined') {
   const styleSheet = document.createElement('style');
   styleSheet.textContent = `
@@ -662,8 +672,6 @@ if (typeof document !== 'undefined') {
       .stat-card-top {
         width: 100% !important;
         justify-content: flex-start !important;
-
-        
       }
       .view-row {
         flex-direction: column !important;

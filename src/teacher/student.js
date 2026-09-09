@@ -11,8 +11,8 @@ import {
   Upload,
   Loader2,
   CheckCircle,
-  UserCheck
-  
+  UserCheck,
+  Hash
 } from 'lucide-react';
 
 function StudentManagement() {
@@ -72,6 +72,7 @@ function StudentManagement() {
 
   const [formData, setFormData] = useState({
     Student_id: '',
+    Student_code: '',
     Name: '',
     Birthday: '',
     Gender: 'ชาย',
@@ -88,6 +89,7 @@ function StudentManagement() {
   const resetForm = () => {
     setFormData({
       Student_id: '',
+      Student_code: '',
       Name: '',
       Birthday: '',
       Gender: 'ชาย',
@@ -205,15 +207,16 @@ function StudentManagement() {
     const genderValue = formData.Gender === "หญิง" ? 2 : 1;
     const formattedName = formatStudentNameWithPrefix(formData.Name, formData.Gender);
 
-   const payload = {
-  Name: formattedName,
-  Birthday: formData.Birthday,
-  Class_level: selectedClass,
-  Blood_group: formData.Blood_group || '',
-  User_id: formData.User_id ? parseInt(formData.User_id, 10) : null, // ถ้าเลือกผู้ปกครองส่ง ID ไป ถ้าไม่เลือกส่ง null (DB รองรับแล้ว ไม่พังแน่นอน)
-  Image: formData.Image || '',
-  Gender: genderValue
-};
+    const payload = {
+      Student_code: formData.Student_code,
+      Name: formattedName,
+      Birthday: formData.Birthday,
+      Class_level: selectedClass,
+      Blood_group: formData.Blood_group || '',
+      User_id: formData.User_id ? parseInt(formData.User_id, 10) : null,
+      Image: formData.Image || '',
+      Gender: genderValue
+    };
 
     fetch('http://localhost:3001/api/students', {
       method: 'POST',
@@ -246,6 +249,7 @@ function StudentManagement() {
 
     setFormData({
       Student_id: studentId,
+      Student_code: student.Student_code || student.student_code || '',
       Name: removePrefixFromName(student.Name || ''),
       Birthday: formattedBirthday,
       Gender: displayGender,
@@ -278,6 +282,7 @@ function StudentManagement() {
     const formattedName = formatStudentNameWithPrefix(formData.Name, formData.Gender);
 
     const payload = {
+      Student_code: formData.Student_code,
       Name: formattedName,
       Birthday: formData.Birthday,
       Class_level: selectedClass,
@@ -459,8 +464,8 @@ function StudentManagement() {
                     <h4 style={styles.cardName}>{student.Name || 'ชื่อ-นามสกุล'}</h4>
                     <div style={styles.cardMeta}>
                       <span style={styles.cardMetaItem}>
-                        <School size={12} color="#94A3B8" />
-                        {student.Class_level || 'ไม่ได้ระบุ'}
+                        <Hash size={12} color="#94A3B8" />
+                        {student.Student_code || student.student_code || 'ไม่มีรหัส'}
                       </span>
                       <span style={styles.cardMetaItem}>
                         <Droplet size={12} color="#94A3B8" />
@@ -498,7 +503,7 @@ function StudentManagement() {
         </div>
       </div>
 
-      {/* View Modal - แก้ไขให้ข้อมูลแสดงแบบบรรทัดเดียวชิดซ้าย */}
+      {/* View Modal */}
       {isViewModalOpen && viewingStudent && (
         <div style={styles.modalOverlay} onClick={() => setIsViewModalOpen(false)}>
           <div style={styles.modalContent} onClick={(e) => e.stopPropagation()}>
@@ -522,7 +527,10 @@ function StudentManagement() {
                 )}
               </div>
               <div style={styles.viewInfo}>
-                {/* แก้ไข: ใช้ flexDirection: 'column' และ justifyContent: 'flex-start' */}
+                <div style={styles.viewItem}>
+                  <span style={styles.viewLabel}>รหัสนักเรียน</span>
+                  <span style={styles.viewValue}>{viewingStudent.Student_code || viewingStudent.student_code || '-'}</span>
+                </div>
                 <div style={styles.viewItem}>
                   <span style={styles.viewLabel}>ชื่อ-นามสกุล</span>
                   <span style={styles.viewValue}>{viewingStudent.Name || '-'}</span>
@@ -590,6 +598,18 @@ function StudentManagement() {
                     )}
                   </div>
                 </label>
+              </div>
+
+              <div style={styles.formGroup}>
+                <label style={styles.formLabel}>รหัสนักเรียน *</label>
+                <input
+                  type="text"
+                  required
+                  style={styles.formInput}
+                  value={formData.Student_code}
+                  onChange={(e) => setFormData({ ...formData, Student_code: e.target.value })}
+                  placeholder="กรอกรหัสนักเรียน (เช่น ST001)"
+                />
               </div>
 
               <div style={styles.formGroup}>
@@ -695,6 +715,18 @@ function StudentManagement() {
                     )}
                   </div>
                 </label>
+              </div>
+
+              <div style={styles.formGroup}>
+                <label style={styles.formLabel}>รหัสนักเรียน *</label>
+                <input
+                  type="text"
+                  required
+                  style={styles.formInput}
+                  value={formData.Student_code}
+                  onChange={(e) => setFormData({ ...formData, Student_code: e.target.value })}
+                  placeholder="กรอกรหัสนักเรียน"
+                />
               </div>
 
               <div style={styles.formGroup}>
@@ -1283,7 +1315,7 @@ const styles = {
     fontSize: '13px',
   },
 
-  // View Modal - แก้ไขให้ข้อความชิดซ้ายและจัดเรียงใหม่
+  // View Modal
   viewContent: {
     display: 'flex',
     flexDirection: 'column',
@@ -1317,7 +1349,6 @@ const styles = {
     flexDirection: 'column',
     gap: '10px',
   },
-  // แก้ไข: ใช้ flexDirection: 'column' และ justifyContent: 'flex-start'
   viewItem: {
     display: 'flex',
     flexDirection: 'column',
