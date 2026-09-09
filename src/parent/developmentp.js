@@ -48,15 +48,19 @@ function TermComparisonChart({ studentDevList }) {
     const validScores = scores.map(s => isNaN(Number(s)) || s === '' ? 0 : Number(s));
     const sum = validScores.reduce((a, b) => a + b, 0);
     const avg = sum / validScores.length;
-    return Math.round(avg * 20);
+    return Math.round((avg / 3) * 100);
   };
 
   const getScores = (data) => {
     if (!data) return [0, 0, 0, 0];
-    const body = data.Weight && data.Height ? 100 : 75;
-    const intellect = calculateScore([data.Problem_solving, data.Communication, data.Remembering]);
-    const emotion = calculateScore([data.Emotion, data.Emotion_control, data.Confidence]);
-    const social = calculateScore([data.Stress, data.Interaction, data.Assistance]);
+    // ด้านร่างกาย: q1-q4 (4 ข้อ)
+    const body = calculateScore([data.q1, data.q2, data.q3, data.q4]);
+    // ด้านสติปัญญา: q11-q12 (2 ข้อ)
+    const intellect = calculateScore([data.q11, data.q12]);
+    // ด้านอารมณ์: q9-q10 (2 ข้อ)
+    const emotion = calculateScore([data.q9, data.q10]);
+    // ด้านสังคม: q5-q8 (4 ข้อ)
+    const social = calculateScore([data.q5, data.q6, data.q7, data.q8]);
     return [body, intellect, emotion, social];
   };
 
@@ -153,7 +157,6 @@ export default function Developmentp() {
     return null;
   };
 
-  // ปรับให้ดึงข้อมูลตาม studentId เดียวที่เลือก
   const fetchDevelopmentData = async (targetStudentId) => {
     if (!targetStudentId) return;
     setLoading(true);
@@ -204,7 +207,6 @@ export default function Developmentp() {
     }
   }, []);
 
-  // ฟังก์ชันสลับเลือกนักเรียน
   const handleStudentChange = (e) => {
     const selectedId = Number(e.target.value);
     setStudentIdOfParent(selectedId);
@@ -231,7 +233,7 @@ export default function Developmentp() {
     const validScores = scores.map(s => isNaN(Number(s)) || s === '' ? 0 : Number(s));
     const sum = validScores.reduce((a, b) => a + b, 0);
     const avg = sum / validScores.length;
-    return Math.round(avg * 20);
+    return Math.round((avg / 3) * 100);
   };
 
   const openDetailModal = (item, tabCategory = 'body') => {
@@ -245,20 +247,14 @@ export default function Developmentp() {
     let style = { backgroundColor: '#f1f5f9', color: '#64748b', border: '1px solid #cbd5e1' };
     let label = 'ไม่มีข้อมูล';
 
-    if (val === 5) {
-      label = 'ดีมาก (5)';
+    if (val === 3) {
+      label = 'ดี (3)';
       style = { backgroundColor: '#dcfce7', color: '#15803d', border: '1px solid #86efac' };
-    } else if (val === 4) {
-      label = 'ดี (4)';
-      style = { backgroundColor: '#e0f2fe', color: '#0369a1', border: '1px solid #7dd3fc' };
-    } else if (val === 3) {
-      label = 'ปานกลาง (3)';
-      style = { backgroundColor: '#fef3c7', color: '#b45309', border: '1px solid #fde047' };
     } else if (val === 2) {
       label = 'พอใช้ (2)';
-      style = { backgroundColor: '#ffedd5', color: '#c2410c', border: '1px solid #fdba74' };
+      style = { backgroundColor: '#fef3c7', color: '#b45309', border: '1px solid #fde047' };
     } else if (val === 1) {
-      label = 'ปรับปรุง (1)';
+      label = 'ควรส่งเสริม (1)';
       style = { backgroundColor: '#ffe4e6', color: '#be123c', border: '1px solid #fca5a5' };
     }
 
@@ -296,14 +292,14 @@ export default function Developmentp() {
               <TrendingUp size={24} color="#FFFFFF" />
             </div>
             <div>
-              <h1 style={styles.mainTitle}>บันทึกพัฒนาการเด็ก</h1>
+              <h1 style={styles.mainTitle}>ติดตามพัฒนาการเด็ก</h1>
               <p style={styles.subTitle}>
                 สลับดูข้อมูลนักเรียนในความปกครอง
               </p>
             </div>
           </div>
 
-          {/* เพิ่ม Dropdown เลือกเด็กที่ Header */}
+          {/* Dropdown เลือกเด็กที่ Header */}
           {students.length > 0 && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: '#FFFFFF', padding: '6px 12px', borderRadius: '10px', border: '1px solid #E2E8F0' }}>
               <UserCheck size={18} color="#4A90D9" />
@@ -377,10 +373,10 @@ export default function Developmentp() {
             </div>
           ) : (
             devList.map((item, idx) => {
-              const scoreBody = item.Weight && item.Height ? 100 : 75;
-              const scoreEmotion = calculateSectionScore([item.Emotion, item.Emotion_control, item.Confidence]);
-              const scoreSocial = calculateSectionScore([item.Stress, item.Interaction, item.Assistance]);
-              const scoreIntellect = calculateSectionScore([item.Problem_solving, item.Communication, item.Remembering]);
+              const scoreBody = calculateSectionScore([item.q1, item.q2, item.q3, item.q4]);
+              const scoreEmotion = calculateSectionScore([item.q9, item.q10]);
+              const scoreSocial = calculateSectionScore([item.q5, item.q6, item.q7, item.q8]);
+              const scoreIntellect = calculateSectionScore([item.q11, item.q12]);
 
               const displayDate = item.date_clean ||
                 (item.Date ? String(item.Date).split('T')[0] : '') ||
@@ -388,7 +384,7 @@ export default function Developmentp() {
 
               let displayTerm = item.Term || item.term || "ภาคเรียนที่ 1";
               if (displayTerm.trim() === 'ภาคเรียนที่') {
-                displayTerm = idx === 0 ? 'ภาคเรียนที่ 1' : 'ภาคเรียนที่ 2';
+                displayTerm = 'ภาคเรียนที่ 1';
               }
 
               const currentItemStudentId = item.Student_id || item.student_id || item.Student_Id;
@@ -464,7 +460,7 @@ export default function Developmentp() {
         </div>
       </div>
 
-      {/* Detail Modal (แก้ไขปิดแท็กสมบูรณ์) */}
+      {/* Detail Modal */}
       {isDetailOpen && selectedDetailItem && (
         <div style={styles.modalOverlay} onClick={() => setIsDetailOpen(false)}>
           <div style={styles.modalContent} onClick={(e) => e.stopPropagation()}>
@@ -576,15 +572,23 @@ export default function Developmentp() {
                   {activeTab === 'body' && (
                     <>
                       <tr style={styles.detailCategoryRow}>
-                        <td colSpan="2" style={styles.detailCategoryText}>• พัฒนาการด้านร่างกายและการเคลื่อนไหว</td>
+                        <td colSpan="2" style={styles.detailCategoryText}>• พัฒนาการด้านร่างกาย</td>
                       </tr>
                       <tr>
-                        <td style={styles.detailTd}>ทักษะการเคลื่อนไหวและการทรงตัว</td>
-                        <td style={styles.detailTdCenter}>{renderBadge(selectedDetailItem.Motor_skills ? 4 : 3)}</td>
+                        <td style={styles.detailTd}>๑. ร่างกายแข็งแรงและมีความมั่นใจต่อตนเอง</td>
+                        <td style={styles.detailTdCenter}>{renderBadge(selectedDetailItem.q1)}</td>
                       </tr>
                       <tr>
-                        <td style={styles.detailTd}>ความสมบูรณ์ของร่างกายตามเกณฑ์</td>
-                        <td style={styles.detailTdCenter}>{renderBadge(selectedDetailItem.Weight && selectedDetailItem.Height ? 5 : 3)}</td>
+                        <td style={styles.detailTd}>๒. มีความสามารถในการเคลื่อนไหวและทักษะทางกาย</td>
+                        <td style={styles.detailTdCenter}>{renderBadge(selectedDetailItem.q2)}</td>
+                      </tr>
+                      <tr>
+                        <td style={styles.detailTd}>๓. มีจิตอาสาและมีส่วนร่วมในกิจกรรมต่างๆ</td>
+                        <td style={styles.detailTdCenter}>{renderBadge(selectedDetailItem.q3)}</td>
+                      </tr>
+                      <tr>
+                        <td style={styles.detailTd}>๔. มีพลังและมีส่วนร่วมในการทำงาน</td>
+                        <td style={styles.detailTdCenter}>{renderBadge(selectedDetailItem.q4)}</td>
                       </tr>
                     </>
                   )}
@@ -595,16 +599,12 @@ export default function Developmentp() {
                         <td colSpan="2" style={styles.detailCategoryText}>• พัฒนาการด้านอารมณ์</td>
                       </tr>
                       <tr>
-                        <td style={styles.detailTd}>การแสดงออกทางอารมณ์</td>
-                        <td style={styles.detailTdCenter}>{renderBadge(selectedDetailItem.Emotion)}</td>
+                        <td style={styles.detailTd}>๑. มีความสามารถในการสร้างสรรค์และความคิดสร้างสรรค์</td>
+                        <td style={styles.detailTdCenter}>{renderBadge(selectedDetailItem.q9)}</td>
                       </tr>
                       <tr>
-                        <td style={styles.detailTd}>การควบคุมอารมณ์</td>
-                        <td style={styles.detailTdCenter}>{renderBadge(selectedDetailItem.Emotion_control)}</td>
-                      </tr>
-                      <tr>
-                        <td style={styles.detailTd}>ความมั่นใจในตัวเอง</td>
-                        <td style={styles.detailTdCenter}>{renderBadge(selectedDetailItem.Confidence)}</td>
+                        <td style={styles.detailTd}>๒. มีความสามารถในการเขียนและพูดภาษาอังกฤษ</td>
+                        <td style={styles.detailTdCenter}>{renderBadge(selectedDetailItem.q10)}</td>
                       </tr>
                     </>
                   )}
@@ -615,16 +615,20 @@ export default function Developmentp() {
                         <td colSpan="2" style={styles.detailCategoryText}>• พัฒนาการด้านสังคม</td>
                       </tr>
                       <tr>
-                        <td style={styles.detailTd}>การจัดการความเครียด</td>
-                        <td style={styles.detailTdCenter}>{renderBadge(selectedDetailItem.Stress)}</td>
+                        <td style={styles.detailTd}>๑. มีสัมพันธ์ที่ดีและมีส่วนร่วมในการทำงาน</td>
+                        <td style={styles.detailTdCenter}>{renderBadge(selectedDetailItem.q5)}</td>
                       </tr>
                       <tr>
-                        <td style={styles.detailTd}>การมีปฏิสัมพันธ์กับผู้อื่น</td>
-                        <td style={styles.detailTdCenter}>{renderBadge(selectedDetailItem.Interaction)}</td>
+                        <td style={styles.detailTd}>๒. มีความเข้าใจอย่างลึกซึ้งเกี่ยวกับตนเอง</td>
+                        <td style={styles.detailTdCenter}>{renderBadge(selectedDetailItem.q6)}</td>
                       </tr>
                       <tr>
-                        <td style={styles.detailTd}>การเอื้อเฟื้อช่วยเหลือ</td>
-                        <td style={styles.detailTdCenter}>{renderBadge(selectedDetailItem.Assistance)}</td>
+                        <td style={styles.detailTd}>๓. มีความสามารถในการสื่อสารอย่างถูกต้อง</td>
+                        <td style={styles.detailTdCenter}>{renderBadge(selectedDetailItem.q7)}</td>
+                      </tr>
+                      <tr>
+                        <td style={styles.detailTd}>๔. มีความสามารถในการแก้ปัญหาได้อย่างมีวิจารณญาณ</td>
+                        <td style={styles.detailTdCenter}>{renderBadge(selectedDetailItem.q8)}</td>
                       </tr>
                     </>
                   )}
@@ -635,16 +639,12 @@ export default function Developmentp() {
                         <td colSpan="2" style={styles.detailCategoryText}>• พัฒนาการด้านสติปัญญา</td>
                       </tr>
                       <tr>
-                        <td style={styles.detailTd}>การคิดแก้ปัญหา</td>
-                        <td style={styles.detailTdCenter}>{renderBadge(selectedDetailItem.Problem_solving)}</td>
+                        <td style={styles.detailTd}>๑. มีความสามารถในการอ่านและการเขียน</td>
+                        <td style={styles.detailTdCenter}>{renderBadge(selectedDetailItem.q11)}</td>
                       </tr>
                       <tr>
-                        <td style={styles.detailTd}>ทักษะการสื่อสาร</td>
-                        <td style={styles.detailTdCenter}>{renderBadge(selectedDetailItem.Communication)}</td>
-                      </tr>
-                      <tr>
-                        <td style={styles.detailTd}>ความสามารถในการจดจำ</td>
-                        <td style={styles.detailTdCenter}>{renderBadge(selectedDetailItem.Remembering)}</td>
+                        <td style={styles.detailTd}>๒. มีเจตคติที่ดีต่อการเรียนรู้ และมีความสามารถในการแสวงหาความรู้ได้เหมาะสมกับวัย</td>
+                        <td style={styles.detailTdCenter}>{renderBadge(selectedDetailItem.q12)}</td>
                       </tr>
                     </>
                   )}
@@ -657,11 +657,9 @@ export default function Developmentp() {
                   คำอธิบายเกณฑ์ระดับผลการประเมิน
                 </div>
                 <ul style={styles.criteriaList}>
-                  <li><strong style={{ color: '#15803d' }}>ดีมาก (5):</strong> ปฏิบัติได้ถูกต้อง รวดเร็ว สม่ำเสมอ และสามารถช่วยเหลือผู้อื่นได้</li>
-                  <li><strong style={{ color: '#0369a1' }}>ดี (4):</strong> ปฏิบัติได้ด้วยตนเอง มีความคล่องแคล่วและถูกต้องเป็นส่วนใหญ่</li>
-                  <li><strong style={{ color: '#b45309' }}>ปานกลาง (3):</strong> ปฏิบัติได้ตามเกณฑ์มาตรฐาน มีความพร้อมในระดับทั่วไป</li>
-                  <li><strong style={{ color: '#c2410c' }}>พอใช้ (2):</strong> ปฏิบัติได้เมื่อได้รับการแนะนำ กระตุ้น หรือช่วยเหลือในบางครั้ง</li>
-                  <li><strong style={{ color: '#be123c' }}>ปรับปรุง (1):</strong> ยังไม่สามารถปฏิบัติได้ หรือต้องได้รับการดูแลช่วยเหลืออย่างใกล้ชิด</li>
+                  <li><strong style={{ color: '#15803d' }}>ดี (3):</strong> แสดงพฤติกรรมตามมาตรฐานคุณลักษณะได้อย่างถูกต้อง สม่ำเสมอ</li>
+                  <li><strong style={{ color: '#b45309' }}>พอใช้ (2):</strong> แสดงพฤติกรรมตามมาตรฐานคุณลักษณะได้เมื่อได้รับคำแนะนำหรือกระตุ้น</li>
+                  <li><strong style={{ color: '#be123c' }}>ควรส่งเสริม (1):</strong> ยังไม่สามารถแสดงพฤติกรรมตามมาตรฐานคุณลักษณะได้ ต้องได้รับการช่วยเหลือ</li>
                 </ul>
               </div>
 
@@ -923,7 +921,7 @@ const styles = {
     backgroundColor: '#FFFFFF',
     borderRadius: '16px',
     width: '100%',
-    maxWidth: '600px',
+    maxWidth: '650px',
     maxHeight: '90vh',
     display: 'flex',
     flexDirection: 'column',

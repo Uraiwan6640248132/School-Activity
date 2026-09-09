@@ -52,15 +52,19 @@ function TermComparisonChart({ studentDevList }) {
     const validScores = scores.map(s => isNaN(Number(s)) || s === '' ? 0 : Number(s));
     const sum = validScores.reduce((a, b) => a + b, 0);
     const avg = sum / validScores.length;
-    return Math.round(avg * 20);
+    return Math.round((avg / 3) * 100);
   };
 
   const getScores = (data) => {
     if (!data) return [0, 0, 0, 0];
-    const body = data.Weight && data.Height ? 100 : 75;
-    const intellect = calculateScore([data.Problem_solving, data.Communication, data.Remembering]);
-    const emotion = calculateScore([data.Emotion, data.Emotion_control, data.Confidence]);
-    const social = calculateScore([data.Stress, data.Interaction, data.Assistance]);
+    // ด้านร่างกาย: q1-q4 (4 ข้อ)
+    const body = calculateScore([data.q1, data.q2, data.q3, data.q4]);
+    // ด้านสติปัญญา: q11-q12 (2 ข้อ)
+    const intellect = calculateScore([data.q11, data.q12]);
+    // ด้านอารมณ์: q9-q10 (2 ข้อ)
+    const emotion = calculateScore([data.q9, data.q10]);
+    // ด้านสังคม: q5-q8 (4 ข้อ)
+    const social = calculateScore([data.q5, data.q6, data.q7, data.q8]);
     return [body, intellect, emotion, social];
   };
 
@@ -142,9 +146,15 @@ export default function Development() {
   const initialFormState = {
     Student_id: '', Year: 2569, Term: 'ภาคเรียนที่ 1', date: new Date().toISOString().split('T')[0],
     Physical: '', Weight: '', Height: '', Dental_health: '', Vaccination: '', Motor_skills: '',
-    Emotional: '', Emotion: '', Emotion_control: '', Confidence: '',
-    Social: '', Stress: '', Interaction: '', Assistance: '',
-    Intellectual: '', Problem_solving: '', Communication: '', Remembering: ''
+    // 12 หัวข้อประเมินตามมาตรฐานคุณลักษณะที่พึงประสงค์
+    // ด้านร่างกาย (4 ข้อ)
+    q1: '3', q2: '3', q3: '3', q4: '3',
+    // ด้านสังคม (4 ข้อ)
+    q5: '3', q6: '3', q7: '3', q8: '3',
+    // ด้านอารมณ์ (2 ข้อ)
+    q9: '3', q10: '3',
+    // ด้านสติปัญญา (2 ข้อ)
+    q11: '3', q12: '3'
   };
 
   const [formData, setFormData] = useState(initialFormState);
@@ -254,7 +264,7 @@ export default function Development() {
     const validScores = scores.map(s => isNaN(Number(s)) || s === '' ? 0 : Number(s));
     const sum = validScores.reduce((a, b) => a + b, 0);
     const avg = sum / validScores.length;
-    return Math.round(avg * 20);
+    return Math.round((avg / 3) * 100);
   };
 
   const handleChange = (e) => {
@@ -335,18 +345,22 @@ export default function Development() {
       Dental_health: item.Dental_health || '',
       Vaccination: item.Vaccination || '',
       Motor_skills: item.Motor_skills || '',
-      Emotional: item.Emotional || '',
-      Emotion: item.Emotion ? String(item.Emotion) : '',
-      Emotion_control: item.Emotion_control ? String(item.Emotion_control) : '',
-      Confidence: item.Confidence ? String(item.Confidence) : '',
-      Social: item.Social || '',
-      Stress: item.Stress ? String(item.Stress) : '',
-      Interaction: item.Interaction ? String(item.Interaction) : '',
-      Assistance: item.Assistance ? String(item.Assistance) : '',
-      Intellectual: item.Intellectual || '',
-      Problem_solving: item.Problem_solving ? String(item.Problem_solving) : '',
-      Communication: item.Communication ? String(item.Communication) : '',
-      Remembering: item.Remembering ? String(item.Remembering) : ''
+      // ด้านร่างกาย (4 ข้อ)
+      q1: item.q1 ? String(item.q1) : '3',
+      q2: item.q2 ? String(item.q2) : '3',
+      q3: item.q3 ? String(item.q3) : '3',
+      q4: item.q4 ? String(item.q4) : '3',
+      // ด้านสังคม (4 ข้อ)
+      q5: item.q5 ? String(item.q5) : '3',
+      q6: item.q6 ? String(item.q6) : '3',
+      q7: item.q7 ? String(item.q7) : '3',
+      q8: item.q8 ? String(item.q8) : '3',
+      // ด้านอารมณ์ (2 ข้อ)
+      q9: item.q9 ? String(item.q9) : '3',
+      q10: item.q10 ? String(item.q10) : '3',
+      // ด้านสติปัญญา (2 ข้อ)
+      q11: item.q11 ? String(item.q11) : '3',
+      q12: item.q12 ? String(item.q12) : '3'
     });
     setIsEditOpen(true);
   };
@@ -385,7 +399,6 @@ export default function Development() {
     }
   };
 
-  // 🟢 แก้ไขจุดนี้: แนบ ?class_level= ไปยัง API ลบข้อมูลตามที่ Backend ร้องขอ
   const handleDeleteSubmit = async () => {
     if (!selectedId) {
       alert("ไม่พบ ID ของรายการที่จะลบ");
@@ -424,11 +437,9 @@ export default function Development() {
   };
 
   const scoreLevels = [
-    { label: 'ดีมาก', val: 5 },
-    { label: 'ดี', val: 4 },
-    { label: 'ปานกลาง', val: 3 },
+    { label: 'ดี', val: 3 },
     { label: 'พอใช้', val: 2 },
-    { label: 'ปรับปรุง', val: 1 }
+    { label: 'ควรส่งเสริม', val: 1 }
   ];
 
   const renderBadge = (scoreVal) => {
@@ -436,20 +447,14 @@ export default function Development() {
     let style = { backgroundColor: '#f1f5f9', color: '#64748b', border: '1px solid #cbd5e1' };
     let label = 'ไม่มีข้อมูล';
 
-    if (val === 5) {
-      label = 'ดีมาก (5)';
+    if (val === 3) {
+      label = 'ดี (3)';
       style = { backgroundColor: '#dcfce7', color: '#15803d', border: '1px solid #86efac' };
-    } else if (val === 4) {
-      label = 'ดี (4)';
-      style = { backgroundColor: '#e0f2fe', color: '#0369a1', border: '1px solid #7dd3fc' };
-    } else if (val === 3) {
-      label = 'ปานกลาง (3)';
-      style = { backgroundColor: '#fef3c7', color: '#b45309', border: '1px solid #fde047' };
     } else if (val === 2) {
       label = 'พอใช้ (2)';
-      style = { backgroundColor: '#ffedd5', color: '#c2410c', border: '1px solid #fdba74' };
+      style = { backgroundColor: '#fef3c7', color: '#b45309', border: '1px solid #fde047' };
     } else if (val === 1) {
-      label = 'ปรับปรุง (1)';
+      label = 'ควรส่งเสริม (1)';
       style = { backgroundColor: '#ffe4e6', color: '#be123c', border: '1px solid #fca5a5' };
     }
 
@@ -561,10 +566,10 @@ export default function Development() {
           ) : (
             devList.map((item, idx) => {
               const targetId = item.Development_id || item.development_id || item.id || item._id;
-              const scoreBody = item.Weight && item.Height ? 100 : 75;
-              const scoreEmotion = calculateSectionScore([item.Emotion, item.Emotion_control, item.Confidence]);
-              const scoreSocial = calculateSectionScore([item.Stress, item.Interaction, item.Assistance]);
-              const scoreIntellect = calculateSectionScore([item.Problem_solving, item.Communication, item.Remembering]);
+              const scoreBody = calculateSectionScore([item.q1, item.q2, item.q3, item.q4]);
+              const scoreEmotion = calculateSectionScore([item.q9, item.q10]);
+              const scoreSocial = calculateSectionScore([item.q5, item.q6, item.q7, item.q8]);
+              const scoreIntellect = calculateSectionScore([item.q11, item.q12]);
 
               const displayDate = item.date_clean ||
                 (item.Date ? String(item.Date).split('T')[0] : '') ||
@@ -777,15 +782,23 @@ export default function Development() {
                   {activeTab === 'body' && (
                     <>
                       <tr style={styles.detailCategoryRow}>
-                        <td colSpan="2" style={styles.detailCategoryText}>• พัฒนาการด้านร่างกายและการเคลื่อนไหว</td>
+                        <td colSpan="2" style={styles.detailCategoryText}>• พัฒนาการด้านร่างกาย</td>
                       </tr>
                       <tr>
-                        <td style={styles.detailTd}>ทักษะการเคลื่อนไหวและการทรงตัว</td>
-                        <td style={styles.detailTdCenter}>{renderBadge(selectedDetailItem.Motor_skills ? 4 : 3)}</td>
+                        <td style={styles.detailTd}>๑. ร่างกายแข็งแรงและมีความมั่นใจต่อตนเอง</td>
+                        <td style={styles.detailTdCenter}>{renderBadge(selectedDetailItem.q1)}</td>
                       </tr>
                       <tr>
-                        <td style={styles.detailTd}>ความสมบูรณ์ของร่างกายตามเกณฑ์</td>
-                        <td style={styles.detailTdCenter}>{renderBadge(selectedDetailItem.Weight && selectedDetailItem.Height ? 5 : 3)}</td>
+                        <td style={styles.detailTd}>๒. มีความสามารถในการเคลื่อนไหวและทักษะทางกาย</td>
+                        <td style={styles.detailTdCenter}>{renderBadge(selectedDetailItem.q2)}</td>
+                      </tr>
+                      <tr>
+                        <td style={styles.detailTd}>๓. มีจิตอาสาและมีส่วนร่วมในกิจกรรมต่างๆ</td>
+                        <td style={styles.detailTdCenter}>{renderBadge(selectedDetailItem.q3)}</td>
+                      </tr>
+                      <tr>
+                        <td style={styles.detailTd}>๔. มีพลังและมีส่วนร่วมในการทำงาน</td>
+                        <td style={styles.detailTdCenter}>{renderBadge(selectedDetailItem.q4)}</td>
                       </tr>
                     </>
                   )}
@@ -796,16 +809,12 @@ export default function Development() {
                         <td colSpan="2" style={styles.detailCategoryText}>• พัฒนาการด้านอารมณ์</td>
                       </tr>
                       <tr>
-                        <td style={styles.detailTd}>การแสดงออกทางอารมณ์</td>
-                        <td style={styles.detailTdCenter}>{renderBadge(selectedDetailItem.Emotion)}</td>
+                        <td style={styles.detailTd}>๑. มีความสามารถในการสร้างสรรค์และความคิดสร้างสรรค์</td>
+                        <td style={styles.detailTdCenter}>{renderBadge(selectedDetailItem.q9)}</td>
                       </tr>
                       <tr>
-                        <td style={styles.detailTd}>การควบคุมอารมณ์</td>
-                        <td style={styles.detailTdCenter}>{renderBadge(selectedDetailItem.Emotion_control)}</td>
-                      </tr>
-                      <tr>
-                        <td style={styles.detailTd}>ความมั่นใจในตัวเอง</td>
-                        <td style={styles.detailTdCenter}>{renderBadge(selectedDetailItem.Confidence)}</td>
+                        <td style={styles.detailTd}>๒. มีความสามารถในการเขียนและพูดภาษาอังกฤษ</td>
+                        <td style={styles.detailTdCenter}>{renderBadge(selectedDetailItem.q10)}</td>
                       </tr>
                     </>
                   )}
@@ -816,16 +825,20 @@ export default function Development() {
                         <td colSpan="2" style={styles.detailCategoryText}>• พัฒนาการด้านสังคม</td>
                       </tr>
                       <tr>
-                        <td style={styles.detailTd}>การจัดการความเครียด</td>
-                        <td style={styles.detailTdCenter}>{renderBadge(selectedDetailItem.Stress)}</td>
+                        <td style={styles.detailTd}>๑. มีสัมพันธ์ที่ดีและมีส่วนร่วมในการทำงาน</td>
+                        <td style={styles.detailTdCenter}>{renderBadge(selectedDetailItem.q5)}</td>
                       </tr>
                       <tr>
-                        <td style={styles.detailTd}>การมีปฏิสัมพันธ์กับผู้อื่น</td>
-                        <td style={styles.detailTdCenter}>{renderBadge(selectedDetailItem.Interaction)}</td>
+                        <td style={styles.detailTd}>๒. มีความเข้าใจอย่างลึกซึ้งเกี่ยวกับตนเอง</td>
+                        <td style={styles.detailTdCenter}>{renderBadge(selectedDetailItem.q6)}</td>
                       </tr>
                       <tr>
-                        <td style={styles.detailTd}>การเอื้อเฟื้อช่วยเหลือ</td>
-                        <td style={styles.detailTdCenter}>{renderBadge(selectedDetailItem.Assistance)}</td>
+                        <td style={styles.detailTd}>๓. มีความสามารถในการสื่อสารอย่างถูกต้อง</td>
+                        <td style={styles.detailTdCenter}>{renderBadge(selectedDetailItem.q7)}</td>
+                      </tr>
+                      <tr>
+                        <td style={styles.detailTd}>๔. มีความสามารถในการแก้ปัญหาได้อย่างมีวิจารณญาณ</td>
+                        <td style={styles.detailTdCenter}>{renderBadge(selectedDetailItem.q8)}</td>
                       </tr>
                     </>
                   )}
@@ -836,16 +849,12 @@ export default function Development() {
                         <td colSpan="2" style={styles.detailCategoryText}>• พัฒนาการด้านสติปัญญา</td>
                       </tr>
                       <tr>
-                        <td style={styles.detailTd}>การคิดแก้ปัญหา</td>
-                        <td style={styles.detailTdCenter}>{renderBadge(selectedDetailItem.Problem_solving)}</td>
+                        <td style={styles.detailTd}>๑. มีความสามารถในการอ่านและการเขียน</td>
+                        <td style={styles.detailTdCenter}>{renderBadge(selectedDetailItem.q11)}</td>
                       </tr>
                       <tr>
-                        <td style={styles.detailTd}>ทักษะการสื่อสาร</td>
-                        <td style={styles.detailTdCenter}>{renderBadge(selectedDetailItem.Communication)}</td>
-                      </tr>
-                      <tr>
-                        <td style={styles.detailTd}>ความสามารถในการจดจำ</td>
-                        <td style={styles.detailTdCenter}>{renderBadge(selectedDetailItem.Remembering)}</td>
+                        <td style={styles.detailTd}>๒. มีเจตคติที่ดีต่อการเรียนรู้ และมีความสามารถในการแสวงหาความรู้ได้เหมาะสมกับวัย</td>
+                        <td style={styles.detailTdCenter}>{renderBadge(selectedDetailItem.q12)}</td>
                       </tr>
                     </>
                   )}
@@ -858,11 +867,9 @@ export default function Development() {
                   คำอธิบายเกณฑ์ระดับผลการประเมิน
                 </div>
                 <ul style={styles.criteriaList}>
-                  <li><strong style={{ color: '#15803d' }}>ดีมาก (5):</strong> ปฏิบัติได้ถูกต้อง รวดเร็ว สม่ำเสมอ และสามารถช่วยเหลือผู้อื่นได้</li>
-                  <li><strong style={{ color: '#0369a1' }}>ดี (4):</strong> ปฏิบัติได้ด้วยตนเอง มีความคล่องแคล่วและถูกต้องเป็นส่วนใหญ่</li>
-                  <li><strong style={{ color: '#b45309' }}>ปานกลาง (3):</strong> ปฏิบัติได้ตามเกณฑ์มาตรฐาน มีความพร้อมในระดับทั่วไป</li>
-                  <li><strong style={{ color: '#c2410c' }}>พอใช้ (2):</strong> ปฏิบัติได้เมื่อได้รับการแนะนำ กระตุ้น หรือช่วยเหลือในบางครั้ง</li>
-                  <li><strong style={{ color: '#be123c' }}>ปรับปรุง (1):</strong> ยังไม่สามารถปฏิบัติได้ หรือต้องได้รับการดูแลช่วยเหลืออย่างใกล้ชิด</li>
+                  <li><strong style={{ color: '#15803d' }}>ดี (3):</strong> แสดงพฤติกรรมตามมาตรฐานคุณลักษณะได้อย่างถูกต้อง สม่ำเสมอ</li>
+                  <li><strong style={{ color: '#b45309' }}>พอใช้ (2):</strong> แสดงพฤติกรรมตามมาตรฐานคุณลักษณะได้เมื่อได้รับคำแนะนำหรือกระตุ้น</li>
+                  <li><strong style={{ color: '#be123c' }}>ควรส่งเสริม (1):</strong> ยังไม่สามารถแสดงพฤติกรรมตามมาตรฐานคุณลักษณะได้ ต้องได้รับการช่วยเหลือ</li>
                 </ul>
               </div>
 
@@ -955,9 +962,10 @@ export default function Development() {
                 </div>
               </div>
 
+              {/* ส่วนข้อมูลกายภาพ */}
               <h4 style={styles.formSectionTitle}>
                 <Activity size={16} color="#4A90D9" />
-                ด้านร่างกาย
+                ด้านร่างกาย (ข้อมูลกายภาพ)
               </h4>
               <div style={styles.formRow}>
                 <div style={styles.formGroup}>
@@ -1020,26 +1028,28 @@ export default function Development() {
                 </div>
               </div>
 
+              {/* แบบประเมินพัฒนาการด้านร่างกาย (4 ข้อ) */}
               <h4 style={styles.formSectionTitle}>
-                <Heart size={16} color="#E74C3C" />
-                ด้านอารมณ์
+                <Activity size={16} color="#4A90D9" />
+                พัฒนาการด้านร่างกาย
               </h4>
               <table style={styles.evalTable}>
                 <thead>
                   <tr>
-                    <th style={styles.evalTh}>หัวข้อ</th>
+                    <th style={styles.evalTh}>มาตรฐานคุณลักษณะที่พึงประสงค์</th>
                     {scoreLevels.map(l => (
                       <th key={l.val} style={styles.evalThCenter}>
-                        {l.label}<br />{l.val}
+                        {l.label}<br />({l.val})
                       </th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {[
-                    { label: 'การแสดงออกทางอารมณ์', key: 'Emotion' },
-                    { label: 'การควบคุมอารมณ์', key: 'Emotion_control' },
-                    { label: 'ความมั่นใจ', key: 'Confidence' }
+                    { label: '๑. ร่างกายแข็งแรงและมีความมั่นใจต่อตนเอง', key: 'q1' },
+                    { label: '๒. มีความสามารถในการเคลื่อนไหวและทักษะทางกาย', key: 'q2' },
+                    { label: '๓. มีจิตอาสาและมีส่วนร่วมในกิจกรรมต่างๆ', key: 'q3' },
+                    { label: '๔. มีพลังและมีส่วนร่วมในการทำงาน', key: 'q4' }
                   ].map(row => (
                     <tr key={row.key}>
                       <td style={styles.evalTd}>{row.label}</td>
@@ -1059,16 +1069,18 @@ export default function Development() {
                 </tbody>
               </table>
 
+              {/* แบบประเมินพัฒนาการด้านสังคม (4 ข้อ) */}
               <h4 style={styles.formSectionTitle}>
                 <Handshake size={16} color="#F39C12" />
-                ด้านสังคม
+                พัฒนาการด้านสังคม
               </h4>
               <table style={styles.evalTable}>
                 <tbody>
                   {[
-                    { label: 'การจัดการความเครียด', key: 'Stress' },
-                    { label: 'การมีปฏิสัมพันธ์กับผู้อื่น', key: 'Interaction' },
-                    { label: 'การช่วยเหลือ', key: 'Assistance' }
+                    { label: '๑. มีสัมพันธ์ที่ดีและมีส่วนร่วมในการทำงาน', key: 'q5' },
+                    { label: '๒. มีความเข้าใจอย่างลึกซึ้งเกี่ยวกับตนเอง', key: 'q6' },
+                    { label: '๓. มีความสามารถในการสื่อสารอย่างถูกต้อง', key: 'q7' },
+                    { label: '๔. มีความสามารถในการแก้ปัญหาได้อย่างมีวิจารณญาณ', key: 'q8' }
                   ].map(row => (
                     <tr key={row.key}>
                       <td style={styles.evalTd}>{row.label}</td>
@@ -1088,16 +1100,45 @@ export default function Development() {
                 </tbody>
               </table>
 
+              {/* แบบประเมินพัฒนาการด้านอารมณ์ (2 ข้อ) */}
               <h4 style={styles.formSectionTitle}>
-                <Brain size={16} color="#8E44AD" />
-                ด้านสติปัญญา
+                <Heart size={16} color="#E74C3C" />
+                พัฒนาการด้านอารมณ์
               </h4>
               <table style={styles.evalTable}>
                 <tbody>
                   {[
-                    { label: 'การแก้ปัญหา', key: 'Problem_solving' },
-                    { label: 'การสื่อสาร', key: 'Communication' },
-                    { label: 'การจดจำ', key: 'Remembering' }
+                    { label: '๑. มีความสามารถในการสร้างสรรค์และความคิดสร้างสรรค์', key: 'q9' },
+                    { label: '๒. มีความสามารถในการเขียนและพูดภาษาอังกฤษ', key: 'q10' }
+                  ].map(row => (
+                    <tr key={row.key}>
+                      <td style={styles.evalTd}>{row.label}</td>
+                      {scoreLevels.map(l => (
+                        <td key={l.val} style={styles.evalTdCenter}>
+                          <input
+                            type="radio"
+                            name={row.key}
+                            checked={String(formData[row.key]) === String(l.val)}
+                            onChange={() => handleRadioChange(row.key, l.val)}
+                            style={styles.radioInput}
+                          />
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              {/* แบบประเมินพัฒนาการด้านสติปัญญา (2 ข้อ) */}
+              <h4 style={styles.formSectionTitle}>
+                <Brain size={16} color="#8E44AD" />
+                พัฒนาการด้านสติปัญญา
+              </h4>
+              <table style={styles.evalTable}>
+                <tbody>
+                  {[
+                    { label: '๑. มีความสามารถในการอ่านและการเขียน', key: 'q11' },
+                    { label: '๒. มีเจตคติที่ดีต่อการเรียนรู้ และมีความสามารถในการแสวงหาความรู้ได้เหมาะสมกับวัย', key: 'q12' }
                   ].map(row => (
                     <tr key={row.key}>
                       <td style={styles.evalTd}>{row.label}</td>
@@ -1452,7 +1493,7 @@ const styles = {
     backgroundColor: '#FFFFFF',
     borderRadius: '16px',
     width: '100%',
-    maxWidth: '600px',
+    maxWidth: '650px',
     maxHeight: '90vh',
     display: 'flex',
     flexDirection: 'column',
