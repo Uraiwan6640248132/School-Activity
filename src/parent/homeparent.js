@@ -27,6 +27,8 @@ const HomeParent = () => {
 
   const parentClass = getParentClass();
 
+  
+
   useEffect(() => {
     const fetchParentHomeData = async () => {
       try {
