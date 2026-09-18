@@ -26,7 +26,6 @@ import {
   Ruler,
   Shield,
   Syringe,
-  Move,
   Handshake,
   Loader2,
   CheckCircle,
@@ -57,9 +56,13 @@ function TermComparisonChart({ studentDevList }) {
 
   const getScores = (data) => {
     if (!data) return [0, 0, 0, 0];
+    // ด้านร่างกาย: q1-q2 (2 ข้อ)
     const body = calculateScore([data.q1, data.q2]);
+    // ด้านอารมณ์: q3-q5 (3 ข้อ)
     const emotion = calculateScore([data.q3, data.q4, data.q5]);
+    // ด้านสังคม: q6-q8 (3 ข้อ)
     const social = calculateScore([data.q6, data.q7, data.q8]);
+    // ด้านสติปัญญา: q9-q12 (4 ข้อ)
     const intellect = calculateScore([data.q9, data.q10, data.q11, data.q12]);
     
     return [body, emotion, social, intellect];
@@ -74,8 +77,8 @@ function TermComparisonChart({ studentDevList }) {
       {
         label: 'ภาคเรียนที่ 1',
         data: scoresTerm1,
-        backgroundColor: '#2baf2b',
-        borderColor: '#2baf2b',
+        backgroundColor: '#3b82f6',
+        borderColor: '#3b82f6',
         borderWidth: 1,
         borderRadius: 4,
         maxBarThickness: 48,
@@ -83,8 +86,8 @@ function TermComparisonChart({ studentDevList }) {
       {
         label: 'ภาคเรียนที่ 2',
         data: scoresTerm2,
-        backgroundColor: '#dd191d',
-        borderColor: '#dd191d',
+        backgroundColor: '#00CC00',
+        borderColor: '#00CC00',
         borderWidth: 1,
         borderRadius: 4,
         maxBarThickness: 48,
@@ -339,7 +342,7 @@ export default function Development() {
       Height: item.Height || '',
       Dental_health: item.Dental_health || '',
       Vaccination: item.Vaccination || '',
-      Motor_skills: item.Motor_skills || '',
+      Motor_skills: item.Motor_skills || '', // ยังเก็บค่าไว้ใน formData เผื่อ backend ต้องการ
       q1: item.q1 ? String(item.q1) : '',
       q2: item.q2 ? String(item.q2) : '',
       q3: item.q3 ? String(item.q3) : '',
@@ -766,10 +769,7 @@ export default function Development() {
                   <Syringe size={14} color="#94A3B8" />
                   <span>วัคซีน: <strong>{selectedDetailItem.Vaccination || 'ไม่ได้ระบุ'}</strong></span>
                 </div>
-                <div style={{ ...styles.detailBodyItem, gridColumn: 'span 2' }}>
-                  <Move size={14} color="#94A3B8" />
-                  <span>การเคลื่อนไหว: <strong>{selectedDetailItem.Motor_skills || 'ไม่ได้ระบุ'}</strong></span>
-                </div>
+                {/* ลบส่วนการเคลื่อนไหวออกแล้ว */}
               </div>
 
               <div style={styles.tabContainer}>
@@ -1007,8 +1007,10 @@ export default function Development() {
                 <Activity size={16} color="#4A90D9" />
                 ด้านร่างกาย (ข้อมูลกายภาพ)
               </h4>
+              
+              {/* แถวที่ 1: น้ำหนัก และ ส่วนสูง */}
               <div style={styles.formRow}>
-                <div style={styles.formGroup}>
+                <div style={{ ...styles.formGroup, width: '48%' }}>
                   <label style={styles.formLabel}>น้ำหนัก (กก.)</label>
                   <input
                     type="text"
@@ -1019,7 +1021,7 @@ export default function Development() {
                     placeholder="เช่น 15.5"
                   />
                 </div>
-                <div style={styles.formGroup}>
+                <div style={{ ...styles.formGroup, width: '48%' }}>
                   <label style={styles.formLabel}>ส่วนสูง (ซม.)</label>
                   <input
                     type="text"
@@ -1030,7 +1032,11 @@ export default function Development() {
                     placeholder="เช่น 105"
                   />
                 </div>
-                <div style={styles.formGroup}>
+              </div>
+
+              {/* แถวที่ 2: สุขภาพฟัน และ วัคซีน */}
+              <div style={styles.formRow}>
+                <div style={{ ...styles.formGroup, width: '48%' }}>
                   <label style={styles.formLabel}>สุขภาพฟัน</label>
                   <input
                     type="text"
@@ -1041,9 +1047,6 @@ export default function Development() {
                     placeholder="ปกติ / ผุ"
                   />
                 </div>
-              </div>
-
-              <div style={styles.formRow}>
                 <div style={{ ...styles.formGroup, width: '48%' }}>
                   <label style={styles.formLabel}>วัคซีน</label>
                   <input
@@ -1053,17 +1056,6 @@ export default function Development() {
                     onChange={handleChange}
                     style={styles.formInput}
                     placeholder="ครบตามเกณฑ์"
-                  />
-                </div>
-                <div style={{ ...styles.formGroup, width: '48%' }}>
-                  <label style={styles.formLabel}>การเคลื่อนไหว</label>
-                  <input
-                    type="text"
-                    name="Motor_skills"
-                    value={formData.Motor_skills}
-                    onChange={handleChange}
-                    style={styles.formInput}
-                    placeholder="คล่องแคล่ว"
                   />
                 </div>
               </div>

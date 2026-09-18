@@ -22,7 +22,6 @@ import {
   Ruler,
   Shield,
   Syringe,
-  Move,
   Handshake,
   Loader2,
   AlertCircle,
@@ -74,8 +73,8 @@ function TermComparisonChart({ studentDevList }) {
       {
         label: 'ภาคเรียนที่ 1',
         data: scoresTerm1,
-        backgroundColor: '#2baf2b',
-        borderColor: '#2baf2b',
+        backgroundColor: '#3b82f6',
+        borderColor: '#3b82f6',
         borderWidth: 1,
         borderRadius: 4,
         maxBarThickness: 48,
@@ -83,8 +82,8 @@ function TermComparisonChart({ studentDevList }) {
       {
         label: 'ภาคเรียนที่ 2',
         data: scoresTerm2,
-        backgroundColor: '#dd191d',
-        borderColor: '#dd191d',
+        backgroundColor: '#00CC00',
+        borderColor: '#00CC00',
         borderWidth: 1,
         borderRadius: 4,
         maxBarThickness: 48,
@@ -575,10 +574,7 @@ export default function Developmentp() {
                   <Syringe size={14} color="#94A3B8" />
                   <span>วัคซีน: <strong>{selectedDetailItem.Vaccination || 'ไม่ได้ระบุ'}</strong></span>
                 </div>
-                <div style={{ ...styles.detailBodyItem, gridColumn: 'span 2' }}>
-                  <Move size={14} color="#94A3B8" />
-                  <span>การเคลื่อนไหว: <strong>{selectedDetailItem.Motor_skills || 'ไม่ได้ระบุ'}</strong></span>
-                </div>
+                {/* ลบส่วนการเคลื่อนไหวออกแล้ว */}
               </div>
 
               <div style={styles.tabContainer}>
