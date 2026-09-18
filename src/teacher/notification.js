@@ -1,37 +1,105 @@
 import axios from "axios";
 import { useEffect, useState } from "react";
+import {
+  Bell,
+  Plus,
+  Edit2,
+  Trash2,
+  X,
+  BookOpen,
+  Calendar,
+  Clock,
+  Send,
+  Loader2,
+  Users,
+  FileText,
+  CalendarDays,
+  Filter
+} from "lucide-react";
 
 const BASE_URL = "http://localhost:3001";
-const MY_CLASS_LEVEL = "อนุบาล 1 ห้องปกติ"; // กำหนดระดับชั้นประจำของห้องนี้
+
+// 🟢 รายชื่อวิชาสำหรับระดับอนุบาล
+const KIN_SUBJECTS = [
+  "ภาษาไทย",
+  "ภาษาอังกฤษ",
+  "ภาษาจีน",
+  "คณิตศาสตร์",
+  "วิทยาศาสตร์",
+  "ศิลปะ",
+  "ดนตรี",
+  "พละศึกษา",
+  "คอมพิวเตอร์"
+];
+
+// 🟢 รายชื่อห้องเรียนระดับอนุบาลสำหรับให้เลือก
+const CLASS_LEVELS = [
+  "อนุบาล1 ห้องปกติ",
+  "อนุบาล1 ห้อง 3 ภาษา",
+  "อนุบาล2 ห้องปกติ",
+  "อนุบาล2 ห้อง 3 ภาษา",
+  "อนุบาล3 ห้องปกติ",
+  "อนุบาล3 ห้อง 3 ภาษา"
+];
 
 function Notification() {
   const [list, setList] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editId, setEditId] = useState(null);
   const [deleteId, setDeleteId] = useState(null);
 
-  // สเตตสำหรับเก็บค่าอินพุต (ล็อกค่าเริ่มต้นเป็นห้องตัวเอง)
-  const [class_level, setClassLevel] = useState(MY_CLASS_LEVEL);
+  // 🟢 เพิ่ม State สำหรับกรองห้องเรียนที่ต้องการดูบนหน้าจอ
+  const [selectedFilterClass, setSelectedFilterClass] = useState("ALL");
+
+  // ดึงระดับชั้นของครูที่ล็อกอินจาก localStorage
+  const [myClassLevel, setMyClassLevel] = useState("");
+  const [class_level, setClassLevel] = useState("");
   const [subject, setSubject] = useState("");
   const [details, setDetails] = useState("");
   const [deadline, setDeadline] = useState("");
 
+  // วันที่ปัจจุบันสำหรับล็อกไม่ให้เลือกวันย้อนหลัง (Format: YYYY-MM-DD)
+  const todayStr = new Date().toLocaleDateString("en-CA", {
+    timeZone: "Asia/Bangkok",
+  });
+
   useEffect(() => {
+    // 🟢 อ่านข้อมูลครูจาก localStorage ตอนโหลดคอมโพเนนต์
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      try {
+        const userData = JSON.parse(storedUser);
+        const teacherClass =
+          userData.Class_level ||
+          userData.class_level ||
+          userData.class_name ||
+          userData.room ||
+          "";
+        setMyClassLevel(teacherClass);
+        setClassLevel(teacherClass); // ตั้งค่าเริ่มต้นตอนสั่งการบ้านเป็นห้องประจำชั้น
+      } catch (e) {
+        console.error("Error parsing user data:", e);
+      }
+    }
     getData();
   }, []);
 
   const getData = async () => {
+    setLoading(true);
     try {
       const res = await axios.get(`${BASE_URL}/notifications`);
       setList(res.data);
     } catch (err) {
       console.log(err);
+    } finally {
+      setLoading(false);
     }
   };
 
   const resetForm = () => {
     setEditId(null);
-    setClassLevel(MY_CLASS_LEVEL); // ล็อกระดับชั้นไว้เสมอ
+    setClassLevel(myClassLevel); // Reset กลับเป็นห้องประจำชั้นของครู
     setSubject("");
     setDetails("");
     setDeadline("");
@@ -40,7 +108,6 @@ function Notification() {
 
   const saveData = async (e) => {
     e.preventDefault();
-    const todayStr = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Bangkok" });
 
     const data = {
       User_id: 1,
@@ -48,7 +115,7 @@ function Notification() {
       Subject: subject,
       Deadline: deadline || todayStr,
       Date: todayStr,
-      Details: details || null
+      Details: details || null,
     };
 
     try {
@@ -66,7 +133,7 @@ function Notification() {
 
   const openEdit = (item) => {
     setEditId(item.Notification_id || item.notification_id);
-    setClassLevel(item.Class_level || item.class_level || MY_CLASS_LEVEL);
+    setClassLevel(item.Class_level || item.class_level || myClassLevel);
     setSubject(item.Subject || item.subject || "");
     setDetails(item.Details || item.details || "");
     setDeadline((item.Deadline || item.deadline)?.split("T")[0] || "");
@@ -83,97 +150,234 @@ function Notification() {
     }
   };
 
+  // 🟢 ปรับ Logic การกรอง: แสดงทั้งหมด หรือแสดงตามตัวกรองที่เลือก
+  const filteredList = list.filter((item) => {
+    if (selectedFilterClass === "ALL") return true;
+
+    const currentClass = item.Class_level || item.class_level;
+    if (!currentClass) return false;
+
+    const dbClass = String(currentClass).replace(/\s+/g, "").trim();
+    const filterClass = String(selectedFilterClass).replace(/\s+/g, "").trim();
+
+    return dbClass === filterClass;
+  });
+
+  if (loading) {
+    return (
+      <div style={styles.loadingContainer}>
+        <Loader2 size={48} style={styles.spinner} />
+        <p style={styles.loadingText}>กำลังโหลดข้อมูลการแจ้งเตือน...</p>
+      </div>
+    );
+  }
+
   return (
-    <div style={page.container}>
-      <div style={page.header}>
-        <h2 style={page.title}>แจ้งเตือนการบ้าน</h2>
-
-        <button style={page.addBtn} onClick={() => setShowModal(true)}>
-          + แจ้งเตือนใหม่
-        </button>
-      </div>
-
-      <div style={page.grid}>
-        {list
-          .filter((item) => {
-            const currentClass = item.Class_level || item.class_level;
-            return currentClass === MY_CLASS_LEVEL;
-          })
-          .map((item) => (
-            <div key={item.Notification_id || item.notification_id} style={page.card}>
-              <h3 style={page.cardTitle}>{item.Class_level || item.class_level}</h3>
-              <p style={page.cardText}>
-                <span style={{ color: "#64748b" }}>วิชา :</span> <strong style={{ color: "#0f172a" }}>{item.Subject || item.subject}</strong>
-              </p>
-              <p style={{ ...page.cardText, color: "#475569", margin: "8px 0" }}>{item.Details || item.details}</p>
-
-              <div style={page.dateGroup}>
-                <p style={page.cardDate}>📅 ส่งงาน : {(item.Deadline || item.deadline) ? (item.Deadline || item.deadline).split("T")[0] : "-"}</p>
-                <p style={page.cardDate}>🔔 แจ้งเมื่อ : {(item.Date || item.date) ? (item.Date || item.date).split("T")[0] : "-"}</p>
-              </div>
-
-              <div style={page.actions}>
-                <button style={page.editBtn} onClick={() => openEdit(item)}>แก้ไข</button>
-                <button style={page.deleteBtn} onClick={() => setDeleteId(item.Notification_id || item.notification_id)}>ลบ</button>
-              </div>
+    <div style={styles.container}>
+      <div style={styles.wrapper}>
+        {/* Header */}
+        <div style={styles.header}>
+          <div style={styles.headerLeft}>
+            <div style={styles.headerIcon}>
+              <Bell size={24} color="#FFFFFF" />
             </div>
-          ))}
+            <div>
+              <h1 style={styles.mainTitle}>การแจ้งเตือนการบ้าน</h1>
+              <p style={styles.subTitle}>
+                <span style={styles.countBadge}>{filteredList.length}</span> รายการแจ้งเตือน
+                <span style={styles.classLabel}> | ห้องประจำชั้น: {myClassLevel || "ไม่ระบุ"}</span>
+              </p>
+            </div>
+          </div>
+
+          <div style={styles.headerActions}>
+            {/* 🟢 ตัวเลือกกรองห้องเรียนบนหน้าจอ */}
+            <div style={styles.filterBox}>
+              <Filter size={16} color="#64748B" />
+              <select
+                value={selectedFilterClass}
+                onChange={(e) => setSelectedFilterClass(e.target.value)}
+                style={styles.filterSelect}
+              >
+                <option value="ALL">แสดงทุกห้องเรียน</option>
+                {CLASS_LEVELS.map((cls, index) => (
+                  <option key={index} value={cls}>
+                    {cls} {cls === myClassLevel ? "(ห้องของคุณ)" : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <button style={styles.btnPrimary} onClick={() => setShowModal(true)}>
+              <Plus size={18} />
+              แจ้งเตือนใหม่
+            </button>
+          </div>
+        </div>
+
+        {/* Notification Grid */}
+        {filteredList.length === 0 ? (
+          <div style={styles.emptyState}>
+            <Bell size={56} color="#CBD5E1" />
+            <p style={styles.emptyText}>ไม่มีการแจ้งเตือน</p>
+            <p style={styles.emptySubText}>ยังไม่มีข้อมูลการแจ้งเตือนการบ้านในหมวดหมู่นี้</p>
+          </div>
+        ) : (
+          <div style={styles.grid}>
+            {filteredList.map((item) => (
+              <div key={item.Notification_id || item.notification_id} style={styles.card}>
+                <div style={styles.cardHeader}>
+                  <div style={styles.cardSubject}>
+                    <BookOpen size={16} color="#4A90D9" />
+                    <span style={styles.subjectText}>
+                      {item.Subject || item.subject || "ไม่ระบุวิชา"}
+                    </span>
+                  </div>
+                  <div style={styles.cardBadge}>
+                    <Users size={12} color="#4A90D9" />
+                    {item.Class_level || item.class_level}
+                  </div>
+                </div>
+
+                <div style={styles.cardBody}>
+                  <p style={styles.cardDetails}>
+                    {item.Details || item.details || "ไม่มีรายละเอียด"}
+                  </p>
+                </div>
+
+                <div style={styles.cardFooter}>
+                  <div style={styles.cardDates}>
+                    <div style={styles.dateItem}>
+                      <Calendar size={14} color="#94A3B8" />
+                      <span>
+                        กำหนดส่ง:{" "}
+                        <strong>
+                          {(item.Deadline || item.deadline)?.split("T")[0] || "-"}
+                        </strong>
+                      </span>
+                    </div>
+                    <div style={styles.dateItem}>
+                      <Clock size={14} color="#94A3B8" />
+                      <span>แจ้งเมื่อ: {(item.Date || item.date)?.split("T")[0] || "-"}</span>
+                    </div>
+                  </div>
+                  <div style={styles.cardActions}>
+                    <button onClick={() => openEdit(item)} style={styles.editBtn}>
+                      <Edit2 size={14} />
+                      แก้ไข
+                    </button>
+                    <button
+                      onClick={() => setDeleteId(item.Notification_id || item.notification_id)}
+                      style={styles.deleteBtn}
+                    >
+                      <Trash2 size={14} />
+                      ลบ
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
+      {/* Add/Edit Modal */}
       {showModal && (
-        <div style={modal.overlay}>
-          <div style={modal.box}>
-            <h3 style={{ margin: "0 0 16px 0", color: "#1e293b", fontSize: "18px" }}>
-              {editId ? "แก้ไขการแจ้งเตือน" : "เพิ่มการแจ้งเตือน"}
-            </h3>
+        <div
+          style={styles.modalOverlay}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) resetForm();
+          }}
+        >
+          <div style={styles.modalContent}>
+            <div style={styles.modalHeader}>
+              <h2 style={styles.modalTitle}>
+                {editId ? <Edit2 size={20} color="#F39C12" /> : <Plus size={20} color="#4A90D9" />}
+                {editId ? "แก้ไขการแจ้งเตือน" : "เพิ่มการแจ้งเตือน"}
+              </h2>
+              <button onClick={resetForm} style={styles.modalCloseBtn}>
+                <X size={18} />
+              </button>
+            </div>
 
             <form onSubmit={saveData}>
-              {/* 🔒 ล็อกช่องระดับชั้น ไม่ให้เปลี่ยนห้อง */}
-              <div style={modal.field}>
-                <label style={modal.label}>ระดับชั้น</label>
-                <input
-                  type="text"
+              {/* ระดับชั้น Dropdown */}
+              <div style={styles.formGroup}>
+                <label style={styles.formLabel}>
+                  <Users size={14} style={styles.labelIcon} />
+                  ระดับชั้น *
+                </label>
+                <select
                   value={class_level}
-                  readOnly
-                  style={modal.inputReadOnly}
-                />
+                  onChange={(e) => setClassLevel(e.target.value)}
+                  required
+                  style={styles.formSelect}
+                >
+                  <option value="">-- เลือกระดับชั้น --</option>
+                  {CLASS_LEVELS.map((cls, index) => (
+                    <option key={index} value={cls}>
+                      {cls} {cls === myClassLevel ? "(ห้องประจำชั้นของคุณ)" : ""}
+                    </option>
+                  ))}
+                </select>
               </div>
 
-              <div style={modal.field}>
-                <label style={modal.label}>วิชา</label>
-                <input
+              {/* วิชา Dropdown */}
+              <div style={styles.formGroup}>
+                <label style={styles.formLabel}>
+                  <BookOpen size={14} style={styles.labelIcon} />
+                  วิชา *
+                </label>
+                <select
                   value={subject}
                   onChange={(e) => setSubject(e.target.value)}
                   required
-                  style={modal.input}
-                />
+                  style={styles.formSelect}
+                >
+                  <option value="">-- เลือกวิชา --</option>
+                  {KIN_SUBJECTS.map((subj, index) => (
+                    <option key={index} value={subj}>
+                      {subj}
+                    </option>
+                  ))}
+                </select>
               </div>
 
-              <div style={modal.field}>
-                <label style={modal.label}>รายละเอียด</label>
+              <div style={styles.formGroup}>
+                <label style={styles.formLabel}>
+                  <FileText size={14} style={styles.labelIcon} />
+                  รายละเอียด
+                </label>
                 <textarea
                   value={details}
                   onChange={(e) => setDetails(e.target.value)}
-                  style={modal.textarea}
+                  style={styles.formTextarea}
+                  placeholder="กรอกรายละเอียดการบ้าน"
+                  rows={3}
                 />
               </div>
 
-              <div style={modal.field}>
-                <label style={modal.label}>กำหนดส่ง</label>
+              <div style={styles.formGroup}>
+                <label style={styles.formLabel}>
+                  <CalendarDays size={14} style={styles.labelIcon} />
+                  กำหนดส่ง
+                </label>
                 <input
                   type="date"
                   value={deadline}
+                  min={todayStr}
                   onChange={(e) => setDeadline(e.target.value)}
-                  style={modal.input}
+                  style={styles.formInput}
                 />
               </div>
 
-              <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
-                <button type="button" onClick={resetForm} style={{ ...page.cancelBtn, flex: 1 }}>
+              <div style={styles.formActions}>
+                <button type="button" onClick={resetForm} style={styles.cancelBtn}>
                   ยกเลิก
                 </button>
-                <button type="submit" style={{ ...modal.saveBtn, flex: 1 }}>
-                  บันทึก
+                <button type="submit" style={styles.submitBtn}>
+                  <Send size={16} />
+                  {editId ? "อัปเดต" : "บันทึก"}
                 </button>
               </div>
             </form>
@@ -181,16 +385,25 @@ function Notification() {
         </div>
       )}
 
+      {/* Delete Modal */}
       {deleteId && (
-        <div style={modal.overlay}>
-          <div style={modal.box}>
-            <h3 style={{ margin: "0 0 12px 0", color: "#1e293b" }}>ยืนยันการลบ</h3>
-            <p style={{ color: "#64748b", fontSize: "14px", margin: "0 0 20px 0" }}>คุณแน่ใจหรือไม่ว่าต้องการลบแจ้งเตือนนี้?</p>
-            <div style={{ display: "flex", gap: 10 }}>
-              <button onClick={() => setDeleteId(null)} style={{ ...page.cancelBtn, flex: 1 }}>
+        <div
+          style={styles.modalOverlay}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setDeleteId(null);
+          }}
+        >
+          <div style={styles.deleteModal}>
+            <div style={styles.deleteIcon}>🗑️</div>
+            <h3 style={styles.deleteTitle}>ยืนยันการลบ</h3>
+            <p style={styles.deleteText}>คุณแน่ใจหรือไม่ว่าต้องการลบการแจ้งเตือนนี้?</p>
+            <p style={styles.deleteSubText}>การดำเนินการนี้ไม่สามารถกู้คืนได้</p>
+            <div style={styles.deleteActions}>
+              <button onClick={() => setDeleteId(null)} style={styles.cancelBtn}>
                 ยกเลิก
               </button>
-              <button style={{ ...page.deleteBtn, flex: 1 }} onClick={() => deleteData(deleteId)}>
+              <button onClick={() => deleteData(deleteId)} style={styles.confirmDeleteBtn}>
+                <Trash2 size={16} />
                 ลบข้อมูล
               </button>
             </div>
@@ -201,174 +414,437 @@ function Notification() {
   );
 }
 
-const page = {
+const styles = {
   container: {
     padding: "20px",
+    minHeight: "100vh",
+    backgroundColor: "#F8FAFC",
+    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
+  },
+  wrapper: {
     maxWidth: "1200px",
     margin: "0 auto",
+    width: "100%",
+  },
+  loadingContainer: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: "100vh",
+    gap: "16px",
+  },
+  spinner: {
+    animation: "spin 1s linear infinite",
+    color: "#4A90D9",
+  },
+  loadingText: {
+    color: "#94A3B8",
+    fontSize: "16px",
   },
   header: {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 28,
+    marginBottom: "28px",
+    flexWrap: "wrap",
+    gap: "12px",
   },
-  title: {
-    margin: 0,
-    color: '#0369a1',
-    fontSize: "22px",
-    fontWeight: "600"
+  headerLeft: {
+    display: "flex",
+    alignItems: "center",
+    gap: "14px",
   },
-  addBtn: {
-    padding: "9px 16px",
-    border: "1px solid #0284c7",
-    borderRadius: 8,
-    background: "linear-gradient(135deg, #0ea5e9, #0369a1)",
-    color: "#ffffff",
+  headerActions: {
+    display: "flex",
+    alignItems: "center",
+    gap: "12px",
+    flexWrap: "wrap",
+  },
+  filterBox: {
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    backgroundColor: "#FFFFFF",
+    padding: "8px 12px",
+    borderRadius: "10px",
+    border: "1px solid #E2E8F0",
+  },
+  filterSelect: {
+    border: "none",
+    backgroundColor: "transparent",
+    fontSize: "14px",
+    color: "#334155",
+    outline: "none",
     cursor: "pointer",
+    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
+  },
+  headerIcon: {
+    width: "48px",
+    height: "48px",
+    borderRadius: "12px",
+    backgroundColor: "#4A90D9",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    boxShadow: "0 4px 12px rgba(74, 144, 217, 0.25)",
+  },
+  mainTitle: {
+    fontSize: "24px",
     fontWeight: "700",
-    fontSize: "13px",
-    boxShadow: "0 10px 22px rgba(14,165,233,0.22)",
+    color: "#1A202C",
+    margin: 0,
+  },
+  subTitle: {
+    fontSize: "14px",
+    color: "#718096",
+    margin: "2px 0 0 0",
+  },
+  countBadge: {
+    fontWeight: "700",
+    color: "#4A90D9",
+  },
+  classLabel: {
+    color: "#94A3B8",
+  },
+  btnPrimary: {
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    padding: "10px 20px",
+    borderRadius: "10px",
+    border: "none",
+    backgroundColor: "#4A90D9",
+    color: "#FFFFFF",
+    cursor: "pointer",
+    fontSize: "14px",
+    fontWeight: "600",
+    transition: "all 0.2s ease",
+    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
+    boxShadow: "0 4px 12px rgba(74, 144, 217, 0.2)",
   },
   grid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
-    gap: 24,
+    gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))",
+    gap: "20px",
   },
   card: {
-    background: "#ffffff",
-    borderRadius: 12,
-    padding: 24,
-    border: "1px solid #f1f5f9",
-    boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05)",
-  },
-  cardTitle: {
-    margin: "0 0 12px 0",
-    color: "#1e293b",
-    fontSize: "16px",
-    fontWeight: "600"
-  },
-  cardText: {
-    margin: "4px 0",
-    fontSize: "14px",
-    color: "#334155"
-  },
-  dateGroup: {
-    borderTop: "1px dashed #f1f5f9",
-    paddingTop: 10,
-    marginTop: 12,
-  },
-  cardDate: {
-    margin: "4px 0",
-    fontSize: "13px",
-    color: "#64748b"
-  },
-  actions: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: "16px",
+    border: "1px solid #E2E8F0",
+    overflow: "hidden",
+    transition: "all 0.2s ease",
+    boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
     display: "flex",
-    gap: 10,
-    marginTop: 15,
+    flexDirection: "column",
+  },
+  cardHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: "16px 18px 12px",
+    borderBottom: "1px solid #F1F5F9",
+  },
+  cardSubject: {
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+  },
+  subjectText: {
+    fontSize: "15px",
+    fontWeight: "600",
+    color: "#1A202C",
+  },
+  cardBadge: {
+    display: "flex",
+    alignItems: "center",
+    gap: "4px",
+    fontSize: "11px",
+    fontWeight: "500",
+    color: "#4A90D9",
+    backgroundColor: "#EBF3FB",
+    padding: "3px 10px",
+    borderRadius: "6px",
+    whiteSpace: "nowrap",
+  },
+  cardBody: {
+    padding: "12px 18px",
+    flex: 1,
+  },
+  cardDetails: {
+    fontSize: "14px",
+    color: "#475569",
+    margin: 0,
+    lineHeight: "1.6",
+  },
+  cardFooter: {
+    padding: "12px 18px 16px",
+    borderTop: "1px solid #F1F5F9",
+  },
+  cardDates: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "4px",
+    marginBottom: "12px",
+  },
+  dateItem: {
+    display: "flex",
+    alignItems: "center",
+    gap: "6px",
+    fontSize: "12px",
+    color: "#94A3B8",
+  },
+  cardActions: {
+    display: "flex",
+    gap: "8px",
   },
   editBtn: {
     flex: 1,
-    background: "#eff8ff",
-    color: "#0369a1",
-    border: "1px solid #bae6fd",
-    padding: "8px 12px",
-    borderRadius: 8,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "6px",
+    padding: "7px",
+    backgroundColor: "#EBF3FB",
+    color: "#4A90D9",
+    border: "none",
+    borderRadius: "8px",
     cursor: "pointer",
-    fontWeight: "700",
     fontSize: "13px",
+    fontWeight: "500",
+    transition: "all 0.2s ease",
+    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
   },
   deleteBtn: {
     flex: 1,
-    background: "#fff1f2",
-    color: "#be123c",
-    border: "1px solid #fecdd3",
-    padding: "8px 12px",
-    borderRadius: 8,
-    cursor: "pointer",
-    fontWeight: "700",
-    fontSize: "13px",
-  },
-  cancelBtn: {
-    padding: "8px 12px",
-    borderRadius: 8,
-    border: "1px solid #cfe8f7",
-    background: "#ffffff",
-    color: "#31556b",
-    cursor: "pointer",
-    fontWeight: "700",
-    fontSize: "13px",
-  },
-};
-
-const modal = {
-  overlay: {
-    position: "fixed",
-    inset: 0,
-    background: "rgba(15, 23, 42, 0.3)",
     display: "flex",
-    justifyContent: "center",
     alignItems: "center",
-    zIndex: 1000,
+    justifyContent: "center",
+    gap: "6px",
+    padding: "7px",
+    backgroundColor: "#FDEDEC",
+    color: "#E74C3C",
+    border: "none",
+    borderRadius: "8px",
+    cursor: "pointer",
+    fontSize: "13px",
+    fontWeight: "500",
+    transition: "all 0.2s ease",
+    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
   },
-  box: {
-    background: "#ffffff",
-    width: 380,
-    padding: 24,
-    borderRadius: 12,
-    boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
-  },
-  field: {
+  emptyState: {
     display: "flex",
     flexDirection: "column",
-    marginBottom: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "80px 20px",
+    backgroundColor: "#FFFFFF",
+    borderRadius: "16px",
+    border: "1px solid #E2E8F0",
   },
-  label: {
-    marginBottom: 6,
-    fontWeight: "500",
-    fontSize: "13px",
-    color: "#475569"
+  emptyText: {
+    fontSize: "18px",
+    fontWeight: "600",
+    color: "#475569",
+    margin: "16px 0 4px 0",
   },
-  input: {
-    padding: "8px 12px",
-    borderRadius: "6px",
-    border: "1px solid #cbd5e1",
+  emptySubText: {
     fontSize: "14px",
-    color: "#334155",
-    outline: "none",
+    color: "#94A3B8",
+    margin: 0,
   },
-  // 🔒 ตกแต่งสไตล์สำหรับ Input ที่ถูกล็อก
-  inputReadOnly: {
-    padding: "8px 12px",
-    borderRadius: "6px",
-    border: "1px solid #cbd5e1",
-    background: "#f1f5f9",
-    color: "#64748b",
-    fontSize: "14px",
-    fontWeight: "500",
-    outline: "none",
-    cursor: "not-allowed",
+  modalOverlay: {
+    position: "fixed",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(15, 23, 42, 0.5)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 9999,
+    padding: "16px",
+    backdropFilter: "blur(4px)",
   },
-  textarea: {
-    padding: "8px 12px",
-    borderRadius: "6px",
-    border: "1px solid #cbd5e1",
-    fontSize: "14px",
-    color: "#334155",
-    outline: "none",
-    minHeight: "70px",
-    resize: "vertical",
+  modalContent: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: "16px",
+    width: "100%",
+    maxWidth: "480px",
+    padding: "28px",
+    boxShadow: "0 25px 50px rgba(0,0,0,0.15)",
+    boxSizing: "border-box",
+    maxHeight: "90vh",
+    overflowY: "auto",
   },
-  saveBtn: {
-    padding: "8px 16px",
-    borderRadius: 6,
-    background: "linear-gradient(135deg, #0ea5e9, #0369a1)",
-    color: "#ffffff",
-    border: "1px solid #0284c7",
+  modalHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: "20px",
+    paddingBottom: "12px",
+    borderBottom: "1px solid #F1F5F9",
+  },
+  modalTitle: {
+    fontSize: "18px",
+    fontWeight: "600",
+    color: "#1A202C",
+    margin: 0,
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
+  },
+  modalCloseBtn: {
+    background: "none",
+    border: "none",
+    color: "#94A3B8",
     cursor: "pointer",
-    fontWeight: "700",
-    boxShadow: "0 10px 22px rgba(14,165,233,0.22)",
+    padding: "4px",
+    borderRadius: "8px",
+    transition: "background 0.2s ease",
+  },
+  formGroup: {
+    marginBottom: "16px",
+  },
+  formLabel: {
+    display: "flex",
+    alignItems: "center",
+    gap: "6px",
+    fontSize: "13px",
+    fontWeight: "500",
+    color: "#334155",
+    marginBottom: "6px",
+  },
+  labelIcon: {
+    color: "#94A3B8",
+  },
+  formInput: {
+    width: "100%",
+    padding: "10px 14px",
+    border: "1px solid #E2E8F0",
+    borderRadius: "10px",
+    fontSize: "14px",
+    backgroundColor: "#FAFBFC",
+    outline: "none",
+    transition: "all 0.2s ease",
+    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
+    boxSizing: "border-box",
+  },
+  formSelect: {
+    width: "100%",
+    padding: "10px 14px",
+    border: "1px solid #E2E8F0",
+    borderRadius: "10px",
+    fontSize: "14px",
+    backgroundColor: "#FAFBFC",
+    outline: "none",
+    transition: "all 0.2s ease",
+    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
+    boxSizing: "border-box",
+    cursor: "pointer",
+  },
+  formTextarea: {
+    width: "100%",
+    padding: "10px 14px",
+    border: "1px solid #E2E8F0",
+    borderRadius: "10px",
+    fontSize: "14px",
+    backgroundColor: "#FAFBFC",
+    outline: "none",
+    transition: "all 0.2s ease",
+    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
+    boxSizing: "border-box",
+    resize: "vertical",
+    minHeight: "70px",
+  },
+  formActions: {
+    display: "flex",
+    gap: "10px",
+    marginTop: "8px",
+  },
+  cancelBtn: {
+    flex: 1,
+    padding: "10px",
+    backgroundColor: "#F1F5F9",
+    color: "#475569",
+    border: "none",
+    borderRadius: "10px",
+    cursor: "pointer",
+    fontSize: "14px",
+    fontWeight: "500",
+    transition: "all 0.2s ease",
+    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
+  },
+  submitBtn: {
+    flex: 1,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "8px",
+    padding: "10px",
+    backgroundColor: "#4A90D9",
+    color: "#FFFFFF",
+    border: "none",
+    borderRadius: "10px",
+    cursor: "pointer",
+    fontSize: "14px",
+    fontWeight: "600",
+    transition: "all 0.2s ease",
+    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
+    boxShadow: "0 4px 12px rgba(74, 144, 217, 0.2)",
+  },
+  deleteModal: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: "16px",
+    padding: "32px 28px",
+    maxWidth: "400px",
+    width: "100%",
+    textAlign: "center",
+    boxShadow: "0 25px 50px rgba(0,0,0,0.15)",
+    boxSizing: "border-box",
+  },
+  deleteIcon: {
+    fontSize: "48px",
+    marginBottom: "12px",
+  },
+  deleteTitle: {
+    fontSize: "20px",
+    fontWeight: "600",
+    color: "#1A202C",
+    margin: "0 0 8px 0",
+  },
+  deleteText: {
+    fontSize: "15px",
+    color: "#475569",
+    margin: 0,
+  },
+  deleteSubText: {
+    fontSize: "13px",
+    color: "#94A3B8",
+    margin: "4px 0 24px 0",
+  },
+  deleteActions: {
+    display: "flex",
+    gap: "12px",
+  },
+  confirmDeleteBtn: {
+    flex: 1,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "8px",
+    padding: "10px",
+    backgroundColor: "#E74C3C",
+    color: "#FFFFFF",
+    border: "none",
+    borderRadius: "10px",
+    cursor: "pointer",
+    fontSize: "14px",
+    fontWeight: "500",
+    transition: "all 0.2s ease",
+    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
+    boxShadow: "0 4px 12px rgba(231, 76, 60, 0.2)",
   },
 };
 

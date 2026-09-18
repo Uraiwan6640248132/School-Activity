@@ -9,8 +9,31 @@ import {
   Legend
 } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
+import {
+  Plus,
+  Edit2,
+  Trash2,
+  X,
+  Eye,
+  User,
+  Calendar,
+  Award,
+  TrendingUp,
+  Heart,
+  Brain,
+  Activity,
+  Weight,
+  Ruler,
+  Shield,
+  Syringe,
+  Move,
+  Handshake,
+  Loader2,
+  CheckCircle,
+  AlertCircle,
+  Users
+} from 'lucide-react';
 
-// 📊 ลงทะเบียน Component ของ Chart.js
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -20,9 +43,7 @@ ChartJS.register(
   Legend
 );
 
-// 📈 Component แสดงกราฟเปรียบเทียบแต่ละเทอม
 function TermComparisonChart({ studentDevList }) {
-  // กรองเฉพาะรายการที่มีเทอมระบุชัดเจน และเรียงตามเทอม
   const term1Data = studentDevList.find(d => (d.Term || d.term || '').includes('1'));
   const term2Data = studentDevList.find(d => (d.Term || d.term || '').includes('2'));
 
@@ -31,15 +52,19 @@ function TermComparisonChart({ studentDevList }) {
     const validScores = scores.map(s => isNaN(Number(s)) || s === '' ? 0 : Number(s));
     const sum = validScores.reduce((a, b) => a + b, 0);
     const avg = sum / validScores.length;
-    return Math.round(avg * 20);
+    return Math.round((avg / 3) * 100);
   };
 
   const getScores = (data) => {
     if (!data) return [0, 0, 0, 0];
-    const body = data.Weight && data.Height ? 100 : 75;
-    const intellect = calculateScore([data.Problem_solving, data.Communication, data.Remembering]);
-    const emotion = calculateScore([data.Emotion, data.Emotion_control, data.Confidence]);
-    const social = calculateScore([data.Stress, data.Interaction, data.Assistance]);
+    // ด้านร่างกาย: q1-q4 (4 ข้อ)
+    const body = calculateScore([data.q1, data.q2, data.q3, data.q4]);
+    // ด้านสติปัญญา: q11-q12 (2 ข้อ)
+    const intellect = calculateScore([data.q11, data.q12]);
+    // ด้านอารมณ์: q9-q10 (2 ข้อ)
+    const emotion = calculateScore([data.q9, data.q10]);
+    // ด้านสังคม: q5-q8 (4 ข้อ)
+    const social = calculateScore([data.q5, data.q6, data.q7, data.q8]);
     return [body, intellect, emotion, social];
   };
 
@@ -52,132 +77,54 @@ function TermComparisonChart({ studentDevList }) {
       {
         label: 'ภาคเรียนที่ 1',
         data: scoresTerm1,
-        backgroundColor: '#ff6f00', // สีฟ้า
-        borderColor: '#ff6f00',
+        backgroundColor: '#2baf2b',
+        borderColor: '#2baf2b',
         borderWidth: 1,
         borderRadius: 4,
+        maxBarThickness: 48,
       },
       {
         label: 'ภาคเรียนที่ 2',
         data: scoresTerm2,
-        backgroundColor: '#42bd41', // สีเขียว
-        borderColor: '#42bd41',
+        backgroundColor: '#dd191d',
+        borderColor: '#dd191d',
         borderWidth: 1,
         borderRadius: 4,
+        maxBarThickness: 48,
       }
     ]
   };
 
- const options = {
-  responsive: true,
-  maintainAspectRatio: false,
-  animation: false,
-  devicePixelRatio: 3,
-
-  layout: {
-    padding: {
-      left: 20,
-      right: 20,
-      top: 15,
-      bottom: 15
-    }
-  },
-
-  plugins: {
-    legend: {
-      position: 'top',
-      labels: {
-        color: '#334155',
-        padding: 20,
-        usePointStyle: false,
-        font: {
-          family: 'Tahoma',
-          size: 14,
-          weight: 'bold'
-        }
-      }
+  const options = {
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: false,
+    devicePixelRatio: 3,
+    layout: { padding: { left: 20, right: 20, top: 15, bottom: 15 } },
+    plugins: {
+      legend: {
+        position: 'top',
+        labels: { color: '#334155', padding: 20, font: { family: "'Kanit', sans-serif", size: 14, weight: 'bold' } }
+      },
+      title: {
+        display: true,
+        text: '📊 กราฟเปรียบเทียบพัฒนาการรายภาคเรียน (คะแนนเต็ม 100)',
+        color: '#1e293b',
+        padding: { top: 10, bottom: 20 },
+        font: { family: "'Kanit', sans-serif", size: 16, weight: 'bold' }
+      },
+      tooltip: { titleFont: { family: "'Kanit', sans-serif", size: 14 }, bodyFont: { family: "'Kanit', sans-serif", size: 13 } }
     },
-
-    title: {
-      display: true,
-      text: '📊 กราฟเปรียบเทียบพัฒนาการรายภาคเรียน (คะแนนเต็ม 100)',
-      color: '#1e293b',
-      padding: {
-        top: 10,
-        bottom: 20
-      },
-      font: {
-        family: 'Tahoma',
-        size: 16,
-        weight: 'bold'
-      }
-    },
-
-    tooltip: {
-      titleFont: {
-        family: 'Tahoma',
-        size: 14
-      },
-      bodyFont: {
-        family: 'Tahoma',
-        size: 13
-      }
+    scales: {
+      x: { grid: { display: false }, ticks: { color: '#334155', padding: 8, font: { family: "'Kanit', sans-serif", size: 13, weight: 'bold' } } },
+      y: { beginAtZero: true, max: 100, ticks: { stepSize: 20, color: '#334155', padding: 10, font: { family: "'Kanit', sans-serif", size: 13, weight: 'bold' } }, grid: { color: '#e2e8f0', lineWidth: 1 } }
     }
-  },
+  };
 
-  scales: {
-    x: {
-      grid: {
-        display: false
-      },
-      ticks: {
-        color: '#334155',
-        padding: 8,
-        maxRotation: 0,
-        minRotation: 0,
-        font: {
-          family: 'Tahoma',
-          size: 13,
-          weight: 'bold'
-        }
-      }
-    },
-
-    y: {
-      beginAtZero: true,
-      max: 100,
-
-      ticks: {
-        stepSize: 20,
-        color: '#334155',
-        padding: 10,
-        font: {
-          family: 'Tahoma',
-          size: 13,
-          weight: 'bold'
-        }
-      },
-
-      grid: {
-        color: '#e2e8f0',
-        lineWidth: 1
-      }
-    }
-  }
-};
   return (
-    <div
-  style={{
-    position: 'relative',
-    width: '100%',
-    height: '350px'
-  }}
->
-  <Bar
-    data={chartData}
-    options={options}
-  />
-</div>
+    <div style={{ position: 'relative', width: '100%', height: '380px', marginTop: '16px' }}>
+      <Bar data={chartData} options={options} />
+    </div>
   );
 }
 
@@ -192,32 +139,22 @@ export default function Development() {
 
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [selectedDetailItem, setSelectedDetailItem] = useState(null);
+  const [activeTab, setActiveTab] = useState('body');
 
   const [selectedId, setSelectedId] = useState(null);
 
   const initialFormState = {
-    Student_id: '',
-    Year: 2569,
-    Term: 'ภาคเรียนที่ 1',
-    date: new Date().toISOString().split('T')[0],
-    Physical: '',
-    Weight: '',
-    Height: '',
-    Dental_health: '',
-    Vaccination: '',
-    Motor_skills: '',
-    Emotional: '',
-    Emotion: '',
-    Emotion_control: '',
-    Confidence: '',
-    Social: '',
-    Stress: '',
-    Interaction: '',
-    Assistance: '',
-    Intellectual: '',
-    Problem_solving: '',
-    Communication: '',
-    Remembering: ''
+    Student_id: '', Year: 2569, Term: 'ภาคเรียนที่ 1', date: new Date().toISOString().split('T')[0],
+    Physical: '', Weight: '', Height: '', Dental_health: '', Vaccination: '', Motor_skills: '',
+    // 12 หัวข้อประเมินตามมาตรฐานคุณลักษณะที่พึงประสงค์
+    // ด้านร่างกาย (4 ข้อ)
+    q1: '3', q2: '3', q3: '3', q4: '3',
+    // ด้านสังคม (4 ข้อ)
+    q5: '3', q6: '3', q7: '3', q8: '3',
+    // ด้านอารมณ์ (2 ข้อ)
+    q9: '3', q10: '3',
+    // ด้านสติปัญญา (2 ข้อ)
+    q11: '3', q12: '3'
   };
 
   const [formData, setFormData] = useState(initialFormState);
@@ -242,7 +179,6 @@ export default function Development() {
 
   const getCurrentClassLevel = (studentId) => {
     if (teacherClassLevel) return teacherClassLevel;
-
     const targetId = studentId || formData.Student_id;
     if (!targetId && students.length > 0) {
       const first = students[0];
@@ -328,7 +264,7 @@ export default function Development() {
     const validScores = scores.map(s => isNaN(Number(s)) || s === '' ? 0 : Number(s));
     const sum = validScores.reduce((a, b) => a + b, 0);
     const avg = sum / validScores.length;
-    return Math.round(avg * 20);
+    return Math.round((avg / 3) * 100);
   };
 
   const handleChange = (e) => {
@@ -363,7 +299,6 @@ export default function Development() {
       if (res.ok) {
         alert("บันทึกการประเมินพัฒนาการเรียบร้อย!");
         setIsAddOpen(false);
-
         const currentLevel = getCurrentClassLevel(formData.Student_id);
         resetForm();
         fetchDevelopmentData(currentLevel);
@@ -375,13 +310,15 @@ export default function Development() {
     }
   };
 
-  const openDetailModal = (item) => {
+  const openDetailModal = (item, tabCategory = 'body') => {
     setSelectedDetailItem(item);
+    setActiveTab(tabCategory);
     setIsDetailOpen(true);
   };
 
   const openEditModal = (item) => {
-    setSelectedId(item.Development_id || item.development_id);
+    const targetId = item.Development_id || item.development_id || item.id || item._id;
+    setSelectedId(targetId);
 
     let cleanDate = '';
     if (item.date_clean) {
@@ -408,18 +345,22 @@ export default function Development() {
       Dental_health: item.Dental_health || '',
       Vaccination: item.Vaccination || '',
       Motor_skills: item.Motor_skills || '',
-      Emotional: item.Emotional || '',
-      Emotion: item.Emotion ? String(item.Emotion) : '',
-      Emotion_control: item.Emotion_control ? String(item.Emotion_control) : '',
-      Confidence: item.Confidence ? String(item.Confidence) : '',
-      Social: item.Social || '',
-      Stress: item.Stress ? String(item.Stress) : '',
-      Interaction: item.Interaction ? String(item.Interaction) : '',
-      Assistance: item.Assistance ? String(item.Assistance) : '',
-      Intellectual: item.Intellectual || '',
-      Problem_solving: item.Problem_solving ? String(item.Problem_solving) : '',
-      Communication: item.Communication ? String(item.Communication) : '',
-      Remembering: item.Remembering ? String(item.Remembering) : ''
+      // ด้านร่างกาย (4 ข้อ)
+      q1: item.q1 ? String(item.q1) : '3',
+      q2: item.q2 ? String(item.q2) : '3',
+      q3: item.q3 ? String(item.q3) : '3',
+      q4: item.q4 ? String(item.q4) : '3',
+      // ด้านสังคม (4 ข้อ)
+      q5: item.q5 ? String(item.q5) : '3',
+      q6: item.q6 ? String(item.q6) : '3',
+      q7: item.q7 ? String(item.q7) : '3',
+      q8: item.q8 ? String(item.q8) : '3',
+      // ด้านอารมณ์ (2 ข้อ)
+      q9: item.q9 ? String(item.q9) : '3',
+      q10: item.q10 ? String(item.q10) : '3',
+      // ด้านสติปัญญา (2 ข้อ)
+      q11: item.q11 ? String(item.q11) : '3',
+      q12: item.q12 ? String(item.q12) : '3'
     });
     setIsEditOpen(true);
   };
@@ -446,7 +387,6 @@ export default function Development() {
       if (res.ok) {
         alert("แก้ไขข้อมูลการประเมินสำเร็จ!");
         setIsEditOpen(false);
-
         const currentLevel = getCurrentClassLevel(formData.Student_id);
         resetForm();
         fetchDevelopmentData(currentLevel);
@@ -460,38 +400,79 @@ export default function Development() {
   };
 
   const handleDeleteSubmit = async () => {
-    if (!selectedId) return;
-    try {
-      const res = await fetch(`${API_URL}/${selectedId}`, { method: 'DELETE' });
-      if (res.ok) {
-        alert("ลบข้อมูลการประเมินเรียบร้อย!");
-        setIsDeleteOpen(false);
+    if (!selectedId) {
+      alert("ไม่พบ ID ของรายการที่จะลบ");
+      return;
+    }
 
-        const currentLevel = getCurrentClassLevel(formData.Student_id);
+    const currentLevel = teacherClassLevel || getCurrentClassLevel(formData.Student_id) || (devList.length > 0 ? devList[0].class_level : null);
+
+    if (!currentLevel) {
+      alert("ไม่พบข้อมูลระดับชั้นเรียน (class_level) สำหรับตรวจสอบสิทธิ์การลบ");
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_URL}/${selectedId}?class_level=${encodeURIComponent(currentLevel)}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (res.ok) {
+        alert(data.message || "ลบข้อมูลการประเมินเรียบร้อย!");
+        setIsDeleteOpen(false);
         resetForm();
         fetchDevelopmentData(currentLevel);
       } else {
-        alert("ไม่สามารถลบข้อมูลได้");
+        alert(data.message || data.error || "ไม่สามารถลบข้อมูลได้");
       }
     } catch (err) {
-      alert("เกิดข้อผิดพลาดในการลบข้อมูล");
+      console.error("Delete Error:", err);
+      alert("เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์เพื่อลบข้อมูล");
     }
   };
 
   const scoreLevels = [
-    { label: 'ดีมาก', val: 5 },
-    { label: 'ดี', val: 4 },
-    { label: 'ปานกลาง', val: 3 },
+    { label: 'ดี', val: 3 },
     { label: 'พอใช้', val: 2 },
-    { label: 'ปรับปรุง', val: 1 }
+    { label: 'ควรส่งเสริม', val: 1 }
   ];
 
-  const getScoreLabel = (val) => {
-    const found = scoreLevels.find(l => String(l.val) === String(val));
-    return found ? `${found.label} (${val})` : val || 'ไม่มีข้อมูล';
+  const renderBadge = (scoreVal) => {
+    const val = Number(scoreVal);
+    let style = { backgroundColor: '#f1f5f9', color: '#64748b', border: '1px solid #cbd5e1' };
+    let label = 'ไม่มีข้อมูล';
+
+    if (val === 3) {
+      label = 'ดี (3)';
+      style = { backgroundColor: '#dcfce7', color: '#15803d', border: '1px solid #86efac' };
+    } else if (val === 2) {
+      label = 'พอใช้ (2)';
+      style = { backgroundColor: '#fef3c7', color: '#b45309', border: '1px solid #fde047' };
+    } else if (val === 1) {
+      label = 'ควรส่งเสริม (1)';
+      style = { backgroundColor: '#ffe4e6', color: '#be123c', border: '1px solid #fca5a5' };
+    }
+
+    return (
+      <span style={{
+        display: 'inline-block',
+        padding: '4px 10px',
+        borderRadius: '12px',
+        fontSize: '12px',
+        fontWeight: '600',
+        textAlign: 'center',
+        ...style
+      }}>
+        {label}
+      </span>
+    );
   };
 
-  // Group devList ตาม Student_id เพื่อวาดกราฟเปรียบเทียบภาคเรียน
   const groupedByStudent = devList.reduce((acc, item) => {
     const sId = String(item.Student_id);
     if (!acc[sId]) acc[sId] = [];
@@ -499,41 +480,96 @@ export default function Development() {
     return acc;
   }, {});
 
+  if (loading) {
+    return (
+      <div style={styles.loadingContainer}>
+        <Loader2 size={48} style={styles.spinner} />
+        <p style={styles.loadingText}>กำลังโหลดข้อมูลพัฒนาการ...</p>
+      </div>
+    );
+  }
+
   return (
     <div style={styles.container}>
-      <div style={styles.cardMain}>
-        <div style={styles.headerRow}>
-          <div>
-            <h2 style={{ margin: 10, color: '#0369a1' }}>บันทึกพัฒนาการเด็ก</h2>
-
-            {teacherClassLevel && (
-              <p style={styles.studentNameDisplay}>
-                <strong>ห้องที่รับผิดชอบ:</strong> {teacherClassLevel}
+      <div style={styles.wrapper}>
+        {/* Header */}
+        <div style={styles.header}>
+          <div style={styles.headerLeft}>
+            <div style={styles.headerIcon}>
+              <TrendingUp size={24} color="#FFFFFF" />
+            </div>
+            <div>
+              <h1 style={styles.mainTitle}>บันทึกพัฒนาการเด็ก</h1>
+              <p style={styles.subTitle}>
+                {teacherClassLevel ? (
+                  <>ห้องที่รับผิดชอบ: <strong style={{ color: '#4A90D9' }}>{teacherClassLevel}</strong></>
+                ) : (
+                  <>จัดการพัฒนาการนักเรียนทั้งหมด</>
+                )}
               </p>
-            )}
+            </div>
           </div>
           <button
-            style={styles.btnAddDev}
+            style={styles.btnPrimary}
             onClick={() => { resetForm(); setIsAddOpen(true); }}
             disabled={teacherClassLevel !== null && students.length === 0}
           >
-            + พัฒนาการ
+            <Plus size={18} />
+            เพิ่มพัฒนาการ
           </button>
         </div>
 
-        {loading && <p style={{ fontSize: '13px', color: '#666' }}>กำลังโหลดข้อมูล...</p>}
+        {/* Stats Summary */}
+        <div style={styles.statsGrid}>
+          <div style={styles.statCard}>
+            <div style={{ ...styles.statIconWrapper, backgroundColor: '#EBF3FB' }}>
+              <Users size={20} color="#4A90D9" />
+            </div>
+            <div style={styles.statContent}>
+              <span style={styles.statLabel}>นักเรียนทั้งหมด</span>
+              <span style={styles.statValue}>{students.length} คน</span>
+            </div>
+          </div>
+          <div style={styles.statCard}>
+            <div style={{ ...styles.statIconWrapper, backgroundColor: '#E8F8ED' }}>
+              <Award size={20} color="#27AE60" />
+            </div>
+            <div style={styles.statContent}>
+              <span style={styles.statLabel}>การประเมินทั้งหมด</span>
+              <span style={styles.statValue}>{devList.length} ครั้ง</span>
+            </div>
+          </div>
+          <div style={styles.statCard}>
+            <div style={{ ...styles.statIconWrapper, backgroundColor: '#FEF9E7' }}>
+              <Calendar size={20} color="#F39C12" />
+            </div>
+            <div style={styles.statContent}>
+              <span style={styles.statLabel}>ภาคเรียนปัจจุบัน</span>
+              <span style={styles.statValue}>ภาคเรียนที่ 1</span>
+            </div>
+          </div>
+        </div>
 
+        {/* Development List */}
         <div style={styles.listContainer}>
           {teacherClassLevel && students.length === 0 ? (
-            <div style={{ textAlign: 'center', color: '#888', padding: '30px' }}>ไม่พบนักเรียนในห้อง "{teacherClassLevel}" ของคุณ</div>
+            <div style={styles.emptyState}>
+              <Users size={48} color="#CBD5E1" />
+              <p style={styles.emptyText}>ไม่พบนักเรียนในห้อง "{teacherClassLevel}"</p>
+            </div>
           ) : devList.length === 0 ? (
-            <div style={{ textAlign: 'center', color: '#888', padding: '30px' }}>ยังไม่มีข้อมูลการประเมินพัฒนาการ</div>
+            <div style={styles.emptyState}>
+              <TrendingUp size={48} color="#CBD5E1" />
+              <p style={styles.emptyText}>ยังไม่มีข้อมูลการประเมินพัฒนาการ</p>
+              <p style={styles.emptySubText}>คลิกปุ่ม "เพิ่มพัฒนาการ" เพื่อเริ่มบันทึก</p>
+            </div>
           ) : (
             devList.map((item, idx) => {
-              const scoreBody = item.Weight && item.Height ? 100 : 75;
-              const scoreEmotion = calculateSectionScore([item.Emotion, item.Emotion_control, item.Confidence]);
-              const scoreSocial = calculateSectionScore([item.Stress, item.Interaction, item.Assistance]);
-              const scoreIntellect = calculateSectionScore([item.Problem_solving, item.Communication, item.Remembering]);
+              const targetId = item.Development_id || item.development_id || item.id || item._id;
+              const scoreBody = calculateSectionScore([item.q1, item.q2, item.q3, item.q4]);
+              const scoreEmotion = calculateSectionScore([item.q9, item.q10]);
+              const scoreSocial = calculateSectionScore([item.q5, item.q6, item.q7, item.q8]);
+              const scoreIntellect = calculateSectionScore([item.q11, item.q12]);
 
               const displayDate = item.date_clean ||
                 (item.Date ? String(item.Date).split('T')[0] : '') ||
@@ -547,45 +583,85 @@ export default function Development() {
               const studentDevs = groupedByStudent[String(item.Student_id)] || [];
 
               return (
-                <div key={idx} style={styles.devCardItem}>
-                  <div style={styles.cardItemHeader}>
-                    <span style={styles.yearText}>
-                      <strong style={{ color: '#1e3a8a' }}>{item.Student_name || getStudentName(item.Student_id)}</strong><br />
-                      ปีการศึกษา {item.Year || item.year || '2569'} - {displayTerm}<br />
-                      <span style={{ fontSize: '12px', color: '#666', fontWeight: 'normal' }}>วันที่ประเมิน: {displayDate}</span>
-                    </span>
-                    <div style={styles.actionGroup}>
-                      <button style={{ ...styles.actionBtnSmall, ...styles.actionBtnEdit }} onClick={() => openEditModal(item)}>แก้ไข</button>
-                      <button style={{ ...styles.actionBtnSmall, ...styles.actionBtnDelete }} onClick={() => { setSelectedId(item.Development_id || item.development_id); setIsDeleteOpen(true); }}>ลบ</button>
+                <div key={idx} style={styles.devCard}>
+                  <div style={styles.cardHeader}>
+                    <div style={styles.studentInfo}>
+                      <div style={styles.studentAvatar}>
+                        {item.Student_name?.charAt(0) || getStudentName(item.Student_id).charAt(0) || 'S'}
+                      </div>
+                      <div>
+                        <h3 style={styles.studentName}>
+                          {item.Student_name || getStudentName(item.Student_id)}
+                        </h3>
+                        <div style={styles.studentMeta}>
+                          <span style={styles.metaItem}>
+                            <Calendar size={12} color="#94A3B8" />
+                            {displayDate}
+                          </span>
+                          <span style={styles.metaItem}>
+                            <Award size={12} color="#94A3B8" />
+                            ปี {item.Year || '2569'} - {displayTerm}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <div style={styles.cardActions}>
+                      <button onClick={() => openEditModal(item)} style={styles.editBtn}>
+                        <Edit2 size={14} />
+                        แก้ไข
+                      </button>
+                      <button 
+                        onClick={() => { 
+                          setSelectedId(targetId); 
+                          setFormData(prev => ({ ...prev, Student_id: String(item.Student_id) }));
+                          setIsDeleteOpen(true); 
+                        }} 
+                        style={styles.deleteBtn}
+                      >
+                        <Trash2 size={14} />
+                        ลบ
+                      </button>
                     </div>
                   </div>
 
-                  <div style={{ ...styles.circlesRow, cursor: 'pointer' }} onClick={() => openDetailModal(item)} title="คลิกเพื่อดูรายละเอียดเพิ่มเติม">
-                    <div style={styles.circleUnit}>
-                      <div style={styles.circleScore}>{isNaN(scoreBody) ? 0 : scoreBody}</div>
-                      <span style={styles.circleLabel}>ด้านร่างกาย</span>
+                  <div style={styles.scoreCircles}>
+                    <div style={styles.scoreCircle} onClick={() => openDetailModal(item, 'body')}>
+                      <div style={styles.scoreCircleValue}>{isNaN(scoreBody) ? 0 : scoreBody}</div>
+                      <span style={styles.scoreCircleLabel}>ร่างกาย</span>
+                      <Activity size={14} color="#4A90D9" />
                     </div>
-                    <div style={styles.circleUnit}>
-                      <div style={styles.circleScore}>{isNaN(scoreIntellect) ? 0 : scoreIntellect}</div>
-                      <span style={styles.circleLabel}>ด้านสติปัญญา</span>
+                    <div style={styles.scoreCircle} onClick={() => openDetailModal(item, 'intellect')}>
+                      <div style={styles.scoreCircleValue}>{isNaN(scoreIntellect) ? 0 : scoreIntellect}</div>
+                      <span style={styles.scoreCircleLabel}>สติปัญญา</span>
+                      <Brain size={14} color="#8E44AD" />
                     </div>
-                    <div style={styles.circleUnit}>
-                      <div style={styles.circleScore}>{isNaN(scoreEmotion) ? 0 : scoreEmotion}</div>
-                      <span style={styles.circleLabel}>ด้านอารมณ์</span>
+                    <div style={styles.scoreCircle} onClick={() => openDetailModal(item, 'emotion')}>
+                      <div style={styles.scoreCircleValue}>{isNaN(scoreEmotion) ? 0 : scoreEmotion}</div>
+                      <span style={styles.scoreCircleLabel}>อารมณ์</span>
+                      <Heart size={14} color="#E74C3C" />
                     </div>
-                    <div style={styles.circleUnit}>
-                      <div style={styles.circleScore}>{isNaN(scoreSocial) ? 0 : scoreSocial}</div>
-                      <span style={styles.circleLabel}>ด้านสังคม</span>
+                    <div style={styles.scoreCircle} onClick={() => openDetailModal(item, 'social')}>
+                      <div style={styles.scoreCircleValue}>{isNaN(scoreSocial) ? 0 : scoreSocial}</div>
+                      <span style={styles.scoreCircleLabel}>สังคม</span>
+                      <Handshake size={14} color="#F39C12" />
                     </div>
                   </div>
 
-                  {/* 📊 แสดงกราฟเปรียบเทียบภาคเรียน */}
                   <TermComparisonChart studentDevList={studentDevs} />
 
-                  <div style={styles.bodyDetailsSummary}>
-                    <span>⚖️ น้ำหนัก: <strong>{item.Weight || '-'}</strong> กก.</span>
-                    <span>📏 ส่วนสูง: <strong>{item.Height || '-'}</strong> ซม.</span>
-                    <span>🦷 สุขภาพฟัน: <strong style={{ color: '#2e7d32' }}>{item.Dental_health || 'ปกติ'}</strong></span>
+                  <div style={styles.bodySummary}>
+                    <span style={styles.bodySummaryItem}>
+                      <Weight size={14} color="#94A3B8" />
+                      น้ำหนัก: <strong>{item.Weight || '-'}</strong> กก.
+                    </span>
+                    <span style={styles.bodySummaryItem}>
+                      <Ruler size={14} color="#94A3B8" />
+                      ส่วนสูง: <strong>{item.Height || '-'}</strong> ซม.
+                    </span>
+                    <span style={styles.bodySummaryItem}>
+                      <Shield size={14} color="#94A3B8" />
+                      ฟัน: <strong style={{ color: '#27AE60' }}>{item.Dental_health || 'ปกติ'}</strong>
+                    </span>
                   </div>
                 </div>
               );
@@ -594,94 +670,211 @@ export default function Development() {
         </div>
       </div>
 
+      {/* Detail Modal */}
       {isDetailOpen && selectedDetailItem && (
-        <div style={styles.overlay} onClick={() => setIsDetailOpen(false)}>
-          <div style={styles.modalDev} onClick={(e) => e.stopPropagation()}>
+        <div style={styles.modalOverlay} onClick={() => setIsDetailOpen(false)}>
+          <div style={styles.modalContent} onClick={(e) => e.stopPropagation()}>
             <div style={styles.modalHeader}>
-              <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#666' }}>
-                ปีการศึกษา {selectedDetailItem.Year || '2569'} ({selectedDetailItem.Term || 'ภาคเรียนที่ 1'})
-              </span>
-              <strong style={{ fontSize: '16px', color: '#1e3a8a' }}>รายละเอียดพัฒนาการเด็ก</strong>
-              <span style={styles.closeX} onClick={() => setIsDetailOpen(false)}>X</span>
+              <div>
+                <span style={styles.modalBadge}>
+                  ปี {selectedDetailItem.Year || '2569'} - {selectedDetailItem.Term || 'ภาคเรียนที่ 1'}
+                </span>
+                <h2 style={styles.modalTitle}>
+                  <Eye size={20} color="#4A90D9" />
+                  รายละเอียดพัฒนาการ
+                </h2>
+              </div>
+              <button onClick={() => setIsDetailOpen(false)} style={styles.modalCloseBtn}>
+                <X size={18} />
+              </button>
             </div>
 
-            <div style={styles.formScrollable}>
-              <div style={{ backgroundColor: '#f0f4f8', padding: '12px', borderRadius: '8px', marginBottom: '15px' }}>
-                <div style={{ fontSize: '15px', fontWeight: 'bold', marginBottom: '4px', color: '#000' }}>
-                  นักเรียน: {selectedDetailItem.Student_name || getStudentName(selectedDetailItem.Student_id)}
+            <div style={styles.modalBody}>
+              <div style={styles.detailStudentCard}>
+                <div style={styles.detailStudentAvatar}>
+                  {selectedDetailItem.Student_name?.charAt(0) || getStudentName(selectedDetailItem.Student_id).charAt(0) || 'S'}
                 </div>
-                <div style={{ fontSize: '12px', color: '#555' }}>
-                  วันที่ทำรายการประเมิน: {selectedDetailItem.date_clean || (selectedDetailItem.date ? String(selectedDetailItem.date).split('T')[0] : 'ไม่ระบุ')}
+                <div>
+                  <div style={styles.detailStudentName}>
+                    {selectedDetailItem.Student_name || getStudentName(selectedDetailItem.Student_id)}
+                  </div>
+                  <div style={styles.detailStudentDate}>
+                    <Calendar size={14} color="#94A3B8" />
+                    วันที่ประเมิน: {selectedDetailItem.date_clean || (selectedDetailItem.date ? String(selectedDetailItem.date).split('T')[0] : 'ไม่ระบุ')}
+                  </div>
                 </div>
               </div>
 
-              <h4 style={{ ...styles.tableSectionTitle, marginTop: '0px', color: '#1e3a8a' }}>📊 1. ข้อมูลด้านร่างกาย</h4>
-              <div style={{ ...styles.bodyMetricsRow, flexWrap: 'wrap', backgroundColor: '#fafafa', padding: '10px', borderRadius: '6px', gap: '8px' }}>
-                <div style={{ width: '47%', fontSize: '13px' }}><strong>น้ำหนัก:</strong> {selectedDetailItem.Weight || '-'} กก.</div>
-                <div style={{ width: '47%', fontSize: '13px' }}><strong>ส่วนสูง:</strong> {selectedDetailItem.Height || '-'} ซม.</div>
-                <div style={{ width: '47%', fontSize: '13px' }}><strong>สุขภาพฟัน:</strong> {selectedDetailItem.Dental_health || 'ไม่ได้ระบุ'}</div>
-                <div style={{ width: '47%', fontSize: '13px' }}><strong>การได้รับวัคซีน:</strong> {selectedDetailItem.Vaccination || 'ไม่ได้ระบุ'}</div>
-                <div style={{ width: '98%', fontSize: '13px' }}><strong>การเคลื่อนไหว (Motor):</strong> {selectedDetailItem.Motor_skills || 'ไม่ได้ระบุ'}</div>
+              <h4 style={styles.detailSectionTitle}>
+                <Activity size={16} color="#4A90D9" style={styles.sectionIcon} />
+                ข้อมูลกายภาพ
+              </h4>
+              <div style={styles.detailBodyGrid}>
+                <div style={styles.detailBodyItem}>
+                  <Weight size={14} color="#94A3B8" />
+                  <span>น้ำหนัก: <strong>{selectedDetailItem.Weight || '-'} กก.</strong></span>
+                </div>
+                <div style={styles.detailBodyItem}>
+                  <Ruler size={14} color="#94A3B8" />
+                  <span>ส่วนสูง: <strong>{selectedDetailItem.Height || '-'} ซม.</strong></span>
+                </div>
+                <div style={styles.detailBodyItem}>
+                  <Shield size={14} color="#94A3B8" />
+                  <span>ฟัน: <strong>{selectedDetailItem.Dental_health || 'ปกติ'}</strong></span>
+                </div>
+                <div style={styles.detailBodyItem}>
+                  <Syringe size={14} color="#94A3B8" />
+                  <span>วัคซีน: <strong>{selectedDetailItem.Vaccination || 'ไม่ได้ระบุ'}</strong></span>
+                </div>
+                <div style={{ ...styles.detailBodyItem, gridColumn: 'span 2' }}>
+                  <Move size={14} color="#94A3B8" />
+                  <span>การเคลื่อนไหว: <strong>{selectedDetailItem.Motor_skills || 'ไม่ได้ระบุ'}</strong></span>
+                </div>
               </div>
 
-              <h4 style={{ ...styles.tableSectionTitle, color: '#1e3a8a' }}>🎭 2. รายละเอียดคะแนนหัวข้อย่อย</h4>
-              <table style={{ ...styles.evalTable, border: '1px solid #e5e7eb' }}>
+              <div style={styles.tabContainer}>
+                <button
+                  style={{ ...styles.tabBtn, ...(activeTab === 'body' ? styles.tabBtnActive : {}) }}
+                  onClick={() => setActiveTab('body')}
+                >
+                  <Activity size={14} />
+                  ร่างกาย
+                </button>
+                <button
+                  style={{ ...styles.tabBtn, ...(activeTab === 'emotion' ? styles.tabBtnActive : {}) }}
+                  onClick={() => setActiveTab('emotion')}
+                >
+                  <Heart size={14} />
+                  อารมณ์
+                </button>
+                <button
+                  style={{ ...styles.tabBtn, ...(activeTab === 'social' ? styles.tabBtnActive : {}) }}
+                  onClick={() => setActiveTab('social')}
+                >
+                  <Handshake size={14} />
+                  สังคม
+                </button>
+                <button
+                  style={{ ...styles.tabBtn, ...(activeTab === 'intellect' ? styles.tabBtnActive : {}) }}
+                  onClick={() => setActiveTab('intellect')}
+                >
+                  <Brain size={14} />
+                  สติปัญญา
+                </button>
+              </div>
+
+              <h4 style={styles.detailSectionTitle}>
+                📋 รายละเอียดหัวข้อย่อย
+                {activeTab === 'body' && ' (ด้านร่างกาย)'}
+                {activeTab === 'emotion' && ' (ด้านอารมณ์)'}
+                {activeTab === 'social' && ' (ด้านสังคม)'}
+                {activeTab === 'intellect' && ' (ด้านสติปัญญา)'}
+              </h4>
+
+              <table style={styles.detailTable}>
                 <thead>
-                  <tr style={{ backgroundColor: '#f8fafc' }}>
-                    <th style={{ ...styles.thLeft, padding: '8px' }}>หัวข้อพัฒนาการ</th>
-                    <th style={{ ...styles.thCenter, padding: '8px', width: '120px' }}>ระดับผลประเมิน</th>
+                  <tr>
+                    <th style={styles.detailTh}>หัวข้อพัฒนาการ</th>
+                    <th style={{ ...styles.detailTh, textAlign: 'center', width: '140px' }}>ระดับผลประเมิน</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr style={{ borderBottom: '1px solid #f1f5f9' }}><td style={{ ...styles.tdLeft, fontWeight: 'bold' }} colSpan="2">ด้านอารมณ์</td></tr>
-                  <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                    <td style={{ ...styles.tdLeft, paddingLeft: '15px' }}>• การแสดงออกทางอารมณ์</td>
-                    <td style={styles.tdCenter}>{getScoreLabel(selectedDetailItem.Emotion)}</td>
-                  </tr>
-                  <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                    <td style={{ ...styles.tdLeft, paddingLeft: '15px' }}>• การควบคุมอารมณ์</td>
-                    <td style={styles.tdCenter}>{getScoreLabel(selectedDetailItem.Emotion_control)}</td>
-                  </tr>
-                  <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                    <td style={{ ...styles.tdLeft, paddingLeft: '15px' }}>• ความมั่นใจในตัวเอง</td>
-                    <td style={styles.tdCenter}>{getScoreLabel(selectedDetailItem.Confidence)}</td>
-                  </tr>
+                  {activeTab === 'body' && (
+                    <>
+                      <tr style={styles.detailCategoryRow}>
+                        <td colSpan="2" style={styles.detailCategoryText}>• พัฒนาการด้านร่างกาย</td>
+                      </tr>
+                      <tr>
+                        <td style={styles.detailTd}>๑. ร่างกายแข็งแรงและมีความมั่นใจต่อตนเอง</td>
+                        <td style={styles.detailTdCenter}>{renderBadge(selectedDetailItem.q1)}</td>
+                      </tr>
+                      <tr>
+                        <td style={styles.detailTd}>๒. มีความสามารถในการเคลื่อนไหวและทักษะทางกาย</td>
+                        <td style={styles.detailTdCenter}>{renderBadge(selectedDetailItem.q2)}</td>
+                      </tr>
+                      <tr>
+                        <td style={styles.detailTd}>๓. มีจิตอาสาและมีส่วนร่วมในกิจกรรมต่างๆ</td>
+                        <td style={styles.detailTdCenter}>{renderBadge(selectedDetailItem.q3)}</td>
+                      </tr>
+                      <tr>
+                        <td style={styles.detailTd}>๔. มีพลังและมีส่วนร่วมในการทำงาน</td>
+                        <td style={styles.detailTdCenter}>{renderBadge(selectedDetailItem.q4)}</td>
+                      </tr>
+                    </>
+                  )}
 
-                  <tr style={{ borderBottom: '1px solid #f1f5f9' }}><td style={{ ...styles.tdLeft, fontWeight: 'bold' }} colSpan="2">ด้านสังคม</td></tr>
-                  <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                    <td style={{ ...styles.tdLeft, paddingLeft: '15px' }}>• การจัดการความเครียด</td>
-                    <td style={styles.tdCenter}>{getScoreLabel(selectedDetailItem.Stress)}</td>
-                  </tr>
-                  <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                    <td style={{ ...styles.tdLeft, paddingLeft: '15px' }}>• การมีปฏิสัมพันธ์กับผู้อื่น</td>
-                    <td style={styles.tdCenter}>{getScoreLabel(selectedDetailItem.Interaction)}</td>
-                  </tr>
-                  <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                    <td style={{ ...styles.tdLeft, paddingLeft: '15px' }}>• การเอื้อเฟื้อช่วยเหลือ</td>
-                    <td style={styles.tdCenter}>{getScoreLabel(selectedDetailItem.Assistance)}</td>
-                  </tr>
+                  {activeTab === 'emotion' && (
+                    <>
+                      <tr style={styles.detailCategoryRow}>
+                        <td colSpan="2" style={styles.detailCategoryText}>• พัฒนาการด้านอารมณ์</td>
+                      </tr>
+                      <tr>
+                        <td style={styles.detailTd}>๑. มีความสามารถในการสร้างสรรค์และความคิดสร้างสรรค์</td>
+                        <td style={styles.detailTdCenter}>{renderBadge(selectedDetailItem.q9)}</td>
+                      </tr>
+                      <tr>
+                        <td style={styles.detailTd}>๒. มีความสามารถในการเขียนและพูดภาษาอังกฤษ</td>
+                        <td style={styles.detailTdCenter}>{renderBadge(selectedDetailItem.q10)}</td>
+                      </tr>
+                    </>
+                  )}
 
-                  <tr style={{ borderBottom: '1px solid #f1f5f9' }}><td style={{ ...styles.tdLeft, fontWeight: 'bold' }} colSpan="2">ด้านสติปัญญา</td></tr>
-                  <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                    <td style={{ ...styles.tdLeft, paddingLeft: '15px' }}>• การคิดแก้ปัญหา</td>
-                    <td style={styles.tdCenter}>{getScoreLabel(selectedDetailItem.Problem_solving)}</td>
-                  </tr>
-                  <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                    <td style={{ ...styles.tdLeft, paddingLeft: '15px' }}>• ทักษะการสื่อสาร</td>
-                    <td style={styles.tdCenter}>{getScoreLabel(selectedDetailItem.Communication)}</td>
-                  </tr>
-                  <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                    <td style={{ ...styles.tdLeft, paddingLeft: '15px' }}>• ความสามารถในการจดจำ</td>
-                    <td style={styles.tdCenter}>{getScoreLabel(selectedDetailItem.Remembering)}</td>
-                  </tr>
+                  {activeTab === 'social' && (
+                    <>
+                      <tr style={styles.detailCategoryRow}>
+                        <td colSpan="2" style={styles.detailCategoryText}>• พัฒนาการด้านสังคม</td>
+                      </tr>
+                      <tr>
+                        <td style={styles.detailTd}>๑. มีสัมพันธ์ที่ดีและมีส่วนร่วมในการทำงาน</td>
+                        <td style={styles.detailTdCenter}>{renderBadge(selectedDetailItem.q5)}</td>
+                      </tr>
+                      <tr>
+                        <td style={styles.detailTd}>๒. มีความเข้าใจอย่างลึกซึ้งเกี่ยวกับตนเอง</td>
+                        <td style={styles.detailTdCenter}>{renderBadge(selectedDetailItem.q6)}</td>
+                      </tr>
+                      <tr>
+                        <td style={styles.detailTd}>๓. มีความสามารถในการสื่อสารอย่างถูกต้อง</td>
+                        <td style={styles.detailTdCenter}>{renderBadge(selectedDetailItem.q7)}</td>
+                      </tr>
+                      <tr>
+                        <td style={styles.detailTd}>๔. มีความสามารถในการแก้ปัญหาได้อย่างมีวิจารณญาณ</td>
+                        <td style={styles.detailTdCenter}>{renderBadge(selectedDetailItem.q8)}</td>
+                      </tr>
+                    </>
+                  )}
+
+                  {activeTab === 'intellect' && (
+                    <>
+                      <tr style={styles.detailCategoryRow}>
+                        <td colSpan="2" style={styles.detailCategoryText}>• พัฒนาการด้านสติปัญญา</td>
+                      </tr>
+                      <tr>
+                        <td style={styles.detailTd}>๑. มีความสามารถในการอ่านและการเขียน</td>
+                        <td style={styles.detailTdCenter}>{renderBadge(selectedDetailItem.q11)}</td>
+                      </tr>
+                      <tr>
+                        <td style={styles.detailTd}>๒. มีเจตคติที่ดีต่อการเรียนรู้ และมีความสามารถในการแสวงหาความรู้ได้เหมาะสมกับวัย</td>
+                        <td style={styles.detailTdCenter}>{renderBadge(selectedDetailItem.q12)}</td>
+                      </tr>
+                    </>
+                  )}
                 </tbody>
               </table>
 
-              <button
-                type="button"
-                style={{ ...styles.btnSaveEvaluation, marginTop: '15px' }}
-                onClick={() => setIsDetailOpen(false)}
-              >
+              <div style={styles.criteriaCard}>
+                <div style={styles.criteriaTitle}>
+                  <AlertCircle size={14} color="#4A90D9" />
+                  คำอธิบายเกณฑ์ระดับผลการประเมิน
+                </div>
+                <ul style={styles.criteriaList}>
+                  <li><strong style={{ color: '#15803d' }}>ดี (3):</strong> แสดงพฤติกรรมตามมาตรฐานคุณลักษณะได้อย่างถูกต้อง สม่ำเสมอ</li>
+                  <li><strong style={{ color: '#b45309' }}>พอใช้ (2):</strong> แสดงพฤติกรรมตามมาตรฐานคุณลักษณะได้เมื่อได้รับคำแนะนำหรือกระตุ้น</li>
+                  <li><strong style={{ color: '#be123c' }}>ควรส่งเสริม (1):</strong> ยังไม่สามารถแสดงพฤติกรรมตามมาตรฐานคุณลักษณะได้ ต้องได้รับการช่วยเหลือ</li>
+                </ul>
+              </div>
+
+              <button style={styles.closeDetailBtn} onClick={() => setIsDetailOpen(false)}>
+                <X size={18} />
                 ปิดหน้าต่างรายละเอียด
               </button>
             </div>
@@ -689,23 +882,34 @@ export default function Development() {
         </div>
       )}
 
+      {/* Add/Edit Modal */}
       {(isAddOpen || isEditOpen) && (
-        <div style={styles.overlay}>
-          <div style={styles.modalDev}>
+        <div style={styles.modalOverlay}>
+          <div style={styles.modalContent}>
             <div style={styles.modalHeader}>
-              <span style={{ fontSize: '14px', fontWeight: 'bold' }}>ปีการศึกษา {formData.Year}</span>
-              <strong style={{ fontSize: '15px' }}>{isAddOpen ? "เพิ่มการพัฒนา" : "แก้ไขการพัฒนา"}</strong>
-              <span style={styles.closeX} onClick={() => { setIsAddOpen(false); setIsEditOpen(false); resetForm(); }}>X</span>
+              <div>
+                <span style={styles.modalBadge}>ปี {formData.Year}</span>
+                <h2 style={styles.modalTitle}>
+                  {isAddOpen ? <Plus size={20} color="#4A90D9" /> : <Edit2 size={20} color="#F39C12" />}
+                  {isAddOpen ? "เพิ่มการประเมินพัฒนาการ" : "แก้ไขการประเมินพัฒนาการ"}
+                </h2>
+              </div>
+              <button onClick={() => { setIsAddOpen(false); setIsEditOpen(false); resetForm(); }} style={styles.modalCloseBtn}>
+                <X size={18} />
+              </button>
             </div>
 
-            <form onSubmit={isAddOpen ? handleAddSubmit : handleEditSubmit} style={styles.formScrollable}>
-              <div style={{ marginBottom: '15px' }}>
-                <label style={styles.labelMini}>เลือกนักเรียนที่ต้องการประเมิน</label>
+            <form onSubmit={isAddOpen ? handleAddSubmit : handleEditSubmit} style={styles.modalBody}>
+              <div style={styles.formGroup}>
+                <label style={styles.formLabel}>
+                  <User size={14} style={styles.labelIcon} />
+                  เลือกนักเรียน
+                </label>
                 <select
                   name="Student_id"
                   value={String(formData.Student_id)}
                   onChange={handleChange}
-                  style={{ ...styles.inputMini, padding: '6px' }}
+                  style={styles.formSelect}
                   required
                 >
                   <option value="" disabled>-- กรุณาเลือกนักเรียน --</option>
@@ -721,70 +925,143 @@ export default function Development() {
                 </select>
               </div>
 
-              <div style={{ ...styles.bodyMetricsRow, marginBottom: '15px' }}>
-                <div style={{ ...styles.inputMiniGroup, width: '31%' }}>
-                  <label style={styles.labelMini}>ปีการศึกษา (พ.ศ.)</label>
-                  <input type="number" name="Year" value={formData.Year} onChange={handleChange} style={styles.inputMini} required />
+              <div style={styles.formRow}>
+                <div style={styles.formGroup}>
+                  <label style={styles.formLabel}>ปีการศึกษา</label>
+                  <input
+                    type="number"
+                    name="Year"
+                    value={formData.Year}
+                    onChange={handleChange}
+                    style={styles.formInput}
+                    required
+                  />
                 </div>
-                <div style={{ ...styles.inputMiniGroup, width: '35%' }}>
-                  <label style={styles.labelMini}>ภาคเรียน</label>
-                  <select name="Term" value={formData.Term} onChange={handleChange} style={{ ...styles.inputMini, padding: '5px' }}>
+                <div style={styles.formGroup}>
+                  <label style={styles.formLabel}>ภาคเรียน</label>
+                  <select
+                    name="Term"
+                    value={formData.Term}
+                    onChange={handleChange}
+                    style={styles.formSelect}
+                  >
                     <option value="ภาคเรียนที่ 1">ภาคเรียนที่ 1</option>
                     <option value="ภาคเรียนที่ 2">ภาคเรียนที่ 2</option>
                   </select>
                 </div>
-                <div style={{ ...styles.inputMiniGroup, width: '31%' }}>
-                  <label style={styles.labelMini}>วันที่ประเมิน</label>
-                  <input type="date" name="date" value={formData.date} onChange={handleChange} style={styles.inputMini} required />
+                <div style={styles.formGroup}>
+                  <label style={styles.formLabel}>วันที่ประเมิน</label>
+                  <input
+                    type="date"
+                    name="date"
+                    value={formData.date}
+                    onChange={handleChange}
+                    style={styles.formInput}
+                    required
+                  />
                 </div>
               </div>
 
-              <h4 style={{ ...styles.tableSectionTitle, marginTop: '0px' }}>พัฒนาการด้านร่างกาย</h4>
-              <div style={styles.bodyMetricsRow}>
-                <div style={styles.inputMiniGroup}>
-                  <label style={styles.labelMini}>น้ำหนัก (กก.)</label>
-                  <input type="text" name="Weight" value={formData.Weight} onChange={handleChange} style={styles.inputMini} />
+              {/* ส่วนข้อมูลกายภาพ */}
+              <h4 style={styles.formSectionTitle}>
+                <Activity size={16} color="#4A90D9" />
+                ด้านร่างกาย (ข้อมูลกายภาพ)
+              </h4>
+              <div style={styles.formRow}>
+                <div style={styles.formGroup}>
+                  <label style={styles.formLabel}>น้ำหนัก (กก.)</label>
+                  <input
+                    type="text"
+                    name="Weight"
+                    value={formData.Weight}
+                    onChange={handleChange}
+                    style={styles.formInput}
+                    placeholder="เช่น 15.5"
+                  />
                 </div>
-                <div style={styles.inputMiniGroup}>
-                  <label style={styles.labelMini}>ส่วนสูง (ซม.)</label>
-                  <input type="text" name="Height" value={formData.Height} onChange={handleChange} style={styles.inputMini} />
+                <div style={styles.formGroup}>
+                  <label style={styles.formLabel}>ส่วนสูง (ซม.)</label>
+                  <input
+                    type="text"
+                    name="Height"
+                    value={formData.Height}
+                    onChange={handleChange}
+                    style={styles.formInput}
+                    placeholder="เช่น 105"
+                  />
                 </div>
-                <div style={styles.inputMiniGroup}>
-                  <label style={styles.labelMini}>สุขภาพฟัน</label>
-                  <input type="text" name="Dental_health" value={formData.Dental_health} onChange={handleChange} style={styles.inputMini} placeholder="เช่น ปกติ/ผุ" />
+                <div style={styles.formGroup}>
+                  <label style={styles.formLabel}>สุขภาพฟัน</label>
+                  <input
+                    type="text"
+                    name="Dental_health"
+                    value={formData.Dental_health}
+                    onChange={handleChange}
+                    style={styles.formInput}
+                    placeholder="ปกติ / ผุ"
+                  />
                 </div>
               </div>
 
-              <div style={{ ...styles.bodyMetricsRow, marginTop: '10px' }}>
-                <div style={{ ...styles.inputMiniGroup, width: '48%' }}>
-                  <label style={styles.labelMini}>การได้รับวัคซีน</label>
-                  <input type="text" name="Vaccination" value={formData.Vaccination} onChange={handleChange} style={styles.inputMini} placeholder="เช่น ครบตามเกณฑ์" />
+              <div style={styles.formRow}>
+                <div style={{ ...styles.formGroup, width: '48%' }}>
+                  <label style={styles.formLabel}>วัคซีน</label>
+                  <input
+                    type="text"
+                    name="Vaccination"
+                    value={formData.Vaccination}
+                    onChange={handleChange}
+                    style={styles.formInput}
+                    placeholder="ครบตามเกณฑ์"
+                  />
                 </div>
-                <div style={{ ...styles.inputMiniGroup, width: '48%' }}>
-                  <label style={styles.labelMini}>การเคลื่อนไหว</label>
-                  <input type="text" name="Motor_skills" value={formData.Motor_skills} onChange={handleChange} style={styles.inputMini} placeholder="เช่น คล่องแคล่ว" />
+                <div style={{ ...styles.formGroup, width: '48%' }}>
+                  <label style={styles.formLabel}>การเคลื่อนไหว</label>
+                  <input
+                    type="text"
+                    name="Motor_skills"
+                    value={formData.Motor_skills}
+                    onChange={handleChange}
+                    style={styles.formInput}
+                    placeholder="คล่องแคล่ว"
+                  />
                 </div>
               </div>
 
-              <h4 style={styles.tableSectionTitle}>พัฒนาการด้านอารมณ์</h4>
+              {/* แบบประเมินพัฒนาการด้านร่างกาย (4 ข้อ) */}
+              <h4 style={styles.formSectionTitle}>
+                <Activity size={16} color="#4A90D9" />
+                พัฒนาการด้านร่างกาย
+              </h4>
               <table style={styles.evalTable}>
                 <thead>
                   <tr>
-                    <th style={styles.thLeft}>หัวข้อ</th>
-                    {scoreLevels.map(l => <th key={l.val} style={styles.thCenter}>{l.label}<br />{l.val}</th>)}
+                    <th style={styles.evalTh}>มาตรฐานคุณลักษณะที่พึงประสงค์</th>
+                    {scoreLevels.map(l => (
+                      <th key={l.val} style={styles.evalThCenter}>
+                        {l.label}<br />({l.val})
+                      </th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody>
                   {[
-                    { label: 'การแสดงออกทางอารมณ์', key: 'Emotion' },
-                    { label: 'การควบคุมอารมณ์', key: 'Emotion_control' },
-                    { label: 'ความมั่นใจ', key: 'Confidence' }
+                    { label: '๑. ร่างกายแข็งแรงและมีความมั่นใจต่อตนเอง', key: 'q1' },
+                    { label: '๒. มีความสามารถในการเคลื่อนไหวและทักษะทางกาย', key: 'q2' },
+                    { label: '๓. มีจิตอาสาและมีส่วนร่วมในกิจกรรมต่างๆ', key: 'q3' },
+                    { label: '๔. มีพลังและมีส่วนร่วมในการทำงาน', key: 'q4' }
                   ].map(row => (
                     <tr key={row.key}>
-                      <td style={styles.tdLeft}>{row.label}</td>
+                      <td style={styles.evalTd}>{row.label}</td>
                       {scoreLevels.map(l => (
-                        <td key={l.val} style={styles.tdCenter}>
-                          <input type="radio" name={row.key} checked={String(formData[row.key]) === String(l.val)} onChange={() => handleRadioChange(row.key, l.val)} />
+                        <td key={l.val} style={styles.evalTdCenter}>
+                          <input
+                            type="radio"
+                            name={row.key}
+                            checked={String(formData[row.key]) === String(l.val)}
+                            onChange={() => handleRadioChange(row.key, l.val)}
+                            style={styles.radioInput}
+                          />
                         </td>
                       ))}
                     </tr>
@@ -792,19 +1069,30 @@ export default function Development() {
                 </tbody>
               </table>
 
-              <h4 style={styles.tableSectionTitle}>พัฒนาการด้านสังคม</h4>
+              {/* แบบประเมินพัฒนาการด้านสังคม (4 ข้อ) */}
+              <h4 style={styles.formSectionTitle}>
+                <Handshake size={16} color="#F39C12" />
+                พัฒนาการด้านสังคม
+              </h4>
               <table style={styles.evalTable}>
                 <tbody>
                   {[
-                    { label: 'การจัดการความเครียด', key: 'Stress' },
-                    { label: 'การมีปฏิสัมพันธ์กับผู้อื่น', key: 'Interaction' },
-                    { label: 'การช่วยเหลือ', key: 'Assistance' }
+                    { label: '๑. มีสัมพันธ์ที่ดีและมีส่วนร่วมในการทำงาน', key: 'q5' },
+                    { label: '๒. มีความเข้าใจอย่างลึกซึ้งเกี่ยวกับตนเอง', key: 'q6' },
+                    { label: '๓. มีความสามารถในการสื่อสารอย่างถูกต้อง', key: 'q7' },
+                    { label: '๔. มีความสามารถในการแก้ปัญหาได้อย่างมีวิจารณญาณ', key: 'q8' }
                   ].map(row => (
                     <tr key={row.key}>
-                      <td style={styles.tdLeft}>{row.label}</td>
+                      <td style={styles.evalTd}>{row.label}</td>
                       {scoreLevels.map(l => (
-                        <td key={l.val} style={styles.tdCenter}>
-                          <input type="radio" name={row.key} checked={String(formData[row.key]) === String(l.val)} onChange={() => handleRadioChange(row.key, l.val)} />
+                        <td key={l.val} style={styles.evalTdCenter}>
+                          <input
+                            type="radio"
+                            name={row.key}
+                            checked={String(formData[row.key]) === String(l.val)}
+                            onChange={() => handleRadioChange(row.key, l.val)}
+                            style={styles.radioInput}
+                          />
                         </td>
                       ))}
                     </tr>
@@ -812,19 +1100,28 @@ export default function Development() {
                 </tbody>
               </table>
 
-              <h4 style={styles.tableSectionTitle}>พัฒนาการด้านสติปัญญา</h4>
+              {/* แบบประเมินพัฒนาการด้านอารมณ์ (2 ข้อ) */}
+              <h4 style={styles.formSectionTitle}>
+                <Heart size={16} color="#E74C3C" />
+                พัฒนาการด้านอารมณ์
+              </h4>
               <table style={styles.evalTable}>
                 <tbody>
                   {[
-                    { label: 'การแก้ปัญหา', key: 'Problem_solving' },
-                    { label: 'การสื่อสาร', key: 'Communication' },
-                    { key: 'Remembering', label: 'การจดจำ' }
+                    { label: '๑. มีความสามารถในการสร้างสรรค์และความคิดสร้างสรรค์', key: 'q9' },
+                    { label: '๒. มีความสามารถในการเขียนและพูดภาษาอังกฤษ', key: 'q10' }
                   ].map(row => (
                     <tr key={row.key}>
-                      <td style={styles.tdLeft}>{row.label}</td>
+                      <td style={styles.evalTd}>{row.label}</td>
                       {scoreLevels.map(l => (
-                        <td key={l.val} style={styles.tdCenter}>
-                          <input type="radio" name={row.key} checked={String(formData[row.key]) === String(l.val)} onChange={() => handleRadioChange(row.key, l.val)} />
+                        <td key={l.val} style={styles.evalTdCenter}>
+                          <input
+                            type="radio"
+                            name={row.key}
+                            checked={String(formData[row.key]) === String(l.val)}
+                            onChange={() => handleRadioChange(row.key, l.val)}
+                            style={styles.radioInput}
+                          />
                         </td>
                       ))}
                     </tr>
@@ -832,21 +1129,60 @@ export default function Development() {
                 </tbody>
               </table>
 
-              <button type="submit" style={styles.btnSaveEvaluation}>{isAddOpen ? "บันทึกการประเมิน" : "บันทึกการแก้ไข"}</button>
+              {/* แบบประเมินพัฒนาการด้านสติปัญญา (2 ข้อ) */}
+              <h4 style={styles.formSectionTitle}>
+                <Brain size={16} color="#8E44AD" />
+                พัฒนาการด้านสติปัญญา
+              </h4>
+              <table style={styles.evalTable}>
+                <tbody>
+                  {[
+                    { label: '๑. มีความสามารถในการอ่านและการเขียน', key: 'q11' },
+                    { label: '๒. มีเจตคติที่ดีต่อการเรียนรู้ และมีความสามารถในการแสวงหาความรู้ได้เหมาะสมกับวัย', key: 'q12' }
+                  ].map(row => (
+                    <tr key={row.key}>
+                      <td style={styles.evalTd}>{row.label}</td>
+                      {scoreLevels.map(l => (
+                        <td key={l.val} style={styles.evalTdCenter}>
+                          <input
+                            type="radio"
+                            name={row.key}
+                            checked={String(formData[row.key]) === String(l.val)}
+                            onChange={() => handleRadioChange(row.key, l.val)}
+                            style={styles.radioInput}
+                          />
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              <button type="submit" style={styles.submitBtn}>
+                <CheckCircle size={18} />
+                {isAddOpen ? "บันทึกการประเมิน" : "บันทึกการแก้ไข"}
+              </button>
             </form>
           </div>
         </div>
       )}
 
+      {/* Delete Modal */}
       {isDeleteOpen && (
-        <div style={styles.overlay}>
+        <div style={styles.modalOverlay}>
           <div style={styles.deleteModal}>
             <div style={styles.deleteIcon}>🗑️</div>
             <h3 style={styles.deleteTitle}>ยืนยันการลบ</h3>
-            <p style={styles.deleteSubtitle}>คุณต้องการลบข้อมูลประเมินชุดนี้ใช่หรือไม่</p>
-            <div style={styles.deleteBtnRow}>
-              <button type="button" style={styles.btnCancel} onClick={() => { setIsDeleteOpen(false); resetForm(); }}>ยกเลิก</button>
-              <button type="button" style={styles.btnConfirmDelete} onClick={handleDeleteSubmit}>ลบ</button>
+            <p style={styles.deleteText}>คุณต้องการลบข้อมูลประเมินชุดนี้ใช่หรือไม่?</p>
+            <p style={styles.deleteSubText}>การดำเนินการนี้ไม่สามารถกู้คืนได้</p>
+            <div style={styles.deleteActions}>
+              <button onClick={() => { setIsDeleteOpen(false); resetForm(); }} style={styles.cancelBtn}>
+                ยกเลิก
+              </button>
+              <button onClick={handleDeleteSubmit} style={styles.confirmDeleteBtn}>
+                <Trash2 size={16} />
+                ลบ
+              </button>
             </div>
           </div>
         </div>
@@ -855,52 +1191,711 @@ export default function Development() {
   );
 }
 
+// สไตล์ CSS
 const styles = {
-  container: { padding: '20px', width: '100%', display: 'flex', justifyContent: 'center', fontFamily: 'sans-serif' },
-  cardMain: { border: '1px solid #ccc', borderRadius: '8px', padding: '20px', width: '100%', maxWidth: '650px', backgroundColor: '#fff', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' },
-  headerRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid #eee', paddingBottom: '12px' },
-  mainTitle: { margin: 0, fontSize: '18px', fontWeight: 'bold', color: '#333' },
-  studentNameDisplay: { margin: '4px 0 0 0', fontSize: '14px', color: '#666' },
-  btnAddDev: { padding: '9px 16px', border: '1px solid #0284c7', background: 'linear-gradient(135deg, #0ea5e9, #0369a1)', color: '#ffffff', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', fontSize: '13px', boxShadow: '0 10px 22px rgba(14,165,233,0.22)' },
-  listContainer: { display: 'flex', flexDirection: 'column', gap: '16px' },
-  devCardItem: { border: '1px solid #e0e0e0', borderRadius: '8px', padding: '16px', backgroundColor: '#fafafa' },
-  cardItemHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' },
-  yearText: { fontSize: '14px', fontWeight: '500', color: '#444', lineHeight: '1.5' },
-  actionGroup: { display: 'flex', gap: '8px' },
-  actionBtnSmall: { borderRadius: '8px', cursor: 'pointer', padding: '6px 9px', fontSize: '12px', fontWeight: '700' },
-  actionBtnEdit: { border: '1px solid #bae6fd', backgroundColor: '#eff8ff', color: '#0369a1' },
-  actionBtnDelete: { border: '1px solid #fecdd3', backgroundColor: '#fff1f2', color: '#be123c' },
-  circlesRow: { display: 'flex', justifyContent: 'space-around', alignItems: 'center', marginTop: '10px' },
-  circleUnit: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' },
-  circleScore: { width: '50px', height: '50px', borderRadius: '50%', border: '1px solid #888', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: 'bold', backgroundColor: '#fff' },
-  circleLabel: { fontSize: '11px', color: '#555' },
-
-  bodyDetailsSummary: { display: 'flex', justifyContent: 'space-between', backgroundColor: '#fff', padding: '8px 12px', borderRadius: '6px', fontSize: '12px', color: '#555', border: '1px solid #eee', marginTop: '14px' },
-
-  overlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 },
-  modalDev: { backgroundColor: '#fff', width: '90%', maxWidth: '520px', height: '85vh', borderRadius: '12px', border: '1px solid #999', padding: '20px', display: 'flex', flexDirection: 'column', boxSizing: 'border-box', boxShadow: '0 8px 24px rgba(0,0,0,0.15)' },
-  modalHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '10px', borderBottom: '1px solid #eee' },
-  closeX: { cursor: 'pointer', fontWeight: 'bold', color: '#999' },
-  formScrollable: { overflowY: 'auto', flex: 1, paddingRight: '5px', marginTop: '15px' },
-
-  bodyMetricsRow: { display: 'flex', gap: '10px', justifyContent: 'space-between' },
-  inputMiniGroup: { display: 'flex', flexDirection: 'column', gap: '4px', width: '32%' },
-  labelMini: { fontSize: '12px', color: '#333' },
-  inputMini: { padding: '6px', border: '1px solid #ccc', borderRadius: '4px', fontSize: '13px', width: '100%', boxSizing: 'border-box' },
-
-  tableSectionTitle: { fontSize: '13px', margin: '16px 0 6px 0', color: '#000', borderBottom: '1px solid #ccc', paddingBottom: '2px', fontWeight: 'bold' },
-  evalTable: { width: '100%', borderCollapse: 'collapse', marginBottom: '10px' },
-  thLeft: { textAlign: 'left', fontSize: '11px', color: '#333', padding: '6px', fontWeight: 'bold', backgroundColor: '#f5f5f5' },
-  thCenter: { textAlign: 'center', fontSize: '11px', color: '#333', padding: '6px', fontWeight: '500', minWidth: '45px', backgroundColor: '#f5f5f5' },
-  tdLeft: { fontSize: '12px', padding: '8px 6px', borderBottom: '1px solid #eee', color: '#444' },
-  tdCenter: { textAlign: 'center', padding: '8px 6px', borderBottom: '1px solid #eee' },
-  btnSaveEvaluation: { width: '100%', padding: '10px', marginTop: '20px', background: 'linear-gradient(135deg, #0ea5e9, #0369a1)', color: '#ffffff', border: '1px solid #0284c7', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', fontSize: '13px', boxShadow: '0 10px 22px rgba(14,165,233,0.22)' },
-
-  deleteModal: { backgroundColor: '#fff', width: '320px', padding: '25px', borderRadius: '12px', border: '1px solid #bbb', textAlign: 'center', boxShadow: '0 4px 16px rgba(0,0,0,0.1)' },
-  deleteIcon: { fontSize: '40px', marginBottom: '12px' },
-  deleteTitle: { margin: '0 0 6px 0', fontSize: '16px', color: '#000', fontWeight: 'bold' },
-  deleteSubtitle: { margin: '0 0 20px 0', fontSize: '13px', color: '#666' },
-  deleteBtnRow: { display: 'flex', gap: '12px', justifyContent: 'center' },
-  btnCancel: { padding: '8px 20px', backgroundColor: '#fff', border: '1px solid #cfe8f7', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', color: '#31556b', fontWeight: '700' },
-  btnConfirmDelete: { padding: '8px 20px', backgroundColor: '#fff1f2', color: '#be123c', border: '1px solid #fecdd3', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: '700' }
+  container: {
+    padding: '20px',
+    minHeight: '100vh',
+    backgroundColor: '#F8FAFC',
+    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
+  },
+  wrapper: {
+    maxWidth: '1000px',
+    margin: '0 auto',
+    width: '100%',
+  },
+  loadingContainer: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: '100vh',
+    gap: '16px',
+  },
+  spinner: {
+    animation: 'spin 1s linear infinite',
+    color: '#4A90D9',
+  },
+  loadingText: {
+    color: '#94A3B8',
+    fontSize: '16px',
+  },
+  header: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '24px',
+    flexWrap: 'wrap',
+    gap: '12px',
+  },
+  headerLeft: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '14px',
+  },
+  headerIcon: {
+    width: '48px',
+    height: '48px',
+    borderRadius: '12px',
+    backgroundColor: '#4A90D9',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    boxShadow: '0 4px 12px rgba(74, 144, 217, 0.25)',
+  },
+  mainTitle: {
+    fontSize: '24px',
+    fontWeight: '700',
+    color: '#1A202C',
+    margin: 0,
+  },
+  subTitle: {
+    fontSize: '14px',
+    color: '#718096',
+    margin: '2px 0 0 0',
+  },
+  btnPrimary: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    padding: '10px 20px',
+    borderRadius: '10px',
+    border: 'none',
+    backgroundColor: '#4A90D9',
+    color: '#FFFFFF',
+    cursor: 'pointer',
+    fontSize: '14px',
+    fontWeight: '600',
+    transition: 'all 0.2s ease',
+    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
+    boxShadow: '0 4px 12px rgba(74, 144, 217, 0.2)',
+  },
+  statsGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+    gap: '16px',
+    marginBottom: '24px',
+  },
+  statCard: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '14px',
+    backgroundColor: '#FFFFFF',
+    padding: '16px 20px',
+    borderRadius: '12px',
+    border: '1px solid #E2E8F0',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+  },
+  statIconWrapper: {
+    width: '44px',
+    height: '44px',
+    borderRadius: '10px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  statContent: {
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  statLabel: {
+    fontSize: '12px',
+    color: '#94A3B8',
+    fontWeight: '500',
+  },
+  statValue: {
+    fontSize: '22px',
+    fontWeight: '700',
+    color: '#1A202C',
+  },
+  listContainer: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '20px',
+  },
+  emptyState: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '60px 20px',
+    backgroundColor: '#FFFFFF',
+    borderRadius: '16px',
+    border: '1px solid #E2E8F0',
+  },
+  emptyText: {
+    fontSize: '18px',
+    fontWeight: '600',
+    color: '#475569',
+    margin: '16px 0 4px 0',
+  },
+  emptySubText: {
+    fontSize: '14px',
+    color: '#94A3B8',
+    margin: 0,
+  },
+  devCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: '16px',
+    border: '1px solid #E2E8F0',
+    padding: '24px',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+    transition: 'all 0.2s ease',
+  },
+  cardHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '16px',
+    flexWrap: 'wrap',
+    gap: '12px',
+  },
+  studentInfo: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+  },
+  studentAvatar: {
+    width: '44px',
+    height: '44px',
+    borderRadius: '50%',
+    backgroundColor: '#EBF3FB',
+    color: '#4A90D9',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: '18px',
+    fontWeight: '600',
+  },
+  studentName: {
+    fontSize: '16px',
+    fontWeight: '600',
+    color: '#1A202C',
+    margin: 0,
+  },
+  studentMeta: {
+    display: 'flex',
+    gap: '12px',
+    marginTop: '2px',
+  },
+  metaItem: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '4px',
+    fontSize: '12px',
+    color: '#94A3B8',
+  },
+  cardActions: {
+    display: 'flex',
+    gap: '8px',
+  },
+  editBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '4px',
+    padding: '6px 14px',
+    backgroundColor: '#EBF3FB',
+    color: '#4A90D9',
+    border: 'none',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    fontSize: '13px',
+    fontWeight: '500',
+    transition: 'all 0.2s ease',
+    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
+  },
+  deleteBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '4px',
+    padding: '6px 14px',
+    backgroundColor: '#FDEDEC',
+    color: '#E74C3C',
+    border: 'none',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    fontSize: '13px',
+    fontWeight: '500',
+    transition: 'all 0.2s ease',
+    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
+  },
+  scoreCircles: {
+    display: 'flex',
+    justifyContent: 'center',
+    gap: '40px',
+    marginTop: '16px',
+    marginBottom: '20px',
+    flexWrap: 'wrap',
+  },
+  scoreCircle: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '4px',
+    cursor: 'pointer',
+    padding: '8px 16px',
+    borderRadius: '12px',
+    transition: 'all 0.2s ease',
+  },
+  scoreCircleValue: {
+    width: '56px',
+    height: '56px',
+    borderRadius: '50%',
+    border: '2px solid #4A90D9',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: '16px',
+    fontWeight: '700',
+    backgroundColor: '#F0F7FF',
+    color: '#0369a1',
+    boxShadow: '0 2px 8px rgba(74, 144, 217, 0.15)',
+  },
+  scoreCircleLabel: {
+    fontSize: '13px',
+    color: '#334155',
+    fontWeight: '600',
+  },
+  bodySummary: {
+    display: 'flex',
+    justifyContent: 'center',
+    gap: '32px',
+    padding: '12px 16px',
+    backgroundColor: '#F8FAFC',
+    borderRadius: '10px',
+    border: '1px solid #E2E8F0',
+    marginTop: '16px',
+    flexWrap: 'wrap',
+  },
+  bodySummaryItem: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    fontSize: '13px',
+    color: '#475569',
+  },
+  modalOverlay: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(15, 23, 42, 0.5)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 9999,
+    padding: '16px',
+    backdropFilter: 'blur(4px)',
+  },
+  modalContent: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: '16px',
+    width: '100%',
+    maxWidth: '650px',
+    maxHeight: '90vh',
+    display: 'flex',
+    flexDirection: 'column',
+    boxShadow: '0 25px 50px rgba(0,0,0,0.15)',
+    boxSizing: 'border-box',
+  },
+  modalHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    padding: '20px 24px',
+    borderBottom: '1px solid #F1F5F9',
+    flexShrink: 0,
+  },
+  modalBadge: {
+    display: 'inline-block',
+    padding: '2px 10px',
+    backgroundColor: '#EBF3FB',
+    color: '#4A90D9',
+    borderRadius: '12px',
+    fontSize: '12px',
+    fontWeight: '500',
+    marginBottom: '4px',
+  },
+  modalTitle: {
+    fontSize: '18px',
+    fontWeight: '600',
+    color: '#1A202C',
+    margin: 0,
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+  },
+  modalCloseBtn: {
+    background: 'none',
+    border: 'none',
+    color: '#94A3B8',
+    cursor: 'pointer',
+    padding: '4px',
+    borderRadius: '8px',
+    transition: 'background 0.2s ease',
+  },
+  modalBody: {
+    padding: '20px 24px 24px',
+    overflowY: 'auto',
+    flex: 1,
+  },
+  detailStudentCard: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '14px',
+    padding: '14px 18px',
+    backgroundColor: '#F8FAFC',
+    borderRadius: '12px',
+    border: '1px solid #E2E8F0',
+    marginBottom: '16px',
+  },
+  detailStudentAvatar: {
+    width: '44px',
+    height: '44px',
+    borderRadius: '50%',
+    backgroundColor: '#EBF3FB',
+    color: '#4A90D9',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: '18px',
+    fontWeight: '600',
+    flexShrink: 0,
+  },
+  detailStudentName: {
+    fontSize: '16px',
+    fontWeight: '600',
+    color: '#1A202C',
+  },
+  detailStudentDate: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    fontSize: '13px',
+    color: '#94A3B8',
+  },
+  detailSectionTitle: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    fontSize: '14px',
+    fontWeight: '600',
+    color: '#1E293B',
+    marginBottom: '10px',
+    marginTop: '16px',
+  },
+  sectionIcon: {
+    flexShrink: 0,
+  },
+  detailBodyGrid: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: '8px',
+    padding: '12px',
+    backgroundColor: '#FAFBFC',
+    borderRadius: '10px',
+    border: '1px solid #F1F5F9',
+    marginBottom: '16px',
+  },
+  detailBodyItem: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    fontSize: '13px',
+    color: '#334155',
+    padding: '4px 0',
+  },
+  tabContainer: {
+    display: 'flex',
+    gap: '4px',
+    padding: '4px',
+    backgroundColor: '#F8FAFC',
+    borderRadius: '10px',
+    border: '1px solid #E2E8F0',
+    marginBottom: '16px',
+  },
+  tabBtn: {
+    flex: 1,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '6px',
+    padding: '8px 0',
+    fontSize: '12px',
+    fontWeight: '500',
+    border: 'none',
+    borderRadius: '8px',
+    backgroundColor: 'transparent',
+    color: '#64748B',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
+  },
+  tabBtnActive: {
+    backgroundColor: '#FFFFFF',
+    color: '#4A90D9',
+    fontWeight: '600',
+    boxShadow: '0 2px 4px rgba(0,0,0,0.06)',
+  },
+  detailTable: {
+    width: '100%',
+    borderCollapse: 'separate',
+    borderSpacing: 0,
+    border: '1px solid #E2E8F0',
+    borderRadius: '10px',
+    overflow: 'hidden',
+    marginBottom: '16px',
+  },
+  detailTh: {
+    backgroundColor: '#F8FAFC',
+    color: '#334155',
+    padding: '10px 14px',
+    fontSize: '12px',
+    fontWeight: '600',
+    textAlign: 'left',
+    borderBottom: '1px solid #E2E8F0',
+  },
+  detailCategoryRow: {
+    backgroundColor: '#F0F7FF',
+  },
+  detailCategoryText: {
+    padding: '8px 14px',
+    fontSize: '12px',
+    fontWeight: '600',
+    color: '#4A90D9',
+  },
+  detailTd: {
+    padding: '8px 14px',
+    fontSize: '13px',
+    color: '#334155',
+    borderBottom: '1px solid #F1F5F9',
+  },
+  detailTdCenter: {
+    padding: '8px 14px',
+    textAlign: 'center',
+    borderBottom: '1px solid #F1F5F9',
+  },
+  criteriaCard: {
+    padding: '14px 18px',
+    backgroundColor: '#F8FAFC',
+    borderRadius: '10px',
+    border: '1px solid #E2E8F0',
+    marginBottom: '16px',
+  },
+  criteriaTitle: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    fontWeight: '600',
+    color: '#1E293B',
+    marginBottom: '6px',
+    fontSize: '13px',
+  },
+  criteriaList: {
+    margin: 0,
+    paddingLeft: '18px',
+    fontSize: '12px',
+    lineHeight: '1.8',
+    color: '#475569',
+  },
+  closeDetailBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '8px',
+    width: '100%',
+    padding: '10px',
+    backgroundColor: '#F1F5F9',
+    color: '#475569',
+    border: 'none',
+    borderRadius: '10px',
+    cursor: 'pointer',
+    fontSize: '14px',
+    fontWeight: '500',
+    transition: 'all 0.2s ease',
+    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
+  },
+  formGroup: {
+    marginBottom: '16px',
+  },
+  formLabel: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    fontSize: '13px',
+    fontWeight: '500',
+    color: '#334155',
+    marginBottom: '6px',
+  },
+  labelIcon: {
+    color: '#94A3B8',
+  },
+  formInput: {
+    width: '100%',
+    padding: '10px 14px',
+    border: '1px solid #E2E8F0',
+    borderRadius: '10px',
+    fontSize: '14px',
+    backgroundColor: '#FAFBFC',
+    outline: 'none',
+    transition: 'all 0.2s ease',
+    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
+    boxSizing: 'border-box',
+  },
+  formSelect: {
+    width: '100%',
+    padding: '10px 14px',
+    border: '1px solid #E2E8F0',
+    borderRadius: '10px',
+    fontSize: '14px',
+    backgroundColor: '#FAFBFC',
+    outline: 'none',
+    transition: 'all 0.2s ease',
+    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
+    boxSizing: 'border-box',
+    appearance: 'auto',
+  },
+  formRow: {
+    display: 'flex',
+    gap: '12px',
+    flexWrap: 'wrap',
+  },
+  formSectionTitle: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    fontSize: '14px',
+    fontWeight: '600',
+    color: '#1E293B',
+    marginBottom: '12px',
+    marginTop: '16px',
+    paddingBottom: '4px',
+    borderBottom: '1px solid #E2E8F0',
+  },
+  evalTable: {
+    width: '100%',
+    borderCollapse: 'collapse',
+    marginBottom: '12px',
+    fontSize: '13px',
+  },
+  evalTh: {
+    textAlign: 'left',
+    padding: '6px 8px',
+    backgroundColor: '#F8FAFC',
+    border: '1px solid #E2E8F0',
+    fontSize: '11px',
+    fontWeight: '600',
+    color: '#334155',
+  },
+  evalThCenter: {
+    textAlign: 'center',
+    padding: '6px 4px',
+    backgroundColor: '#F8FAFC',
+    border: '1px solid #E2E8F0',
+    fontSize: '10px',
+    fontWeight: '500',
+    color: '#334155',
+  },
+  evalTd: {
+    padding: '6px 8px',
+    border: '1px solid #E2E8F0',
+    fontSize: '12px',
+    color: '#334155',
+  },
+  evalTdCenter: {
+    textAlign: 'center',
+    padding: '6px 4px',
+    border: '1px solid #E2E8F0',
+  },
+  radioInput: {
+    cursor: 'pointer',
+    width: '16px',
+    height: '16px',
+  },
+  submitBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '10px',
+    width: '100%',
+    padding: '12px',
+    backgroundColor: '#4A90D9',
+    color: '#FFFFFF',
+    border: 'none',
+    borderRadius: '10px',
+    cursor: 'pointer',
+    fontSize: '15px',
+    fontWeight: '600',
+    marginTop: '8px',
+    transition: 'all 0.2s ease',
+    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
+    boxShadow: '0 4px 12px rgba(74, 144, 217, 0.2)',
+  },
+  deleteModal: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: '16px',
+    padding: '32px 28px',
+    maxWidth: '400px',
+    width: '100%',
+    textAlign: 'center',
+    boxShadow: '0 25px 50px rgba(0,0,0,0.15)',
+    boxSizing: 'border-box',
+  },
+  deleteIcon: {
+    fontSize: '48px',
+    marginBottom: '12px',
+  },
+  deleteTitle: {
+    fontSize: '20px',
+    fontWeight: '600',
+    color: '#1A202C',
+    margin: '0 0 8px 0',
+  },
+  deleteText: {
+    fontSize: '15px',
+    color: '#475569',
+    margin: 0,
+  },
+  deleteSubText: {
+    fontSize: '13px',
+    color: '#94A3B8',
+    margin: '4px 0 24px 0',
+  },
+  deleteActions: {
+    display: 'flex',
+    gap: '12px',
+  },
+  cancelBtn: {
+    flex: 1,
+    padding: '10px',
+    backgroundColor: '#F1F5F9',
+    color: '#475569',
+    border: 'none',
+    borderRadius: '10px',
+    cursor: 'pointer',
+    fontSize: '14px',
+    fontWeight: '500',
+    transition: 'all 0.2s ease',
+    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
+  },
+  confirmDeleteBtn: {
+    flex: 1,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '8px',
+    padding: '10px',
+    backgroundColor: '#E74C3C',
+    color: '#FFFFFF',
+    border: 'none',
+    borderRadius: '10px',
+    cursor: 'pointer',
+    fontSize: '14px',
+    fontWeight: '500',
+    transition: 'all 0.2s ease',
+    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
+    boxShadow: '0 4px 12px rgba(231, 76, 60, 0.2)',
+  },
 };

@@ -1,159 +1,643 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import {
+  User,
+  Phone,
+  UserCircle,
+  Shield,
+  School,
+  Lock,
+  Key,
+  Save,
+  Loader2,
+  CheckCircle,
+  AlertCircle,
+  Eye,
+  EyeOff,
+  Edit3,
+  UserCheck,
+  Sparkles
+} from "lucide-react";
 
-function PersonalDataParent() {
+const PersonalDataParent = () => {
   const [formData, setFormData] = useState({
-    User_id: '',
-    Name: '',
-    Phone: '',
-    UserName: '',
-    Role: '',
-    Class_level: '',
-    newPassword: '',
-    confirmPassword: ''
+    User_id: "",
+    name: "",
+    phone: "",
+    username: "",
+    role: "ผู้ปกครอง",
+    class_level: "",
+    password: "",
+    confirmPassword: "",
   });
+
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [errors, setErrors] = useState({});
 
   useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
+    const fetchParentData = async () => {
+      const storedUser = localStorage.getItem("user");
+      if (!storedUser) {
+        alert("ไม่พบเซสชันการเข้าสู่ระบบ กรุณาล็อกอินใหม่อีกครั้ง");
+        window.location.href = "/login";
+        return;
+      }
+
       try {
         const userData = JSON.parse(storedUser);
         const userId = userData.User_id || userData.user_id || userData.id;
 
         if (userId) {
-          axios.get(`http://127.0.0.1:3001/users`)
-            .then(res => {
-              // 🔍 [LOG 1] ดูว่า API /users ส่ง Array ของผู้ใช้กลับมาหน้าตาแบบไหน
-              console.log("1. ข้อมูลทั้งหมดจาก API:", res.data);
+          const res = await axios.get(`http://127.0.0.1:3001/users`);
+          const currentUser = res.data.find(
+            (u) => String(u.User_id || u.user_id || u.id) === String(userId)
+          );
 
-              const currentUser = res.data.find(u => String(u.User_id || u.user_id || u.id) === String(userId));
-
-              // 🔍 [LOG 2] ดูว่าระบบหาผู้ใช้ที่ล็อกอินเจอไหม และ Object มี Key อะไรบ้าง
-              console.log("2. ข้อมูลผู้ใช้ที่หาเจอ (CurrentUser):", currentUser);
-
-              if (currentUser) {
-                setFormData(prev => ({
-                  ...prev,
-                  User_id: currentUser.User_id || currentUser.user_id || userId,
-                  Name: currentUser.Name || currentUser.name || '',
-                  Phone: currentUser.Phone || currentUser.phone || '',
-                  UserName: currentUser.UserName || currentUser.Username || currentUser.username || '',
-                  Role: currentUser.Role || currentUser.role || 'ผู้ปกครอง',
-                  Class_level: currentUser.Class_level || currentUser.class_level || 'ไม่มี'
-                }));
-              }
-              setLoading(false);
-            })
-            .catch(err => {
-              console.error("Error fetching parent data:", err);
-              setLoading(false);
-            });
-        } else {
-          setLoading(false);
+          if (currentUser) {
+            setFormData((prev) => ({
+              ...prev,
+              User_id: currentUser.User_id || currentUser.user_id || userId,
+              name: currentUser.Name || currentUser.name || "",
+              phone: currentUser.Phone || currentUser.phone || "",
+              username: currentUser.UserName || currentUser.Username || currentUser.username || "",
+              role: currentUser.Role || currentUser.role || "ผู้ปกครอง",
+              class_level: currentUser.Class_level || currentUser.class_level || "ไม่มี",
+            }));
+          }
         }
       } catch (err) {
-        console.error("Error parsing user storage:", err);
+        console.error("ดึงข้อมูลผู้ปกครองไม่สำเร็จ:", err);
+      } finally {
         setLoading(false);
       }
-    } else {
-      alert("ไม่พบเซสชันการเข้าสู่ระบบ กรุณาล็อกอินใหม่อีกครั้ง");
-      window.location.href = "/login";
-    }
+    };
+
+    fetchParentData();
   }, []);
 
-  const handleChange = (e) => {
+  const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: "" }));
+    }
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+    if (!formData.name || formData.name.trim().length < 2) {
+      newErrors.name = "กรุณากรอกชื่อ-นามสกุลให้ถูกต้อง";
+    }
+    if (formData.phone && !/^[0-9]{10}$/.test(formData.phone.replace(/[-\s]/g, ""))) {
+      newErrors.phone = "กรุณากรอกเบอร์โทรศัพท์ 10 หลัก";
+    }
+    if (formData.password && formData.password.length < 6) {
+      newErrors.password = "รหัสผ่านต้องมีความยาวอย่างน้อย 6 ตัวอักษร";
+    }
+    if (formData.password && formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = "รหัสผ่านใหม่และยืนยันรหัสผ่านไม่ตรงกัน";
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (formData.newPassword || formData.confirmPassword) {
-      if (formData.newPassword !== formData.confirmPassword) {
-        alert("❌ รหัสผ่านใหม่และยืนยันรหัสผ่านใหม่ไม่ตรงกันครับ!");
-        return;
-      }
-    }
+
+    if (!validateForm()) return;
+
+    setSaving(true);
     try {
       await axios.put(`http://127.0.0.1:3001/users/${formData.User_id}`, {
-        Name: formData.Name,
-        Phone: formData.Phone,
-        Username: formData.UserName,
-        Role: formData.Role,
-        Class_level: formData.Class_level,
-        Password: formData.newPassword ? formData.newPassword : undefined
+        Name: formData.name.trim(),
+        Phone: formData.phone.trim(),
+        Username: formData.username,
+        Role: formData.role,
+        Class_level: formData.class_level,
+        Password: formData.password ? formData.password : undefined,
       });
+
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+
       alert("🎉 บันทึกการแก้ไขข้อมูลส่วนตัวสำเร็จแล้วค่ะ!");
+
       const updatedUser = {
         User_id: formData.User_id,
-        Name: formData.Name,
-        Phone: formData.Phone,
-        UserName: formData.UserName,
-        Role: formData.Role,
-        Class_level: formData.Class_level
+        Name: formData.name.trim(),
+        Phone: formData.phone.trim(),
+        UserName: formData.username,
+        Role: formData.role,
+        Class_level: formData.class_level,
       };
       localStorage.setItem("user", JSON.stringify(updatedUser));
-      window.location.reload();
+      setFormData((prev) => ({ ...prev, password: "", confirmPassword: "" }));
     } catch (err) {
-      console.error(err);
+      console.error("บันทึกข้อมูลไม่สำเร็จ:", err);
       alert("เกิดข้อผิดพลาด ไม่สามารถบันทึกข้อมูลได้");
+    } finally {
+      setSaving(false);
     }
   };
 
-  if (loading) return <div style={{ textAlign: 'center', padding: '50px', fontFamily: "'Kanit', sans-serif" }}>กำลังโหลดข้อมูลผู้ปกครอง...</div>;
+  const getRoleColor = (role) => {
+    const colors = {
+      แอดมิน: "#C62828",
+      ครูผู้สอน: "#1565C0",
+      ผู้ปกครอง: "#2E7D32",
+      ถูกระงับสิทธิ์: "#9E9E9E",
+    };
+    return colors[role] || "#2E7D32";
+  };
+
+  if (loading) {
+    return (
+      <div style={styles.loadingContainer}>
+        <Loader2 size={48} style={styles.spinner} />
+        <p style={styles.loadingText}>กำลังโหลดข้อมูลผู้ปกครอง...</p>
+      </div>
+    );
+  }
 
   return (
     <div style={styles.container}>
-      <h2 style={{ margin: 10, color: '#0369a1' }}>แก้ไขข้อมูลส่วนตัว</h2>
+      <div style={styles.wrapper}>
+        {/* Header */}
+        <div style={styles.header}>
+          <div style={styles.headerLeft}>
+            <div style={styles.headerIcon}>
+              <User size={24} color="#FFFFFF" />
+            </div>
+            <div>
+              <h1 style={styles.mainTitle}>ข้อมูลส่วนตัวผู้ปกครอง</h1>
+              <p style={styles.subTitle}>
+                <Sparkles size={14} color="#4A90D9" />
+                จัดการข้อมูลส่วนตัวของคุณ
+              </p>
+            </div>
+          </div>
+        </div>
 
-      <div style={styles.formCard}>
-        <form onSubmit={handleSubmit} style={styles.form}>
-          <div style={styles.inputGroup}>
-            <label style={styles.label}>ชื่อ-นามสกุล</label>
-            <input type="text" name="Name" value={formData.Name} onChange={handleChange} style={styles.input} required />
+        {/* Success Message */}
+        {saveSuccess && (
+          <div style={styles.successMessage}>
+            <CheckCircle size={20} color="#27AE60" />
+            <span>บันทึกข้อมูลสำเร็จ! 🎉</span>
           </div>
-          <div style={styles.inputGroup}>
-            <label style={styles.label}>เบอร์โทร</label>
-            <input type="text" name="Phone" value={formData.Phone} onChange={handleChange} style={styles.input} required />
+        )}
+
+        {/* Profile Card */}
+        <form onSubmit={handleSubmit} style={styles.profileCard}>
+          {/* Avatar Section */}
+          <div style={styles.avatarSection}>
+            <div style={styles.avatarWrapper}>
+              <div style={styles.avatar}>
+                {formData.name?.charAt(0) || "P"}
+              </div>
+              <div style={styles.avatarBadge}>
+                <Edit3 size={14} color="#FFFFFF" />
+              </div>
+            </div>
+            <h3 style={styles.parentName}>{formData.name || "ผู้ปกครอง"}</h3>
+            <div style={styles.roleBadge}>
+              <UserCheck size={14} />
+              <span style={{ ...styles.roleText, color: getRoleColor(formData.role) }}>
+                {formData.role}
+              </span>
+            </div>
           </div>
-          <div style={styles.inputGroup}>
-            <label style={styles.label}>ชื่อผู้ใช้</label>
-            <input type="text" name="UserName" value={formData.UserName} disabled style={{ ...styles.input, backgroundColor: "#f8fafc", color: "#94a3b8", cursor: "not-allowed" }} required />
+
+          {/* Form Fields */}
+          <div style={styles.formGroup}>
+            <label style={styles.label}>
+              <User size={16} color="#4A90D9" style={styles.labelIcon} />
+              ชื่อ-นามสกุล <span style={styles.required}>*</span>
+            </label>
+            <input
+              type="text"
+              name="name"
+              value={formData.name}
+              onChange={handleInputChange}
+              required
+              style={{ ...styles.input, borderColor: errors.name ? "#E74C3C" : "#E2E8F0" }}
+              placeholder="กรุณากรอกชื่อ-นามสกุล"
+            />
+            {errors.name && (
+              <div style={styles.errorText}>
+                <AlertCircle size={14} />
+                {errors.name}
+              </div>
+            )}
           </div>
-          <div style={styles.inputGroup}>
-            <label style={styles.label}>สถานะ</label>
-            <input type="text" name="Role" value={formData.Role} style={{ ...styles.input, backgroundColor: "#f1f5f9", cursor: "not-allowed" }} disabled />
+
+          <div style={styles.formGroup}>
+            <label style={styles.label}>
+              <Phone size={16} color="#27AE60" style={styles.labelIcon} />
+              เบอร์โทรศัพท์
+            </label>
+            <input
+              type="tel"
+              name="phone"
+              value={formData.phone}
+              onChange={handleInputChange}
+              style={{ ...styles.input, borderColor: errors.phone ? "#E74C3C" : "#E2E8F0" }}
+              placeholder="0XX-XXX-XXXX"
+            />
+            {errors.phone && (
+              <div style={styles.errorText}>
+                <AlertCircle size={14} />
+                {errors.phone}
+              </div>
+            )}
           </div>
-          <div style={styles.inputGroup}>
-            <label style={styles.label}>ผู้ปกครองระดับชั้น</label>
-            <input type="text" name="Class_level" value={formData.Class_level} style={{ ...styles.input, backgroundColor: "#f1f5f9", cursor: "not-allowed", color: "#475569" }} disabled />
+
+          <div style={styles.formGroup}>
+            <label style={styles.label}>
+              <UserCircle size={16} color="#E67E22" style={styles.labelIcon} />
+              ชื่อผู้ใช้
+            </label>
+            <input
+              type="text"
+              name="username"
+              value={formData.username}
+              disabled
+              style={styles.inputDisabled}
+            />
           </div>
-          <div style={styles.inputGroup}>
-            <label style={styles.label}>รหัสผ่านใหม่ (ปล่อยว่างไว้ได้หากไม่ต้องการเปลี่ยน)</label>
-            <input type="password" name="newPassword" value={formData.newPassword} onChange={handleChange} placeholder="กรอกรหัสผ่านใหม่" style={styles.input} />
+
+          <div style={styles.formGroup}>
+            <label style={styles.label}>
+              <Shield size={16} color="#8E44AD" style={styles.labelIcon} />
+              สถานะ
+            </label>
+            <input
+              type="text"
+              name="role"
+              value={formData.role}
+              disabled
+              style={styles.inputDisabled}
+            />
           </div>
-          <div style={styles.inputGroup}>
-            <label style={styles.label}>ยืนยันรหัสผ่านใหม่</label>
-            <input type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} placeholder="กรอกยืนยันรหัสผ่านใหม่อีกครั้ง" style={styles.input} />
+
+          <div style={styles.formGroup}>
+            <label style={styles.label}>
+              <School size={16} color="#4A90D9" style={styles.labelIcon} />
+              ผู้ปกครองระดับชั้น
+            </label>
+            <input
+              type="text"
+              name="class_level"
+              value={formData.class_level || "ไม่มี"}
+              disabled
+              style={styles.inputDisabled}
+            />
           </div>
-          <button type="submit" style={styles.submitButton}>บันทึกการเปลี่ยนแปลง</button>
+
+          <div style={styles.formGroup}>
+            <label style={styles.label}>
+              <Lock size={16} color="#E74C3C" style={styles.labelIcon} />
+              รหัสผ่านใหม่
+              <span style={styles.hintText}>(ปล่อยว่างหากไม่เปลี่ยน)</span>
+            </label>
+            <div style={styles.passwordWrapper}>
+              <input
+                type={showPassword ? "text" : "password"}
+                name="password"
+                placeholder="กรอกรหัสผ่านใหม่"
+                value={formData.password}
+                onChange={handleInputChange}
+                style={{
+                  ...styles.input,
+                  borderColor: errors.password ? "#E74C3C" : "#E2E8F0",
+                  paddingRight: "44px",
+                }}
+              />
+              <button
+                type="button"
+                style={styles.passwordToggle}
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? <EyeOff size={18} color="#94A3B8" /> : <Eye size={18} color="#94A3B8" />}
+              </button>
+            </div>
+            {errors.password && (
+              <div style={styles.errorText}>
+                <AlertCircle size={14} />
+                {errors.password}
+              </div>
+            )}
+            <div style={styles.hintTextSmall}>
+              <Key size={12} color="#94A3B8" />
+              ต้องมีความยาวอย่างน้อย 6 ตัวอักษร
+            </div>
+          </div>
+
+          <div style={styles.formGroup}>
+            <label style={styles.label}>
+              <Key size={16} color="#E67E22" style={styles.labelIcon} />
+              ยืนยันรหัสผ่านใหม่
+            </label>
+            <div style={styles.passwordWrapper}>
+              <input
+                type={showConfirmPassword ? "text" : "password"}
+                name="confirmPassword"
+                placeholder="กรอกยืนยันรหัสผ่านใหม่อีกครั้ง"
+                value={formData.confirmPassword}
+                onChange={handleInputChange}
+                style={{
+                  ...styles.input,
+                  borderColor: errors.confirmPassword ? "#E74C3C" : "#E2E8F0",
+                  paddingRight: "44px",
+                }}
+              />
+              <button
+                type="button"
+                style={styles.passwordToggle}
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              >
+                {showConfirmPassword ? <EyeOff size={18} color="#94A3B8" /> : <Eye size={18} color="#94A3B8" />}
+              </button>
+            </div>
+            {errors.confirmPassword && (
+              <div style={styles.errorText}>
+                <AlertCircle size={14} />
+                {errors.confirmPassword}
+              </div>
+            )}
+          </div>
+
+          <button type="submit" style={styles.btnSave} disabled={saving}>
+            {saving ? (
+              <>
+                <Loader2 size={18} style={styles.spinnerSmall} />
+                กำลังบันทึก...
+              </>
+            ) : (
+              <>
+                <Save size={18} />
+                บันทึกการเปลี่ยนแปลง
+              </>
+            )}
+          </button>
         </form>
       </div>
     </div>
   );
-}
+};
 
 const styles = {
-  container: { padding: "40px 20px", backgroundColor: "#dff3ff 48%", minHeight: "100vh", fontFamily: "'Kanit', sans-serif", display: "flex", flexDirection: "column", alignItems: "center" },
-  mainTitle: { fontSize: "24px", fontWeight: "600", color: "#1e293b", margin: "0 0 4px 0", width: "100%", maxWidth: "480px", textAlign: "left" },
-  subTitle: { fontSize: "14px", color: "#64748b", margin: "0 0 24px 0", width: "100%", maxWidth: "480px", textAlign: "left" },
-  formCard: { background: "#ffffff", borderRadius: "16px", border: "1px solid #e2e8f0", boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.05)", padding: "40px", width: "100%", maxWidth: "480px", boxSizing: "border-box" },
-  form: { display: "flex", flexDirection: "column", gap: "20px" },
-  inputGroup: { display: "flex", flexDirection: "column", gap: "6px", textAlign: "left" },
-  label: { fontSize: "14px", fontWeight: "500", color: "#334155" },
-  input: { padding: "10px 14px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "14px", fontFamily: "'Kanit', sans-serif", outline: "none", width: "100%", boxSizing: "border-box" },
-  submitButton: { marginTop: "12px", padding: "10px 20px", backgroundColor: "#ffffff", color: "#1e293b", border: "1px solid #cbd5e1", borderRadius: "8px", fontSize: "14px", fontWeight: "500", cursor: "pointer", fontFamily: "'Kanit', sans-serif", boxShadow: "0 1px 2px rgba(0, 0, 0, 0.05)", width: "100%", textAlign: "center" }
+  container: {
+    padding: "20px",
+    minHeight: "100vh",
+    backgroundColor: "#F8FAFC",
+    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
+  },
+  wrapper: {
+    maxWidth: "560px",
+    margin: "0 auto",
+    width: "100%",
+  },
+  loadingContainer: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: "100vh",
+    gap: "16px",
+  },
+  spinner: {
+    animation: "spin 1s linear infinite",
+    color: "#4A90D9",
+  },
+  spinnerSmall: {
+    animation: "spin 1s linear infinite",
+  },
+  loadingText: {
+    color: "#94A3B8",
+    fontSize: "16px",
+  },
+  header: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: "24px",
+    flexWrap: "wrap",
+    gap: "12px",
+  },
+  headerLeft: {
+    display: "flex",
+    alignItems: "center",
+    gap: "14px",
+  },
+  headerIcon: {
+    width: "48px",
+    height: "48px",
+    borderRadius: "12px",
+    backgroundColor: "#4A90D9",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    boxShadow: "0 4px 12px rgba(74, 144, 217, 0.25)",
+  },
+  mainTitle: {
+    fontSize: "24px",
+    fontWeight: "700",
+    color: "#1A202C",
+    margin: 0,
+  },
+  subTitle: {
+    display: "flex",
+    alignItems: "center",
+    gap: "6px",
+    fontSize: "14px",
+    color: "#718096",
+    margin: "2px 0 0 0",
+  },
+  successMessage: {
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
+    backgroundColor: "#E8F8ED",
+    color: "#27AE60",
+    padding: "12px 16px",
+    borderRadius: "10px",
+    marginBottom: "20px",
+    border: "1px solid #A9DFBF",
+    fontSize: "14px",
+    fontWeight: "500",
+    animation: "fadeIn 0.3s ease",
+  },
+  profileCard: {
+    backgroundColor: "#FFFFFF",
+    border: "1px solid #E2E8F0",
+    borderRadius: "16px",
+    padding: "32px 36px",
+    boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+    boxSizing: "border-box",
+    display: "flex",
+    flexDirection: "column",
+    gap: "18px",
+  },
+  avatarSection: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    marginBottom: "8px",
+  },
+  avatarWrapper: {
+    position: "relative",
+    marginBottom: "12px",
+  },
+  avatar: {
+    width: "80px",
+    height: "80px",
+    borderRadius: "50%",
+    backgroundColor: "#EBF3FB",
+    color: "#4A90D9",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: "32px",
+    fontWeight: "600",
+    border: "3px solid #FFFFFF",
+    boxShadow: "0 4px 12px rgba(74, 144, 217, 0.15)",
+  },
+  avatarBadge: {
+    position: "absolute",
+    bottom: "0",
+    right: "0",
+    backgroundColor: "#4A90D9",
+    borderRadius: "50%",
+    padding: "4px",
+    border: "2px solid #FFFFFF",
+    boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+  },
+  parentName: {
+    margin: "0 0 4px 0",
+    fontSize: "20px",
+    fontWeight: "700",
+    color: "#1A202C",
+  },
+  roleBadge: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: "6px",
+    padding: "4px 14px",
+    backgroundColor: "#F1F5F9",
+    borderRadius: "20px",
+  },
+  roleText: {
+    fontSize: "14px",
+    fontWeight: "500",
+  },
+  formGroup: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "6px",
+    textAlign: "left",
+  },
+  label: {
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    fontSize: "14px",
+    color: "#334155",
+    fontWeight: "500",
+  },
+  labelIcon: {
+    flexShrink: 0,
+  },
+  required: {
+    color: "#E74C3C",
+    fontSize: "14px",
+  },
+  hintText: {
+    fontSize: "12px",
+    color: "#94A3B8",
+    fontWeight: "400",
+    marginLeft: "4px",
+  },
+  hintTextSmall: {
+    display: "flex",
+    alignItems: "center",
+    gap: "6px",
+    fontSize: "12px",
+    color: "#94A3B8",
+    marginTop: "4px",
+  },
+  input: {
+    padding: "10px 14px",
+    fontSize: "14px",
+    border: "1px solid #E2E8F0",
+    borderRadius: "10px",
+    outline: "none",
+    boxSizing: "border-box",
+    width: "100%",
+    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
+    backgroundColor: "#FAFBFC",
+    transition: "all 0.2s ease",
+    color: "#1A202C",
+  },
+  inputDisabled: {
+    padding: "10px 14px",
+    fontSize: "14px",
+    border: "1px solid #E2E8F0",
+    borderRadius: "10px",
+    outline: "none",
+    boxSizing: "border-box",
+    width: "100%",
+    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
+    backgroundColor: "#F1F5F9",
+    color: "#94A3B8",
+    cursor: "not-allowed",
+  },
+  passwordWrapper: {
+    position: "relative",
+    width: "100%",
+  },
+  passwordToggle: {
+    position: "absolute",
+    right: "12px",
+    top: "50%",
+    transform: "translateY(-50%)",
+    background: "none",
+    border: "none",
+    cursor: "pointer",
+    padding: "4px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  errorText: {
+    display: "flex",
+    alignItems: "center",
+    gap: "6px",
+    fontSize: "13px",
+    color: "#E74C3C",
+  },
+  btnSave: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "10px",
+    width: "100%",
+    padding: "12px",
+    fontSize: "15px",
+    fontWeight: "600",
+    backgroundColor: "#4A90D9",
+    color: "#FFFFFF",
+    border: "none",
+    borderRadius: "10px",
+    cursor: "pointer",
+    fontFamily: "'Kanit', 'Sarabun', system-ui, sans-serif",
+    boxShadow: "0 4px 12px rgba(74, 144, 217, 0.2)",
+    transition: "all 0.2s ease",
+    marginTop: "4px",
+  },
 };
 
 export default PersonalDataParent;

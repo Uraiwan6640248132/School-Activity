@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom'; // 🆕 นำเข้า useNavigate เพื่อใช้สั่งเปลี่ยนหน้าของ React Router
-// 🛠️ ปรับ Path ให้วิ่งย้อนกลับไปดึงไฟล์รูปภาพจากโฟลเดอร์ src ให้ถูกต้องตามโครงสร้างของพี่ครับ
+import { useNavigate } from 'react-router-dom';
 import schoolImg from '../school-building.jpg.JPG';
 import bgImg from '../bg-pattern.jpg'; 
 
@@ -9,7 +8,7 @@ function Login({ onLoginSuccess }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
 
-  const navigate = useNavigate(); // 🆕 ประกาศตัวแปรเพื่อเรียกใช้งานการนำทาง (Navigation)
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -22,72 +21,72 @@ function Login({ onLoginSuccess }) {
       UserName: username,
       Password: password
     };
+
     try {
       const res = await axios.post('http://127.0.0.1:3001/login', loginData);
+
       // =================================
       // 1. กรณี Login ไม่สำเร็จจากหลังบ้าน
       // =================================
       if (!res.data.success) {
         alert(res.data.error || "ไม่สามารถเข้าสู่ระบบได้");
         localStorage.removeItem("user");
+        localStorage.removeItem("selectedStudent");
+        localStorage.removeItem("teacher_class_id");
+        localStorage.removeItem("teacher_class_name");
         navigate("/login");
         return;
       }
-      // เปลี่ยนจาก response.ok -> เป็น res.ok
-      if (res.ok) {
-        const data = await res.json(); // เปลี่ยนจาก response.json() -> เป็น res.json()
 
-        localStorage.setItem('role', data.Role);
-        localStorage.setItem('username', data.UserName);
-
-        // เก็บค่า Class_level เข้า LocalStorage
-        if (data.Class_level) {
-          localStorage.setItem('class_level', data.Class_level || data.class_level || '');
-        }
-      }
       // =================================
-      // 2. ดักตรวจสอบสิทธิ์การใช้งาน (แก้ไขจุดนี้)
-      // =================================
-      // =================================
-      // 2. ดักตรวจสอบสิทธิ์การใช้งาน (ปรับตรงนี้ให้รัดกุมขึ้น)
+      // 2. ดักตรวจสอบสิทธิ์การใช้งาน
       // =================================
       const userData = res.data.user;
 
-      // ดึงค่า Role มาล้างช่องว่าง
       const checkRole = String(userData?.role || userData?.Role || "")
         .replace(/\s+/g, "")
         .trim();
 
-      // ดึงค่า Status มาล้างช่องว่างด้วย
       const checkStatus = String(userData?.status || userData?.Status || "")
         .replace(/\s+/g, "")
         .trim();
 
-      // 🚨 ตรวจสอบ: ถ้าเจอคำว่าระงับสิทธิ์ไม่ว่าจะจากช่อง Role หรือ Status ให้บล็อกทันที
       if (
         checkRole === "ถูกระงับสิทธิ์" ||
         checkStatus === "ถูกระงับสิทธิ์" ||
         checkStatus === "ถูกระงับ" ||
         checkStatus === "ระงับ"
       ) {
-        // แสดงป๊อบอัพเตือนด้านบนทันที
         alert("บัญชีของคุณถูกระงับสิทธิ์การใช้งาน กรุณาติดต่อผู้ดูแลระบบ");
-
-        // ล้างข้อมูลเซสชันทิ้ง และบังคับให้อยู่ที่หน้าล็อกอินเดิม
         localStorage.removeItem("user");
+        localStorage.removeItem("selectedStudent");
+        localStorage.removeItem("teacher_class_id");
+        localStorage.removeItem("teacher_class_name");
         navigate("/login");
-        return; // 🛑 ตัดจบ ไม่ให้ไหลลงไปทำงานด้านล่าง
+        return;
       }
 
-      console.log(res.data.user);
       console.log("LOGIN USER =", userData);
+
       // =================================
       // 3. กรณีสิทธิ์ผ่านปกติ (แอดมิน, ครู, ผู้ปกครอง)
       // =================================
-      localStorage.setItem(
-        "user",
-        JSON.stringify(userData)
-      );
+      localStorage.setItem("user", JSON.stringify(userData));
+
+      // 🟢 บันทึกข้อมูลห้องเรียนของคุณครูลง localStorage (หากมี)
+      const teacherClassId = userData.class_id || userData.Class_id || userData.classId || "";
+      const teacherClassName = userData.class_name || userData.Class_name || userData.Class_level || "";
+      
+      if (teacherClassId) localStorage.setItem("teacher_class_id", String(teacherClassId));
+      if (teacherClassName) localStorage.setItem("teacher_class_name", String(teacherClassName));
+
+      // กรณีเป็นผู้ปกครองและมีรายชื่อเด็ก
+      if (userData.students && userData.students.length > 0) {
+        localStorage.setItem("selectedStudent", JSON.stringify(userData.students[0]));
+      } else {
+        localStorage.removeItem("selectedStudent");
+      }
+
       onLoginSuccess();
 
     } catch (err) {
@@ -100,7 +99,6 @@ function Login({ onLoginSuccess }) {
     }
   };
 
-  // 🛠️ ปรับปรุงจุดนี้: เมื่อกดปุ่มจะวิ่งไปตาม Path "/register" ที่พี่ตั้งไว้ใน Routes ทันที
   const handleGoToRegister = () => {
     navigate('/register');
   };
@@ -111,8 +109,6 @@ function Login({ onLoginSuccess }) {
 
         {/* 🎨 ฝั่งซ้าย: พื้นหลังรูปตึกโรงเรียน */}
         <div style={{ ...styles.leftPanel, backgroundImage: `url(${schoolImg})` }}>
-
-          {/* ข้อความขยับขึ้นมาและเปลี่ยนเป็นสีน้ำเงินเรียบร้อยครับ */}
           <div style={styles.logoArea}>
             <h2 style={styles.logoText}>ระบบบันทึกกิจกรรมนักเรียนระดับปฐมวัย</h2>
           </div>
@@ -153,7 +149,6 @@ function Login({ onLoginSuccess }) {
               เข้าสู่ระบบ
             </button>
 
-            {/* ปุ่มเชื่อมต่อไปหน้าลงทะเบียน */}
             <div style={styles.registerContainer}>
               <span style={styles.registerText}>ยังไม่มีบัญชีผู้ใช้?</span>
               <button
@@ -173,47 +168,46 @@ function Login({ onLoginSuccess }) {
   );
 }
 
-
 const styles = {
   container: {
-  display: "flex",
-  justifyContent: "center",
-  alignItems: "center",
-  minHeight: "100vh",
-  width: "100vw",
-  backgroundImage: `url(${bgImg})`,     // 🆕 เปลี่ยนจาก gradient เป็นรูปใหม่
-  backgroundSize: "cover",
-  backgroundPosition: "center",
-  backgroundRepeat: "no-repeat",
-  fontFamily: "'Inter', 'Kanit', sans-serif",
-  position: "absolute",
-  top: 0,
-  left: 0,
-  zIndex: 9999
-},
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    minHeight: "100vh",
+    width: "100vw",
+    backgroundImage: `url(${bgImg})`,
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+    backgroundRepeat: "no-repeat",
+    fontFamily: "'Inter', 'Kanit', sans-serif",
+    position: "absolute",
+    top: 0,
+    left: 0,
+    zIndex: 9999
+  },
   card: {
-  display: "grid",
-  gridTemplateColumns: "1fr 1fr",
-  backgroundColor: "transparent",   // 🆕 เอาสีทึบออก ถ้ายังมี backgroundColor: "#ffffff" อยู่ต้องลบออก
-  borderRadius: "20px",
-  width: "900px",
-  height: "600px",
-  boxShadow: "0 28px 60px rgba(2, 132, 199, 0.18)",
-  overflow: "hidden",
-},
- leftPanel: {
-  backgroundSize: "cover",
-  backgroundPosition: "center",
-  backgroundRepeat: "no-repeat",
-  color: "#1d4ed8",
-  padding: "40px",
-  display: "flex",
-  flexDirection: "column",
-  justifyContent: "flex-end",
-  alignItems: "center",
-  position: "relative",
-  textAlign: "center"
-},
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    backgroundColor: "transparent",
+    borderRadius: "20px",
+    width: "900px",
+    height: "600px",
+    boxShadow: "0 28px 60px rgba(2, 132, 199, 0.18)",
+    overflow: "hidden",
+  },
+  leftPanel: {
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+    backgroundRepeat: "no-repeat",
+    color: "#1d4ed8",
+    padding: "40px",
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "flex-end",
+    alignItems: "center",
+    position: "relative",
+    textAlign: "center"
+  },
   logoArea: {
     display: "flex",
     flexDirection: "column",
@@ -229,22 +223,15 @@ const styles = {
     color: "#0f4f7a",
     textShadow: "0 1px 4px rgba(255, 255, 255, 0.6)"
   },
-  logoSubText: {
-    margin: 0,
-    fontSize: "14px",
-    fontWeight: "600",
-    color: "#0284c7",
-    textShadow: "0 1px 4px rgba(255, 255, 255, 0.6)"
-  },
   rightPanel: {
-  padding: "40px 60px",
-  display: "flex",
-  flexDirection: "column",
-  backgroundColor: "rgba(255, 255, 255, 0)",   // 🆕 ใสเลย ไม่มีสีขาวผสมเลยแม้แต่นิดเดียว
-  backdropFilter: "blur(6px)",                  // 🆕 เบลอนิดเดียวพอ ให้พอรู้ว่าเป็นกระจก ไม่ใช่ทะลุจนมองไม่ออกว่ามีการ์ด
-  WebkitBackdropFilter: "blur(6px)",
-  borderLeft: "1px solid rgba(255, 255, 255, 0.3)",
-},
+    padding: "40px 60px",
+    display: "flex",
+    flexDirection: "column",
+    backgroundColor: "rgba(255, 255, 255, 0)",
+    backdropFilter: "blur(6px)",
+    WebkitBackdropFilter: "blur(6px)",
+    borderLeft: "1px solid rgba(255, 255, 255, 0.3)",
+  },
   formContent: {
     display: "flex",
     flexDirection: "column",
@@ -271,16 +258,16 @@ const styles = {
     textAlign: "left"
   },
   input: {
-  width: "100%",
-  padding: "12px 16px",
-  borderRadius: "8px",
-  border: "1px solid rgba(255, 255, 255, 0.5)",
-  boxSizing: "border-box",
-  outline: "none",
-  fontSize: "14px",
-  color: "#334155",
-  backgroundColor: "rgba(255, 255, 255, 0.35)",   // 🆕 คงความอ่านง่าย แม้พื้นหลังรอบข้างใสมาก
-},
+    width: "100%",
+    padding: "12px 16px",
+    borderRadius: "8px",
+    border: "1px solid rgba(255, 255, 255, 0.5)",
+    boxSizing: "border-box",
+    outline: "none",
+    fontSize: "14px",
+    color: "#334155",
+    backgroundColor: "rgba(255, 255, 255, 0.35)",
+  },
   button: {
     width: "100%",
     padding: "14px",
@@ -317,4 +304,4 @@ const styles = {
   }
 };
 
-export default Login; 
+export default Login;
