@@ -57,22 +57,19 @@ function TermComparisonChart({ studentDevList }) {
 
   const getScores = (data) => {
     if (!data) return [0, 0, 0, 0];
-    // ด้านร่างกาย: q1-q4 (4 ข้อ)
-    const body = calculateScore([data.q1, data.q2, data.q3, data.q4]);
-    // ด้านสติปัญญา: q11-q12 (2 ข้อ)
-    const intellect = calculateScore([data.q11, data.q12]);
-    // ด้านอารมณ์: q9-q10 (2 ข้อ)
-    const emotion = calculateScore([data.q9, data.q10]);
-    // ด้านสังคม: q5-q8 (4 ข้อ)
-    const social = calculateScore([data.q5, data.q6, data.q7, data.q8]);
-    return [body, intellect, emotion, social];
+    const body = calculateScore([data.q1, data.q2]);
+    const emotion = calculateScore([data.q3, data.q4, data.q5]);
+    const social = calculateScore([data.q6, data.q7, data.q8]);
+    const intellect = calculateScore([data.q9, data.q10, data.q11, data.q12]);
+    
+    return [body, emotion, social, intellect];
   };
 
   const scoresTerm1 = getScores(term1Data);
   const scoresTerm2 = getScores(term2Data);
 
   const chartData = {
-    labels: ['ด้านร่างกาย', 'ด้านสติปัญญา', 'ด้านอารมณ์', 'ด้านสังคม'],
+    labels: ['ด้านร่างกาย', 'ด้านอารมณ์', 'ด้านสังคม', 'ด้านสติปัญญา'],
     datasets: [
       {
         label: 'ภาคเรียนที่ 1',
@@ -141,20 +138,18 @@ export default function Development() {
   const [selectedDetailItem, setSelectedDetailItem] = useState(null);
   const [activeTab, setActiveTab] = useState('body');
 
+  // State for selecting term per student card
+  const [selectedTerms, setSelectedTerms] = useState({});
+
   const [selectedId, setSelectedId] = useState(null);
 
   const initialFormState = {
     Student_id: '', Year: 2569, Term: 'ภาคเรียนที่ 1', date: new Date().toISOString().split('T')[0],
     Physical: '', Weight: '', Height: '', Dental_health: '', Vaccination: '', Motor_skills: '',
-    // 12 หัวข้อประเมินตามมาตรฐานคุณลักษณะที่พึงประสงค์
-    // ด้านร่างกาย (4 ข้อ)
-    q1: '3', q2: '3', q3: '3', q4: '3',
-    // ด้านสังคม (4 ข้อ)
-    q5: '3', q6: '3', q7: '3', q8: '3',
-    // ด้านอารมณ์ (2 ข้อ)
-    q9: '3', q10: '3',
-    // ด้านสติปัญญา (2 ข้อ)
-    q11: '3', q12: '3'
+    q1: '', q2: '',
+    q3: '', q4: '', q5: '',
+    q6: '', q7: '', q8: '',
+    q9: '', q10: '', q11: '', q12: ''
   };
 
   const [formData, setFormData] = useState(initialFormState);
@@ -345,22 +340,18 @@ export default function Development() {
       Dental_health: item.Dental_health || '',
       Vaccination: item.Vaccination || '',
       Motor_skills: item.Motor_skills || '',
-      // ด้านร่างกาย (4 ข้อ)
-      q1: item.q1 ? String(item.q1) : '3',
-      q2: item.q2 ? String(item.q2) : '3',
-      q3: item.q3 ? String(item.q3) : '3',
-      q4: item.q4 ? String(item.q4) : '3',
-      // ด้านสังคม (4 ข้อ)
-      q5: item.q5 ? String(item.q5) : '3',
-      q6: item.q6 ? String(item.q6) : '3',
-      q7: item.q7 ? String(item.q7) : '3',
-      q8: item.q8 ? String(item.q8) : '3',
-      // ด้านอารมณ์ (2 ข้อ)
-      q9: item.q9 ? String(item.q9) : '3',
-      q10: item.q10 ? String(item.q10) : '3',
-      // ด้านสติปัญญา (2 ข้อ)
-      q11: item.q11 ? String(item.q11) : '3',
-      q12: item.q12 ? String(item.q12) : '3'
+      q1: item.q1 ? String(item.q1) : '',
+      q2: item.q2 ? String(item.q2) : '',
+      q3: item.q3 ? String(item.q3) : '',
+      q4: item.q4 ? String(item.q4) : '',
+      q5: item.q5 ? String(item.q5) : '',
+      q6: item.q6 ? String(item.q6) : '',
+      q7: item.q7 ? String(item.q7) : '',
+      q8: item.q8 ? String(item.q8) : '',
+      q9: item.q9 ? String(item.q9) : '',
+      q10: item.q10 ? String(item.q10) : '',
+      q11: item.q11 ? String(item.q11) : '',
+      q12: item.q12 ? String(item.q12) : ''
     });
     setIsEditOpen(true);
   };
@@ -473,12 +464,27 @@ export default function Development() {
     );
   };
 
+  // จัดกลุ่มข้อมูลตาม Student_id
   const groupedByStudent = devList.reduce((acc, item) => {
     const sId = String(item.Student_id);
     if (!acc[sId]) acc[sId] = [];
     acc[sId].push(item);
     return acc;
   }, {});
+
+  const uniqueStudentList = Object.keys(groupedByStudent).map(sId => {
+    const studentDevs = groupedByStudent[sId];
+    // เรียงลำดับตามภาคเรียน (เทอม 1 มาก่อน เทอม 2)
+    studentDevs.sort((a, b) => {
+      const termA = a.Term || a.term || '';
+      const termB = b.Term || b.term || '';
+      return termA.localeCompare(termB);
+    });
+    return {
+      studentId: sId,
+      allTerms: studentDevs
+    };
+  });
 
   if (loading) {
     return (
@@ -557,41 +563,47 @@ export default function Development() {
               <Users size={48} color="#CBD5E1" />
               <p style={styles.emptyText}>ไม่พบนักเรียนในห้อง "{teacherClassLevel}"</p>
             </div>
-          ) : devList.length === 0 ? (
+          ) : uniqueStudentList.length === 0 ? (
             <div style={styles.emptyState}>
               <TrendingUp size={48} color="#CBD5E1" />
               <p style={styles.emptyText}>ยังไม่มีข้อมูลการประเมินพัฒนาการ</p>
               <p style={styles.emptySubText}>คลิกปุ่ม "เพิ่มพัฒนาการ" เพื่อเริ่มบันทึก</p>
             </div>
           ) : (
-            devList.map((item, idx) => {
-              const targetId = item.Development_id || item.development_id || item.id || item._id;
-              const scoreBody = calculateSectionScore([item.q1, item.q2, item.q3, item.q4]);
-              const scoreEmotion = calculateSectionScore([item.q9, item.q10]);
-              const scoreSocial = calculateSectionScore([item.q5, item.q6, item.q7, item.q8]);
-              const scoreIntellect = calculateSectionScore([item.q11, item.q12]);
+            uniqueStudentList.map((studentGroup, idx) => {
+              const sId = studentGroup.studentId;
+              const devs = studentGroup.allTerms;
+              
+              // Determine which term to display currently
+              const currentTermSelection = selectedTerms[sId] || devs[0].Term || 'ภาคเรียนที่ 1';
+              const currentItem = devs.find(d => (d.Term || d.term) === currentTermSelection) || devs[0];
 
-              const displayDate = item.date_clean ||
-                (item.Date ? String(item.Date).split('T')[0] : '') ||
-                (item.date ? String(item.date).split('T')[0] : 'ไม่ได้ระบุ');
+              const targetId = currentItem.Development_id || currentItem.development_id || currentItem.id || currentItem._id;
+              
+              const scoreBody = calculateSectionScore([currentItem.q1, currentItem.q2]);
+              const scoreEmotion = calculateSectionScore([currentItem.q3, currentItem.q4, currentItem.q5]);
+              const scoreSocial = calculateSectionScore([currentItem.q6, currentItem.q7, currentItem.q8]);
+              const scoreIntellect = calculateSectionScore([currentItem.q9, currentItem.q10, currentItem.q11, currentItem.q12]);
 
-              let displayTerm = item.Term || item.term || "ภาคเรียนที่ 1";
+              const displayDate = currentItem.date_clean ||
+                (currentItem.Date ? String(currentItem.Date).split('T')[0] : '') ||
+                (currentItem.date ? String(currentItem.date).split('T')[0] : 'ไม่ได้ระบุ');
+
+              let displayTerm = currentItem.Term || currentItem.term || "ภาคเรียนที่ 1";
               if (displayTerm.trim() === 'ภาคเรียนที่') {
                 displayTerm = 'ภาคเรียนที่ 1';
               }
-
-              const studentDevs = groupedByStudent[String(item.Student_id)] || [];
 
               return (
                 <div key={idx} style={styles.devCard}>
                   <div style={styles.cardHeader}>
                     <div style={styles.studentInfo}>
                       <div style={styles.studentAvatar}>
-                        {item.Student_name?.charAt(0) || getStudentName(item.Student_id).charAt(0) || 'S'}
+                        {currentItem.Student_name?.charAt(0) || getStudentName(currentItem.Student_id).charAt(0) || 'S'}
                       </div>
                       <div>
                         <h3 style={styles.studentName}>
-                          {item.Student_name || getStudentName(item.Student_id)}
+                          {currentItem.Student_name || getStudentName(currentItem.Student_id)}
                         </h3>
                         <div style={styles.studentMeta}>
                           <span style={styles.metaItem}>
@@ -600,20 +612,47 @@ export default function Development() {
                           </span>
                           <span style={styles.metaItem}>
                             <Award size={12} color="#94A3B8" />
-                            ปี {item.Year || '2569'} - {displayTerm}
+                            ปี {currentItem.Year || '2569'} - {displayTerm}
                           </span>
                         </div>
                       </div>
                     </div>
                     <div style={styles.cardActions}>
-                      <button onClick={() => openEditModal(item)} style={styles.editBtn}>
+                      {/* Term Selector Buttons */}
+                      <div style={{ display: 'flex', gap: '4px', marginRight: '8px', backgroundColor: '#F1F5F9', padding: '2px', borderRadius: '8px' }}>
+                        {devs.map((d, i) => {
+                          const t = d.Term || d.term || 'ภาคเรียนที่ 1';
+                          const isActive = t === currentTermSelection;
+                          return (
+                            <button
+                              key={i}
+                              onClick={() => setSelectedTerms(prev => ({ ...prev, [sId]: t }))}
+                              style={{
+                                padding: '4px 8px',
+                                fontSize: '11px',
+                                fontWeight: '600',
+                                border: 'none',
+                                borderRadius: '6px',
+                                cursor: 'pointer',
+                                backgroundColor: isActive ? '#FFFFFF' : 'transparent',
+                                color: isActive ? '#4A90D9' : '#94A3B8',
+                                boxShadow: isActive ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                                transition: 'all 0.2s ease'
+                              }}
+                            >
+                              {t.replace('ภาคเรียนที่ ', 'เทอม ')}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <button onClick={() => openEditModal(currentItem)} style={styles.editBtn}>
                         <Edit2 size={14} />
                         แก้ไข
                       </button>
                       <button 
                         onClick={() => { 
                           setSelectedId(targetId); 
-                          setFormData(prev => ({ ...prev, Student_id: String(item.Student_id) }));
+                          setFormData(prev => ({ ...prev, Student_id: String(currentItem.Student_id) }));
                           setIsDeleteOpen(true); 
                         }} 
                         style={styles.deleteBtn}
@@ -625,42 +664,43 @@ export default function Development() {
                   </div>
 
                   <div style={styles.scoreCircles}>
-                    <div style={styles.scoreCircle} onClick={() => openDetailModal(item, 'body')}>
+                    <div style={styles.scoreCircle} onClick={() => openDetailModal(currentItem, 'body')}>
                       <div style={styles.scoreCircleValue}>{isNaN(scoreBody) ? 0 : scoreBody}</div>
                       <span style={styles.scoreCircleLabel}>ร่างกาย</span>
                       <Activity size={14} color="#4A90D9" />
                     </div>
-                    <div style={styles.scoreCircle} onClick={() => openDetailModal(item, 'intellect')}>
-                      <div style={styles.scoreCircleValue}>{isNaN(scoreIntellect) ? 0 : scoreIntellect}</div>
-                      <span style={styles.scoreCircleLabel}>สติปัญญา</span>
-                      <Brain size={14} color="#8E44AD" />
-                    </div>
-                    <div style={styles.scoreCircle} onClick={() => openDetailModal(item, 'emotion')}>
+                    <div style={styles.scoreCircle} onClick={() => openDetailModal(currentItem, 'emotion')}>
                       <div style={styles.scoreCircleValue}>{isNaN(scoreEmotion) ? 0 : scoreEmotion}</div>
                       <span style={styles.scoreCircleLabel}>อารมณ์</span>
                       <Heart size={14} color="#E74C3C" />
                     </div>
-                    <div style={styles.scoreCircle} onClick={() => openDetailModal(item, 'social')}>
+                    <div style={styles.scoreCircle} onClick={() => openDetailModal(currentItem, 'social')}>
                       <div style={styles.scoreCircleValue}>{isNaN(scoreSocial) ? 0 : scoreSocial}</div>
                       <span style={styles.scoreCircleLabel}>สังคม</span>
                       <Handshake size={14} color="#F39C12" />
                     </div>
+                    <div style={styles.scoreCircle} onClick={() => openDetailModal(currentItem, 'intellect')}>
+                      <div style={styles.scoreCircleValue}>{isNaN(scoreIntellect) ? 0 : scoreIntellect}</div>
+                      <span style={styles.scoreCircleLabel}>สติปัญญา</span>
+                      <Brain size={14} color="#8E44AD" />
+                    </div>
                   </div>
 
-                  <TermComparisonChart studentDevList={studentDevs} />
+                  {/* ส่งข้อมูลทุกเทอมของนักเรียนคนนี้ไปให้กราฟ */}
+                  <TermComparisonChart studentDevList={devs} />
 
                   <div style={styles.bodySummary}>
                     <span style={styles.bodySummaryItem}>
                       <Weight size={14} color="#94A3B8" />
-                      น้ำหนัก: <strong>{item.Weight || '-'}</strong> กก.
+                      น้ำหนัก: <strong>{currentItem.Weight || '-'}</strong> กก.
                     </span>
                     <span style={styles.bodySummaryItem}>
                       <Ruler size={14} color="#94A3B8" />
-                      ส่วนสูง: <strong>{item.Height || '-'}</strong> ซม.
+                      ส่วนสูง: <strong>{currentItem.Height || '-'}</strong> ซม.
                     </span>
                     <span style={styles.bodySummaryItem}>
                       <Shield size={14} color="#94A3B8" />
-                      ฟัน: <strong style={{ color: '#27AE60' }}>{item.Dental_health || 'ปกติ'}</strong>
+                      ฟัน: <strong style={{ color: '#27AE60' }}>{currentItem.Dental_health || 'ปกติ'}</strong>
                     </span>
                   </div>
                 </div>
@@ -785,20 +825,12 @@ export default function Development() {
                         <td colSpan="2" style={styles.detailCategoryText}>• พัฒนาการด้านร่างกาย</td>
                       </tr>
                       <tr>
-                        <td style={styles.detailTd}>๑. ร่างกายแข็งแรงและมีความมั่นใจต่อตนเอง</td>
+                        <td style={styles.detailTd}>๑. ร่างกายเจริญเติบโตตามวัย และมีสุขนิสัยที่ดี</td>
                         <td style={styles.detailTdCenter}>{renderBadge(selectedDetailItem.q1)}</td>
                       </tr>
                       <tr>
-                        <td style={styles.detailTd}>๒. มีความสามารถในการเคลื่อนไหวและทักษะทางกาย</td>
+                        <td style={styles.detailTd}>๒. กล้ามเนื้อใหญ่และกล้ามเนื้อเล็กแข็งแรงใช้ได้อย่างคล่องแคล่วและประสานสัมพันธ์กัน</td>
                         <td style={styles.detailTdCenter}>{renderBadge(selectedDetailItem.q2)}</td>
-                      </tr>
-                      <tr>
-                        <td style={styles.detailTd}>๓. มีจิตอาสาและมีส่วนร่วมในกิจกรรมต่างๆ</td>
-                        <td style={styles.detailTdCenter}>{renderBadge(selectedDetailItem.q3)}</td>
-                      </tr>
-                      <tr>
-                        <td style={styles.detailTd}>๔. มีพลังและมีส่วนร่วมในการทำงาน</td>
-                        <td style={styles.detailTdCenter}>{renderBadge(selectedDetailItem.q4)}</td>
                       </tr>
                     </>
                   )}
@@ -806,15 +838,19 @@ export default function Development() {
                   {activeTab === 'emotion' && (
                     <>
                       <tr style={styles.detailCategoryRow}>
-                        <td colSpan="2" style={styles.detailCategoryText}>• พัฒนาการด้านอารมณ์</td>
+                        <td colSpan="2" style={styles.detailCategoryText}>• พัฒนาการด้านอารมณ์ จิตใจ</td>
                       </tr>
                       <tr>
-                        <td style={styles.detailTd}>๑. มีความสามารถในการสร้างสรรค์และความคิดสร้างสรรค์</td>
-                        <td style={styles.detailTdCenter}>{renderBadge(selectedDetailItem.q9)}</td>
+                        <td style={styles.detailTd}>๓. มีสุขภาพจิตดีและมีความสุข</td>
+                        <td style={styles.detailTdCenter}>{renderBadge(selectedDetailItem.q3)}</td>
                       </tr>
                       <tr>
-                        <td style={styles.detailTd}>๒. มีความสามารถในการเขียนและพูดภาษาอังกฤษ</td>
-                        <td style={styles.detailTdCenter}>{renderBadge(selectedDetailItem.q10)}</td>
+                        <td style={styles.detailTd}>๔. ชื่นชมและแสดงออกทางศิลปะ ดนตรี และการเคลื่อนไหว</td>
+                        <td style={styles.detailTdCenter}>{renderBadge(selectedDetailItem.q4)}</td>
+                      </tr>
+                      <tr>
+                        <td style={styles.detailTd}>๕. มีคุณธรรม จริยธรรม และมีจิตใจที่ดีงาม</td>
+                        <td style={styles.detailTdCenter}>{renderBadge(selectedDetailItem.q5)}</td>
                       </tr>
                     </>
                   )}
@@ -825,19 +861,15 @@ export default function Development() {
                         <td colSpan="2" style={styles.detailCategoryText}>• พัฒนาการด้านสังคม</td>
                       </tr>
                       <tr>
-                        <td style={styles.detailTd}>๑. มีสัมพันธ์ที่ดีและมีส่วนร่วมในการทำงาน</td>
-                        <td style={styles.detailTdCenter}>{renderBadge(selectedDetailItem.q5)}</td>
-                      </tr>
-                      <tr>
-                        <td style={styles.detailTd}>๒. มีความเข้าใจอย่างลึกซึ้งเกี่ยวกับตนเอง</td>
+                        <td style={styles.detailTd}>๖. มีทักษะชีวิตและปฏิบัติตนตามหลักปรัชญาของเศรษฐกิจพอเพียง</td>
                         <td style={styles.detailTdCenter}>{renderBadge(selectedDetailItem.q6)}</td>
                       </tr>
                       <tr>
-                        <td style={styles.detailTd}>๓. มีความสามารถในการสื่อสารอย่างถูกต้อง</td>
+                        <td style={styles.detailTd}>๗. รักธรรมชาติ สิ่งแวดล้อม วัฒนธรรม และความเป็นไทย</td>
                         <td style={styles.detailTdCenter}>{renderBadge(selectedDetailItem.q7)}</td>
                       </tr>
                       <tr>
-                        <td style={styles.detailTd}>๔. มีความสามารถในการแก้ปัญหาได้อย่างมีวิจารณญาณ</td>
+                        <td style={styles.detailTd}>๘. อยู่ร่วมกับผู้อื่นได้อย่างมีความสุขและปฏิบัติเป็นสมาชิกที่ดีของสังคมในระบบประชาธิปไตยอันมีพระมหากษัตริย์ทรงเป็นประมุข</td>
                         <td style={styles.detailTdCenter}>{renderBadge(selectedDetailItem.q8)}</td>
                       </tr>
                     </>
@@ -849,11 +881,19 @@ export default function Development() {
                         <td colSpan="2" style={styles.detailCategoryText}>• พัฒนาการด้านสติปัญญา</td>
                       </tr>
                       <tr>
-                        <td style={styles.detailTd}>๑. มีความสามารถในการอ่านและการเขียน</td>
+                        <td style={styles.detailTd}>๙. การใช้ภาษาสื่อสารได้เหมาะสมกับวัย</td>
+                        <td style={styles.detailTdCenter}>{renderBadge(selectedDetailItem.q9)}</td>
+                      </tr>
+                      <tr>
+                        <td style={styles.detailTd}>๑๐. มีความสามารถในการคิดที่เป็นพื้นฐานในการเรียนรู้</td>
+                        <td style={styles.detailTdCenter}>{renderBadge(selectedDetailItem.q10)}</td>
+                      </tr>
+                      <tr>
+                        <td style={styles.detailTd}>๑๑. มีจินตนาการและความคิดสร้างสรรค์</td>
                         <td style={styles.detailTdCenter}>{renderBadge(selectedDetailItem.q11)}</td>
                       </tr>
                       <tr>
-                        <td style={styles.detailTd}>๒. มีเจตคติที่ดีต่อการเรียนรู้ และมีความสามารถในการแสวงหาความรู้ได้เหมาะสมกับวัย</td>
+                        <td style={styles.detailTd}>๑๒. มีเจตคติที่ดีต่อการเรียนรู้ และมีความสามารถในการแสวงหาความรู้ได้เหมาะสมกับวัย</td>
                         <td style={styles.detailTdCenter}>{renderBadge(selectedDetailItem.q12)}</td>
                       </tr>
                     </>
@@ -1028,7 +1068,7 @@ export default function Development() {
                 </div>
               </div>
 
-              {/* แบบประเมินพัฒนาการด้านร่างกาย (4 ข้อ) */}
+              {/* แบบประเมินพัฒนาการด้านร่างกาย (2 ข้อ) */}
               <h4 style={styles.formSectionTitle}>
                 <Activity size={16} color="#4A90D9" />
                 พัฒนาการด้านร่างกาย
@@ -1046,10 +1086,8 @@ export default function Development() {
                 </thead>
                 <tbody>
                   {[
-                    { label: '๑. ร่างกายแข็งแรงและมีความมั่นใจต่อตนเอง', key: 'q1' },
-                    { label: '๒. มีความสามารถในการเคลื่อนไหวและทักษะทางกาย', key: 'q2' },
-                    { label: '๓. มีจิตอาสาและมีส่วนร่วมในกิจกรรมต่างๆ', key: 'q3' },
-                    { label: '๔. มีพลังและมีส่วนร่วมในการทำงาน', key: 'q4' }
+                    { label: '๑. ร่างกายเจริญเติบโตตามวัย และมีสุขนิสัยที่ดี', key: 'q1' },
+                    { label: '๒. กล้ามเนื้อใหญ่และกล้ามเนื้อเล็กแข็งแรงใช้ได้อย่างคล่องแคล่วและประสานสัมพันธ์กัน', key: 'q2' }
                   ].map(row => (
                     <tr key={row.key}>
                       <td style={styles.evalTd}>{row.label}</td>
@@ -1069,7 +1107,37 @@ export default function Development() {
                 </tbody>
               </table>
 
-              {/* แบบประเมินพัฒนาการด้านสังคม (4 ข้อ) */}
+              {/* แบบประเมินพัฒนาการด้านอารมณ์ (3 ข้อ) */}
+              <h4 style={styles.formSectionTitle}>
+                <Heart size={16} color="#E74C3C" />
+                พัฒนาการด้านอารมณ์ จิตใจ
+              </h4>
+              <table style={styles.evalTable}>
+                <tbody>
+                  {[
+                    { label: '๓. มีสุขภาพจิตดีและมีความสุข', key: 'q3' },
+                    { label: '๔. ชื่นชมและแสดงออกทางศิลปะ ดนตรี และการเคลื่อนไหว', key: 'q4' },
+                    { label: '๕. มีคุณธรรม จริยธรรม และมีจิตใจที่ดีงาม', key: 'q5' }
+                  ].map(row => (
+                    <tr key={row.key}>
+                      <td style={styles.evalTd}>{row.label}</td>
+                      {scoreLevels.map(l => (
+                        <td key={l.val} style={styles.evalTdCenter}>
+                          <input
+                            type="radio"
+                            name={row.key}
+                            checked={String(formData[row.key]) === String(l.val)}
+                            onChange={() => handleRadioChange(row.key, l.val)}
+                            style={styles.radioInput}
+                          />
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              {/* แบบประเมินพัฒนาการด้านสังคม (3 ข้อ) */}
               <h4 style={styles.formSectionTitle}>
                 <Handshake size={16} color="#F39C12" />
                 พัฒนาการด้านสังคม
@@ -1077,10 +1145,9 @@ export default function Development() {
               <table style={styles.evalTable}>
                 <tbody>
                   {[
-                    { label: '๑. มีสัมพันธ์ที่ดีและมีส่วนร่วมในการทำงาน', key: 'q5' },
-                    { label: '๒. มีความเข้าใจอย่างลึกซึ้งเกี่ยวกับตนเอง', key: 'q6' },
-                    { label: '๓. มีความสามารถในการสื่อสารอย่างถูกต้อง', key: 'q7' },
-                    { label: '๔. มีความสามารถในการแก้ปัญหาได้อย่างมีวิจารณญาณ', key: 'q8' }
+                    { label: '๖. มีทักษะชีวิตและปฏิบัติตนตามหลักปรัชญาของเศรษฐกิจพอเพียง', key: 'q6' },
+                    { label: '๗. รักธรรมชาติ สิ่งแวดล้อม วัฒนธรรม และความเป็นไทย', key: 'q7' },
+                    { label: '๘. อยู่ร่วมกับผู้อื่นได้อย่างมีความสุขและปฏิบัติเป็นสมาชิกที่ดีของสังคมในระบบประชาธิปไตยอันมีพระมหากษัตริย์ทรงเป็นประมุข', key: 'q8' }
                   ].map(row => (
                     <tr key={row.key}>
                       <td style={styles.evalTd}>{row.label}</td>
@@ -1100,36 +1167,7 @@ export default function Development() {
                 </tbody>
               </table>
 
-              {/* แบบประเมินพัฒนาการด้านอารมณ์ (2 ข้อ) */}
-              <h4 style={styles.formSectionTitle}>
-                <Heart size={16} color="#E74C3C" />
-                พัฒนาการด้านอารมณ์
-              </h4>
-              <table style={styles.evalTable}>
-                <tbody>
-                  {[
-                    { label: '๑. มีความสามารถในการสร้างสรรค์และความคิดสร้างสรรค์', key: 'q9' },
-                    { label: '๒. มีความสามารถในการเขียนและพูดภาษาอังกฤษ', key: 'q10' }
-                  ].map(row => (
-                    <tr key={row.key}>
-                      <td style={styles.evalTd}>{row.label}</td>
-                      {scoreLevels.map(l => (
-                        <td key={l.val} style={styles.evalTdCenter}>
-                          <input
-                            type="radio"
-                            name={row.key}
-                            checked={String(formData[row.key]) === String(l.val)}
-                            onChange={() => handleRadioChange(row.key, l.val)}
-                            style={styles.radioInput}
-                          />
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-
-              {/* แบบประเมินพัฒนาการด้านสติปัญญา (2 ข้อ) */}
+              {/* แบบประเมินพัฒนาการด้านสติปัญญา (4 ข้อ) */}
               <h4 style={styles.formSectionTitle}>
                 <Brain size={16} color="#8E44AD" />
                 พัฒนาการด้านสติปัญญา
@@ -1137,8 +1175,10 @@ export default function Development() {
               <table style={styles.evalTable}>
                 <tbody>
                   {[
-                    { label: '๑. มีความสามารถในการอ่านและการเขียน', key: 'q11' },
-                    { label: '๒. มีเจตคติที่ดีต่อการเรียนรู้ และมีความสามารถในการแสวงหาความรู้ได้เหมาะสมกับวัย', key: 'q12' }
+                    { label: '๙. การใช้ภาษาสื่อสารได้เหมาะสมกับวัย', key: 'q9' },
+                    { label: '๑๐. มีความสามารถในการคิดที่เป็นพื้นฐานในการเรียนรู้', key: 'q10' },
+                    { label: '๑๑. มีจินตนาการและความคิดสร้างสรรค์', key: 'q11' },
+                    { label: '๑๒. มีเจตคติที่ดีต่อการเรียนรู้ และมีความสามารถในการแสวงหาความรู้ได้เหมาะสมกับวัย', key: 'q12' }
                   ].map(row => (
                     <tr key={row.key}>
                       <td style={styles.evalTd}>{row.label}</td>
@@ -1388,6 +1428,7 @@ const styles = {
   },
   cardActions: {
     display: 'flex',
+    alignItems: 'center',
     gap: '8px',
   },
   editBtn: {
@@ -1797,6 +1838,7 @@ const styles = {
     fontSize: '10px',
     fontWeight: '500',
     color: '#334155',
+    width: '60px', // ล็อคความกว้างคอลัมน์
   },
   evalTd: {
     padding: '6px 8px',
@@ -1808,6 +1850,7 @@ const styles = {
     textAlign: 'center',
     padding: '6px 4px',
     border: '1px solid #E2E8F0',
+    width: '60px', // ล็อคความกว้างคอลัมน์
   },
   radioInput: {
     cursor: 'pointer',
